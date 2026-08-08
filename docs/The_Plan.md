@@ -120,7 +120,7 @@ The MVP is not complete until this full sequence works end to end:
 *   [x] **Mirror Server Infrastructure (Initial)** — GitHub Releases (v1.0)
     *   *Hosting:* GitHub Releases for "White Box" binaries
     *   *Master Manifest:* repository.json for the Tool Catalog (standard profile)
-    *   *Repo:* OpenGameStack-Org/ogs-frozen-stacks
+    *   *Repo:* OpenGameStack-Launcher/ogs-frozen-stacks
 *   [x] **Hash Verification** — 100% Complete ✅
     *   *Manifest Enforcement:* `sha256` is required for each tool entry in `repository.json`
     *   *Hydration Validation:* Local and remote mirror hydration verify archive SHA-256 before extraction
@@ -328,8 +328,8 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Packaging script uses `Start-Process` with redirected stdout/stderr to avoid PowerShell `NativeCommandError` on Godot's expected test stderr
 - `artifacts/` added to `.gitignore`
 - GitHub CLI (`gh`) used to publish: `gh release create v0.1.0-alpha ... --prerelease`
-- **v0.1.0-alpha released**: https://github.com/OpenGameStack-Org/ogs-launcher/releases/tag/v0.1.0-alpha
-- Website (`OpenGameStack-Org.github.io`) updated with alpha download section and direct tag URL links
+- **v0.1.0-alpha released**: https://github.com/OpenGameStack-Launcher/ogs-launcher/releases/tag/v0.1.0-alpha
+- Website (`OpenGameStack-Launcher.github.io`) updated with alpha download section and direct tag URL links
 
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management

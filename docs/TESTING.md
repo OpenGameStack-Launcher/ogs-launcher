@@ -12,7 +12,7 @@ Execute the full test suite in headless mode:
 
 **PowerShell (Windows) - Recommended:**
 ```powershell
-$start = Get-Date; & "C:\Program Files\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe" --headless --script res://tests/test_runner.gd 2>&1 | Select-Object -Last 10; $elapsed = ((Get-Date) - $start).TotalSeconds; Write-Host "Exit code: $LASTEXITCODE (execution time: $elapsed seconds)"
+$start = Get-Date; & "C:\Program Files\Godot\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe" --headless --script res://tests/test_runner.gd 2>&1 | Select-Object -Last 10; $elapsed = ((Get-Date) - $start).TotalSeconds; Write-Host "Exit code: $LASTEXITCODE (execution time: $elapsed seconds)"
 ```
 
 This command:
@@ -67,7 +67,7 @@ For advanced scenarios, you can override the test library path with your own:
 **PowerShell:**
 ```powershell
 $env:OGS_LIBRARY_ROOT = "C:\MyTestLibrary"
-& "C:\Program Files\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe" --headless --script res://tests/test_runner.gd
+& "C:\Program Files\Godot\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe" --headless --script res://tests/test_runner.gd
 ```
 
 **Bash:**
@@ -384,7 +384,7 @@ godot --headless --script res://tests/test_runner.gd
 All pull requests must pass the test suite. The CI pipeline runs:
 
 ```powershell
-& "C:\Program Files\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe" --headless --script res://tests/test_runner.gd
+& "C:\Program Files\Godot\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe" --headless --script res://tests/test_runner.gd
 ```
 
 Exit code 0 = all tests passed; exit code 1 = failures detected.

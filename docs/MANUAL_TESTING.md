@@ -264,7 +264,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 1. Stay on Settings page
 2. In "Remote Repo URL:" field, paste (or type a test URL):
    ```
-   https://raw.githubusercontent.com/OpenGameStack-Org/ogs-frozen-stacks/main/repository.json
+   https://raw.githubusercontent.com/OpenGameStack-Launcher/ogs-frozen-stacks/main/repository.json
    ```
 3. Observe the "Mirror status:" label
 

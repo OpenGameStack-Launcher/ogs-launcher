@@ -84,7 +84,7 @@ mirror_root/
       "id": "godot",
       "version": "4.3",
       "category": "Engine",
-      "archive_url": "https://github.com/OpenGameStack-Org/ogs-frozen-stacks/releases/download/v1.0/godot-4.3-win64.zip",
+      "archive_url": "https://github.com/OpenGameStack-Launcher/ogs-frozen-stacks/releases/download/v1.0/godot-4.3-win64.zip",
       "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "size_bytes": 123456789
     }

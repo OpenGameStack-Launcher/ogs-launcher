@@ -2,7 +2,7 @@
 
 ## Overview
 
-This document records the **Tool Catalog**—the authoritative list of tools available for download through the OGS Launcher. The catalog is hosted in the [ogs-frozen-stacks](https://github.com/OpenGameStack-Org/ogs-frozen-stacks) GitHub repository and distributed via a `repository.json` manifest.
+This document records the **Tool Catalog**—the authoritative list of tools available for download through the OGS Launcher. The catalog is hosted in the [ogs-frozen-stacks](https://github.com/OpenGameStack-Launcher/ogs-frozen-stacks) GitHub repository and distributed via a `repository.json` manifest.
 
 **Important Terminology:**
 - **Tool Catalog** = The remote `repository.json` listing available tools (what this document describes)
@@ -19,9 +19,9 @@ The following tools are currently available in the OGS Tool Catalog:
 
 ## Remote Repository
 
-- **Repository:** https://github.com/OpenGameStack-Org/ogs-frozen-stacks
+- **Repository:** https://github.com/OpenGameStack-Launcher/ogs-frozen-stacks
 - **Release Tag:** v1.0
-- **Manifest URL:** https://raw.githubusercontent.com/OpenGameStack-Org/ogs-frozen-stacks/main/repository.json
+- **Manifest URL:** https://raw.githubusercontent.com/OpenGameStack-Launcher/ogs-frozen-stacks/main/repository.json
 
 ## How It Works
 

@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
-    [string]$Version = "0.1.0-alpha",
-    [string]$GodotPath = "C:\Program Files\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe",
+    [string]$Version = "0.1.1-alpha",
+    [string]$GodotPath = "C:\Program Files\Godot\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe",
     [switch]$SkipTests,
     [switch]$SkipZip
 )

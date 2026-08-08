@@ -1,7 +1,7 @@
 extends Control
 
 const MirrorPathResolverScript = preload("res://scripts/mirror/mirror_path_resolver.gd")
-const DEFAULT_REMOTE_REPO_URL := "https://raw.githubusercontent.com/OpenGameStack-Org/ogs-frozen-stacks/main/repository.json"
+const DEFAULT_REMOTE_REPO_URL := "https://raw.githubusercontent.com/OpenGameStack-Launcher/ogs-frozen-stacks/main/repository.json"
 const LayoutControllerScript = preload("res://scripts/launcher/layout_controller.gd")
 const ProjectsControllerScript = preload("res://scripts/projects/projects_controller.gd")
 const SealControllerScript = preload("res://scripts/launcher/seal_controller.gd")

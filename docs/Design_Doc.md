@@ -9,7 +9,7 @@ The **Open Game Stack (OGS) Launcher** is a standalone application designed to b
 To avoid confusion, the OGS ecosystem operates on a three-tier architecture:
 
 ### 1.5.1 Tool Catalog (Remote)
-*   **What:** The [ogs-frozen-stacks](https://github.com/OpenGameStack-Org/ogs-frozen-stacks) GitHub repository.
+*   **What:** The [ogs-frozen-stacks](https://github.com/OpenGameStack-Launcher/ogs-frozen-stacks) GitHub repository.
 *   **Contains:** A `repository.json` manifest listing available tool versions with download URLs, SHA-256 hashes, and metadata.
 *   **Purpose:** Acts as the **authoritative source** for tool discovery. The Launcher fetches this manifest to show users what tools are available for download.
 *   **Analogy:** Like a package registry (npm, PyPI) but for pre-validated simulation tools.

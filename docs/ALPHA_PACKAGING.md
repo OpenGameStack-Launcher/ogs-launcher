@@ -10,7 +10,7 @@ Produce a single ZIP artifact containing the launcher executable and support fil
 
 - Windows 10/11 x64
 - Godot 4.3 Stable executable installed at:
-  - `C:\Program Files\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe`
+  - `C:\Program Files\Godot\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe`
 - Godot 4.3 export templates installed (Editor -> Manage Export Templates)
 - Existing launcher test suite passing
 
@@ -35,7 +35,7 @@ Godot export requires a local `export_presets.cfg` file in the repo root.
 From repo root (`ogs-launcher`):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.ps1 -Version 0.1.0-alpha
+powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.ps1 -Version 0.1.1-alpha
 ```
 
 ### Optional Flags
@@ -43,13 +43,13 @@ powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.p
 - Skip tests:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.ps1 -Version 0.1.0-alpha -SkipTests
+powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.ps1 -Version 0.1.1-alpha -SkipTests
 ```
 
 - Skip zip (staging only):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.ps1 -Version 0.1.0-alpha -SkipZip
+powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.ps1 -Version 0.1.1-alpha -SkipZip
 ```
 
 ## Outputs
@@ -74,7 +74,7 @@ Expected files include:
 ```powershell
 gh release create v<version> `
   "artifacts\alpha\OGS-Launcher-alpha-win64-<version>.zip" `
-  --repo OpenGameStack-Org/ogs-launcher `
+  --repo OpenGameStack-Launcher/ogs-launcher `
   --title "OGS Launcher v<version>" `
   --notes "Release notes here..." `
   --prerelease
@@ -84,7 +84,7 @@ If `gh` is not installed: `winget install --id GitHub.cli`
 Authenticate before first use: `gh auth login`
 
 4. Update website download links to point to the new release tag URL:
-   - `https://github.com/OpenGameStack-Org/ogs-launcher/releases/tag/v<version>`
+  - `https://github.com/OpenGameStack-Launcher/ogs-launcher/releases/tag/v<version>`
    - Note: Pre-releases are **not** returned by `/releases/latest` — always use the explicit tag URL.
 
 ## Published Releases
