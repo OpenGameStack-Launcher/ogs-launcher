@@ -147,11 +147,17 @@ func _load_from_json_string(json_text: String) -> void:
 	Parameters:
 	  json_text (String): Raw config JSON string."""
 	errors.clear()
-	var data = JSON.parse_string(json_text)
-	if data == null:
+	if json_text.strip_edges().is_empty():
 		Logger.warn("config_parse_failed", {"component": "config"})
 		errors.append("config_json_invalid")
 		return
+	var parser = JSON.new()
+	var parse_err = parser.parse(json_text)
+	if parse_err != OK:
+		Logger.warn("config_parse_failed", {"component": "config"})
+		errors.append("config_json_invalid")
+		return
+	var data = parser.data
 	if typeof(data) != TYPE_DICTIONARY:
 		Logger.warn("config_root_invalid", {"component": "config"})
 		errors.append("config_root_not_object")

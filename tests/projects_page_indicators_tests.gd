@@ -91,7 +91,7 @@ func _cleanup_nodes(nodes: Array) -> void:
 	"""Frees UI nodes created during tests to avoid leaks."""
 	for node in nodes:
 		if node is Node:
-			node.queue_free()
+			node.free()
 	if FileAccess.file_exists(TEST_REGISTRY_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_REGISTRY_PATH))
 

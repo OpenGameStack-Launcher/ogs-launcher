@@ -40,20 +40,20 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 	if script == null:
 		message = "Main scene missing script (main.gd)"
 		_expect(false, message, results)
-		instance.queue_free()
+		instance.free()
 		return
 	
 	# Verify the script has no parse errors
 	if script.get_instance_base_type() == "":
 		message = "Main scene script has parse or initialization error"
 		_expect(false, message, results)
-		instance.queue_free()
+		instance.free()
 		return
 	
 	success = true
 	message = "Main scene loaded successfully with valid script"
 	
-	instance.queue_free()
+	instance.free()
 	_expect(success, message, results)
 
 ## Test 2: All required UI nodes exist and are accessible.
@@ -91,7 +91,7 @@ func _test_all_required_nodes_exist(results: Dictionary) -> void:
 		if node == null:
 			missing_nodes.append(node_path)
 	
-	instance.queue_free()
+	instance.free()
 	
 	var success = missing_nodes.is_empty()
 	var message = "All required nodes exist" if success else "Missing nodes: " + ", ".join(missing_nodes)

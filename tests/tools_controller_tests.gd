@@ -37,7 +37,7 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 
 func _make_controller() -> ToolsController:
 	"""Creates a ToolsController with a dummy hydrator."""
-	var controller = ToolsControllerScript.new(SceneTree.new(), "https://example.com/repository.json")
+	var controller = ToolsControllerScript.new(null, "https://example.com/repository.json")
 	controller.remote_hydrator = DummyHydrator.new()
 	return controller
 

@@ -312,16 +312,19 @@ func _load_mirror_settings() -> void:
 		var file = FileAccess.open(settings_file_path, FileAccess.READ)
 		if file != null:
 			var json_text = file.get_as_text()
-			var data = JSON.parse_string(json_text)
-			if data != null and typeof(data) == TYPE_DICTIONARY:
-				mirror_root_override = String(data.get("mirror_root", ""))
-				if data.has("remote_repository_url"):
-					mirror_repository_url = String(data.get("remote_repository_url", ""))
-				else:
-					mirror_repository_url = DEFAULT_REMOTE_REPO_URL
-				mirror_root_path.text = mirror_root_override
-				mirror_repo_path.text = mirror_repository_url
-				return
+			if not json_text.strip_edges().is_empty():
+				var parser = JSON.new()
+				var parse_err = parser.parse(json_text)
+				var data = parser.data
+				if parse_err == OK and typeof(data) == TYPE_DICTIONARY:
+					mirror_root_override = String(data.get("mirror_root", ""))
+					if data.has("remote_repository_url"):
+						mirror_repository_url = String(data.get("remote_repository_url", ""))
+					else:
+						mirror_repository_url = DEFAULT_REMOTE_REPO_URL
+					mirror_root_path.text = mirror_root_override
+					mirror_repo_path.text = mirror_repository_url
+					return
 	# No saved setting found, use defaults
 	mirror_root_override = ""
 	mirror_repository_url = DEFAULT_REMOTE_REPO_URL

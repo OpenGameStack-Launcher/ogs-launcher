@@ -210,11 +210,17 @@ func _load_from_file(file_path: String) -> void:
 func _load_from_json_string(json_text: String) -> void:
 	"""Loads repository data from JSON text while recording parse errors."""
 	errors.clear()
-	var data = JSON.parse_string(json_text)
-	if data == null:
+	if json_text.strip_edges().is_empty():
 		Logger.warn("mirror_repo_parse_failed", {"component": "mirror"})
 		errors.append("repository_json_invalid")
 		return
+	var parser = JSON.new()
+	var parse_err = parser.parse(json_text)
+	if parse_err != OK:
+		Logger.warn("mirror_repo_parse_failed", {"component": "mirror"})
+		errors.append("repository_json_invalid")
+		return
+	var data = parser.data
 	if typeof(data) != TYPE_DICTIONARY:
 		Logger.warn("mirror_repo_root_invalid", {"component": "mirror"})
 		errors.append("repository_root_not_object")

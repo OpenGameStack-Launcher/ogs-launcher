@@ -27,7 +27,8 @@ enum LaunchError {
 	TOOL_PATH_ABSOLUTE = 6,     ## Tool path is absolute and disallowed
 	TOOL_PATH_OUTSIDE_ROOT = 7, ## Tool path resolves outside the project root
 	TOOL_HASH_INVALID = 8,      ## Tool sha256 value is invalid or unreadable
-	TOOL_HASH_MISMATCH = 9      ## Tool sha256 does not match file contents
+	TOOL_HASH_MISMATCH = 9,     ## Tool sha256 does not match file contents
+	GODOT_PROJECT_INIT_FAILED = 10 ## Godot project.godot discovery/creation failed
 }
 
 
@@ -78,9 +79,17 @@ static func launch(tool_entry: Dictionary, project_dir: String) -> Dictionary:
 	if not hash_check["success"]:
 		Logger.warn("tool_launch_failed", {"component": "launcher", "reason": "hash_check", "tool": tool_id})
 		return _error_result(hash_check["error_code"], hash_check["error_message"])
+
+	var launch_project_dir = project_dir
+	if tool_id == "godot":
+		var godot_project_result = _resolve_godot_project_dir(project_dir)
+		if not godot_project_result["success"]:
+			Logger.warn("tool_launch_failed", {"component": "launcher", "reason": "godot_project_init", "tool": tool_id})
+			return _error_result(godot_project_result["error_code"], godot_project_result["error_message"])
+		launch_project_dir = String(godot_project_result["launch_project_dir"])
 	
 	# Build tool-specific arguments
-	var args = _build_launch_arguments(tool_id, project_dir)
+	var args = _build_launch_arguments(tool_id, launch_project_dir)
 	if OfflineEnforcer.is_offline():
 		var inject = ToolConfigInjector.apply(tool_id, project_dir)
 		if not inject["success"]:
@@ -102,11 +111,46 @@ static func launch(tool_entry: Dictionary, project_dir: String) -> Dictionary:
 		"pid": pid
 	}
 
+## Resolves a launchable Godot project directory.
+##
+## Looks for an existing project.godot within the OGS project folder.
+## If missing, creates a minimal project.godot under the OGS game/ folder
+## using stack.json stack_name as the project name when available.
+static func _resolve_godot_project_dir(project_dir: String) -> Dictionary:
+	var existing_project_dir = _find_existing_godot_project_dir(project_dir)
+	if not existing_project_dir.is_empty():
+		return {
+			"success": true,
+			"launch_project_dir": existing_project_dir,
+			"created": false
+		}
+
+	var project_name = _resolve_ogs_project_name(project_dir)
+	var godot_project_dir = project_dir.path_join("game")
+	var create_result = _create_godot_project_file(godot_project_dir, project_name)
+	if not create_result["success"]:
+		return {
+			"success": false,
+			"error_code": LaunchError.GODOT_PROJECT_INIT_FAILED,
+			"error_message": create_result["error_message"]
+		}
+
+	Logger.info("godot_project_created", {
+		"component": "launcher",
+		"project": project_dir.get_file(),
+		"project_name": project_name
+	})
+	return {
+		"success": true,
+		"launch_project_dir": godot_project_dir,
+		"created": true
+	}
+
 
 ## Builds tool-specific launch arguments.
 ##
 ## Different tools require different arguments to operate in the project context:
-## - Godot: --path <project_dir> (opens the project)
+## - Godot: --editor --path <project_dir> (opens the project in editor mode)
 ## - Blender: (no special args needed, opens blank scene)
 ## - Other tools: (no special args for now)
 static func _build_launch_arguments(tool_id: String, project_dir: String) -> PackedStringArray:
@@ -114,7 +158,8 @@ static func _build_launch_arguments(tool_id: String, project_dir: String) -> Pac
 	
 	match tool_id:
 		"godot":
-			# Godot needs --path to open a project
+			# Force editor mode so launch never depends on a configured main scene.
+			args.append("--editor")
 			args.append("--path")
 			args.append(project_dir)
 		"blender":
@@ -125,6 +170,87 @@ static func _build_launch_arguments(tool_id: String, project_dir: String) -> Pac
 			pass
 	
 	return args
+
+## Finds an existing Godot project.godot path and returns its parent directory.
+static func _find_existing_godot_project_dir(project_dir: String) -> String:
+	# Prefer canonical OGS layout first, then legacy locations.
+	var common_paths = ["game/project.godot", "project_source/project.godot", "project.godot"]
+	for relative_path in common_paths:
+		var candidate = project_dir.path_join(relative_path)
+		if FileAccess.file_exists(candidate):
+			return candidate.get_base_dir()
+
+	var recursive_match = _find_first_project_godot(project_dir, 3, 0)
+	if recursive_match.is_empty():
+		return ""
+	return recursive_match.get_base_dir()
+
+## Recursively searches for project.godot up to the provided depth.
+static func _find_first_project_godot(directory: String, max_depth: int, depth: int) -> String:
+	if depth > max_depth:
+		return ""
+
+	var project_file = directory.path_join("project.godot")
+	if FileAccess.file_exists(project_file):
+		return project_file
+
+	var dir = DirAccess.open(directory)
+	if dir == null:
+		return ""
+
+	dir.list_dir_begin()
+	var entry = dir.get_next()
+	while entry != "":
+		if dir.current_is_dir() and not entry.begins_with(".") and entry != "tools":
+			var nested_result = _find_first_project_godot(directory.path_join(entry), max_depth, depth + 1)
+			if not nested_result.is_empty():
+				dir.list_dir_end()
+				return nested_result
+		entry = dir.get_next()
+	dir.list_dir_end()
+
+	return ""
+
+## Resolves the display project name from stack.json or falls back to folder name.
+static func _resolve_ogs_project_name(project_dir: String) -> String:
+	var stack_path = project_dir.path_join("stack.json")
+	if FileAccess.file_exists(stack_path):
+		var stack_file = FileAccess.open(stack_path, FileAccess.READ)
+		if stack_file != null:
+			var parse = JSON.parse_string(stack_file.get_as_text())
+			stack_file.close()
+			if parse is Dictionary:
+				var stack_name = String(parse.get("stack_name", "")).strip_edges()
+				if not stack_name.is_empty():
+					return stack_name
+
+	var fallback_name = project_dir.get_file().strip_edges()
+	if fallback_name.is_empty():
+		return "OGS Project"
+	return fallback_name
+
+## Creates a minimal Godot 4.x project.godot at the given Godot project directory.
+static func _create_godot_project_file(godot_project_dir: String, project_name: String) -> Dictionary:
+	var mkdir_result = DirAccess.make_dir_recursive_absolute(godot_project_dir)
+	if mkdir_result != OK and not DirAccess.dir_exists_absolute(godot_project_dir):
+		return {
+			"success": false,
+			"error_message": "Failed to create Godot project directory: %s" % godot_project_dir
+		}
+
+	var config_path = godot_project_dir.path_join("project.godot")
+	var file = FileAccess.open(config_path, FileAccess.WRITE)
+	if file == null:
+		return {
+			"success": false,
+			"error_message": "Failed to create Godot project file at: %s" % config_path
+		}
+
+	var safe_name = project_name.replace("\\", "\\\\").replace("\"", "\\\"")
+	var content = "config_version=5\n\n[application]\nconfig/name=\"%s\"\n" % safe_name
+	file.store_string(content)
+	file.close()
+	return {"success": true}
 
 
 ## Helper to construct error result dictionaries.

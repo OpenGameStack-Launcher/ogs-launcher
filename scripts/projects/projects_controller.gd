@@ -1008,8 +1008,16 @@ func _load_project_registry() -> void:
 
 	var text = file.get_as_text()
 	file.close()
-	var parsed = JSON.parse_string(text)
-	if parsed == null or typeof(parsed) != TYPE_DICTIONARY:
+	if text.strip_edges().is_empty():
+		Logger.warn("project_registry_parse_failed", {
+			"component": "projects",
+			"reason": "empty_json"
+		})
+		return
+	var parser = JSON.new()
+	var parse_err = parser.parse(text)
+	var parsed = parser.data
+	if parse_err != OK or typeof(parsed) != TYPE_DICTIONARY:
 		Logger.warn("project_registry_parse_failed", {
 			"component": "projects",
 			"reason": "invalid_json"
