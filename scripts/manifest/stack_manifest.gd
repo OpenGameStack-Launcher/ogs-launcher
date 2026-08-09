@@ -213,11 +213,17 @@ func _load_from_file(file_path: String) -> void:
 func _load_from_json_string(json_text: String) -> void:
 	"""Loads manifest data from JSON text while recording parse errors."""
 	errors.clear()
-	var data = JSON.parse_string(json_text)
-	if data == null:
+	if json_text.strip_edges().is_empty():
 		Logger.warn("manifest_parse_failed", {"component": "manifest"})
 		errors.append("manifest_json_invalid")
 		return
+	var parser = JSON.new()
+	var parse_err = parser.parse(json_text)
+	if parse_err != OK:
+		Logger.warn("manifest_parse_failed", {"component": "manifest"})
+		errors.append("manifest_json_invalid")
+		return
+	var data = parser.data
 	if typeof(data) != TYPE_DICTIONARY:
 		Logger.warn("manifest_root_invalid", {"component": "manifest"})
 		errors.append("manifest_root_not_object")

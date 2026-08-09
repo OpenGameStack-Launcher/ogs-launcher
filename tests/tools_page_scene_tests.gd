@@ -76,7 +76,7 @@ func _test_download_button_state(results: Dictionary) -> void:
 	if instance == null:
 		return
 
-	var controller = ToolsControllerScript.new(SceneTree.new(), "https://example.com/repository.json")
+	var controller = ToolsControllerScript.new(null, "https://example.com/repository.json")
 	instance.tools_controller = controller
 	
 	var button_active = Button.new()
