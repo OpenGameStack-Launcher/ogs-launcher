@@ -16,6 +16,7 @@ config/features=PackedStringArray("4.3", "Mobile")
 run/low_processor_mode=true
 boot_splash/image="res://Images/logo.png"
 config/icon="res://Images/logo.png"
+config/windows_native_icon="res://Images/logo.ico"
 
 [display]
 
