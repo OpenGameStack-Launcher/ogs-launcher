@@ -1,7 +1,14 @@
 [CmdletBinding()]
 param(
-    [string]$Version = "0.1.2-alpha",
+    [string]$Version = "0.1.4-alpha",
     [string]$GodotPath = "C:\Program Files\Godot\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe",
+    [string]$RcEditPath = "C:\Tools\rcedit-x64.exe",
+    [string]$CompanyName = "Open Game Stack",
+    [string]$ProductName = "OGS Launcher",
+    [string]$FileDescription = "Open Game Stack Launcher",
+    [string]$InternalName = "OGS-Launcher.exe",
+    [string]$OriginalFilename = "OGS-Launcher.exe",
+    [string]$LegalCopyright = "Copyright (c) Open Game Stack",
     [switch]$SkipTests,
     [switch]$SkipZip
 )
@@ -79,6 +86,46 @@ function Write-Step {
     Write-Host "[OGS Alpha Build] $Message" -ForegroundColor Cyan
 }
 
+function Convert-ToWindowsVersion {
+    <#
+    .SYNOPSIS
+    Converts a semantic-like version label into Windows file version format.
+    .DESCRIPTION
+    Windows file metadata expects 4 numeric parts. This function extracts up to
+    the first 4 numeric components from labels such as 0.1.4-alpha and pads
+    missing parts with zeros.
+    #>
+    param([string]$VersionLabel)
+
+    $parts = [regex]::Matches($VersionLabel, "\d+") | ForEach-Object { $_.Value }
+    if ($parts.Count -eq 0) {
+        return "0.0.0.0"
+    }
+
+    $windowsParts = @($parts | Select-Object -First 4)
+    while ($windowsParts.Count -lt 4) {
+        $windowsParts += "0"
+    }
+
+    return ($windowsParts -join ".")
+}
+
+function Invoke-RcEditCommand {
+    <#
+    .SYNOPSIS
+    Runs rcedit with explicit exit-code validation.
+    .DESCRIPTION
+    Centralizes error handling for executable resource updates so packaging
+    fails fast if icon or metadata patching does not succeed.
+    #>
+    param([string[]]$Arguments)
+
+    & $RcEditPath @Arguments
+    if ($LASTEXITCODE -ne 0) {
+        throw "rcedit failed with exit code $LASTEXITCODE for arguments: $($Arguments -join ' ')"
+    }
+}
+
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 $exportPresetPath = Join-Path $repoRoot "export_presets.cfg"
@@ -90,6 +137,10 @@ Write-Step "Repository root: $repoRoot"
 
 if (-not (Test-Path $GodotPath)) {
     throw "Godot executable not found at: $GodotPath"
+}
+
+if (-not (Test-Path $RcEditPath)) {
+    throw "rcedit executable not found at: $RcEditPath"
 }
 
 if (-not (Test-Path $exportPresetPath)) {
@@ -129,6 +180,24 @@ if ($exportExitCode -ne 0) {
 if (-not (Test-Path $exportPath)) {
     throw "Export did not produce OGS-Launcher.exe in staging directory"
 }
+
+$iconPath = Join-Path $repoRoot "Images\logo.ico"
+if (-not (Test-Path $iconPath)) {
+    throw "Missing icon file required for Windows metadata patching: $iconPath"
+}
+
+$windowsVersion = Convert-ToWindowsVersion -VersionLabel $Version
+Write-Step "Stamping executable icon and Windows metadata via rcedit"
+Invoke-RcEditCommand -Arguments @($exportPath, "--set-icon", $iconPath)
+Invoke-RcEditCommand -Arguments @($exportPath, "--set-file-version", $windowsVersion)
+Invoke-RcEditCommand -Arguments @($exportPath, "--set-product-version", $windowsVersion)
+Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "CompanyName", $CompanyName)
+Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "ProductName", $ProductName)
+Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "FileDescription", $FileDescription)
+Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "InternalName", $InternalName)
+Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "LegalCopyright", $LegalCopyright)
+Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "FileVersion", $Version)
+Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "ProductVersion", $Version)
 
 $alphaReadme = @"
 OGS Launcher Alpha Package
