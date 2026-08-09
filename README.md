@@ -3,7 +3,7 @@
 ![Status](https://img.shields.io/badge/Status-Alpha-orange)
 ![Engine](https://img.shields.io/badge/Godot-4.3-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
-[![Download Alpha](https://img.shields.io/badge/Download-v0.1.1--alpha-brightgreen)](https://github.com/OpenGameStack-Launcher/ogs-launcher/releases/tag/v0.1.1-alpha)
+[![Download Alpha](https://img.shields.io/badge/Download-v0.1.2--alpha-brightgreen)](https://github.com/OpenGameStack-Launcher/ogs-launcher/releases/tag/v0.1.2-alpha)
 
 > **The "Studio-in-a-Box" for Sovereign Game Development.**
 
@@ -58,7 +58,7 @@ The heart of the stack is the **OGS Launcher**, a custom application (built in G
 
 A pre-built Windows binary is available for testing:
 
-**[Download OGS Launcher v0.1.1-alpha (Windows x64)](https://github.com/OpenGameStack-Launcher/ogs-launcher/releases/tag/v0.1.1-alpha)**
+**[Download OGS Launcher v0.1.2-alpha (Windows x64)](https://github.com/OpenGameStack-Launcher/ogs-launcher/releases/tag/v0.1.2-alpha)**
 
 Extract the ZIP, keep `OGS-Launcher.exe` and `OGS-Launcher.pck` together, and run. No installation required.
 

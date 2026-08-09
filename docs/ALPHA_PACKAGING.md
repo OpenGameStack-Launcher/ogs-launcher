@@ -35,7 +35,7 @@ Godot export requires a local `export_presets.cfg` file in the repo root.
 From repo root (`ogs-launcher`):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.ps1 -Version 0.1.1-alpha
+powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.ps1 -Version 0.1.2-alpha
 ```
 
 ### Optional Flags
@@ -43,13 +43,13 @@ powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.p
 - Skip tests:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.ps1 -Version 0.1.1-alpha -SkipTests
+powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.ps1 -Version 0.1.2-alpha -SkipTests
 ```
 
 - Skip zip (staging only):
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.ps1 -Version 0.1.1-alpha -SkipZip
+powershell -ExecutionPolicy Bypass -File .\scripts\release\build_alpha_package.ps1 -Version 0.1.2-alpha -SkipZip
 ```
 
 ## Outputs
