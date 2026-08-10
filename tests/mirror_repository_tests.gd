@@ -17,6 +17,8 @@ func run() -> Dictionary:
 	_test_valid_category(results)
 	_test_invalid_category(results)
 	_test_missing_category(results)
+	_test_valid_info_url(results)
+	_test_invalid_info_url(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -129,3 +131,27 @@ func _test_missing_category(results: Dictionary) -> void:
 	}
 	var repo = MirrorRepositoryScript.from_dict(data)
 	_expect(repo.is_valid(), "missing category should be allowed", results)
+
+func _test_valid_info_url(results: Dictionary) -> void:
+	"""Valid info_url field should be accepted."""
+	var data = {
+		"schema_version": 1,
+		"mirror_name": "OGS",
+		"tools": [
+			{"id": "godot", "version": "4.3", "info_url": "https://godotengine.org/releases/4.3/", "archive_path": "tools/godot/4.3/godot.zip", "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}
+		]
+	}
+	var repo = MirrorRepositoryScript.from_dict(data)
+	_expect(repo.is_valid(), "valid info_url should be accepted", results)
+
+func _test_invalid_info_url(results: Dictionary) -> void:
+	"""Empty info_url string should be rejected."""
+	var data = {
+		"schema_version": 1,
+		"mirror_name": "OGS",
+		"tools": [
+			{"id": "godot", "version": "4.3", "info_url": "", "archive_path": "tools/godot/4.3/godot.zip", "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"}
+		]
+	}
+	var errors = MirrorRepositoryScript.validate_data(data)
+	_expect(errors.has("tool_info_url_invalid:0"), "should flag empty info_url", results)

@@ -197,7 +197,8 @@ func get_categorized_tools() -> Dictionary:
 			"category": category,
 			"size_bytes": tool.get("size_bytes", 0),
 			"sha256": tool.get("sha256", ""),
-			"archive_url": tool.get("archive_url", "")
+			"archive_url": tool.get("archive_url", ""),
+			"info_url": tool.get("info_url", "")
 		})
 	
 	return categorized
