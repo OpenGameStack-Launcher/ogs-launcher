@@ -12,6 +12,8 @@
 extends RefCounted
 class_name OgsConfig
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 const CURRENT_SCHEMA_VERSION := 1
 
 var schema_version := 1
@@ -129,12 +131,12 @@ func _load_from_file(file_path: String) -> void:
 	  file_path (String): Config file path to read."""
 	errors.clear()
 	if not FileAccess.file_exists(file_path):
-		Logger.debug("config_missing", {"component": "config"})
+		OgsLogger.debug("config_missing", {"component": "config"})
 		return
 
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if file == null:
-		Logger.warn("config_read_failed", {"component": "config"})
+		OgsLogger.warn("config_read_failed", {"component": "config"})
 		errors.append("config_file_unreadable")
 		return
 
@@ -148,18 +150,18 @@ func _load_from_json_string(json_text: String) -> void:
 	  json_text (String): Raw config JSON string."""
 	errors.clear()
 	if json_text.strip_edges().is_empty():
-		Logger.warn("config_parse_failed", {"component": "config"})
+		OgsLogger.warn("config_parse_failed", {"component": "config"})
 		errors.append("config_json_invalid")
 		return
 	var parser = JSON.new()
 	var parse_err = parser.parse(json_text)
 	if parse_err != OK:
-		Logger.warn("config_parse_failed", {"component": "config"})
+		OgsLogger.warn("config_parse_failed", {"component": "config"})
 		errors.append("config_json_invalid")
 		return
 	var data = parser.data
 	if typeof(data) != TYPE_DICTIONARY:
-		Logger.warn("config_root_invalid", {"component": "config"})
+		OgsLogger.warn("config_root_invalid", {"component": "config"})
 		errors.append("config_root_not_object")
 		return
 	_load_from_dict(data)
@@ -170,7 +172,7 @@ func _load_from_dict(data: Dictionary) -> void:
 	  data (Dictionary): Parsed config dictionary."""
 	errors = validate_data(data)
 	if not errors.is_empty():
-		Logger.warn("config_validation_failed", {"component": "config", "error_count": errors.size()})
+		OgsLogger.warn("config_validation_failed", {"component": "config", "error_count": errors.size()})
 
 	if data.has("schema_version"):
 		schema_version = int(data["schema_version"])

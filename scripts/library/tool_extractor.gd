@@ -33,6 +33,8 @@
 extends RefCounted
 class_name ToolExtractor
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 ## Error codes for extraction failures
 enum ExtractionError {
 	SUCCESS = 0,
@@ -75,7 +77,7 @@ func extract_to_library(archive_path: String, tool_id: String, version: String) 
 	# Validate parameters
 	if archive_path.is_empty() or tool_id.is_empty() or version.is_empty():
 		result["error_message"] = "Missing required parameters"
-		Logger.error("extraction_failed", {
+		OgsLogger.error("extraction_failed", {
 			"component": "library",
 			"reason": "invalid parameters",
 			"tool_id": tool_id,
@@ -87,7 +89,7 @@ func extract_to_library(archive_path: String, tool_id: String, version: String) 
 	if not FileAccess.file_exists(archive_path):
 		result["error_code"] = ExtractionError.SOURCE_NOT_FOUND
 		result["error_message"] = "Archive file not found: %s" % archive_path
-		Logger.error("extraction_failed", {
+		OgsLogger.error("extraction_failed", {
 			"component": "library",
 			"reason": "archive not found",
 			"archive": archive_path,
@@ -100,7 +102,7 @@ func extract_to_library(archive_path: String, tool_id: String, version: String) 
 	if target_dir.is_empty():
 		result["error_code"] = ExtractionError.INVALID_PARAMETERS
 		result["error_message"] = "Failed to resolve target directory"
-		Logger.error("extraction_failed", {
+		OgsLogger.error("extraction_failed", {
 			"component": "library",
 			"reason": "path resolution failed",
 			"tool_id": tool_id,
@@ -114,7 +116,7 @@ func extract_to_library(archive_path: String, tool_id: String, version: String) 
 		if err != OK:
 			result["error_code"] = ExtractionError.EXTRACTION_FAILED
 			result["error_message"] = "Failed to create target directory"
-			Logger.error("extraction_failed", {
+			OgsLogger.error("extraction_failed", {
 				"component": "library",
 				"reason": "mkdir failed",
 				"target": target_dir,
@@ -127,7 +129,7 @@ func extract_to_library(archive_path: String, tool_id: String, version: String) 
 	if not extraction_result["success"]:
 		result["error_code"] = ExtractionError.EXTRACTION_FAILED
 		result["error_message"] = extraction_result["error"]
-		Logger.error("extraction_failed", {
+		OgsLogger.error("extraction_failed", {
 			"component": "library",
 			"reason": extraction_result["error"],
 			"archive": archive_path,
@@ -139,7 +141,7 @@ func extract_to_library(archive_path: String, tool_id: String, version: String) 
 	# Try to clean up the archive
 	var cleanup_err = _cleanup_archive(archive_path)
 	if cleanup_err != OK:
-		Logger.warn("archive_cleanup_failed", {
+		OgsLogger.warn("archive_cleanup_failed", {
 			"component": "library",
 			"archive": archive_path,
 			"tool_id": tool_id,
@@ -152,7 +154,7 @@ func extract_to_library(archive_path: String, tool_id: String, version: String) 
 	result["tool_path"] = target_dir
 	result["extracted_files"] = extraction_result["file_count"]
 	
-	Logger.info("tool_extracted", {
+	OgsLogger.info("tool_extracted", {
 		"component": "library",
 		"tool_id": tool_id,
 		"version": version,

@@ -29,6 +29,8 @@
 extends RefCounted
 class_name ProjectSealer
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 const SealValidatorScript = preload("res://scripts/projects/project_seal_validator.gd")
 const SealToolCopierScript = preload("res://scripts/projects/project_seal_tool_copier.gd")
 const SealConfigWriterScript = preload("res://scripts/projects/project_seal_config_writer.gd")
@@ -63,7 +65,7 @@ func seal_project(project_path: String) -> Dictionary:
 	
 	if project_path.is_empty():
 		result.errors.append("Project path cannot be empty")
-		Logger.error("seal_project_invalid_path", {
+		OgsLogger.error("seal_project_invalid_path", {
 			"component": "sealer",
 			"reason": "empty project path"
 		})
@@ -73,7 +75,7 @@ func seal_project(project_path: String) -> Dictionary:
 	project_path = project_path.trim_suffix("/")
 	
 	# Step 1: Validate project
-	Logger.info("seal_project_starting", {
+	OgsLogger.info("seal_project_starting", {
 		"component": "sealer",
 		"project_path": project_path
 	})
@@ -81,7 +83,7 @@ func seal_project(project_path: String) -> Dictionary:
 	var validation = _validate_project(project_path)
 	if not validation.success:
 		result.errors = validation.errors
-		Logger.error("seal_project_validation_failed", {
+		OgsLogger.error("seal_project_validation_failed", {
 			"component": "sealer",
 			"project_path": project_path,
 			"errors": validation.errors
@@ -92,7 +94,7 @@ func seal_project(project_path: String) -> Dictionary:
 	var copy_result = _copy_tools_to_local(project_path, validation.manifest)
 	if not copy_result.success:
 		result.errors = copy_result.errors
-		Logger.error("seal_project_copy_failed", {
+		OgsLogger.error("seal_project_copy_failed", {
 			"component": "sealer",
 			"project_path": project_path,
 			"errors": copy_result.errors
@@ -105,7 +107,7 @@ func seal_project(project_path: String) -> Dictionary:
 	var config_result = _write_offline_config(project_path)
 	if not config_result.success:
 		result.errors = config_result.errors
-		Logger.error("seal_project_config_failed", {
+		OgsLogger.error("seal_project_config_failed", {
 			"component": "sealer",
 			"project_path": project_path,
 			"errors": config_result.errors
@@ -116,7 +118,7 @@ func seal_project(project_path: String) -> Dictionary:
 	var zip_result = _create_sealed_zip(project_path)
 	if not zip_result.success:
 		result.errors = zip_result.errors
-		Logger.error("seal_project_zip_failed", {
+		OgsLogger.error("seal_project_zip_failed", {
 			"component": "sealer",
 			"project_path": project_path,
 			"errors": zip_result.errors
@@ -127,7 +129,7 @@ func seal_project(project_path: String) -> Dictionary:
 	result.sealed_zip = zip_result.zip_path
 	result.project_size_mb = zip_result.size_mb
 	
-	Logger.info("seal_project_complete", {
+	OgsLogger.info("seal_project_complete", {
 		"component": "sealer",
 		"project_path": project_path,
 		"sealed_zip": result.sealed_zip,

@@ -17,6 +17,8 @@
 extends RefCounted
 class_name StackGenerator
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 const SCHEMA_VERSION := 1
 const StackManifestScript = preload("res://scripts/manifest/stack_manifest.gd")
 
@@ -45,7 +47,7 @@ static func create_default() -> StackManifest:
 		"id": "audacity",
 		"version": "3.7"
 	})
-	Logger.info("manifest_generated", {"component": "manifest", "stack_name": manifest.stack_name})
+	OgsLogger.info("manifest_generated", {"component": "manifest", "stack_name": manifest.stack_name})
 	return manifest
 
 ## Converts a manifest to JSON string.
@@ -74,9 +76,9 @@ static func save_to_file(manifest: StackManifest, file_path: String) -> bool:
 	var json_text = to_json_string(manifest, true)
 	var file = FileAccess.open(file_path, FileAccess.WRITE)
 	if file == null:
-		Logger.warn("manifest_write_failed", {"component": "manifest"})
+		OgsLogger.warn("manifest_write_failed", {"component": "manifest"})
 		return false
 	file.store_string(json_text)
 	file.close()
-	Logger.info("manifest_saved", {"component": "manifest", "stack_name": manifest.stack_name})
+	OgsLogger.info("manifest_saved", {"component": "manifest", "stack_name": manifest.stack_name})
 	return true

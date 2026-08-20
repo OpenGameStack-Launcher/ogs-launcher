@@ -15,6 +15,8 @@
 extends RefCounted
 class_name ToolsController
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 signal tool_list_updated()
 signal tool_list_refresh_failed(error_message: String)
 signal tool_download_started(tool_id: String, version: String)
@@ -62,7 +64,7 @@ func refresh_tool_list() -> void:
 	_is_loading = true
 	_last_error = ""
 	
-	Logger.info("tools_refresh_started", {
+	OgsLogger.info("tools_refresh_started", {
 		"component": "tools",
 		"context": "user_initiated"
 	})
@@ -70,7 +72,7 @@ func refresh_tool_list() -> void:
 	# Fetch remote repository.json
 	if remote_repository_url.is_empty():
 		_last_error = "No remote repository URL configured"
-		Logger.warn("tools_refresh_no_url", {
+		OgsLogger.warn("tools_refresh_no_url", {
 			"component": "tools",
 			"reason": "remote_url_empty"
 		})
@@ -80,7 +82,7 @@ func refresh_tool_list() -> void:
 	var guard = OfflineEnforcer.guard_network_call("tools_refresh")
 	if not guard["allowed"]:
 		_last_error = guard["error_message"]
-		Logger.info("tools_refresh_offline", {
+		OgsLogger.info("tools_refresh_offline", {
 			"component": "tools",
 			"reason": "offline_mode_active"
 		})
@@ -95,7 +97,7 @@ func refresh_tool_list() -> void:
 	var err = http.request(remote_repository_url)
 	if err != OK:
 		_last_error = "Failed to start HTTP request: " + str(err)
-		Logger.error("tools_refresh_http_failed", {
+		OgsLogger.error("tools_refresh_http_failed", {
 			"component": "tools",
 			"url": remote_repository_url,
 			"error": err
@@ -110,7 +112,7 @@ func _on_repository_fetched(result: int, response_code: int, _headers: PackedStr
 	
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
 		_last_error = "HTTP request failed: code %d" % response_code
-		Logger.error("tools_refresh_http_error", {
+		OgsLogger.error("tools_refresh_http_error", {
 			"component": "tools",
 			"result": result,
 			"response_code": response_code
@@ -125,7 +127,7 @@ func _on_repository_fetched(result: int, response_code: int, _headers: PackedStr
 	
 	if not repository.is_valid():
 		_last_error = "Invalid repository.json: " + ", ".join(repository.errors)
-		Logger.error("tools_refresh_validation_failed", {
+		OgsLogger.error("tools_refresh_validation_failed", {
 			"component": "tools",
 			"errors": repository.errors
 		})
@@ -138,7 +140,7 @@ func _on_repository_fetched(result: int, response_code: int, _headers: PackedStr
 	# Scan installed tools from library
 	_scan_installed_tools()
 	
-	Logger.info("tools_refresh_success", {
+	OgsLogger.info("tools_refresh_success", {
 		"component": "tools",
 		"available_count": _available_tools.size(),
 		"installed_count": _get_installed_count()
@@ -227,14 +229,14 @@ func download_tool(tool_id: String, version: String) -> void:
 	
 	# Check if already downloading
 	if _currently_downloading.get(key, false):
-		Logger.warn("tool_already_downloading", {
+		OgsLogger.warn("tool_already_downloading", {
 			"component": "tools",
 			"tool_id": tool_id,
 			"version": version
 		})
 		return
 	
-	Logger.info("tool_download_requested", {
+	OgsLogger.info("tool_download_requested", {
 		"component": "tools",
 		"tool_id": tool_id,
 		"version": version
@@ -242,7 +244,7 @@ func download_tool(tool_id: String, version: String) -> void:
 	
 	# Verify tool exists in repository
 	if repository == null:
-		Logger.error("tool_download_no_repository", {
+		OgsLogger.error("tool_download_no_repository", {
 			"component": "tools",
 			"tool_id": tool_id,
 			"version": version
@@ -251,7 +253,7 @@ func download_tool(tool_id: String, version: String) -> void:
 	
 	var tool = repository.get_tool_entry(tool_id, version)
 	if tool.is_empty():
-		Logger.error("tool_download_not_found", {
+		OgsLogger.error("tool_download_not_found", {
 			"component": "tools",
 			"tool_id": tool_id,
 			"version": version
@@ -285,7 +287,7 @@ func _on_install_complete(tool_id: String, version: String, success: bool, error
 	
 	tool_download_complete.emit(tool_id, version, success)
 	
-	Logger.info("tool_download_complete", {
+	OgsLogger.info("tool_download_complete", {
 		"component": "tools",
 		"tool_id": tool_id,
 		"version": version,
@@ -320,7 +322,7 @@ func check_connectivity() -> void:
 	if not guard["allowed"]:
 		_is_online = false
 		connectivity_checked.emit(false)
-		Logger.debug("tools_connectivity_offline", {
+		OgsLogger.debug("tools_connectivity_offline", {
 			"component": "tools",
 			"reason": "offline_mode_active"
 		})
@@ -336,7 +338,7 @@ func check_connectivity() -> void:
 		_is_online = false
 		connectivity_checked.emit(false)
 		http.queue_free()
-		Logger.debug("tools_connectivity_failed", {
+		OgsLogger.debug("tools_connectivity_failed", {
 			"component": "tools",
 			"error": err
 		})
@@ -349,7 +351,7 @@ func _on_connectivity_checked(result: int, response_code: int, _headers: PackedS
 	_is_online = (result == HTTPRequest.RESULT_SUCCESS and (response_code == 200 or response_code == 304))
 	connectivity_checked.emit(_is_online)
 	
-	Logger.debug("tools_connectivity_result", {
+	OgsLogger.debug("tools_connectivity_result", {
 		"component": "tools",
 		"online": _is_online,
 		"result": result,
@@ -382,7 +384,7 @@ func cancel_download(tool_id: String, version: String) -> void:
 	var key = "%s_%s" % [tool_id, version]
 	_currently_downloading.erase(key)
 	
-	Logger.info("tool_download_cancelled", {
+	OgsLogger.info("tool_download_cancelled", {
 		"component": "tools",
 		"tool_id": tool_id,
 		"version": version

@@ -6,6 +6,8 @@
 extends RefCounted
 class_name MirrorPathResolver
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 ## Returns the default mirror root directory for the current platform.
 ## Windows: %LOCALAPPDATA%/OGS/Mirror
 ## Unix:    ~/.config/ogs-launcher/mirror
@@ -15,7 +17,7 @@ func get_mirror_root() -> String:
 	if OS.get_name() == "Windows":
 		var appdata = OS.get_environment("LOCALAPPDATA")
 		if appdata.is_empty():
-			Logger.error("mirror_root_resolution_failed", {
+			OgsLogger.error("mirror_root_resolution_failed", {
 				"component": "mirror",
 				"reason": "LOCALAPPDATA not set",
 				"platform": OS.get_name()
@@ -25,7 +27,7 @@ func get_mirror_root() -> String:
 	else:
 		var home = OS.get_environment("HOME")
 		if home.is_empty():
-			Logger.error("mirror_root_resolution_failed", {
+			OgsLogger.error("mirror_root_resolution_failed", {
 				"component": "mirror",
 				"reason": "HOME not set",
 				"platform": OS.get_name()
@@ -33,7 +35,7 @@ func get_mirror_root() -> String:
 			return ""
 		root = home.path_join(".config").path_join("ogs-launcher").path_join("mirror")
 
-	Logger.debug("mirror_root_resolved", {
+	OgsLogger.debug("mirror_root_resolved", {
 		"component": "mirror",
 		"path": root,
 		"platform": OS.get_name()
@@ -55,7 +57,7 @@ func normalize_path(path_str: String) -> String:
 		if not home.is_empty():
 			normalized = home + normalized.substr(1)
 	var abs_path = ProjectSettings.globalize_path(normalized)
-	Logger.debug("mirror_path_normalized", {
+	OgsLogger.debug("mirror_path_normalized", {
 		"component": "mirror",
 		"input": path_str,
 		"output": abs_path

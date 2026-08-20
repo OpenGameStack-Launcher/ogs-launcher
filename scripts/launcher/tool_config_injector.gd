@@ -6,6 +6,8 @@
 extends RefCounted
 class_name ToolConfigInjector
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 const GODOT_SETTINGS_PRIMARY := "user://editor_settings-4.tres"
 const GODOT_SETTINGS_LEGACY := "user://editor_settings.tres"
 
@@ -22,11 +24,11 @@ static func apply(tool_id: String, project_dir: String) -> Dictionary:
 		"godot":
 			var result = _apply_godot_overrides()
 			if not result["success"]:
-				Logger.warn("tool_config_failed", {"component": "launcher", "tool": "godot"})
+				OgsLogger.warn("tool_config_failed", {"component": "launcher", "tool": "godot"})
 				return result
 		"blender":
 			args.append_array(_blender_offline_args())
-			Logger.info("tool_config_applied", {"component": "launcher", "tool": "blender"})
+			OgsLogger.info("tool_config_applied", {"component": "launcher", "tool": "blender"})
 			return {
 				"success": true,
 				"error_message": "",
@@ -68,13 +70,13 @@ static func _apply_godot_overrides() -> Dictionary:
 	config.set_value("network/http_proxy", "port", 0)
 	var save_err = config.save(settings_path)
 	if save_err != OK:
-		Logger.warn("tool_config_failed", {"component": "launcher", "tool": "godot"})
+		OgsLogger.warn("tool_config_failed", {"component": "launcher", "tool": "godot"})
 		return {
 			"success": false,
 			"error_message": "Failed to save Godot settings: %s" % settings_path,
 			"args": PackedStringArray()
 		}
-	Logger.info("tool_config_applied", {"component": "launcher", "tool": "godot"})
+	OgsLogger.info("tool_config_applied", {"component": "launcher", "tool": "godot"})
 	return {
 		"success": true,
 		"error_message": "",
@@ -107,10 +109,10 @@ static func _apply_placeholder_override(tool_id: String, project_dir: String, ar
 	"""
 	var write_result = _write_placeholder_override(tool_id, project_dir)
 	if not write_result["success"]:
-		Logger.warn("tool_config_failed", {"component": "launcher", "tool": tool_id})
+		OgsLogger.warn("tool_config_failed", {"component": "launcher", "tool": tool_id})
 		return write_result
 	OS.set_environment("OGS_OFFLINE_TOOL_%s" % tool_id.to_upper(), "1")
-	Logger.info("tool_config_applied", {"component": "launcher", "tool": tool_id})
+	OgsLogger.info("tool_config_applied", {"component": "launcher", "tool": tool_id})
 	return {
 		"success": true,
 		"error_message": "",

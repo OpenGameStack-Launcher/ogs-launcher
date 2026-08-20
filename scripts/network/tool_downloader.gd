@@ -22,6 +22,8 @@
 extends RefCounted
 class_name ToolDownloader
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 ## Error codes for download failures.
 enum DownloadError {
 	SUCCESS = 0,
@@ -89,7 +91,7 @@ func download_tool(tool_id: String, version: String) -> Dictionary:
 		result["error_code"] = DownloadError.SUCCESS
 		result["tool_path"] = library.get_tool_path(tool_id, version)
 		result["already_exists"] = true
-		Logger.info("tool_already_installed", {
+		OgsLogger.info("tool_already_installed", {
 			"component": "network",
 			"tool_id": tool_id,
 			"version": version,
@@ -102,7 +104,7 @@ func download_tool(tool_id: String, version: String) -> Dictionary:
 	if not guard["allowed"]:
 		result["error_code"] = DownloadError.OFFLINE_BLOCKED
 		result["error_message"] = guard["error_message"]
-		Logger.warn("download_blocked", {
+		OgsLogger.warn("download_blocked", {
 			"component": "network",
 			"reason": "offline",
 			"tool": tool_id,
@@ -114,7 +116,7 @@ func download_tool(tool_id: String, version: String) -> Dictionary:
 	if mirror_url.is_empty():
 		result["error_code"] = DownloadError.MIRROR_NOT_CONFIGURED
 		result["error_message"] = "Mirror URL not configured"
-		Logger.error("download_failed", {
+		OgsLogger.error("download_failed", {
 			"component": "network",
 			"tool_id": tool_id,
 			"version": version,
@@ -127,7 +129,7 @@ func download_tool(tool_id: String, version: String) -> Dictionary:
 	if not download_result["success"]:
 		result["error_code"] = DownloadError.DOWNLOAD_FAILED
 		result["error_message"] = download_result["error"]
-		Logger.error("download_failed", {
+		OgsLogger.error("download_failed", {
 			"component": "network",
 			"tool_id": tool_id,
 			"version": version,
@@ -146,7 +148,7 @@ func download_tool(tool_id: String, version: String) -> Dictionary:
 		result["error_code"] = DownloadError.EXTRACTION_FAILED
 		result["error_message"] = extract_result["error_message"]
 		_cleanup_download(download_result["archive_path"])
-		Logger.error("download_failed", {
+		OgsLogger.error("download_failed", {
 			"component": "network",
 			"tool_id": tool_id,
 			"version": version,
@@ -159,7 +161,7 @@ func download_tool(tool_id: String, version: String) -> Dictionary:
 	if not validation["valid"]:
 		result["error_code"] = DownloadError.VALIDATION_FAILED
 		result["error_message"] = "Validation failed: " + str(validation["errors"])
-		Logger.error("download_failed", {
+		OgsLogger.error("download_failed", {
 			"component": "network",
 			"tool_id": tool_id,
 			"version": version,
@@ -172,7 +174,7 @@ func download_tool(tool_id: String, version: String) -> Dictionary:
 	result["error_code"] = DownloadError.SUCCESS
 	result["tool_path"] = library.get_tool_path(tool_id, version)
 	
-	Logger.info("tool_downloaded", {
+	OgsLogger.info("tool_downloaded", {
 		"component": "network",
 		"tool_id": tool_id,
 		"version": version,
@@ -210,7 +212,7 @@ func _download_archive(tool_id: String, version: String) -> Dictionary:
 	
 	# Stub: Actually implement HTTPRequest in Phase 2
 	# For now, log and return not implemented
-	Logger.info("download_stubbed", {
+	OgsLogger.info("download_stubbed", {
 		"component": "network",
 		"tool_id": tool_id,
 		"version": version,
@@ -226,7 +228,7 @@ func _cleanup_download(archive_path: String) -> void:
 	if FileAccess.file_exists(archive_path):
 		var err = DirAccess.remove_absolute(archive_path)
 		if err != OK:
-			Logger.warn("cleanup_failed", {
+			OgsLogger.warn("cleanup_failed", {
 				"component": "network",
 				"archive": archive_path
 			})

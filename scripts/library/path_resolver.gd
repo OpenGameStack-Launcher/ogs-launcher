@@ -20,6 +20,8 @@
 extends RefCounted
 class_name PathResolver
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 ## Returns the root directory for the central library.
 ## On Windows: %LOCALAPPDATA%/OGS/Library (or %OGS_LIBRARY_ROOT% if set)
 ## On Unix:    ~/.config/ogs-launcher/library (or $OGS_LIBRARY_ROOT if set)
@@ -30,7 +32,7 @@ func get_library_root() -> String:
 	# Check for test override first
 	var override_root = OS.get_environment("OGS_LIBRARY_ROOT")
 	if not override_root.is_empty():
-		Logger.debug("library_root_override", {
+		OgsLogger.debug("library_root_override", {
 			"component": "library",
 			"path": override_root,
 			"reason": "OGS_LIBRARY_ROOT env var set"
@@ -42,7 +44,7 @@ func get_library_root() -> String:
 	if OS.get_name() == "Windows":
 		var appdata = OS.get_environment("LOCALAPPDATA")
 		if appdata.is_empty():
-			Logger.error("path_resolution_failed", {
+			OgsLogger.error("path_resolution_failed", {
 				"component": "library",
 				"reason": "LOCALAPPDATA not set",
 				"platform": OS.get_name()
@@ -53,7 +55,7 @@ func get_library_root() -> String:
 		# Unix-like: use ~/.config/ogs-launcher/library
 		var home = OS.get_environment("HOME")
 		if home.is_empty():
-			Logger.error("path_resolution_failed", {
+			OgsLogger.error("path_resolution_failed", {
 				"component": "library",
 				"reason": "HOME not set",
 				"platform": OS.get_name()
@@ -61,7 +63,7 @@ func get_library_root() -> String:
 			return ""
 		root = home.path_join(".config").path_join("ogs-launcher").path_join("library")
 	
-	Logger.debug("library_root_resolved", {
+	OgsLogger.debug("library_root_resolved", {
 		"component": "library",
 		"path": root,
 		"platform": OS.get_name()
@@ -103,7 +105,7 @@ func normalize_path(path_str: String) -> String:
 	# Convert to absolute path using Godot's file system
 	var abs_path = ProjectSettings.globalize_path(normalized)
 	
-	Logger.debug("path_normalized", {
+	OgsLogger.debug("path_normalized", {
 		"component": "library",
 		"input": path_str,
 		"output": abs_path
@@ -124,7 +126,7 @@ func get_available_tools() -> Array[String]:
 	var dir = DirAccess.open(root)
 	
 	if dir == null:
-		Logger.debug("library_discovery_empty", {
+		OgsLogger.debug("library_discovery_empty", {
 			"component": "library",
 			"library_root": root,
 			"reason": "directory does not exist"
@@ -141,7 +143,7 @@ func get_available_tools() -> Array[String]:
 				tools.append(file_name)
 		file_name = dir.get_next()
 	
-	Logger.debug("available_tools_discovered", {
+	OgsLogger.debug("available_tools_discovered", {
 		"component": "library",
 		"count": tools.size(),
 		"tools": tools
@@ -166,7 +168,7 @@ func get_available_versions(tool_id: String) -> Array[String]:
 	var dir = DirAccess.open(tool_dir)
 	
 	if dir == null:
-		Logger.debug("versions_discovery_empty", {
+		OgsLogger.debug("versions_discovery_empty", {
 			"component": "library",
 			"tool_id": tool_id,
 			"reason": "tool directory does not exist"
@@ -185,7 +187,7 @@ func get_available_versions(tool_id: String) -> Array[String]:
 	
 	versions.sort()
 	
-	Logger.debug("available_versions_discovered", {
+	OgsLogger.debug("available_versions_discovered", {
 		"component": "library",
 		"tool_id": tool_id,
 		"count": versions.size(),

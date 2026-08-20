@@ -3,6 +3,8 @@
 extends RefCounted
 class_name ProjectSealArchiver
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 ## Creates zip archive for project and returns output metadata.
 ## Parameters:
 ##   project_path (String): Absolute project path to archive
@@ -27,7 +29,7 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 		var remove_err = DirAccess.remove_absolute(zip_path)
 		if remove_err != OK:
 			result.errors.append("Failed to replace existing zip archive: %s" % error_string(remove_err))
-			Logger.error("sealed_zip_replace_failed", {
+			OgsLogger.error("sealed_zip_replace_failed", {
 				"component": "sealer",
 				"zip_path": zip_path,
 				"error": error_string(remove_err)
@@ -37,7 +39,7 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 	var files_to_pack = _collect_files_recursive(project_path)
 	files_to_pack.sort()
 
-	Logger.info("sealed_zip_packaging_start", {
+	OgsLogger.info("sealed_zip_packaging_start", {
 		"component": "sealer",
 		"project_path": project_path,
 		"zip_path": zip_path,
@@ -48,7 +50,7 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 	var open_error = zipper.open(zip_path)
 	if open_error != OK:
 		result.errors.append("Failed to create zip archive: %s" % error_string(open_error))
-		Logger.error("sealed_zip_open_failed", {
+		OgsLogger.error("sealed_zip_open_failed", {
 			"component": "sealer",
 			"zip_path": zip_path,
 			"error": error_string(open_error)
@@ -66,7 +68,7 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 		if source_file == null:
 			zipper.close()
 			result.errors.append("Failed to read file for packaging: %s" % abs_file_path)
-			Logger.error("sealed_zip_read_failed", {
+			OgsLogger.error("sealed_zip_read_failed", {
 				"component": "sealer",
 				"file": relative_path,
 				"error": error_string(FileAccess.get_open_error())
@@ -78,7 +80,7 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 		if start_error != OK:
 			zipper.close()
 			result.errors.append("Failed to add file to zip: %s" % relative_path)
-			Logger.error("sealed_zip_start_file_failed", {
+			OgsLogger.error("sealed_zip_start_file_failed", {
 				"component": "sealer",
 				"file": relative_path,
 				"error": error_string(start_error)
@@ -90,7 +92,7 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 			zipper.close_file()
 			zipper.close()
 			result.errors.append("Failed to write file to zip: %s" % relative_path)
-			Logger.error("sealed_zip_write_failed", {
+			OgsLogger.error("sealed_zip_write_failed", {
 				"component": "sealer",
 				"file": relative_path,
 				"error": error_string(write_error)
@@ -103,7 +105,7 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 
 	if not FileAccess.file_exists(zip_path):
 		result.errors.append("Zip archive was not created")
-		Logger.error("sealed_zip_missing_after_close", {
+		OgsLogger.error("sealed_zip_missing_after_close", {
 			"component": "sealer",
 			"zip_path": zip_path
 		})
@@ -112,7 +114,7 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 	var zip_file = FileAccess.open(zip_path, FileAccess.READ)
 	if zip_file == null:
 		result.errors.append("Failed to read created zip archive")
-		Logger.error("sealed_zip_metadata_read_failed", {
+		OgsLogger.error("sealed_zip_metadata_read_failed", {
 			"component": "sealer",
 			"zip_path": zip_path,
 			"error": error_string(FileAccess.get_open_error())
@@ -124,7 +126,7 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 	result.zip_path = zip_path
 	result.size_mb = size_bytes / (1024.0 * 1024.0)
 
-	Logger.info("sealed_zip_created", {
+	OgsLogger.info("sealed_zip_created", {
 		"component": "sealer",
 		"zip_path": zip_path,
 		"size_mb": result.size_mb,

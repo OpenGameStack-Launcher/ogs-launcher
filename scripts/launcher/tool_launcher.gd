@@ -6,6 +6,8 @@
 extends RefCounted
 class_name ToolLauncher
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 ## Handles spawning external tools from the frozen stack with correct environment and working directory.
 ##
 ## This class is responsible for:
@@ -40,7 +42,7 @@ enum LaunchError {
 static func launch(tool_entry: Dictionary, project_dir: String) -> Dictionary:
 	# Validate inputs
 	if project_dir.is_empty():
-		Logger.warn("tool_launch_failed", {"component": "launcher", "reason": "empty_project_dir"})
+		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "empty_project_dir"})
 		return _error_result(LaunchError.INVALID_PROJECT_DIR, "Project directory path is empty.")
 	
 	var tool_id = String(tool_entry.get("id", "unknown"))
@@ -51,40 +53,40 @@ static func launch(tool_entry: Dictionary, project_dir: String) -> Dictionary:
 	if tool_entry.has("path"):
 		var tool_path = String(tool_entry["path"])
 		if tool_path.is_empty():
-			Logger.warn("tool_launch_failed", {"component": "launcher", "reason": "empty_path"})
+			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "empty_path"})
 			return _error_result(LaunchError.TOOL_PATH_MISSING, "Tool path is empty.")
 		
 		# Resolve tool path (relative paths only, within project root)
 		if tool_path.is_absolute_path():
-			Logger.warn("tool_launch_failed", {"component": "launcher", "reason": "absolute_path"})
+			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "absolute_path"})
 			return _error_result(LaunchError.TOOL_PATH_ABSOLUTE, "Tool path must be project-relative.")
 		full_tool_path = project_dir.path_join(tool_path)
 		if not _is_path_under_root(full_tool_path, project_dir):
-			Logger.warn("tool_launch_failed", {"component": "launcher", "reason": "path_escape"})
+			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "path_escape"})
 			return _error_result(LaunchError.TOOL_PATH_OUTSIDE_ROOT, "Tool path escapes project root.")
 	else:
 		# Path not provided - resolve from library
 		var library = LibraryManager.new()
 		var library_result = _resolve_tool_from_library(library, tool_id, tool_version)
 		if not library_result["success"]:
-			Logger.warn("tool_launch_failed", {"component": "launcher", "reason": "library_resolution_failed", "tool": tool_id})
+			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "library_resolution_failed", "tool": tool_id})
 			return _error_result(library_result["error_code"], library_result["error_message"])
 		full_tool_path = library_result["executable_path"]
 	
 	if not FileAccess.file_exists(full_tool_path):
-		Logger.warn("tool_launch_failed", {"component": "launcher", "reason": "not_found", "tool": tool_id})
+		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "not_found", "tool": tool_id})
 		return _error_result(LaunchError.TOOL_NOT_FOUND, "Tool executable not found at: %s" % full_tool_path)
 
 	var hash_check = _validate_tool_hash(tool_entry, full_tool_path)
 	if not hash_check["success"]:
-		Logger.warn("tool_launch_failed", {"component": "launcher", "reason": "hash_check", "tool": tool_id})
+		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "hash_check", "tool": tool_id})
 		return _error_result(hash_check["error_code"], hash_check["error_message"])
 
 	var launch_project_dir = project_dir
 	if tool_id == "godot":
 		var godot_project_result = _resolve_godot_project_dir(project_dir)
 		if not godot_project_result["success"]:
-			Logger.warn("tool_launch_failed", {"component": "launcher", "reason": "godot_project_init", "tool": tool_id})
+			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "godot_project_init", "tool": tool_id})
 			return _error_result(godot_project_result["error_code"], godot_project_result["error_message"])
 		launch_project_dir = String(godot_project_result["launch_project_dir"])
 	
@@ -93,16 +95,16 @@ static func launch(tool_entry: Dictionary, project_dir: String) -> Dictionary:
 	if OfflineEnforcer.is_offline():
 		var inject = ToolConfigInjector.apply(tool_id, project_dir)
 		if not inject["success"]:
-			Logger.warn("tool_launch_failed", {"component": "launcher", "reason": "offline_inject", "tool": tool_id})
+			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "offline_inject", "tool": tool_id})
 			return _error_result(LaunchError.OFFLINE_CONFIG_FAILED, inject["error_message"])
 		args.append_array(inject["args"])
 	
 	# Spawn the process
 	var pid = OS.create_process(full_tool_path, args)
 	if pid == -1:
-		Logger.error("tool_launch_failed", {"component": "launcher", "reason": "spawn_failed", "tool": tool_id})
+		OgsLogger.error("tool_launch_failed", {"component": "launcher", "reason": "spawn_failed", "tool": tool_id})
 		return _error_result(LaunchError.SPAWN_FAILED, "Failed to spawn process for tool: %s" % tool_id)
-	Logger.info("tool_launched", {"component": "launcher", "tool": tool_id, "project": project_dir.get_file()})
+	OgsLogger.info("tool_launched", {"component": "launcher", "tool": tool_id, "project": project_dir.get_file()})
 	
 	return {
 		"success": true,
@@ -135,7 +137,7 @@ static func _resolve_godot_project_dir(project_dir: String) -> Dictionary:
 			"error_message": create_result["error_message"]
 		}
 
-	Logger.info("godot_project_created", {
+	OgsLogger.info("godot_project_created", {
 		"component": "launcher",
 		"project": project_dir.get_file(),
 		"project_name": project_name

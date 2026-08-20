@@ -22,6 +22,8 @@
 extends RefCounted
 class_name LibraryHydrator
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 signal tool_download_started(tool_id: String, version: String)
 @warning_ignore("unused_signal")
 signal tool_download_progress(tool_id: String, version: String, bytes_received: int, bytes_total: int)
@@ -61,14 +63,14 @@ func hydrate(tools_to_download: Array) -> Dictionary:
 	}
 	
 	if tools_to_download.is_empty():
-		Logger.info("hydration_complete", {
+		OgsLogger.info("hydration_complete", {
 			"component": "library",
 			"reason": "no tools to download"
 		})
 		hydration_complete.emit(true, [])
 		return result
 	
-	Logger.info("hydration_started", {
+	OgsLogger.info("hydration_started", {
 		"component": "library",
 		"tool_count": tools_to_download.size()
 	})
@@ -94,7 +96,7 @@ func hydrate(tools_to_download: Array) -> Dictionary:
 	
 	result["success"] = result["failed_count"] == 0
 	
-	Logger.info("hydration_complete", {
+	OgsLogger.info("hydration_complete", {
 		"component": "library",
 		"downloaded": result["downloaded_count"],
 		"failed": result["failed_count"]
@@ -116,7 +118,7 @@ func _download_and_install_tool(tool_id: String, version: String) -> Dictionary:
 	
 	# Check if already in library (skip if present)
 	if library.tool_exists(tool_id, version):
-		Logger.debug("tool_hydration_skipped", {
+		OgsLogger.debug("tool_hydration_skipped", {
 			"component": "library",
 			"tool_id": tool_id,
 			"version": version,
@@ -128,7 +130,7 @@ func _download_and_install_tool(tool_id: String, version: String) -> Dictionary:
 	var download_result = downloader.download_tool(tool_id, version)
 	
 	if not download_result["success"]:
-		Logger.error("tool_download_failed", {
+		OgsLogger.error("tool_download_failed", {
 			"component": "library",
 			"tool_id": tool_id,
 			"version": version,
@@ -143,7 +145,7 @@ func _download_and_install_tool(tool_id: String, version: String) -> Dictionary:
 	# Verify tool is now in library
 	if not library.tool_exists(tool_id, version):
 		var error_msg = "Tool not found in library after download"
-		Logger.error("tool_hydration_failed", {
+		OgsLogger.error("tool_hydration_failed", {
 			"component": "library",
 			"tool_id": tool_id,
 			"version": version,
@@ -152,7 +154,7 @@ func _download_and_install_tool(tool_id: String, version: String) -> Dictionary:
 		return {"success": false, "error": error_msg, "path": ""}
 	
 	var tool_path = library.get_tool_path(tool_id, version)
-	Logger.info("tool_hydrated", {
+	OgsLogger.info("tool_hydrated", {
 		"component": "library",
 		"tool_id": tool_id,
 		"version": version,

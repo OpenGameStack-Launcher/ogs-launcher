@@ -6,6 +6,8 @@
 extends RefCounted
 class_name ProjectSealerTests
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 const SealerTestHelpersScript = preload("res://tests/project_sealer_test_helpers.gd")
 
 var _helpers = SealerTestHelpersScript.new()
@@ -433,8 +435,8 @@ func test_sealed_zip_contains_expected_files() -> Dictionary:
 
 ## Test: seal_project logs packaging lifecycle events
 func test_seal_project_writes_packaging_logs() -> Dictionary:
-	Logger.clear_logs_for_tests()
-	Logger.set_level(Logger.Level.DEBUG)
+	OgsLogger.clear_logs_for_tests()
+	OgsLogger.set_level(OgsLogger.Level.DEBUG)
 
 	var fixture = _helpers.create_seal_success_fixture("test_seal_logging")
 	if not fixture.success:

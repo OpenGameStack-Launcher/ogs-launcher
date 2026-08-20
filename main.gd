@@ -1,4 +1,5 @@
 extends Control
+const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 const MirrorPathResolverScript = preload("res://scripts/mirror/mirror_path_resolver.gd")
 const DEFAULT_REMOTE_REPO_URL := "https://raw.githubusercontent.com/OpenGameStack-Launcher/ogs-frozen-stacks/main/repository.json"
@@ -97,9 +98,9 @@ func _resolve_ogs_root_path() -> String:
 	return OS.get_user_data_dir().path_join("OGS")
 
 func _ready():
-	Logger.enable_console(true)
-	Logger.set_level(Logger.Level.DEBUG)
-	Logger.info("launcher_started", {"component": "app"})
+	OgsLogger.enable_console(true)
+	OgsLogger.set_level(OgsLogger.Level.DEBUG)
+	OgsLogger.info("launcher_started", {"component": "app"})
 	
 	# Set up onboarding wizard for first-run experience
 	var ogs_root_path = _resolve_ogs_root_path()
@@ -110,7 +111,7 @@ func _ready():
 	
 	# Show wizard on first run
 	var should_show = onboarding_wizard.should_show_wizard()
-	Logger.debug("onboarding_check", {"component": "onboarding", "should_show": should_show})
+	OgsLogger.debug("onboarding_check", {"component": "onboarding", "should_show": should_show})
 	if should_show:
 		onboarding_wizard.show_wizard()
 	
@@ -278,7 +279,7 @@ func _on_tool_view_requested(tool_id: String, tool_version: String) -> void:
 	if tools_tabs != null:
 		tools_tabs.current_tab = 1
 	_focus_requested_tool_card()
-	Logger.info("tool_view_requested", {
+	OgsLogger.info("tool_view_requested", {
 		"component": "projects",
 		"tool_id": tool_id,
 		"version": tool_version
@@ -343,7 +344,7 @@ func _save_mirror_settings() -> void:
 	var file = FileAccess.open(settings_file_path, FileAccess.WRITE)
 	if file != null:
 		file.store_string(json_text)
-		Logger.info("mirror_settings_saved", {"component": "settings"})
+		OgsLogger.info("mirror_settings_saved", {"component": "settings"})
 
 ## Called when mirror root text changes.
 func _on_mirror_root_text_changed(new_text: String) -> void:
@@ -428,9 +429,9 @@ func _update_mirror_status() -> void:
 func _on_wizard_completed(success: bool, message: String) -> void:
 	"""Called when onboarding wizard completes."""
 	if success:
-		Logger.info("wizard_startup_complete", {"component": "onboarding", "message": message})
+		OgsLogger.info("wizard_startup_complete", {"component": "onboarding", "message": message})
 	else:
-		Logger.warn("wizard_startup_failed", {"component": "onboarding", "message": message})
+		OgsLogger.warn("wizard_startup_failed", {"component": "onboarding", "message": message})
 
 ##============================================================
 ## TOOLS PAGE HANDLERS
@@ -463,7 +464,7 @@ func _update_tools_connectivity_status(is_online: bool) -> void:
 		tools_status_label.text = "Status: Online ✓"
 		tools_status_label.modulate = Color.GREEN
 		tools_offline_message.visible = false
-		Logger.debug("tools_connectivity_status_updated", {
+		OgsLogger.debug("tools_connectivity_status_updated", {
 			"component": "tools",
 			"is_online": true
 		})
@@ -471,7 +472,7 @@ func _update_tools_connectivity_status(is_online: bool) -> void:
 		tools_status_label.text = "Status: Offline ⚠️"
 		tools_status_label.modulate = Color(1, 0.6, 0.2, 1)
 		tools_offline_message.visible = true
-		Logger.info("tools_connectivity_status_updated", {
+		OgsLogger.info("tools_connectivity_status_updated", {
 			"component": "tools",
 			"is_online": false
 		})
@@ -485,7 +486,7 @@ func _on_tools_refresh_pressed() -> void:
 ## Signal handler: tools list updated successfully.
 func _on_tools_list_updated() -> void:
 	"""Repopulates UI when tools data is refreshed."""
-	Logger.info("tools_list_refresh_completed", {
+	OgsLogger.info("tools_list_refresh_completed", {
 		"component": "tools"
 	})
 	_update_tools_connectivity_status(tools_controller.is_online())
@@ -496,7 +497,7 @@ func _on_tools_list_updated() -> void:
 ## Signal handler: tools refresh failed.
 func _on_tools_refresh_failed(_error_message: String) -> void:
 	"""Handles refresh failure and updates status display."""
-	Logger.warn("tools_list_refresh_failed", {
+	OgsLogger.warn("tools_list_refresh_failed", {
 		"component": "tools",
 		"error": _error_message
 	})
@@ -507,7 +508,7 @@ func _on_tools_refresh_failed(_error_message: String) -> void:
 func _on_tool_download_complete(tool_id: String, version: String, success: bool) -> void:
 	"""Refreshes UI after tool download and completes progress tracking."""
 	if success:
-		Logger.info("tool_download_complete_ui", {
+		OgsLogger.info("tool_download_complete_ui", {
 			"component": "tools",
 			"tool_id": tool_id,
 			"version": version
@@ -538,7 +539,7 @@ func _on_tool_download_started(tool_id: String, version: String) -> void:
 	if progress_controller != null:
 		progress_controller.set_install_phase(tool_id, version)
 		
-	Logger.info("tool_install_phase_started", {
+	OgsLogger.info("tool_install_phase_started", {
 		"component": "tools",
 		"tool_id": tool_id,
 		"version": version
@@ -584,7 +585,7 @@ func _populate_tools_ui() -> void:
 	_update_download_button_states()
 	_focus_requested_tool_card()
 	
-	Logger.info("tools_ui_populated", {
+	OgsLogger.info("tools_ui_populated", {
 		"component": "tools",
 		"total_installed": total_installed,
 		"total_available": total_available,
@@ -608,7 +609,7 @@ func _clear_tool_containers() -> void:
 				child.queue_free()
 	
 	if cleared_count > 0:
-		Logger.debug("tool_containers_cleared", {
+		OgsLogger.debug("tool_containers_cleared", {
 			"component": "tools",
 			"cleared_cards": cleared_count
 		})
@@ -645,7 +646,7 @@ func _add_tool_card_to_category(category: String, tool: Dictionary, is_installed
 	var card = _create_tool_card(tool, is_installed)
 	container.add_child(card)
 	
-	Logger.debug("tool_card_added", {
+	OgsLogger.debug("tool_card_added", {
 		"component": "tools",
 		"tool_id": tool.get("id", "unknown"),
 		"category": category,
@@ -757,21 +758,21 @@ func _create_tool_card(tool: Dictionary, is_installed: bool) -> PanelContainer:
 		var is_downloading = tools_controller.is_downloading(tool["id"], tool["version"])
 		if is_downloading:
 			progress_container.visible = true
-			Logger.debug("tool_card_created_with_download", {
+			OgsLogger.debug("tool_card_created_with_download", {
 				"component": "tools",
 				"tool_id": tool["id"],
 				"version": tool["version"],
 				"size_mb": tool.get("size_bytes", 0) / (1024.0 * 1024.0)
 			})
 		else:
-			Logger.debug("tool_card_created", {
+			OgsLogger.debug("tool_card_created", {
 				"component": "tools",
 				"tool_id": tool["id"],
 				"version": tool["version"],
 				"size_mb": tool.get("size_bytes", 0) / (1024.0 * 1024.0)
 			})
 	else:
-		Logger.debug("tool_card_created_installed", {
+		OgsLogger.debug("tool_card_created_installed", {
 			"component": "tools",
 			"tool_id": tool["id"],
 			"version": tool["version"]
@@ -782,7 +783,7 @@ func _create_tool_card(tool: Dictionary, is_installed: bool) -> PanelContainer:
 ## Signal handler: download tool button pressed.
 func _on_download_tool_pressed(tool_id: String, version: String) -> void:
 	"""Initiates tool download."""
-	Logger.info("tool_download_initiated", {
+	OgsLogger.info("tool_download_initiated", {
 		"component": "tools",
 		"tool_id": tool_id,
 		"version": version
@@ -813,7 +814,7 @@ func _on_download_tool_pressed(tool_id: String, version: String) -> void:
 ## Signal handler: cancel tool download button pressed.
 func _on_cancel_tool_download(tool_id: String, version: String) -> void:
 	"""Cancels an ongoing tool download."""
-	Logger.info("tool_download_cancel_requested", {
+	OgsLogger.info("tool_download_cancel_requested", {
 		"component": "tools",
 		"tool_id": tool_id,
 		"version": version
@@ -833,7 +834,7 @@ func _on_cancel_tool_download(tool_id: String, version: String) -> void:
 ## Signal handler: progress completed.
 func _on_progress_completed(tool_id: String, version: String) -> void:
 	"""Called when ProgressController marks operation as complete."""
-	Logger.debug("progress_completed", {
+	OgsLogger.debug("progress_completed", {
 		"component": "tools",
 		"tool_id": tool_id,
 		"version": version
@@ -842,7 +843,7 @@ func _on_progress_completed(tool_id: String, version: String) -> void:
 ## Signal handler: progress cancelled.
 func _on_progress_cancelled(tool_id: String, version: String) -> void:
 	"""Called when ProgressController cancels operation."""
-	Logger.debug("progress_cancelled", {
+	OgsLogger.debug("progress_cancelled", {
 		"component": "tools",
 		"tool_id": tool_id,
 		"version": version
@@ -884,7 +885,7 @@ func _update_download_button_states() -> void:
 				updated_count += 1
 	
 	if updated_count > 0:
-		Logger.debug("download_button_states_updated", {
+		OgsLogger.debug("download_button_states_updated", {
 			"component": "tools",
 			"buttons_updated": updated_count,
 			"any_active_downloads": any_active

@@ -11,6 +11,8 @@
 extends RefCounted
 class_name SealController
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 ## Emitted when seal operation completes (success or failure).
 signal seal_completed(success: bool, zip_path: String)
 
@@ -76,7 +78,7 @@ func _run_seal_async(project_path: String) -> void:
 	if start_err != OK:
 		_seal_in_progress = false
 		_show_error("Seal operation failed.", "Unable to start background packaging thread.")
-		Logger.error("seal_thread_start_failed", {
+		OgsLogger.error("seal_thread_start_failed", {
 			"component": "sealer",
 			"error": error_string(start_err)
 		})
@@ -134,7 +136,7 @@ func _show_success(result: Dictionary) -> void:
 	_open_folder_button.visible = true
 	_seal_dialog.popup_centered()
 	
-	Logger.info("seal_completed_success", {
+	OgsLogger.info("seal_completed_success", {
 		"component": "sealer",
 		"zip_path": result.sealed_zip,
 		"size_mb": result.project_size_mb,
@@ -156,7 +158,7 @@ func _show_error(title: String, errors: Variant) -> void:
 	_open_folder_button.visible = false
 	_seal_dialog.popup_centered()
 	
-	Logger.warn("seal_completed_failure", {
+	OgsLogger.warn("seal_completed_failure", {
 		"component": "sealer",
 		"error_count": errors.size() if errors is Array else 1
 	})
@@ -173,12 +175,12 @@ func _show_progress() -> void:
 func _on_open_folder_pressed() -> void:
 	"""Opens Windows Explorer to the sealed folder."""
 	if _last_sealed_zip.is_empty():
-		Logger.warn("open_folder_no_path", {"component": "sealer"})
+		OgsLogger.warn("open_folder_no_path", {"component": "sealer"})
 		return
 
 	var folder_path = _last_sealed_zip.get_base_dir()
 	if folder_path.is_empty() or not DirAccess.dir_exists_absolute(folder_path):
-		Logger.warn("open_folder_invalid_path", {
+		OgsLogger.warn("open_folder_invalid_path", {
 			"component": "sealer",
 			"zip_path": _last_sealed_zip,
 			"folder_path": folder_path
@@ -187,7 +189,7 @@ func _on_open_folder_pressed() -> void:
 
 	OS.shell_open(folder_path)
 	
-	Logger.info("open_folder_pressed", {
+	OgsLogger.info("open_folder_pressed", {
 		"component": "sealer",
 		"folder_path": folder_path
 	})

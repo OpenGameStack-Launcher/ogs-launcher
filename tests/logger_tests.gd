@@ -1,7 +1,9 @@
 ## LoggerTests: Unit tests for Logger behavior.
 
 extends RefCounted
-class_name LoggerTests
+class_name OgsLoggerTests
+
+const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 func run() -> Dictionary:
 	"""Runs Logger unit tests.
@@ -25,10 +27,10 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 
 func _test_write_and_level_filter(results: Dictionary) -> void:
 	"""Verifies log writes and level filtering."""
-	Logger.clear_logs_for_tests()
-	Logger.set_level(Logger.Level.WARN)
-	Logger.info("info message", {"component": "test"})
-	Logger.warn("warn message", {"component": "test"})
+	OgsLogger.clear_logs_for_tests()
+	OgsLogger.set_level(OgsLogger.Level.WARN)
+	OgsLogger.info("info message", {"component": "test"})
+	OgsLogger.warn("warn message", {"component": "test"})
 	var log_path = "user://logs/ogs_launcher.log"
 	_expect(FileAccess.file_exists(log_path), "log file should exist", results)
 	var file = FileAccess.open(log_path, FileAccess.READ)

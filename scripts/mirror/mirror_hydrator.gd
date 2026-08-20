@@ -7,6 +7,8 @@
 extends RefCounted
 class_name MirrorHydrator
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 signal tool_install_started(tool_id: String, version: String)
 signal tool_install_complete(tool_id: String, version: String, success: bool, error_message: String)
 @warning_ignore("unused_signal")
@@ -80,7 +82,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 	}
 
 	if tools_to_install.is_empty():
-		Logger.info("mirror_hydration_complete", {
+		OgsLogger.info("mirror_hydration_complete", {
 			"component": "mirror",
 			"reason": "no tools to install"
 		})
@@ -93,14 +95,14 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		result["success"] = false
 		result["failed_count"] = tools_to_install.size()
 		result["failed_tools"] = tools_to_install
-		Logger.error("mirror_repo_invalid", {
+		OgsLogger.error("mirror_repo_invalid", {
 			"component": "mirror",
 			"error_count": repository.errors.size()
 		})
 		_emit_hydration_complete(false, tools_to_install)
 		return result
 
-	Logger.info("mirror_hydration_started", {
+	OgsLogger.info("mirror_hydration_started", {
 		"component": "mirror",
 		"tool_count": tools_to_install.size()
 	})
@@ -116,7 +118,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		_emit_tool_install_started(tool_id, version)
 
 		if library.tool_exists(tool_id, version):
-			Logger.debug("mirror_tool_skip", {
+			OgsLogger.debug("mirror_tool_skip", {
 				"component": "mirror",
 				"tool_id": tool_id,
 				"version": version,
@@ -129,7 +131,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		var repo_entry = repository.get_tool_entry(tool_id, version)
 		if repo_entry.is_empty():
 			var missing_msg = "Tool not found in repository"
-			Logger.error("mirror_tool_missing", {
+			OgsLogger.error("mirror_tool_missing", {
 				"component": "mirror",
 				"tool_id": tool_id,
 				"version": version
@@ -143,7 +145,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		var resolve_result = path_resolver.resolve_archive_path(mirror_root, archive_path)
 		if not resolve_result["success"]:
 			var resolve_error = String(resolve_result.get("error", ""))
-			Logger.error("mirror_archive_invalid", {
+			OgsLogger.error("mirror_archive_invalid", {
 				"component": "mirror",
 				"tool_id": tool_id,
 				"version": version,
@@ -157,7 +159,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		var full_archive_path = String(resolve_result["full_path"])
 		if not FileAccess.file_exists(full_archive_path):
 			var missing_archive = "Archive file not found"
-			Logger.error("mirror_archive_missing", {
+			OgsLogger.error("mirror_archive_missing", {
 				"component": "mirror",
 				"tool_id": tool_id,
 				"version": version
@@ -177,7 +179,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 				continue
 			if hash_result["sha256"] != sha_value:
 				var mismatch = "Archive sha256 does not match repository"
-				Logger.error("mirror_hash_mismatch", {
+				OgsLogger.error("mirror_hash_mismatch", {
 					"component": "mirror",
 					"tool_id": tool_id,
 					"version": version
@@ -213,7 +215,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		_emit_tool_install_complete(tool_id, version, true, "")
 
 	result["success"] = result["failed_count"] == 0
-	Logger.info("mirror_hydration_complete", {
+	OgsLogger.info("mirror_hydration_complete", {
 		"component": "mirror",
 		"installed": result["installed_count"],
 		"failed": result["failed_count"]

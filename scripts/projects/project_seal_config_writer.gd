@@ -3,6 +3,8 @@
 extends RefCounted
 class_name ProjectSealConfigWriter
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 ## Writes ogs_config.json configured for forced offline execution.
 ## Parameters:
 ##   project_path (String): Absolute project path
@@ -25,7 +27,7 @@ func write_offline_config(project_path: String) -> Dictionary:
 	file.store_string(config_json_text)
 	result.success = true
 
-	Logger.debug("offline_config_written", {
+	OgsLogger.debug("offline_config_written", {
 		"component": "sealer",
 		"project_path": project_path
 	})

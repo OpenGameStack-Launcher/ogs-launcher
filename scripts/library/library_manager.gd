@@ -28,6 +28,8 @@
 extends RefCounted
 class_name LibraryManager
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 var path_resolver: PathResolver
 
 func _init():
@@ -43,7 +45,7 @@ func get_tool_path(tool_id: String, version: String) -> String:
 	var path = path_resolver.get_tool_path(tool_id, version)
 	
 	if path.is_empty():
-		Logger.warn("library_tool_path_failed", {
+		OgsLogger.warn("library_tool_path_failed", {
 			"component": "library",
 			"tool_id": tool_id,
 			"version": version,
@@ -52,7 +54,7 @@ func get_tool_path(tool_id: String, version: String) -> String:
 		return ""
 	
 	if not path_resolver.tool_exists(tool_id, version):
-		Logger.debug("library_tool_not_found", {
+		OgsLogger.debug("library_tool_not_found", {
 			"component": "library",
 			"tool_id": tool_id,
 			"version": version,
@@ -123,7 +125,7 @@ func get_tool_metadata(tool_id: String, version: String) -> Dictionary:
 	if FileAccess.file_exists(tool_path):
 		meta["last_modified"] = FileAccess.get_modified_time(tool_path)
 	
-	Logger.debug("tool_metadata_retrieved", {
+	OgsLogger.debug("tool_metadata_retrieved", {
 		"component": "library",
 		"tool_id": tool_id,
 		"version": version,
@@ -152,7 +154,7 @@ func validate_tool(tool_id: String, version: String) -> Dictionary:
 	if not tool_exists(tool_id, version):
 		result["valid"] = false
 		result["errors"].append("Tool directory not found")
-		Logger.warn("tool_validation_failed", {
+		OgsLogger.warn("tool_validation_failed", {
 			"component": "library",
 			"tool_id": tool_id,
 			"version": version,
@@ -166,7 +168,7 @@ func validate_tool(tool_id: String, version: String) -> Dictionary:
 	if dir == null:
 		result["valid"] = false
 		result["errors"].append("Tool directory not readable")
-		Logger.warn("tool_validation_failed", {
+		OgsLogger.warn("tool_validation_failed", {
 			"component": "library",
 			"tool_id": tool_id,
 			"version": version,
@@ -174,7 +176,7 @@ func validate_tool(tool_id: String, version: String) -> Dictionary:
 		})
 		return result
 	
-	Logger.debug("tool_validation_success", {
+	OgsLogger.debug("tool_validation_success", {
 		"component": "library",
 		"tool_id": tool_id,
 		"version": version
@@ -213,7 +215,7 @@ func get_library_summary() -> Dictionary:
 		summary["tools"][tool_id] = versions
 		summary["total_versions"] += versions.size()
 	
-	Logger.debug("library_summary_generated", {
+	OgsLogger.debug("library_summary_generated", {
 		"component": "library",
 		"total_tools": summary["total_tools"],
 		"total_versions": summary["total_versions"]

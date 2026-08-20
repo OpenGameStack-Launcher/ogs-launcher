@@ -4,7 +4,6 @@
 ## Use this for operational events; avoid logging sensitive file paths.
 
 extends RefCounted
-class_name Logger
 
 const LOG_DIR := "user://logs"
 const LOG_FILE := "ogs_launcher.log"
@@ -26,7 +25,7 @@ static var _console_enabled := Engine.is_editor_hint()
 static func set_level(level: int) -> void:
 	"""Sets the minimum log level for writing entries.
 	Parameters:
-	  level (int): Logger.Level value
+	  level (int): OgsLogger.Level value
 	"""
 	_level = level as Level
 
@@ -79,7 +78,7 @@ static func error(message: String, context: Dictionary = {}) -> void:
 static func write(level: int, message: String, context: Dictionary = {}) -> void:
 	"""Writes a structured log entry as JSON.
 	Parameters:
-	  level (int): Logger.Level value
+	  level (int): OgsLogger.Level value
 	  message (String): Log message
 	  context (Dictionary): Structured context fields
 	"""

@@ -15,6 +15,8 @@
 extends RefCounted
 class_name OnboardingWizard
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 signal wizard_completed(success: bool, message: String)
 
 var wizard_complete_flag_path: String = ""
@@ -44,13 +46,13 @@ func setup(tree: SceneTree, library_root_path: String, onboarding_dialog: Accept
 	if dialog:
 		status_label = dialog.get_node_or_null("VBoxContainer/StatusLabel")
 		skip_button = dialog.get_node_or_null("VBoxContainer/ButtonContainer/SkipButton")
-		Logger.debug("wizard_nodes", {"component": "onboarding", "status_label": status_label != null, "skip_button": skip_button != null})
+		OgsLogger.debug("wizard_nodes", {"component": "onboarding", "status_label": status_label != null, "skip_button": skip_button != null})
 		
 		# Wire signal handlers
 		if skip_button:
 			skip_button.pressed.connect(_on_skip_pressed)
 		else:
-			Logger.warn("wizard_skip_button_missing", {"component": "onboarding"})
+			OgsLogger.warn("wizard_skip_button_missing", {"component": "onboarding"})
 		dialog.confirmed.connect(_on_start_pressed)
 
 ## Returns true if the wizard should be shown (first run).
@@ -78,7 +80,7 @@ func show_wizard() -> void:
 	"""Displays the wizard dialog."""
 	if dialog:
 		dialog.popup_centered()
-		Logger.info("wizard_shown", {"component": "onboarding", "dialog_visible": dialog.visible})
+		OgsLogger.info("wizard_shown", {"component": "onboarding", "dialog_visible": dialog.visible})
 
 ## Marks the wizard as complete (won't show again).
 func mark_complete() -> void:
@@ -86,7 +88,7 @@ func mark_complete() -> void:
 	var file = FileAccess.open(wizard_complete_flag_path, FileAccess.WRITE)
 	if file != null:
 		file.store_string("completed")
-		Logger.info("onboarding_wizard_completed", {"component": "onboarding"})
+		OgsLogger.info("onboarding_wizard_completed", {"component": "onboarding"})
 
 ## Signal handler: skip button pressed.
 func _on_skip_pressed() -> void:
@@ -94,13 +96,13 @@ func _on_skip_pressed() -> void:
 	if dialog:
 		dialog.hide()
 	mark_complete()
-	Logger.info("wizard_skipped", {"component": "onboarding"})
+	OgsLogger.info("wizard_skipped", {"component": "onboarding"})
 	wizard_completed.emit(true, "Wizard skipped. You can always configure tools later.")
 
 ## Signal handler: start button pressed.
 func _on_start_pressed() -> void:
 	"""User chose to initialize default stack."""
-	Logger.info("wizard_start_pressed", {"component": "onboarding"})
+	OgsLogger.info("wizard_start_pressed", {"component": "onboarding"})
 	if status_label:
 		status_label.text = "Initializing default stack..."
 		status_label.modulate = Color.YELLOW
@@ -136,4 +138,4 @@ func _initialize_default_stack() -> void:
 		dialog.hide()
 	
 	wizard_completed.emit(true, "Default stack initialized. Tools can be added via the mirror or repair workflow.")
-	Logger.info("default_stack_initialized", {"component": "onboarding"})
+	OgsLogger.info("default_stack_initialized", {"component": "onboarding"})

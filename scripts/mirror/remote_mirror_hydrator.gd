@@ -7,6 +7,8 @@
 extends RefCounted
 class_name RemoteMirrorHydrator
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 signal tool_install_started(tool_id: String, version: String)
 signal tool_install_complete(tool_id: String, version: String, success: bool, error_message: String)
 signal tool_download_progress(tool_id: String, version: String, bytes_downloaded: int, total_bytes: int)
@@ -79,7 +81,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 	}
 
 	if tools_to_install.is_empty():
-		Logger.info("remote_hydration_complete", {
+		OgsLogger.info("remote_hydration_complete", {
 			"component": "mirror",
 			"reason": "no tools to install"
 		})
@@ -91,7 +93,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		result["success"] = false
 		result["failed_count"] = tools_to_install.size()
 		result["failed_tools"] = tools_to_install
-		Logger.warn("remote_hydration_blocked", {
+		OgsLogger.warn("remote_hydration_blocked", {
 			"component": "mirror",
 			"reason": guard["error_message"]
 		})
@@ -102,7 +104,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		result["success"] = false
 		result["failed_count"] = tools_to_install.size()
 		result["failed_tools"] = tools_to_install
-		Logger.error("remote_repo_missing", {
+		OgsLogger.error("remote_repo_missing", {
 			"component": "mirror",
 			"reason": "repository_url_not_set"
 		})
@@ -114,7 +116,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		result["success"] = false
 		result["failed_count"] = tools_to_install.size()
 		result["failed_tools"] = tools_to_install
-		Logger.error("remote_repo_invalid", {
+		OgsLogger.error("remote_repo_invalid", {
 			"component": "mirror",
 			"reason": repo_result.get("error", "unknown")
 		})
@@ -126,14 +128,14 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		result["success"] = false
 		result["failed_count"] = tools_to_install.size()
 		result["failed_tools"] = tools_to_install
-		Logger.error("remote_repo_validation_failed", {
+		OgsLogger.error("remote_repo_validation_failed", {
 			"component": "mirror",
 			"error_count": repository.errors.size()
 		})
 		_emit_hydration_complete(false, tools_to_install)
 		return result
 
-	Logger.info("remote_hydration_started", {
+	OgsLogger.info("remote_hydration_started", {
 		"component": "mirror",
 		"tool_count": tools_to_install.size()
 	})
@@ -149,7 +151,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		_emit_tool_install_started(tool_id, version)
 
 		if library.tool_exists(tool_id, version):
-			Logger.debug("remote_tool_skip", {
+			OgsLogger.debug("remote_tool_skip", {
 				"component": "mirror",
 				"tool_id": tool_id,
 				"version": version,
@@ -162,7 +164,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		var repo_entry = repository.get_tool_entry(tool_id, version)
 		if repo_entry.is_empty():
 			var missing_msg = "Tool not found in remote repository"
-			Logger.error("remote_tool_missing", {
+			OgsLogger.error("remote_tool_missing", {
 				"component": "mirror",
 				"tool_id": tool_id,
 				"version": version
@@ -198,7 +200,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 				continue
 			if hash_result["sha256"] != sha_value:
 				var mismatch = "Archive sha256 does not match repository"
-				Logger.error("remote_hash_mismatch", {
+				OgsLogger.error("remote_hash_mismatch", {
 					"component": "mirror",
 					"tool_id": tool_id,
 					"version": version
@@ -226,7 +228,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		_emit_tool_install_complete(tool_id, version, true, "")
 
 	result["success"] = result["failed_count"] == 0
-	Logger.info("remote_hydration_complete", {
+	OgsLogger.info("remote_hydration_complete", {
 		"component": "mirror",
 		"installed": result["installed_count"],
 		"failed": result["failed_count"]
@@ -325,7 +327,7 @@ func _stage_archive(archive_url: String, tool_id: String, version: String) -> St
 
 	var download_result = _http_download_to_file(archive_url, temp_path, "", 0, tool_id, version)
 	if not download_result["success"]:
-		Logger.error("remote_archive_download_failed", {
+		OgsLogger.error("remote_archive_download_failed", {
 			"component": "mirror",
 			"error": download_result.get("error", "unknown")
 		})
@@ -476,7 +478,7 @@ func _http_request(url: String) -> Dictionary:
 	var client = HTTPClient.new()
 	var tls_options = TLSOptions.client() if parsed["use_tls"] else null
 	
-	Logger.debug("http_connecting", {
+	OgsLogger.debug("http_connecting", {
 		"component": "mirror",
 		"host": parsed["host"],
 		"port": parsed["port"],
@@ -485,7 +487,7 @@ func _http_request(url: String) -> Dictionary:
 	
 	var err = client.connect_to_host(parsed["host"], parsed["port"], tls_options)
 	if err != OK:
-		Logger.error("http_connect_error", {
+		OgsLogger.error("http_connect_error", {
 			"component": "mirror",
 			"error_code": err,
 			"host": parsed["host"],
@@ -503,14 +505,14 @@ func _http_request(url: String) -> Dictionary:
 		poll_count += 1
 	
 	var final_status = client.get_status()
-	Logger.debug("http_after_connect", {
+	OgsLogger.debug("http_after_connect", {
 		"component": "mirror",
 		"status": _status_name(final_status),
 		"poll_count": poll_count
 	})
 	
 	if final_status != HTTPClient.STATUS_CONNECTED:
-		Logger.error("http_connection_failed", {
+		OgsLogger.error("http_connection_failed", {
 			"component": "mirror",
 			"status": _status_name(final_status),
 			"host": parsed["host"],
@@ -520,7 +522,7 @@ func _http_request(url: String) -> Dictionary:
 	
 	var request_err = client.request(HTTPClient.METHOD_GET, parsed["path"], ["User-Agent: OGS-Launcher"])
 	if request_err != OK:
-		Logger.error("http_request_error", {
+		OgsLogger.error("http_request_error", {
 			"component": "mirror",
 			"error_code": request_err,
 			"path": parsed["path"]
@@ -542,7 +544,7 @@ func _http_request(url: String) -> Dictionary:
 			continue
 		chunks.append(chunk)
 	
-	Logger.debug("http_response_received", {
+	OgsLogger.debug("http_response_received", {
 		"component": "mirror",
 		"status_code": status_code,
 		"chunk_count": chunks.size()

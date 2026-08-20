@@ -6,6 +6,8 @@
 extends RefCounted
 class_name ProjectSealToolCopier
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 ## Copies all manifest tools from central library to project ./tools.
 ## Parameters:
 ##   project_path (String): Absolute project path
@@ -48,7 +50,7 @@ func copy_tools_to_local(project_path: String, manifest: StackManifest, library:
 			continue
 
 		result.tools_copied.append("%s v%s" % [tool_id, version])
-		Logger.debug("tool_copied_to_sealed", {
+		OgsLogger.debug("tool_copied_to_sealed", {
 			"component": "sealer",
 			"tool_id": tool_id,
 			"version": version

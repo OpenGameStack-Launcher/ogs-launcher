@@ -37,6 +37,8 @@
 extends RefCounted
 class_name StackManifest
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 const CURRENT_SCHEMA_VERSION := 1
 
 var schema_version := 0
@@ -199,7 +201,7 @@ func _load_from_file(file_path: String) -> void:
 	errors.clear()
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if file == null:
-		Logger.warn("manifest_read_failed", {"component": "manifest"})
+		OgsLogger.warn("manifest_read_failed", {"component": "manifest"})
 		errors.append("manifest_file_unreadable")
 		return
 	var json_text = file.get_as_text()
@@ -214,18 +216,18 @@ func _load_from_json_string(json_text: String) -> void:
 	"""Loads manifest data from JSON text while recording parse errors."""
 	errors.clear()
 	if json_text.strip_edges().is_empty():
-		Logger.warn("manifest_parse_failed", {"component": "manifest"})
+		OgsLogger.warn("manifest_parse_failed", {"component": "manifest"})
 		errors.append("manifest_json_invalid")
 		return
 	var parser = JSON.new()
 	var parse_err = parser.parse(json_text)
 	if parse_err != OK:
-		Logger.warn("manifest_parse_failed", {"component": "manifest"})
+		OgsLogger.warn("manifest_parse_failed", {"component": "manifest"})
 		errors.append("manifest_json_invalid")
 		return
 	var data = parser.data
 	if typeof(data) != TYPE_DICTIONARY:
-		Logger.warn("manifest_root_invalid", {"component": "manifest"})
+		OgsLogger.warn("manifest_root_invalid", {"component": "manifest"})
 		errors.append("manifest_root_not_object")
 		return
 	_load_from_dict(data)
@@ -239,7 +241,7 @@ func _load_from_dict(data: Dictionary) -> void:
 	"""Populates fields from a dictionary after validation."""
 	errors = validate_data(data)
 	if not errors.is_empty():
-		Logger.warn("manifest_validation_failed", {"component": "manifest", "error_count": errors.size()})
+		OgsLogger.warn("manifest_validation_failed", {"component": "manifest", "error_count": errors.size()})
 	schema_version = int(data.get("schema_version", 0))
 	stack_name = String(data.get("stack_name", ""))
 	var raw_tools = data.get("tools", [])

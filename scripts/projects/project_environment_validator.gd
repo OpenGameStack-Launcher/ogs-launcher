@@ -20,6 +20,8 @@
 extends RefCounted
 class_name ProjectEnvironmentValidator
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 var library: LibraryManager
 
 func _init():
@@ -75,7 +77,7 @@ func validate_project(project_dir: String, use_project_tools: bool = false) -> D
 		if use_project_tools:
 			if tool_path.is_empty():
 				missing.append({"tool_id": tool_id, "version": version})
-				Logger.debug("tool_missing_from_project", {
+				OgsLogger.debug("tool_missing_from_project", {
 					"component": "projects",
 					"tool_id": tool_id,
 					"version": version,
@@ -90,7 +92,7 @@ func validate_project(project_dir: String, use_project_tools: bool = false) -> D
 			
 			if not FileAccess.file_exists(resolved_path):
 				missing.append({"tool_id": tool_id, "version": version})
-				Logger.debug("tool_missing_from_project", {
+				OgsLogger.debug("tool_missing_from_project", {
 					"component": "projects",
 					"tool_id": tool_id,
 					"version": version,
@@ -100,7 +102,7 @@ func validate_project(project_dir: String, use_project_tools: bool = false) -> D
 		else:
 			if not library.tool_exists(tool_id, version):
 				missing.append({"tool_id": tool_id, "version": version})
-				Logger.debug("tool_missing_from_library", {
+				OgsLogger.debug("tool_missing_from_library", {
 					"component": "projects",
 					"tool_id": tool_id,
 					"version": version,
@@ -112,13 +114,13 @@ func validate_project(project_dir: String, use_project_tools: bool = false) -> D
 	result["ready"] = missing.is_empty()
 	
 	if result["ready"]:
-		Logger.info("environment_validated", {
+		OgsLogger.info("environment_validated", {
 			"component": "projects",
 			"project": project_dir,
 			"status": "ready"
 		})
 	else:
-		Logger.warn("environment_incomplete", {
+		OgsLogger.warn("environment_incomplete", {
 			"component": "projects",
 			"project": project_dir,
 			"missing_count": missing.size()

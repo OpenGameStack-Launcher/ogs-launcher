@@ -13,6 +13,8 @@
 extends RefCounted
 class_name ProjectsController
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 ## Emitted when offline state changes after loading a project or config.
 signal offline_state_changed(active: bool, reason: String)
 
@@ -214,7 +216,7 @@ func _create_new_project_from_name(project_name: String) -> bool:
 	var sanitized_name = _sanitize_project_name(project_name)
 	if sanitized_name.is_empty():
 		_update_status("Status: Enter a valid project name.")
-		Logger.warn("project_create_failed", {
+		OgsLogger.warn("project_create_failed", {
 			"component": "projects",
 			"reason": "invalid_name"
 		})
@@ -223,7 +225,7 @@ func _create_new_project_from_name(project_name: String) -> bool:
 	var projects_root = _resolve_ogs_projects_root_path()
 	if projects_root.is_empty():
 		_update_status("Status: Unable to resolve OGS Projects directory.")
-		Logger.warn("project_create_failed", {
+		OgsLogger.warn("project_create_failed", {
 			"component": "projects",
 			"reason": "projects_root_unresolved"
 		})
@@ -232,7 +234,7 @@ func _create_new_project_from_name(project_name: String) -> bool:
 	var make_root_result = DirAccess.make_dir_recursive_absolute(projects_root)
 	if make_root_result != OK and not DirAccess.dir_exists_absolute(projects_root):
 		_update_status("Status: Failed to create OGS Projects folder.")
-		Logger.warn("project_create_failed", {
+		OgsLogger.warn("project_create_failed", {
 			"component": "projects",
 			"reason": "projects_root_create_failed"
 		})
@@ -241,7 +243,7 @@ func _create_new_project_from_name(project_name: String) -> bool:
 	var new_project_dir = projects_root.path_join(sanitized_name)
 	if DirAccess.dir_exists_absolute(new_project_dir):
 		_update_status("Status: Project '%s' already exists in OGS/Projects." % sanitized_name)
-		Logger.warn("project_create_failed", {
+		OgsLogger.warn("project_create_failed", {
 			"component": "projects",
 			"reason": "project_folder_exists",
 			"stack_name": sanitized_name
@@ -251,7 +253,7 @@ func _create_new_project_from_name(project_name: String) -> bool:
 	var make_project_result = DirAccess.make_dir_recursive_absolute(new_project_dir)
 	if make_project_result != OK:
 		_update_status("Status: Failed to create project folder.")
-		Logger.warn("project_create_failed", {
+		OgsLogger.warn("project_create_failed", {
 			"component": "projects",
 			"reason": "project_folder_create_failed"
 		})
@@ -268,7 +270,7 @@ func _create_new_project_from_name(project_name: String) -> bool:
 	var config_path = new_project_dir.path_join("ogs_config.json")
 	if not _save_json_file(stack_path, stack_payload) or not _save_json_file(config_path, config_payload):
 		_update_status("Status: Failed writing new project files.")
-		Logger.warn("project_create_failed", {
+		OgsLogger.warn("project_create_failed", {
 			"component": "projects",
 			"reason": "scaffold_write_failed",
 			"stack_name": sanitized_name
@@ -278,7 +280,7 @@ func _create_new_project_from_name(project_name: String) -> bool:
 	var add_ok = add_project_from_path(new_project_dir)
 	if not add_ok:
 		_update_status("Status: Project created, but failed to add to Project Library.")
-		Logger.warn("project_create_add_failed", {
+		OgsLogger.warn("project_create_add_failed", {
 			"component": "projects",
 			"stack_name": sanitized_name
 		})
@@ -286,7 +288,7 @@ func _create_new_project_from_name(project_name: String) -> bool:
 
 	new_project_dialog.hide()
 	_update_status("Status: Created project '%s' in OGS/Projects." % sanitized_name)
-	Logger.info("project_created", {
+	OgsLogger.info("project_created", {
 		"component": "projects",
 		"stack_name": sanitized_name,
 		"tools_count": 0
@@ -543,7 +545,7 @@ func add_tool_to_current_project(tool_id: String, version: String) -> bool:
 	if _selected_project_index >= 0:
 		_select_project(_selected_project_index)
 	_update_status("Status: Added %s v%s to project stack." % [tool_id, version])
-	Logger.info("project_tool_added", {
+	OgsLogger.info("project_tool_added", {
 		"component": "projects",
 		"tool_id": tool_id,
 		"version": version
@@ -582,7 +584,7 @@ func remove_tool_at_index(index: int) -> bool:
 	if _selected_project_index >= 0:
 		_select_project(_selected_project_index)
 	_update_status("Status: Removed %s v%s from project stack." % [removed_id, removed_version])
-	Logger.info("project_tool_removed", {
+	OgsLogger.info("project_tool_removed", {
 		"component": "projects",
 		"tool_id": removed_id,
 		"version": removed_version
@@ -601,7 +603,7 @@ func _save_current_stack_manifest() -> bool:
 	var payload = current_manifest.to_dict()
 	if not _save_json_file(stack_path, payload):
 		_update_status("Status: Failed to update stack.json.")
-		Logger.warn("project_stack_save_failed", {
+		OgsLogger.warn("project_stack_save_failed", {
 			"component": "projects"
 		})
 		return false
@@ -644,7 +646,7 @@ func _remove_project_at_index(index: int) -> void:
 		_apply_offline_config(null)
 		_update_offline_status(null)
 		_update_status("Status: Removed '%s'. Project Library is now empty." % removed_name)
-		Logger.info("project_removed", {
+		OgsLogger.info("project_removed", {
 			"component": "projects",
 			"stack_name": removed_name,
 			"remaining_projects": 0
@@ -654,7 +656,7 @@ func _remove_project_at_index(index: int) -> void:
 	var next_index = min(index, _tracked_projects.size() - 1)
 	_select_project(next_index)
 	_update_status("Status: Removed '%s' from Project Library." % removed_name)
-	Logger.info("project_removed", {
+	OgsLogger.info("project_removed", {
 		"component": "projects",
 		"stack_name": removed_name,
 		"remaining_projects": _tracked_projects.size()
@@ -731,7 +733,7 @@ func _on_project_dialog_custom_action(action: String) -> void:
 	var selected_dir = _get_picker_selected_dir()
 	if not _is_addable_project_dir(selected_dir):
 		_update_status("Status: Add Project requires stack.json and ogs_config.json in the selected folder.")
-		Logger.warn("project_add_rejected", {
+		OgsLogger.warn("project_add_rejected", {
 			"component": "projects",
 			"reason": "missing_required_files"
 		})
@@ -753,12 +755,12 @@ func add_project_from_path(project_dir: String) -> bool:
 	var normalized_dir = project_dir.strip_edges()
 	if normalized_dir.is_empty():
 		_update_status("Status: Select a project folder before adding.")
-		Logger.warn("project_add_failed", {"component": "projects", "reason": "empty_path"})
+		OgsLogger.warn("project_add_failed", {"component": "projects", "reason": "empty_path"})
 		return false
 
 	if not _is_addable_project_dir(normalized_dir):
 		_update_status("Status: Missing required files (stack.json and ogs_config.json).")
-		Logger.warn("project_add_failed", {
+		OgsLogger.warn("project_add_failed", {
 			"component": "projects",
 			"reason": "missing_required_files"
 		})
@@ -768,7 +770,7 @@ func add_project_from_path(project_dir: String) -> bool:
 	if existing_index != -1:
 		_select_project(existing_index)
 		_update_status("Status: Project is already in the list. Selected existing entry.")
-		Logger.info("project_add_duplicate_selected", {
+		OgsLogger.info("project_add_duplicate_selected", {
 			"component": "projects",
 			"project": normalized_dir
 		})
@@ -789,7 +791,7 @@ func add_project_from_path(project_dir: String) -> bool:
 	_refresh_projects_list()
 	_select_project(_tracked_projects.size() - 1)
 
-	Logger.info("project_added_to_library", {
+	OgsLogger.info("project_added_to_library", {
 		"component": "projects",
 		"stack_name": manifest.stack_name,
 		"tool_count": manifest.tools.size()
@@ -849,7 +851,7 @@ func _load_manifest_from_project(project_dir: String) -> StackManifest:
 	if not manifest.is_valid():
 		if not _is_manifest_acceptable_for_project_library(manifest):
 			_update_status("Status: Cannot add project. stack.json invalid: %s" % ", ".join(manifest.errors))
-			Logger.warn("project_add_failed", {
+			OgsLogger.warn("project_add_failed", {
 				"component": "projects",
 				"reason": "invalid_manifest",
 				"errors": manifest.errors
@@ -857,7 +859,7 @@ func _load_manifest_from_project(project_dir: String) -> StackManifest:
 			return null
 	if String(manifest.stack_name).strip_edges().is_empty():
 		_update_status("Status: Cannot add project. stack.json missing stack_name.")
-		Logger.warn("project_add_failed", {
+		OgsLogger.warn("project_add_failed", {
 			"component": "projects",
 			"reason": "missing_stack_name"
 		})
@@ -951,7 +953,7 @@ func _select_project(index: int) -> void:
 		_apply_offline_config(null)
 		_update_offline_status(null)
 		_disable_launch_for_selected_project()
-		Logger.warn("project_select_failed", {
+		OgsLogger.warn("project_select_failed", {
 			"component": "projects",
 			"reason": "missing_required_files"
 		})
@@ -984,7 +986,7 @@ func _select_project(index: int) -> void:
 	var use_project_tools = config != null and config.force_offline
 	_validate_and_report_environment(project_dir, use_project_tools)
 
-	Logger.info("project_selected", {
+	OgsLogger.info("project_selected", {
 		"component": "projects",
 		"stack_name": manifest.stack_name,
 		"tool_count": manifest.tools.size()
@@ -994,14 +996,14 @@ func _load_project_registry() -> void:
 	"""Loads persisted project entries from disk with validation and pruning."""
 	_tracked_projects.clear()
 	if not FileAccess.file_exists(_projects_index_path):
-		Logger.debug("project_registry_missing", {
+		OgsLogger.debug("project_registry_missing", {
 			"component": "projects"
 		})
 		return
 
 	var file = FileAccess.open(_projects_index_path, FileAccess.READ)
 	if file == null:
-		Logger.warn("project_registry_read_failed", {
+		OgsLogger.warn("project_registry_read_failed", {
 			"component": "projects"
 		})
 		return
@@ -1009,7 +1011,7 @@ func _load_project_registry() -> void:
 	var text = file.get_as_text()
 	file.close()
 	if text.strip_edges().is_empty():
-		Logger.warn("project_registry_parse_failed", {
+		OgsLogger.warn("project_registry_parse_failed", {
 			"component": "projects",
 			"reason": "empty_json"
 		})
@@ -1018,7 +1020,7 @@ func _load_project_registry() -> void:
 	var parse_err = parser.parse(text)
 	var parsed = parser.data
 	if parse_err != OK or typeof(parsed) != TYPE_DICTIONARY:
-		Logger.warn("project_registry_parse_failed", {
+		OgsLogger.warn("project_registry_parse_failed", {
 			"component": "projects",
 			"reason": "invalid_json"
 		})
@@ -1032,7 +1034,7 @@ func _load_project_registry() -> void:
 		if _is_addable_project_dir(project_dir):
 			_tracked_projects.append(raw_entry)
 
-	Logger.info("project_registry_loaded", {
+	OgsLogger.info("project_registry_loaded", {
 		"component": "projects",
 		"count": _tracked_projects.size()
 	})
@@ -1046,13 +1048,13 @@ func _save_project_registry() -> void:
 	}
 	var file = FileAccess.open(_projects_index_path, FileAccess.WRITE)
 	if file == null:
-		Logger.warn("project_registry_write_failed", {
+		OgsLogger.warn("project_registry_write_failed", {
 			"component": "projects"
 		})
 		return
 	file.store_string(JSON.stringify(payload))
 	file.close()
-	Logger.debug("project_registry_saved", {
+	OgsLogger.debug("project_registry_saved", {
 		"component": "projects",
 		"count": _tracked_projects.size()
 	})
@@ -1132,7 +1134,7 @@ func _populate_tools_list(tools: Array) -> void:
 		
 		tools_list.add_item(label)
 	
-	Logger.info("project_tools_list_populated", {
+	OgsLogger.info("project_tools_list_populated", {
 		"component": "projects",
 		"total_tools": tools.size(),
 		"installed": installed_count,
@@ -1154,7 +1156,7 @@ func _get_available_tools() -> Dictionary:
 	              Empty dict if ToolsController is not available
 	"""
 	if tools_controller == null:
-		Logger.debug("get_available_tools_no_controller", {
+		OgsLogger.debug("get_available_tools_no_controller", {
 			"component": "projects",
 			"reason": "ToolsController not initialized"
 		})
@@ -1175,7 +1177,7 @@ func _get_available_tools() -> Dictionary:
 					available[tool_id][version] = tool
 					available_count += 1
 	
-	Logger.debug("available_tools_scanned", {
+	OgsLogger.debug("available_tools_scanned", {
 		"component": "projects",
 		"available_count": available_count,
 		"unique_tools": available.size()
@@ -1203,7 +1205,7 @@ func _on_tool_item_clicked(index: int) -> void:
 		tools_list.select(index)
 
 	if current_manifest == null or index < 0 or index >= current_manifest.tools.size():
-		Logger.debug("tool_item_clicked_invalid_index", {
+		OgsLogger.debug("tool_item_clicked_invalid_index", {
 			"component": "projects",
 			"index": index,
 			"manifest_valid": current_manifest != null,
@@ -1220,7 +1222,7 @@ func _on_tool_item_clicked(index: int) -> void:
 	if availability_key in _tool_availability:
 		var availability = _tool_availability[availability_key]
 		if not availability["installed"]:
-			Logger.info("tool_view_requested_from_projects", {
+			OgsLogger.info("tool_view_requested_from_projects", {
 				"component": "projects",
 				"tool_id": tool_id,
 				"version": tool_version,
@@ -1283,7 +1285,7 @@ func refresh_project_tools_state() -> void:
 	if _selected_project_index >= 0:
 		_select_project(_selected_project_index)
 
-	Logger.info("project_tools_state_refreshed", {
+	OgsLogger.info("project_tools_state_refreshed", {
 		"component": "projects",
 		"project": current_project_dir,
 		"tool_count": current_manifest.tools.size()
@@ -1381,7 +1383,7 @@ func _validate_and_report_environment(project_dir: String, use_project_tools: bo
 		# Validation error - append to existing status
 		var error_msg = ", ".join(validation["errors"])
 		_update_status("Status: Manifest loaded (Environment error: %s)" % error_msg)
-		Logger.warn("environment_validation_error", {
+		OgsLogger.warn("environment_validation_error", {
 			"component": "projects",
 			"project": project_dir,
 			"errors": validation["errors"]
@@ -1395,7 +1397,7 @@ func _validate_and_report_environment(project_dir: String, use_project_tools: bo
 		_update_status("Status: Manifest loaded. Environment ready - all tools in library.")
 		_enable_launch_button()
 		environment_ready.emit()
-		Logger.info("environment_ready", {
+		OgsLogger.info("environment_ready", {
 			"component": "projects",
 			"project": project_dir
 		})
@@ -1408,7 +1410,7 @@ func _validate_and_report_environment(project_dir: String, use_project_tools: bo
 			_update_status("Status: Manifest loaded (%d tool(s) missing - use Tools page to download)." % tool_count)
 		_enable_launch_button()
 		environment_incomplete.emit(validation["missing_tools"])
-		Logger.warn("environment_incomplete", {
+		OgsLogger.warn("environment_incomplete", {
 			"component": "projects",
 			"project": project_dir,
 			"missing_count": tool_count

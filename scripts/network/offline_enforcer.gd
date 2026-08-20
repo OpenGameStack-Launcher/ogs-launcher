@@ -16,6 +16,8 @@
 extends RefCounted
 class_name OfflineEnforcer
 
+const OgsLogger = preload("res://scripts/logging/logger.gd")
+
 const BLOCKED_ERROR_CODE := "network_blocked_offline"
 const SOCKET_BLOCKER = preload("res://scripts/network/socket_blocker.gd")
 
@@ -91,4 +93,4 @@ static func _set_offline(active: bool, reason: String) -> void:
 	_offline_active = active
 	_reason = reason
 	OS.set_environment("OGS_OFFLINE", "1" if active else "0")
-	Logger.info("offline_state", {"component": "network", "active": active, "reason": reason})
+	OgsLogger.info("offline_state", {"component": "network", "active": active, "reason": reason})
