@@ -28,6 +28,9 @@ signal environment_ready
 ## Emitted when user clicks a tool to view it in Tools page.
 signal tool_view_requested(tool_id: String, tool_version: String)
 
+## Emitted when the selected project's offline policy changes.
+signal project_selection_changed(project_dir: String, offline_mode: bool, force_offline: bool)
+
 const DEFAULT_PROJECTS_INDEX_PATH := "user://ogs_projects_index.json"
 const PICKER_ACTION_ADD_PROJECT := "add_project"
 
@@ -51,6 +54,7 @@ var project_picker_add_button: Button
 
 var current_project_dir := ""
 var current_manifest: StackManifest = null
+var current_project_config: OgsConfig = null
 var environment_validator: ProjectEnvironmentValidator
 var tools_controller: ToolsController
 var _tool_availability: Dictionary = {}  # Maps {tool_id: {version: {available: bool}}}
@@ -949,6 +953,8 @@ func _select_project(index: int) -> void:
 		return
 
 	if not _is_addable_project_dir(project_dir):
+		current_project_config = null
+		project_selection_changed.emit("", false, false)
 		_update_status("Status: Selected project is missing stack.json or ogs_config.json.")
 		_apply_offline_config(null)
 		_update_offline_status(null)
@@ -961,6 +967,8 @@ func _select_project(index: int) -> void:
 
 	var manifest = _load_manifest_from_project(project_dir)
 	if manifest == null:
+		current_project_config = null
+		project_selection_changed.emit("", false, false)
 		_apply_offline_config(null)
 		_update_offline_status(null)
 		_disable_launch_for_selected_project()
@@ -980,8 +988,10 @@ func _select_project(index: int) -> void:
 
 	var config_path = project_dir.path_join("ogs_config.json")
 	var config = _load_config_if_present(config_path)
+	current_project_config = config
 	_apply_offline_config(config)
 	_update_offline_status(config)
+	project_selection_changed.emit(project_dir, config.offline_mode, config.force_offline)
 
 	var use_project_tools = config != null and config.force_offline
 	_validate_and_report_environment(project_dir, use_project_tools)
@@ -991,6 +1001,32 @@ func _select_project(index: int) -> void:
 		"stack_name": manifest.stack_name,
 		"tool_count": manifest.tools.size()
 	})
+
+func update_current_project_offline_settings(offline_mode: bool, force_offline: bool) -> bool:
+	"""Persists and applies offline policy changes for the selected OGS project."""
+	if current_project_dir.is_empty():
+		return false
+
+	var config = _load_config_if_present(current_project_dir.path_join("ogs_config.json"))
+	config.offline_mode = offline_mode
+	config.force_offline = force_offline
+	var file = FileAccess.open(current_project_dir.path_join("ogs_config.json"), FileAccess.WRITE)
+	if file == null:
+		OgsLogger.warn("project_config_write_failed", {"component": "projects"})
+		return false
+	file.store_string(JSON.stringify(config.to_dict()))
+	file.close()
+
+	current_project_config = config
+	_apply_offline_config(config)
+	_update_offline_status(config)
+	project_selection_changed.emit(current_project_dir, config.offline_mode, config.force_offline)
+	OgsLogger.info("project_offline_settings_updated", {
+		"component": "projects",
+		"offline_mode": offline_mode,
+		"force_offline": force_offline
+	})
+	return true
 
 func _load_project_registry() -> void:
 	"""Loads persisted project entries from disk with validation and pruning."""

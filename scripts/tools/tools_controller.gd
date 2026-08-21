@@ -20,7 +20,7 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 signal tool_list_updated()
 signal tool_list_refresh_failed(error_message: String)
 signal tool_download_started(tool_id: String, version: String)
-signal tool_download_complete(tool_id: String, version: String, success: bool)
+signal tool_download_complete(tool_id: String, version: String, success: bool, error_message: String)
 signal tool_download_progress(tool_id: String, version: String, bytes_downloaded: int, total_bytes: int)
 signal connectivity_checked(is_online: bool)
 
@@ -285,7 +285,7 @@ func _on_install_complete(tool_id: String, version: String, success: bool, error
 		_scan_installed_tools()
 		tool_list_updated.emit()
 	
-	tool_download_complete.emit(tool_id, version, success)
+	tool_download_complete.emit(tool_id, version, success, error_message)
 	
 	OgsLogger.info("tool_download_complete", {
 		"component": "tools",

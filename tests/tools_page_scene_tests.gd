@@ -14,6 +14,8 @@ func run() -> Dictionary:
 	var results := {"passed": 0, "failed": 0, "failures": []}
 	_test_tools_nodes_exist(results)
 	_test_connectivity_status_label(results)
+	_test_enforced_offline_status_label(results)
+	_test_tool_card_style(results)
 	_test_download_button_state(results)
 	return results
 
@@ -50,6 +52,28 @@ func _test_tools_nodes_exist(results: Dictionary) -> void:
 
 	instance.free()
 
+func _test_enforced_offline_status_label(results: Dictionary) -> void:
+	"""Verifies the Tools status identifies project-enforced offline mode."""
+	var instance = _instantiate_main_scene(results)
+	if instance == null:
+		return
+
+	var status_label = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsStatusLabel")
+	var offline_label = instance.get_node_or_null("AppLayout/Content/PageTools/OfflineMessage")
+	if status_label != null and offline_label != null:
+		instance.tools_status_label = status_label
+		instance.tools_offline_message = offline_label
+		var config = OgsConfig.new()
+		config.force_offline = true
+		OfflineEnforcer.apply_config(config)
+		instance._update_tools_connectivity_status(false)
+		_expect(status_label.text.find("enforced: force_offline") != -1, "Tools status should identify enforced offline mode", results)
+		OfflineEnforcer.reset()
+	else:
+		_expect(false, "Tools status labels should exist for enforced offline test", results)
+
+	instance.free()
+
 func _test_connectivity_status_label(results: Dictionary) -> void:
 	"""Verifies online/offline status updates the Tools status label."""
 	var instance = _instantiate_main_scene(results)
@@ -68,6 +92,21 @@ func _test_connectivity_status_label(results: Dictionary) -> void:
 		instance._update_tools_connectivity_status(false)
 		_expect(status_label.text.find("Offline") != -1, "Status label should show Offline", results)
 
+	instance.free()
+
+func _test_tool_card_style(results: Dictionary) -> void:
+	"""Verifies dynamically-created tool cards have explicit visual separation."""
+	var instance = _instantiate_main_scene(results)
+	if instance == null:
+		return
+
+	var controller = ToolsControllerScript.new(null, "https://example.com/repository.json")
+	instance.tools_controller = controller
+	var card = instance._create_tool_card({"id": "godot", "version": "4.3", "size_bytes": 1}, false, false)
+	var style = card.get_theme_stylebox("panel")
+	_expect(card.custom_minimum_size.y >= 94, "Tool cards should have stable vertical spacing", results)
+	_expect(style is StyleBoxFlat, "Tool cards should use a bordered panel style", results)
+	card.free()
 	instance.free()
 
 func _test_download_button_state(results: Dictionary) -> void:

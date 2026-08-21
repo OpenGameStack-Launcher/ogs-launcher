@@ -73,6 +73,63 @@ func get_tool_path(tool_id: String, version: String) -> String:
 func tool_exists(tool_id: String, version: String) -> bool:
 	return path_resolver.tool_exists(tool_id, version)
 
+## Removes one installed tool version from the central library.
+## Returns a result dictionary with success and an error message for the OGS lifecycle.
+func remove_tool(tool_id: String, version: String) -> Dictionary:
+	"""Deletes only the resolved tool/version directory after containment checks."""
+	var library_root = path_resolver.get_library_root().simplify_path()
+	var tool_path = path_resolver.get_tool_path(tool_id, version).simplify_path()
+	if library_root.is_empty() or tool_path.is_empty():
+		return {"success": false, "error_message": "Unable to resolve the library path."}
+
+	var expected_prefix = library_root + "/"
+	if not tool_path.begins_with(expected_prefix) or tool_path == library_root:
+		OgsLogger.error("tool_removal_rejected", {"component": "library", "reason": "path_outside_library"})
+		return {"success": false, "error_message": "Removal path is outside the OGS library."}
+	if not DirAccess.dir_exists_absolute(tool_path):
+		return {"success": false, "error_message": "Installed tool directory was not found."}
+
+	var remove_error = _remove_directory_contents(tool_path)
+	if remove_error != OK:
+		OgsLogger.error("tool_removal_failed", {"component": "library", "error": remove_error})
+		return {
+			"success": false,
+			"error_message": "Could not delete the installed tool files (filesystem error %d). Close any running copy of this tool and try again." % remove_error
+		}
+
+	OgsLogger.info("tool_removed", {"component": "library", "tool_id": tool_id, "version": version})
+	return {"success": true, "error_message": ""}
+
+func _remove_directory_contents(directory_path: String) -> int:
+	"""Recursively removes a directory and its contents for tool uninstall."""
+	var directory = DirAccess.open(directory_path)
+	if directory == null:
+		return ERR_CANT_OPEN
+
+	var entries: Array[Dictionary] = []
+	directory.list_dir_begin()
+	var entry_name = directory.get_next()
+	while not entry_name.is_empty():
+		if entry_name != "." and entry_name != "..":
+			entries.append({
+				"path": directory_path.path_join(entry_name),
+				"is_dir": directory.current_is_dir()
+			})
+		entry_name = directory.get_next()
+	directory.list_dir_end()
+
+	for entry in entries:
+		var entry_path = String(entry["path"])
+		var error = OK
+		if entry["is_dir"]:
+			error = _remove_directory_contents(entry_path)
+		else:
+			error = DirAccess.remove_absolute(entry_path)
+		if error != OK:
+			return error
+
+	return DirAccess.remove_absolute(directory_path)
+
 ## Returns a list of all tools currently in the library.
 ## Returns:
 ##   Array[String]: Tool identifiers (e.g., ["godot", "blender"])

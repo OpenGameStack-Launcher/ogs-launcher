@@ -10,6 +10,14 @@ const ToolsControllerScript = preload("res://scripts/tools/tools_controller.gd")
 const ProgressControllerScript = preload("res://scripts/tools/progress_controller.gd")
 const OnboardingWizardScript = preload("res://scripts/onboarding/onboarding_wizard.gd")
 
+const TOOL_ICON_PATHS := {
+	"audacity": "res://Images/tools/Audacity.png",
+	"blender": "res://Images/tools/Blender.png",
+	"gimp": "res://Images/tools/GIMP.png",
+	"godot": "res://Images/tools/Godot.png",
+	"krita": "res://Images/tools/Krita.png"
+}
+
 
 # -- PRELOAD REFERENCES --
 # These allow us to talk to the nodes we created in the editor
@@ -53,6 +61,10 @@ const OnboardingWizardScript = preload("res://scripts/onboarding/onboarding_wiza
 @onready var btn_seal_for_delivery = $AppLayout/Content/PageProjects/ToolControlsContainer/ProjectActionRow/SealButton
 @onready var project_dir_dialog = $ProjectDirDialog
 @onready var remove_project_dialog = $RemoveProjectDialog
+@onready var remove_tool_dialog = $RemoveToolDialog
+@onready var remove_tool_confirmation_label = $RemoveToolDialog/VBoxContainer/ConfirmationLabel
+@onready var remove_tool_status_label = $RemoveToolDialog/VBoxContainer/StatusLabel
+@onready var remove_tool_progress_bar = $RemoveToolDialog/VBoxContainer/ProgressBar
 @onready var new_project_dialog = $NewProjectDialog
 @onready var new_project_name_line_edit = $NewProjectDialog/VBoxContainer/ProjectNameLineEdit
 @onready var add_tool_dialog = $AddToolDialog
@@ -74,6 +86,9 @@ const OnboardingWizardScript = preload("res://scripts/onboarding/onboarding_wiza
 @onready var mirror_repo_path = $AppLayout/Content/PageSettings/MirrorRepoContainer/MirrorRepoPath
 @onready var mirror_repo_clear_button = $AppLayout/Content/PageSettings/MirrorRepoContainer/MirrorRepoClearButton
 @onready var mirror_status_label = $AppLayout/Content/PageSettings/MirrorStatusLabel
+@onready var project_offline_status_label = $AppLayout/Content/PageSettings/ProjectOfflineStatusLabel
+@onready var project_offline_mode_check_button = $AppLayout/Content/PageSettings/ProjectOfflineModeCheckButton
+@onready var project_force_offline_check_button = $AppLayout/Content/PageSettings/ProjectForceOfflineCheckButton
 
 var network_ui_nodes: Array = []
 
@@ -88,6 +103,10 @@ var mirror_repository_url: String = ""
 var settings_file_path: String = ""
 var tool_cards: Dictionary = {}  # {"tool_id_version": {panel, button, progress_bar}}
 var requested_tool_key: String = ""
+var removal_thread: Thread = null
+var removal_tool_id: String = ""
+var removal_tool_version: String = ""
+var removal_result: Dictionary = {}
 
 ## Resolves the base OGS data directory.
 func _resolve_ogs_root_path() -> String:
@@ -125,7 +144,6 @@ func _ready():
 		page_tools,
 		page_settings
 	)
-	layout_controller.page_changed.connect(_on_page_changed)
 
 	# Load mirror settings BEFORE setting up controllers
 	# so that remote repository URL is available
@@ -142,6 +160,7 @@ func _ready():
 	tools_controller.tool_download_progress.connect(_on_tool_download_progress)
 	tools_controller.connectivity_checked.connect(_on_connectivity_checked)
 	tools_refresh_button.pressed.connect(_on_tools_refresh_pressed)
+	remove_tool_dialog.confirmed.connect(_on_remove_tool_confirmed)
 	
 	# Set up progress controller for download tracking
 	progress_controller = ProgressControllerScript.new()
@@ -170,6 +189,7 @@ func _ready():
 		tools_controller
 	)
 	projects_controller.offline_state_changed.connect(_on_offline_state_changed)
+	projects_controller.project_selection_changed.connect(_on_project_selection_changed)
 	projects_controller.tool_view_requested.connect(_on_tool_view_requested)
 	projects_controller.environment_incomplete.connect(_on_environment_incomplete)
 	projects_controller.environment_ready.connect(_on_environment_ready)
@@ -193,7 +213,10 @@ func _ready():
 	mirror_root_reset_button.pressed.connect(_on_mirror_root_reset_pressed)
 	mirror_repo_path.text_changed.connect(_on_mirror_repo_text_changed)
 	mirror_repo_clear_button.pressed.connect(_on_mirror_repo_clear_pressed)
+	project_offline_mode_check_button.toggled.connect(_on_project_offline_setting_toggled)
+	project_force_offline_check_button.toggled.connect(_on_project_offline_setting_toggled)
 	_update_mirror_status()
+	_sync_project_offline_settings(projects_controller.current_project_dir, projects_controller.current_project_config)
 	
 	# Initial tools refresh will happen when user navigates to tools page
 	layout_controller.page_changed.connect(_on_layout_page_changed)
@@ -208,10 +231,6 @@ func _ready():
 	# Show onboarding wizard if first run
 	if onboarding_wizard.should_show_wizard():
 		onboarding_wizard.show_wizard()
-
-func _on_page_changed(page_name: String) -> void:
-	"""Called when LayoutController changes pages."""
-	_on_layout_page_changed(page_name)
 
 func _collect_network_ui_nodes() -> void:
 	"""Collects all UI nodes tagged as network-related."""
@@ -237,6 +256,31 @@ func _collect_network_ui_nodes_from(root: Node) -> Array:
 func _on_offline_state_changed(active: bool, _reason: String) -> void:
 	"""Disables network-related UI when offline is active."""
 	_apply_offline_ui(active)
+
+func _on_project_selection_changed(project_dir: String, offline_mode: bool, force_offline: bool) -> void:
+	"""Updates Settings controls when the selected project changes."""
+	project_offline_status_label.text = "Selected: %s" % project_dir if not project_dir.is_empty() else "No project selected"
+	project_offline_mode_check_button.set_pressed_no_signal(offline_mode)
+	project_force_offline_check_button.set_pressed_no_signal(force_offline)
+	project_offline_mode_check_button.disabled = project_dir.is_empty()
+	project_force_offline_check_button.disabled = project_dir.is_empty()
+
+func _sync_project_offline_settings(project_dir: String, config: OgsConfig) -> void:
+	"""Initializes Settings controls from the selected project configuration."""
+	_on_project_selection_changed(
+		project_dir,
+		config.offline_mode if config != null else false,
+		config.force_offline if config != null else false
+	)
+
+func _on_project_offline_setting_toggled(_enabled: bool) -> void:
+	"""Saves changed offline policy controls for the selected project."""
+	if projects_controller == null or projects_controller.current_project_dir.is_empty():
+		return
+	projects_controller.update_current_project_offline_settings(
+		project_offline_mode_check_button.button_pressed,
+		project_force_offline_check_button.button_pressed
+	)
 
 func _apply_offline_ui(active: bool) -> void:
 	"""Applies offline UI state to tagged controls."""
@@ -460,7 +504,16 @@ func _update_tools_connectivity_status(is_online: bool) -> void:
 	current connectivity state. Logs when status changes to aid in debugging
 	connectivity issues.
 	"""
-	if is_online:
+	if OfflineEnforcer.is_offline():
+		tools_status_label.text = "Status: Offline (enforced: %s)" % OfflineEnforcer.get_reason()
+		tools_status_label.modulate = Color(1, 0.6, 0.2, 1)
+		tools_offline_message.visible = true
+		OgsLogger.info("tools_connectivity_status_updated", {
+			"component": "tools",
+			"is_online": false,
+			"reason": OfflineEnforcer.get_reason()
+		})
+	elif is_online:
 		tools_status_label.text = "Status: Online ✓"
 		tools_status_label.modulate = Color.GREEN
 		tools_offline_message.visible = false
@@ -505,7 +558,7 @@ func _on_tools_refresh_failed(_error_message: String) -> void:
 	# Keep offline message synced with connectivity only
 
 ## Signal handler: tool download completed.
-func _on_tool_download_complete(tool_id: String, version: String, success: bool) -> void:
+func _on_tool_download_complete(tool_id: String, version: String, success: bool, error_message: String) -> void:
 	"""Refreshes UI after tool download and completes progress tracking."""
 	if success:
 		OgsLogger.info("tool_download_complete_ui", {
@@ -524,9 +577,30 @@ func _on_tool_download_complete(tool_id: String, version: String, success: bool)
 		# On failure, cancel progress tracking
 		if progress_controller != null:
 			progress_controller.cancel_progress(tool_id, version)
+		_show_tool_download_error(tool_id, version, error_message)
 	
 	_update_tools_connectivity_status(tools_controller.is_online())
 	_update_download_button_states()
+
+func _show_tool_download_error(tool_id: String, version: String, error_message: String) -> void:
+	"""Shows the download failure reason on the affected tool card."""
+	var key = "%s_%s" % [tool_id, version]
+	var card_data = tool_cards.get(key)
+	if card_data == null:
+		return
+	var error_label = card_data.get("error_label")
+	if error_label == null:
+		return
+	error_label.text = "Download failed: %s" % error_message if not error_message.is_empty() else "Download failed."
+	error_label.visible = true
+
+func _create_download_error_label() -> Label:
+	"""Creates the inline error label used to explain failed downloads."""
+	var error_label = Label.new()
+	error_label.visible = false
+	error_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	error_label.modulate = Color(1, 0.45, 0.35, 1.0)
+	return error_label
 
 ## Signal handler: tool install started (after download).
 func _on_tool_download_started(tool_id: String, version: String) -> void:
@@ -575,12 +649,14 @@ func _populate_tools_ui() -> void:
 			continue
 		
 		for tool in tools:
-			if tool["installed"]:
+			var is_installed = tool["installed"]
+			if is_installed:
 				total_installed += 1
 				_add_tool_card_to_category(category, tool, true)
 			else:
 				total_available += 1
-				_add_tool_card_to_category(category, tool, false)
+
+			_add_tool_card_to_category(category, tool, is_installed, false)
 
 	_update_download_button_states()
 	_focus_requested_tool_card()
@@ -615,18 +691,24 @@ func _clear_tool_containers() -> void:
 		})
 
 ## Adds a tool card to the appropriate category container.
-func _add_tool_card_to_category(category: String, tool: Dictionary, is_installed: bool) -> void:
+func _add_tool_card_to_category(
+	category: String,
+	tool: Dictionary,
+	is_installed: bool,
+	target_installed_section: bool = is_installed
+) -> void:
 	"""Creates and adds a tool card to a category section.
 	
 	Parameters:
 	  category (String): "Engine", "2D", "3D", or "Audio"
 	  tool (Dictionary): Tool data from controller containing id, version, size_bytes
 	  is_installed (bool): True for installed section, False for available/download section
+	  target_installed_section (bool): True for Installed, False for Download
 	"""
 	var container: VBoxContainer = null
 	
 	# Determine which container to use
-	if is_installed:
+	if target_installed_section:
 		match category:
 			"Engine": container = installed_engine_tools
 			"2D": container = installed_2d_tools
@@ -643,7 +725,7 @@ func _add_tool_card_to_category(category: String, tool: Dictionary, is_installed
 		return
 	
 	# Create tool card
-	var card = _create_tool_card(tool, is_installed)
+	var card = _create_tool_card(tool, is_installed, target_installed_section)
 	container.add_child(card)
 	
 	OgsLogger.debug("tool_card_added", {
@@ -654,7 +736,7 @@ func _add_tool_card_to_category(category: String, tool: Dictionary, is_installed
 	})
 
 ## Creates a tool card UI element.
-func _create_tool_card(tool: Dictionary, is_installed: bool) -> PanelContainer:
+func _create_tool_card(tool: Dictionary, is_installed: bool, show_remove_action: bool) -> PanelContainer:
 	"""Builds a tool card panel with metadata, action button, and progress tracking.
 	
 	Constructs a PanelContainer containing tool name/version/size info on top,
@@ -669,14 +751,21 @@ func _create_tool_card(tool: Dictionary, is_installed: bool) -> PanelContainer:
 	  PanelContainer: The tool card UI element with embedded button and progress tracking
 	"""
 	var card = PanelContainer.new()
-	card.custom_minimum_size = Vector2(0, 80)
+	card.custom_minimum_size = Vector2(0, 94)
+	card.add_theme_stylebox_override("panel", _create_tool_card_style(is_installed))
 	
 	var main_vbox = VBoxContainer.new()
+	main_vbox.add_theme_constant_override("separation", 6)
 	card.add_child(main_vbox)
 	
 	# Top row: Tool info and button
 	var hbox = HBoxContainer.new()
+	hbox.custom_minimum_size = Vector2(0, 42)
 	main_vbox.add_child(hbox)
+
+	var icon = _create_tool_icon(tool)
+	if icon != null:
+		hbox.add_child(icon)
 	
 	# Tool info section
 	var vbox = VBoxContainer.new()
@@ -699,7 +788,11 @@ func _create_tool_card(tool: Dictionary, is_installed: bool) -> PanelContainer:
 	
 	# Action button
 	var button = Button.new()
-	if is_installed:
+	if is_installed and show_remove_action:
+		button.text = "Remove"
+		button.tooltip_text = "Remove this installed tool from the OGS library."
+		button.pressed.connect(_on_remove_tool_pressed.bind(tool["id"], tool["version"]))
+	elif is_installed:
 		button.text = "Installed ✓"
 		button.disabled = true
 	else:
@@ -729,6 +822,9 @@ func _create_tool_card(tool: Dictionary, is_installed: bool) -> PanelContainer:
 	progress_label.custom_minimum_size = Vector2(100, 0)
 	progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
 	progress_container.add_child(progress_label)
+
+	var error_label = _create_download_error_label()
+	main_vbox.add_child(error_label)
 	
 	# Store card references for progress updates
 	if not is_installed:
@@ -741,6 +837,7 @@ func _create_tool_card(tool: Dictionary, is_installed: bool) -> PanelContainer:
 			"progress_bar": tool_progress_bar,
 			"progress_label": progress_label,
 			"progress_container": progress_container,
+			"error_label": error_label,
 			"phase": "download"
 		}
 		
@@ -779,6 +876,34 @@ func _create_tool_card(tool: Dictionary, is_installed: bool) -> PanelContainer:
 		})
 	
 	return card
+
+func _create_tool_icon(tool: Dictionary) -> TextureRect:
+	"""Creates a fixed-size tool icon when a catalog icon asset is available."""
+	var tool_id = String(tool.get("id", "")).to_lower()
+	var icon_path = String(TOOL_ICON_PATHS.get(tool_id, ""))
+	if icon_path.is_empty() or not ResourceLoader.exists(icon_path):
+		return null
+
+	var icon = TextureRect.new()
+	icon.custom_minimum_size = Vector2(42, 42)
+	icon.texture = load(icon_path)
+	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
+	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
+	icon.tooltip_text = String(tool.get("id", "")).capitalize()
+	return icon
+
+func _create_tool_card_style(is_installed: bool) -> StyleBoxFlat:
+	"""Creates a restrained surface style that separates each tool version card."""
+	var style = StyleBoxFlat.new()
+	style.bg_color = Color(0.12, 0.15, 0.2, 0.96) if is_installed else Color(0.1, 0.13, 0.18, 0.96)
+	style.border_color = Color(0.3, 0.55, 0.72, 0.8) if is_installed else Color(0.32, 0.38, 0.48, 0.8)
+	style.set_border_width_all(1)
+	style.set_corner_radius_all(5)
+	style.content_margin_left = 12
+	style.content_margin_top = 9
+	style.content_margin_right = 12
+	style.content_margin_bottom = 9
+	return style
 
 ## Signal handler: download tool button pressed.
 func _on_download_tool_pressed(tool_id: String, version: String) -> void:
@@ -830,6 +955,66 @@ func _on_cancel_tool_download(tool_id: String, version: String) -> void:
 		
 		# Refresh UI to reset button state
 		_populate_tools_ui()
+
+func _on_remove_tool_pressed(tool_id: String, version: String) -> void:
+	"""Shows confirmation before removing an installed tool version."""
+	if removal_thread != null and removal_thread.is_alive():
+		return
+	removal_tool_id = tool_id
+	removal_tool_version = version
+	remove_tool_confirmation_label.text = "Remove %s %s from the OGS library?\nThis deletes its installed files." % [tool_id.capitalize(), version]
+	remove_tool_status_label.text = "Ready to remove."
+	remove_tool_progress_bar.visible = false
+	remove_tool_progress_bar.indeterminate = false
+	remove_tool_dialog.get_ok_button().disabled = false
+	remove_tool_dialog.get_cancel_button().disabled = false
+	remove_tool_dialog.popup_centered_ratio(0.4)
+
+func _on_remove_tool_confirmed() -> void:
+	"""Starts asynchronous deletion after the user confirms removal."""
+	if removal_tool_id.is_empty() or removal_tool_version.is_empty():
+		return
+	remove_tool_dialog.get_ok_button().disabled = true
+	remove_tool_dialog.get_cancel_button().disabled = true
+	remove_tool_status_label.text = "Removing %s %s..." % [removal_tool_id.capitalize(), removal_tool_version]
+	remove_tool_progress_bar.visible = true
+	remove_tool_progress_bar.indeterminate = true
+	removal_thread = Thread.new()
+	removal_result = {}
+	var start_error = removal_thread.start(_remove_tool_on_thread.bind(removal_tool_id, removal_tool_version))
+	if start_error != OK:
+		removal_thread = null
+		_on_tool_removal_finished({"success": false, "error_message": "Could not start the removal operation."})
+
+func _remove_tool_on_thread(tool_id: String, version: String) -> Dictionary:
+	"""Removes the selected tool files without blocking the launcher UI thread."""
+	var library = LibraryManager.new()
+	removal_result = library.remove_tool(tool_id, version)
+	call_deferred("_on_tool_removal_thread_finished")
+	return removal_result
+
+func _on_tool_removal_thread_finished() -> void:
+	"""Receives the completed removal result on the launcher thread."""
+	if removal_thread == null:
+		return
+	var result: Dictionary = removal_thread.wait_to_finish()
+	removal_thread = null
+	_on_tool_removal_finished(result)
+
+func _on_tool_removal_finished(result: Dictionary) -> void:
+	"""Completes removal UI and refreshes installed/download tool state."""
+	remove_tool_progress_bar.indeterminate = false
+	remove_tool_progress_bar.visible = false
+	remove_tool_dialog.get_cancel_button().disabled = false
+	if result.get("success", false):
+		remove_tool_status_label.text = "Removal complete."
+		remove_tool_dialog.hide()
+		_populate_tools_ui()
+		if projects_controller != null:
+			projects_controller.refresh_project_tools_state()
+	else:
+		remove_tool_status_label.text = "Removal failed: %s" % result.get("error_message", "Unknown error")
+		remove_tool_dialog.get_ok_button().disabled = false
 
 ## Signal handler: progress completed.
 func _on_progress_completed(tool_id: String, version: String) -> void:

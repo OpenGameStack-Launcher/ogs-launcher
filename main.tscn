@@ -1,8 +1,8 @@
-[gd_scene load_steps=2 format=3 uid="uid://o6wgamwxxlx4"]
+[gd_scene format=3 uid="uid://o6wgamwxxlx4"]
 
-[ext_resource type="Script" path="res://main.gd" id="1_vvehl"]
+[ext_resource type="Script" uid="uid://d4ld263wl24he" path="res://main.gd" id="1_vvehl"]
 
-[node name="Main" type="Control"]
+[node name="Main" type="Control" unique_id=308260745]
 layout_mode = 3
 anchors_preset = 15
 anchor_right = 1.0
@@ -11,7 +11,7 @@ grow_horizontal = 2
 grow_vertical = 2
 script = ExtResource("1_vvehl")
 
-[node name="Panel" type="Panel" parent="."]
+[node name="Panel" type="Panel" parent="." unique_id=981004209]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -19,7 +19,7 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="AppLayout" type="HBoxContainer" parent="."]
+[node name="AppLayout" type="HBoxContainer" parent="." unique_id=5654433]
 layout_mode = 1
 anchors_preset = 15
 anchor_right = 1.0
@@ -27,371 +27,475 @@ anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Sidebar" type="PanelContainer" parent="AppLayout"]
+[node name="Sidebar" type="PanelContainer" parent="AppLayout" unique_id=336042933]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 size_flags_horizontal = 0
 
-[node name="VBoxContainer" type="VBoxContainer" parent="AppLayout/Sidebar"]
+[node name="VBoxContainer" type="VBoxContainer" parent="AppLayout/Sidebar" unique_id=1831504914]
 layout_mode = 2
 
-[node name="BtnProjects" type="Button" parent="AppLayout/Sidebar/VBoxContainer"]
+[node name="BtnProjects" type="Button" parent="AppLayout/Sidebar/VBoxContainer" unique_id=933281809]
 layout_mode = 2
 text = "Projects"
 
-[node name="BtnTools" type="Button" parent="AppLayout/Sidebar/VBoxContainer"]
+[node name="BtnTools" type="Button" parent="AppLayout/Sidebar/VBoxContainer" unique_id=1751515871]
 layout_mode = 2
 text = "Tools"
 
-[node name="BtnSettings" type="Button" parent="AppLayout/Sidebar/VBoxContainer"]
+[node name="BtnSettings" type="Button" parent="AppLayout/Sidebar/VBoxContainer" unique_id=415680266]
 layout_mode = 2
 text = "Settings"
 
-[node name="Content" type="MarginContainer" parent="AppLayout"]
+[node name="Content" type="MarginContainer" parent="AppLayout" unique_id=782060099]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="PageProjects" type="VBoxContainer" parent="AppLayout/Content"]
+[node name="PageProjects" type="VBoxContainer" parent="AppLayout/Content" unique_id=323450688]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ProjectsTitle" type="Label" parent="AppLayout/Content/PageProjects"]
+[node name="ProjectsTitle" type="Label" parent="AppLayout/Content/PageProjects" unique_id=1928982413]
 layout_mode = 2
 text = "Projects"
 
-[node name="ProjectsControls" type="HBoxContainer" parent="AppLayout/Content/PageProjects"]
+[node name="ProjectsControls" type="HBoxContainer" parent="AppLayout/Content/PageProjects" unique_id=938020695]
 layout_mode = 2
 
-[node name="AddButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls"]
+[node name="AddButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls" unique_id=755997457]
 layout_mode = 2
 text = "Add Project"
 
-[node name="NewProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls"]
+[node name="NewProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls" unique_id=866719061]
 layout_mode = 2
 text = "New Project"
 
-[node name="ProjectsListLabel" type="Label" parent="AppLayout/Content/PageProjects"]
+[node name="ProjectsListLabel" type="Label" parent="AppLayout/Content/PageProjects" unique_id=1393366665]
 layout_mode = 2
 text = "Project Library"
 
-[node name="ProjectsList" type="ItemList" parent="AppLayout/Content/PageProjects"]
+[node name="ProjectsList" type="ItemList" parent="AppLayout/Content/PageProjects" unique_id=2121007457]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ProjectsStatusLabel" type="Label" parent="AppLayout/Content/PageProjects"]
+[node name="ProjectsStatusLabel" type="Label" parent="AppLayout/Content/PageProjects" unique_id=1563600937]
 layout_mode = 2
 text = "Status: Waiting for project selection."
 
-[node name="OfflineStatusLabel" type="Label" parent="AppLayout/Content/PageProjects"]
+[node name="OfflineStatusLabel" type="Label" parent="AppLayout/Content/PageProjects" unique_id=943174233]
 layout_mode = 2
 text = "Offline: Unknown"
 
-[node name="ToolsListLabel" type="Label" parent="AppLayout/Content/PageProjects"]
+[node name="ToolsListLabel" type="Label" parent="AppLayout/Content/PageProjects" unique_id=1884445940]
 layout_mode = 2
 text = "Tools for Selected Project"
 
-[node name="ToolsList" type="ItemList" parent="AppLayout/Content/PageProjects"]
+[node name="ToolsList" type="ItemList" parent="AppLayout/Content/PageProjects" unique_id=2128217008]
 layout_mode = 2
 size_flags_vertical = 3
 
-[node name="ToolControlsContainer" type="VBoxContainer" parent="AppLayout/Content/PageProjects"]
+[node name="ToolControlsContainer" type="VBoxContainer" parent="AppLayout/Content/PageProjects" unique_id=811918473]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_constants/separation = 6
 
-[node name="ToolActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ToolControlsContainer"]
+[node name="ToolActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ToolControlsContainer" unique_id=1082188753]
 layout_mode = 2
 
-[node name="AddToolButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ToolActionRow"]
+[node name="AddToolButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ToolActionRow" unique_id=2133794034]
 layout_mode = 2
 disabled = true
 text = "Add Tool"
 
-[node name="RemoveToolButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ToolActionRow"]
+[node name="RemoveToolButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ToolActionRow" unique_id=437998484]
 layout_mode = 2
 disabled = true
 text = "Remove Tool"
 
-[node name="LaunchButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ToolActionRow"]
+[node name="LaunchButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ToolActionRow" unique_id=778618894]
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Launch Selected Tool"
 
-[node name="ProjectActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ToolControlsContainer"]
+[node name="ProjectActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ToolControlsContainer" unique_id=1423751299]
 layout_mode = 2
 
-[node name="RemoveButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ProjectActionRow"]
+[node name="RemoveButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ProjectActionRow" unique_id=538681926]
 layout_mode = 2
 disabled = true
 text = "Remove Project"
 
-[node name="SealButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ProjectActionRow"]
+[node name="SealButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ProjectActionRow" unique_id=996258368]
 layout_mode = 2
 text = "Seal for Delivery"
 
-[node name="PageTools" type="VBoxContainer" parent="AppLayout/Content"]
+[node name="PageTools" type="VBoxContainer" parent="AppLayout/Content" unique_id=238307947]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="ToolsToolbar" type="HBoxContainer" parent="AppLayout/Content/PageTools"]
+[node name="ToolsToolbar" type="HBoxContainer" parent="AppLayout/Content/PageTools" unique_id=2106282420]
 layout_mode = 2
 
-[node name="ToolsTitle" type="Label" parent="AppLayout/Content/PageTools/ToolsToolbar"]
+[node name="ToolsTitle" type="Label" parent="AppLayout/Content/PageTools/ToolsToolbar" unique_id=1754347414]
 layout_mode = 2
 text = "Tools"
 vertical_alignment = 1
 
-[node name="Spacer" type="Control" parent="AppLayout/Content/PageTools/ToolsToolbar"]
+[node name="Spacer" type="Control" parent="AppLayout/Content/PageTools/ToolsToolbar" unique_id=243495030]
 layout_mode = 2
 size_flags_horizontal = 3
 
-[node name="RefreshButton" type="Button" parent="AppLayout/Content/PageTools/ToolsToolbar"]
+[node name="RefreshButton" type="Button" parent="AppLayout/Content/PageTools/ToolsToolbar" unique_id=2100808698]
 layout_mode = 2
 text = "Refresh"
 
-[node name="ToolsStatusLabel" type="Label" parent="AppLayout/Content/PageTools"]
+[node name="ToolsStatusLabel" type="Label" parent="AppLayout/Content/PageTools" unique_id=681354899]
 modulate = Color(1, 0.8, 0.2, 1)
 layout_mode = 2
 text = "Status: Loading..."
 
-[node name="OfflineMessage" type="Label" parent="AppLayout/Content/PageTools"]
+[node name="OfflineMessage" type="Label" parent="AppLayout/Content/PageTools" unique_id=2105491231]
 visible = false
 modulate = Color(1, 0.6, 0.2, 1)
 layout_mode = 2
 text = "⚠️ Offline Mode: Connect online or visit GitHub to download tools"
 horizontal_alignment = 1
 
-[node name="ToolsTabs" type="TabContainer" parent="AppLayout/Content/PageTools"]
+[node name="ToolsTabs" type="TabContainer" parent="AppLayout/Content/PageTools" unique_id=1077639699]
 layout_mode = 2
 size_flags_vertical = 3
 current_tab = 0
 
-[node name="Installed" type="ScrollContainer" parent="AppLayout/Content/PageTools/ToolsTabs"]
+[node name="Installed" type="ScrollContainer" parent="AppLayout/Content/PageTools/ToolsTabs" unique_id=1663194702]
 layout_mode = 2
 metadata/_tab_index = 0
 
-[node name="InstalledContent" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed"]
+[node name="InstalledContent" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed" unique_id=1471721297]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 16
+theme_override_constants/separation = 20
 
-[node name="EngineSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent"]
+[node name="EngineSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=524823504]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="EngineHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/EngineSection"]
+[node name="EngineHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/EngineSection" unique_id=1404457622]
+modulate = Color(0.45, 0.8, 1, 1)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Engine"
 
-[node name="EngineTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/EngineSection"]
+[node name="EngineTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/EngineSection" unique_id=1572554511]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CategoryDivider" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=2062689336]
 layout_mode = 2
 
-[node name="2DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent"]
+[node name="2DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=574834040]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="2DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/2DSection"]
+[node name="2DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/2DSection" unique_id=1410285366]
+modulate = Color(0.55, 0.9, 0.65, 1)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "2D Tools"
 
-[node name="2DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/2DSection"]
+[node name="2DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/2DSection" unique_id=739796838]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CategoryDivider2" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=1161450709]
 layout_mode = 2
 
-[node name="3DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent"]
+[node name="3DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=2132407013]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="3DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/3DSection"]
+[node name="3DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/3DSection" unique_id=1477040708]
+modulate = Color(1, 0.72, 0.35, 1)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "3D Tools"
 
-[node name="3DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/3DSection"]
+[node name="3DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/3DSection" unique_id=798722386]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CategoryDivider3" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=271342658]
 layout_mode = 2
 
-[node name="AudioSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent"]
+[node name="AudioSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=583224698]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="AudioHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/AudioSection"]
+[node name="AudioHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/AudioSection" unique_id=1080829129]
+modulate = Color(0.85, 0.65, 1, 1)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Audio Tools"
 
-[node name="AudioTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/AudioSection"]
+[node name="AudioTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/AudioSection" unique_id=1576073845]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="Download" type="ScrollContainer" parent="AppLayout/Content/PageTools/ToolsTabs"]
+[node name="Download" type="ScrollContainer" parent="AppLayout/Content/PageTools/ToolsTabs" unique_id=1569399598]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
-[node name="DownloadContent" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download"]
+[node name="DownloadContent" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download" unique_id=1766538652]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
-theme_override_constants/separation = 16
+theme_override_constants/separation = 20
 
-[node name="EngineSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent"]
+[node name="EngineSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1977543610]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="EngineHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/EngineSection"]
+[node name="EngineHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/EngineSection" unique_id=890703930]
+modulate = Color(0.45, 0.8, 1, 1)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Engine"
 
-[node name="EngineTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/EngineSection"]
+[node name="EngineTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/EngineSection" unique_id=884121086]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CategoryDivider" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1800157661]
 layout_mode = 2
 
-[node name="2DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent"]
+[node name="2DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=240034114]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="2DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/2DSection"]
+[node name="2DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/2DSection" unique_id=1757466312]
+modulate = Color(0.55, 0.9, 0.65, 1)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "2D Tools"
 
-[node name="2DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/2DSection"]
+[node name="2DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/2DSection" unique_id=785609022]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CategoryDivider2" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1475223502]
 layout_mode = 2
 
-[node name="3DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent"]
+[node name="3DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1074513919]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="3DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/3DSection"]
+[node name="3DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/3DSection" unique_id=1901182147]
+modulate = Color(1, 0.72, 0.35, 1)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "3D Tools"
 
-[node name="3DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/3DSection"]
+[node name="3DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/3DSection" unique_id=1853629794]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CategoryDivider3" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1331531843]
 layout_mode = 2
 
-[node name="AudioSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent"]
+[node name="AudioSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1916090933]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="AudioHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/AudioSection"]
+[node name="AudioHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/AudioSection" unique_id=1177173031]
+modulate = Color(0.85, 0.65, 1, 1)
+custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Audio Tools"
 
-[node name="AudioTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/AudioSection"]
+[node name="AudioTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/AudioSection" unique_id=1750307220]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="PageSettings" type="VBoxContainer" parent="AppLayout/Content"]
+[node name="PageSettings" type="VBoxContainer" parent="AppLayout/Content" unique_id=1673014235]
 visible = false
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="Label" type="Label" parent="AppLayout/Content/PageSettings"]
+[node name="Label" type="Label" parent="AppLayout/Content/PageSettings" unique_id=91038207]
 layout_mode = 2
 text = "Settings"
 
-[node name="NetworkLabel" type="Label" parent="AppLayout/Content/PageSettings"]
+[node name="NetworkLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=486317142]
 layout_mode = 2
 text = "Network"
 
-[node name="CheckUpdatesButton" type="Button" parent="AppLayout/Content/PageSettings"]
+[node name="ProjectOfflineSettingsLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=1879047723]
+layout_mode = 2
+text = "Selected Project Offline Policy"
+
+[node name="ProjectOfflineStatusLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=669732033]
+layout_mode = 2
+text = "No project selected"
+
+[node name="ProjectOfflineModeCheckButton" type="CheckButton" parent="AppLayout/Content/PageSettings" unique_id=153682165]
+layout_mode = 2
+tooltip_text = "Blocks network access for the selected project."
+text = "Offline mode"
+
+[node name="ProjectForceOfflineCheckButton" type="CheckButton" parent="AppLayout/Content/PageSettings" unique_id=639651992]
+layout_mode = 2
+tooltip_text = "Always blocks network access for the selected project."
+text = "Force offline"
+
+[node name="CheckUpdatesButton" type="Button" parent="AppLayout/Content/PageSettings" unique_id=1946003724]
 layout_mode = 2
 text = "Check for Updates"
 metadata/network_ui = true
 
-[node name="MirrorSettingsLabel" type="Label" parent="AppLayout/Content/PageSettings"]
+[node name="MirrorSettingsLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=646124025]
 layout_mode = 2
 text = "Mirror Settings"
 
-[node name="MirrorRootContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings"]
+[node name="MirrorRootContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings" unique_id=854921524]
 layout_mode = 2
 
-[node name="MirrorRootLabel" type="Label" parent="AppLayout/Content/PageSettings/MirrorRootContainer"]
+[node name="MirrorRootLabel" type="Label" parent="AppLayout/Content/PageSettings/MirrorRootContainer" unique_id=417527318]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 text = "Mirror Root:"
 vertical_alignment = 1
 
-[node name="MirrorRootPath" type="LineEdit" parent="AppLayout/Content/PageSettings/MirrorRootContainer"]
+[node name="MirrorRootPath" type="LineEdit" parent="AppLayout/Content/PageSettings/MirrorRootContainer" unique_id=350638828]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "C:\\tools or ~/.config/ogs-launcher/mirror"
 
-[node name="MirrorRootBrowseButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorRootContainer"]
+[node name="MirrorRootBrowseButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorRootContainer" unique_id=828726662]
 layout_mode = 2
 text = "Browse"
 
-[node name="MirrorRootResetButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorRootContainer"]
+[node name="MirrorRootResetButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorRootContainer" unique_id=610220166]
 layout_mode = 2
 text = "Reset to Default"
 
-[node name="MirrorRepoContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings"]
+[node name="MirrorRepoContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings" unique_id=1852643269]
 layout_mode = 2
 
-[node name="MirrorRepoLabel" type="Label" parent="AppLayout/Content/PageSettings/MirrorRepoContainer"]
+[node name="MirrorRepoLabel" type="Label" parent="AppLayout/Content/PageSettings/MirrorRepoContainer" unique_id=431691777]
 custom_minimum_size = Vector2(100, 0)
 layout_mode = 2
 text = "Remote Repo URL:"
 vertical_alignment = 1
 
-[node name="MirrorRepoPath" type="LineEdit" parent="AppLayout/Content/PageSettings/MirrorRepoContainer"]
+[node name="MirrorRepoPath" type="LineEdit" parent="AppLayout/Content/PageSettings/MirrorRepoContainer" unique_id=825774933]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "https://raw.githubusercontent.com/.../repository.json"
 metadata/network_ui = true
 
-[node name="MirrorRepoClearButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorRepoContainer"]
+[node name="MirrorRepoClearButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorRepoContainer" unique_id=1754813744]
 layout_mode = 2
 text = "Reset to Default"
 metadata/network_ui = true
 
-[node name="MirrorStatusLabel" type="Label" parent="AppLayout/Content/PageSettings"]
+[node name="MirrorStatusLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=328179951]
 modulate = Color(1, 0.8, 0.2, 1)
 layout_mode = 2
 text = "Mirror status: Not configured"
 
-[node name="SealDialog" type="AcceptDialog" parent="."]
+[node name="SealDialog" type="AcceptDialog" parent="." unique_id=939076631]
 title = "Seal for Delivery"
 initial_position = 1
 size = Vector2i(550, 350)
 ok_button_text = "Close"
 
-[node name="VBoxContainer" type="VBoxContainer" parent="SealDialog"]
+[node name="VBoxContainer" type="VBoxContainer" parent="SealDialog" unique_id=838987614]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="StatusLabel" type="Label" parent="SealDialog/VBoxContainer"]
+[node name="StatusLabel" type="Label" parent="SealDialog/VBoxContainer" unique_id=713948544]
 layout_mode = 2
 theme_override_font_sizes/font_size = 14
 text = "Sealing project..."
 text_overrun_behavior = 3
 
-[node name="OutputLabel" type="Label" parent="SealDialog/VBoxContainer"]
+[node name="OutputLabel" type="Label" parent="SealDialog/VBoxContainer" unique_id=1640189469]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 size_flags_vertical = 3
 autowrap_mode = 2
 text_overrun_behavior = 3
 
-[node name="OpenFolderButton" type="Button" parent="SealDialog/VBoxContainer"]
+[node name="OpenFolderButton" type="Button" parent="SealDialog/VBoxContainer" unique_id=1671705950]
 visible = false
 layout_mode = 2
 text = "Open Sealed Folder in Explorer"
 
-[node name="ProjectDirDialog" type="FileDialog" parent="."]
+[node name="ProjectDirDialog" type="FileDialog" parent="." unique_id=644489062]
 title = "Open a Directory"
 ok_button_text = "Select Current Folder"
 file_mode = 2
 access = 2
 
-[node name="RemoveProjectDialog" type="ConfirmationDialog" parent="."]
+[node name="RemoveProjectDialog" type="ConfirmationDialog" parent="." unique_id=1454610086]
 title = "Remove Project"
 ok_button_text = "Remove"
 dialog_text = "Remove selected project from the Project Library?"
 
-[node name="NewProjectDialog" type="ConfirmationDialog" parent="."]
+[node name="RemoveToolDialog" type="ConfirmationDialog" parent="." unique_id=959620722]
+title = "Remove Installed Tool"
+ok_button_text = "Remove"
+dialog_hide_on_ok = false
+
+[node name="VBoxContainer" type="VBoxContainer" parent="RemoveToolDialog" unique_id=64621792]
+custom_minimum_size = Vector2(0, 120)
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -48.0
+grow_horizontal = 2
+grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="ConfirmationLabel" type="Label" parent="RemoveToolDialog/VBoxContainer" unique_id=1366937011]
+layout_mode = 2
+text = "Remove this installed tool from the OGS library?"
+autowrap_mode = 2
+
+[node name="Spacer" type="Control" parent="RemoveToolDialog/VBoxContainer" unique_id=1645185565]
+custom_minimum_size = Vector2(0, 4)
+layout_mode = 2
+
+[node name="StatusLabel" type="Label" parent="RemoveToolDialog/VBoxContainer" unique_id=1953471538]
+layout_mode = 2
+text = "Ready to remove."
+autowrap_mode = 2
+
+[node name="ProgressBar" type="ProgressBar" parent="RemoveToolDialog/VBoxContainer" unique_id=65076889]
+layout_mode = 2
+show_percentage = false
+
+[node name="NewProjectDialog" type="ConfirmationDialog" parent="." unique_id=1408040700]
 title = "Create New Project"
 ok_button_text = "Create"
 
-[node name="VBoxContainer" type="VBoxContainer" parent="NewProjectDialog"]
+[node name="VBoxContainer" type="VBoxContainer" parent="NewProjectDialog" unique_id=115466722]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -402,20 +506,20 @@ offset_bottom = -48.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="InstructionsLabel" type="Label" parent="NewProjectDialog/VBoxContainer"]
+[node name="InstructionsLabel" type="Label" parent="NewProjectDialog/VBoxContainer" unique_id=248422333]
 layout_mode = 2
 text = "Enter project name. A folder will be created under OGS/Projects."
 autowrap_mode = 2
 
-[node name="ProjectNameLineEdit" type="LineEdit" parent="NewProjectDialog/VBoxContainer"]
+[node name="ProjectNameLineEdit" type="LineEdit" parent="NewProjectDialog/VBoxContainer" unique_id=2050410315]
 layout_mode = 2
 placeholder_text = "Project name"
 
-[node name="AddToolDialog" type="ConfirmationDialog" parent="."]
+[node name="AddToolDialog" type="ConfirmationDialog" parent="." unique_id=1284810764]
 title = "Add Tool to Project"
 ok_button_text = "Add Tool"
 
-[node name="VBoxContainer" type="VBoxContainer" parent="AddToolDialog"]
+[node name="VBoxContainer" type="VBoxContainer" parent="AddToolDialog" unique_id=401051602]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -426,22 +530,22 @@ offset_bottom = -48.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="InstructionsLabel" type="Label" parent="AddToolDialog/VBoxContainer"]
+[node name="InstructionsLabel" type="Label" parent="AddToolDialog/VBoxContainer" unique_id=810732352]
 layout_mode = 2
 text = "Select a tool/version to add to this project."
 autowrap_mode = 2
 
-[node name="ToolOptionList" type="ItemList" parent="AddToolDialog/VBoxContainer"]
+[node name="ToolOptionList" type="ItemList" parent="AddToolDialog/VBoxContainer" unique_id=962797521]
 custom_minimum_size = Vector2(0, 180)
 layout_mode = 2
 
-[node name="OnboardingWizardDialog" type="AcceptDialog" parent="."]
+[node name="OnboardingWizardDialog" type="AcceptDialog" parent="." unique_id=279852584]
 title = "Welcome to Open Game Stack"
 initial_position = 1
 size = Vector2i(460, 180)
 ok_button_text = "Start"
 
-[node name="VBoxContainer" type="VBoxContainer" parent="OnboardingWizardDialog"]
+[node name="VBoxContainer" type="VBoxContainer" parent="OnboardingWizardDialog" unique_id=2088917370]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
@@ -449,21 +553,21 @@ offset_bottom = -42.0
 grow_horizontal = 2
 grow_vertical = 2
 
-[node name="Welcome" type="Label" parent="OnboardingWizardDialog/VBoxContainer"]
+[node name="Welcome" type="Label" parent="OnboardingWizardDialog/VBoxContainer" unique_id=326475952]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 text = "First-run setup: initialize the default frozen stack (Godot 4.3 + Blender 4.2 LTS) in your central library."
 autowrap_mode = 2
 
-[node name="StatusLabel" type="Label" parent="OnboardingWizardDialog/VBoxContainer"]
+[node name="StatusLabel" type="Label" parent="OnboardingWizardDialog/VBoxContainer" unique_id=2044879495]
 modulate = Color(0.6, 0.6, 0.6, 1)
 layout_mode = 2
 text = "Ready to initialize."
 
-[node name="ButtonContainer" type="HBoxContainer" parent="OnboardingWizardDialog/VBoxContainer"]
+[node name="ButtonContainer" type="HBoxContainer" parent="OnboardingWizardDialog/VBoxContainer" unique_id=2007118452]
 layout_mode = 2
 alignment = 2
 
-[node name="SkipButton" type="Button" parent="OnboardingWizardDialog/VBoxContainer/ButtonContainer"]
+[node name="SkipButton" type="Button" parent="OnboardingWizardDialog/VBoxContainer/ButtonContainer" unique_id=1145177868]
 layout_mode = 2
 text = "Skip for Now"

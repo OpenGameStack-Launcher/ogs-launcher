@@ -81,6 +81,12 @@ func _test_all_required_nodes_exist(results: Dictionary) -> void:
 		"AppLayout/Content/PageSettings/MirrorRepoContainer/MirrorRepoPath",
 		"AppLayout/Content/PageSettings/MirrorRepoContainer/MirrorRepoClearButton",
 		"AppLayout/Content/PageSettings/MirrorStatusLabel",
+		"AppLayout/Content/PageSettings/ProjectOfflineStatusLabel",
+		"AppLayout/Content/PageSettings/ProjectOfflineModeCheckButton",
+		"AppLayout/Content/PageSettings/ProjectForceOfflineCheckButton",
+		"RemoveToolDialog",
+		"RemoveToolDialog/VBoxContainer/ConfirmationLabel",
+		"RemoveToolDialog/VBoxContainer/ProgressBar",
 		"SealDialog",
 		"ProjectDirDialog"
 	]
