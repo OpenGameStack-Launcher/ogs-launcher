@@ -14,3 +14,6 @@ artifacts/
 
 # Notes folder
 notes/*
+
+# Temporary files
+tmp/
