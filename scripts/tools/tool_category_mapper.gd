@@ -17,7 +17,8 @@ const FALLBACK_CATEGORIES := {
 	"godot": "Engine",
 	"blender": "3D",
 	"krita": "2D",
-	"audacity": "Audio"
+	"audacity": "Audio",
+	"gimp": "2D"
 }
 
 ## Gets category for a tool ID using fallback mapping.

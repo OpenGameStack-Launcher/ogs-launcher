@@ -223,6 +223,15 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			result["failed_tools"].append(tool_entry)
 			_emit_tool_install_complete(tool_id, version, false, validation_error)
 			continue
+			
+		# Write local metadata into the installed tool directory so it is entirely portable
+		if repo_entry.has("executable_path"):
+			var tool_dir = library.get_tool_path(tool_id, version)
+			var metadata_path = tool_dir.path_join("ogs_metadata.json")
+			var file = FileAccess.open(metadata_path, FileAccess.WRITE)
+			if file:
+				file.store_string(JSON.stringify({"executable_path": repo_entry["executable_path"]}, "  "))
+				file.close()
 
 		result["installed_count"] += 1
 		_emit_tool_install_complete(tool_id, version, true, "")

@@ -161,6 +161,11 @@ static func _validate_tool_entry(tool_entry: Dictionary, index: int, found_error
 		var archive_url = tool_entry["archive_url"]
 		if typeof(archive_url) != TYPE_STRING or String(archive_url).strip_edges() == "":
 			found_errors.append("tool_archive_url_invalid:%d" % index)
+			
+	if not tool_entry.has("executable_path"):
+		found_errors.append("tool_executable_path_missing:%d" % index)
+	elif typeof(tool_entry["executable_path"]) != TYPE_STRING or String(tool_entry["executable_path"]).strip_edges() == "":
+		found_errors.append("tool_executable_path_invalid:%d" % index)
 
 	if not tool_entry.has("sha256"):
 		found_errors.append("tool_sha256_missing:%d" % index)

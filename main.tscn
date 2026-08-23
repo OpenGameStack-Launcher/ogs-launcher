@@ -1,6 +1,7 @@
 [gd_scene format=3 uid="uid://o6wgamwxxlx4"]
 
 [ext_resource type="Script" uid="uid://d4ld263wl24he" path="res://main.gd" id="1_vvehl"]
+[ext_resource type="Script" path="res://scripts/projects/custom_item_list.gd" id="2_cui"]
 
 [node name="Main" type="Control" unique_id=308260745]
 layout_mode = 3
@@ -64,20 +65,16 @@ text = "Projects"
 layout_mode = 2
 
 [node name="AddButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls" unique_id=755997457]
+custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Add Project"
 
 [node name="NewProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls" unique_id=866719061]
+custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
+size_flags_horizontal = 3
 text = "New Project"
-
-[node name="ProjectsListLabel" type="Label" parent="AppLayout/Content/PageProjects" unique_id=1393366665]
-layout_mode = 2
-text = "Project Library"
-
-[node name="ProjectsList" type="ItemList" parent="AppLayout/Content/PageProjects" unique_id=2121007457]
-layout_mode = 2
-size_flags_vertical = 3
 
 [node name="ProjectsStatusLabel" type="Label" parent="AppLayout/Content/PageProjects" unique_id=1563600937]
 layout_mode = 2
@@ -87,48 +84,100 @@ text = "Status: Waiting for project selection."
 layout_mode = 2
 text = "Offline: Unknown"
 
-[node name="ToolsListLabel" type="Label" parent="AppLayout/Content/PageProjects" unique_id=1884445940]
-layout_mode = 2
-text = "Tools for Selected Project"
-
-[node name="ToolsList" type="ItemList" parent="AppLayout/Content/PageProjects" unique_id=2128217008]
+[node name="ProjectsTabs" type="TabContainer" parent="AppLayout/Content/PageProjects"]
 layout_mode = 2
 size_flags_vertical = 3
+current_tab = 0
 
-[node name="ToolControlsContainer" type="VBoxContainer" parent="AppLayout/Content/PageProjects" unique_id=811918473]
+[node name="Project Library" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs"]
+layout_mode = 2
+metadata/_tab_index = 0
+
+[node name="ProjectsList" type="ScrollContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library" unique_id=2121007457]
+layout_mode = 2
+size_flags_vertical = 3
+script = ExtResource("2_cui")
+
+[node name="ProjectActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library" unique_id=1423751299]
+layout_mode = 2
+
+[node name="RemoveButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow" unique_id=538681926]
+custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
 size_flags_horizontal = 3
-theme_override_constants/separation = 6
-
-[node name="ToolActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ToolControlsContainer" unique_id=1082188753]
-layout_mode = 2
-
-[node name="AddToolButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ToolActionRow" unique_id=2133794034]
-layout_mode = 2
-disabled = true
-text = "Add Tool"
-
-[node name="RemoveToolButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ToolActionRow" unique_id=437998484]
-layout_mode = 2
-disabled = true
-text = "Remove Tool"
-
-[node name="LaunchButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ToolActionRow" unique_id=778618894]
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Launch Selected Tool"
-
-[node name="ProjectActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ToolControlsContainer" unique_id=1423751299]
-layout_mode = 2
-
-[node name="RemoveButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ProjectActionRow" unique_id=538681926]
-layout_mode = 2
 disabled = true
 text = "Remove Project"
 
-[node name="SealButton" type="Button" parent="AppLayout/Content/PageProjects/ToolControlsContainer/ProjectActionRow" unique_id=996258368]
+[node name="SealButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow" unique_id=996258368]
+custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
+size_flags_horizontal = 3
 text = "Seal for Delivery"
+
+[node name="Project Details" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs"]
+visible = false
+layout_mode = 2
+metadata/_tab_index = 1
+
+[node name="ProjectToolsList" type="ItemList" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+custom_minimum_size = Vector2(0, 150)
+layout_mode = 2
+
+[node name="ToolActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details" unique_id=1082188753]
+layout_mode = 2
+
+[node name="AddToolButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow" unique_id=2133794034]
+custom_minimum_size = Vector2(100, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Add Tool"
+
+[node name="RemoveToolButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow" unique_id=437998484]
+custom_minimum_size = Vector2(100, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Remove Tool"
+
+[node name="ChangeVersionButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow"]
+custom_minimum_size = Vector2(100, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Change Version"
+
+[node name="SectionSeparator" type="HSeparator" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="ExplorerToolbar" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+layout_mode = 2
+
+[node name="ExplorerLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar"]
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Project Explorer"
+
+[node name="NewFolderBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar"]
+custom_minimum_size = Vector2(100, 32)
+layout_mode = 2
+text = "New Folder"
+
+[node name="NewFileBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar"]
+custom_minimum_size = Vector2(100, 32)
+layout_mode = 2
+text = "New File"
+
+[node name="ProjectExplorerTree" type="Tree" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+layout_mode = 2
+size_flags_vertical = 3
+hide_root = true
+
+[node name="LaunchButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details" unique_id=778618894]
+custom_minimum_size = Vector2(160, 32)
+layout_mode = 2
+text = "Launch Selected Tool"
 
 [node name="PageTools" type="VBoxContainer" parent="AppLayout/Content" unique_id=238307947]
 layout_mode = 2
@@ -538,6 +587,30 @@ autowrap_mode = 2
 [node name="ToolOptionList" type="ItemList" parent="AddToolDialog/VBoxContainer" unique_id=962797521]
 custom_minimum_size = Vector2(0, 180)
 layout_mode = 2
+
+[node name="NewFileDialog" type="ConfirmationDialog" parent="." unique_id=1418040700]
+title = "Create New File"
+ok_button_text = "Create"
+
+[node name="VBoxContainer" type="VBoxContainer" parent="NewFileDialog" unique_id=116466722]
+anchors_preset = 15
+anchor_right = 1.0
+anchor_bottom = 1.0
+offset_left = 8.0
+offset_top = 8.0
+offset_right = -8.0
+offset_bottom = -48.0
+grow_horizontal = 2
+grow_vertical = 2
+
+[node name="InstructionsLabel" type="Label" parent="NewFileDialog/VBoxContainer" unique_id=249422333]
+layout_mode = 2
+text = "Enter file name. Extension will be added automatically."
+autowrap_mode = 2
+
+[node name="FileNameLineEdit" type="LineEdit" parent="NewFileDialog/VBoxContainer" unique_id=2060410315]
+layout_mode = 2
+placeholder_text = "File name"
 
 [node name="OnboardingWizardDialog" type="AcceptDialog" parent="." unique_id=279852584]
 title = "Welcome to Open Game Stack"

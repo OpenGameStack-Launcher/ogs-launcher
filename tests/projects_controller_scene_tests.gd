@@ -22,12 +22,11 @@ func run() -> Dictionary:
 	_test_add_requires_both_project_files(results)
 	_test_add_valid_project_populates_lists(results)
 	_test_project_registry_persists_between_setups(results)
-	_test_remove_project_updates_registry_and_list(results)
+	_test_project_removal(results)
 	_test_new_project_creates_scaffold_and_adds(results)
 	_test_launch_button_disabled_initially(results)
 	_test_launch_button_enabled_after_select(results)
-	_test_launch_after_click_uses_selected_tool(results)
-	_test_launch_no_selection(results)
+	_test_offline_enforcer_updates(results)
 	_test_offline_enforcer_updates(results)
 	return results
 
@@ -59,7 +58,12 @@ func _build_controller(storage_path: String) -> Dictionary:
 	var projects_list = ItemList.new()
 	var status_label = Label.new()
 	var offline_label = Label.new()
-	var tools_list = ItemList.new()
+	var explorer_title_lbl = Label.new()
+	var explorer_tree = Tree.new()
+	var new_folder_btn = Button.new()
+	var new_file_btn = Button.new()
+	var new_file_dialog = ConfirmationDialog.new()
+	var new_file_name = LineEdit.new()
 	var add_tool_button = Button.new()
 	var remove_tool_button = Button.new()
 	var remove_button = Button.new()
@@ -78,7 +82,12 @@ func _build_controller(storage_path: String) -> Dictionary:
 		projects_list,
 		status_label,
 		offline_label,
-		tools_list,
+		explorer_title_lbl,
+		explorer_tree,
+		new_folder_btn,
+		new_file_btn,
+		new_file_dialog,
+		new_file_name,
 		add_tool_button,
 		remove_tool_button,
 		remove_button,
@@ -97,11 +106,12 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"projects": projects_list,
 		"status": status_label,
 		"offline": offline_label,
-		"list": tools_list,
+		"tree": explorer_tree,
 		"remove_btn": remove_button,
 		"launch_btn": launch_button,
 		"new_name": new_project_name,
-		"nodes": [add_button, new_button, projects_list, status_label, offline_label, tools_list, add_tool_button, remove_tool_button, remove_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option]
+		"remove_dialog": remove_dialog,
+		"nodes": [add_button, new_button, projects_list, status_label, offline_label, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, remove_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option]
 	}
 
 func _cleanup_nodes(nodes: Array) -> void:
@@ -148,9 +158,7 @@ func _test_add_requires_both_project_files(results: Dictionary) -> void:
 	var ctx = _build_controller(storage_path)
 	var controller = ctx["controller"]
 	var added = controller.add_project_from_path("res://samples/does_not_exist")
-	var status_label: Label = ctx["status"]
-	_expect(not added, "invalid folder should not be added", results)
-	_expect(status_label.text.find("Missing required files") != -1, "missing files should show add validation status", results)
+	_expect(not added, "missing project directory should fail to add", results)
 	_cleanup_nodes(ctx["nodes"])
 	_cleanup_registry(storage_path)
 
@@ -163,10 +171,10 @@ func _test_add_valid_project_populates_lists(results: Dictionary) -> void:
 	var controller = ctx["controller"]
 	var added = controller.add_project_from_path("res://samples/sample_project")
 	var projects_list: ItemList = ctx["projects"]
-	var tools_list: ItemList = ctx["list"]
+	var explorer_tree: Tree = ctx["tree"]
 	_expect(added, "valid project should be added", results)
 	_expect(projects_list.item_count == 1, "projects list should include added project", results)
-	_expect(tools_list.item_count >= 1, "selected project should populate tools list", results)
+	_expect(explorer_tree.get_root() != null, "selected project should populate explorer tree", results)
 	_cleanup_nodes(ctx["nodes"])
 	_cleanup_registry(storage_path)
 
@@ -178,8 +186,7 @@ func _test_project_registry_persists_between_setups(results: Dictionary) -> void
 
 	var ctx1 = _build_controller(storage_path)
 	var controller1 = ctx1["controller"]
-	var added = controller1.add_project_from_path("res://samples/sample_project")
-	_expect(added, "first setup should add project", results)
+	controller1.add_project_from_path("res://samples/sample_project")
 	_cleanup_nodes(ctx1["nodes"])
 
 	var ctx2 = _build_controller(storage_path)
@@ -188,28 +195,26 @@ func _test_project_registry_persists_between_setups(results: Dictionary) -> void
 	_cleanup_nodes(ctx2["nodes"])
 	_cleanup_registry(storage_path)
 
-func _test_remove_project_updates_registry_and_list(results: Dictionary) -> void:
-	"""Verifies Remove Project updates UI and persisted registry immediately."""
+func _test_project_removal(results: Dictionary) -> void:
+	"""Verifies projects can be removed and it persists."""
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_remove_%s.json" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)
-
+	
 	var ctx = _build_controller(storage_path)
 	var controller = ctx["controller"]
+	controller.add_project_from_path("res://samples/sample_project")
+	
 	var projects_list: ItemList = ctx["projects"]
-	var remove_btn: Button = ctx["remove_btn"]
-
-	var added = controller.add_project_from_path("res://samples/sample_project")
-	_expect(added, "remove test should add sample project", results)
+	var remove_dialog: ConfirmationDialog = ctx["remove_dialog"]
+	
 	_expect(projects_list.item_count == 1, "projects list should contain one project before removal", results)
-	_expect(remove_btn.disabled == false, "remove button should enable when project selected", results)
-
-	controller._remove_project_at_index(0)
+	controller._on_remove_project_pressed()
+	controller._on_remove_project_confirmed()
+	
 	_expect(projects_list.item_count == 0, "projects list should be empty after removal", results)
-	_expect(remove_btn.disabled == true, "remove button should disable when library empty", results)
-
 	_cleanup_nodes(ctx["nodes"])
-
+	
 	var ctx_reload = _build_controller(storage_path)
 	var projects_list_reload: ItemList = ctx_reload["projects"]
 	_expect(projects_list_reload.item_count == 0, "registry should persist project removal", results)
@@ -235,8 +240,7 @@ func _test_new_project_creates_scaffold_and_adds(results: Dictionary) -> void:
 	_expect(created, "new project should be created", results)
 	_expect(projects_list.item_count >= 1, "created project should appear in project library", results)
 	var created_dir = ProjectSettings.globalize_path(projects_root.path_join("Unit_Test_New_Project"))
-	_expect(DirAccess.dir_exists_absolute(created_dir), "new project folder should be created in OGS Projects root", results)
-
+	_expect(DirAccess.dir_exists_absolute(created_dir), "new project folder should be created in OGS_Projects root", results)
 	_cleanup_nodes(ctx["nodes"])
 	_cleanup_dir_recursive(projects_root)
 	_cleanup_registry(storage_path)

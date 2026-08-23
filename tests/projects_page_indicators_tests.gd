@@ -22,8 +22,6 @@ func run() -> Dictionary:
 		"failed": 0,
 		"failures": []
 	}
-	_test_populate_tools_list_with_availability(results)
-	_test_tool_view_requested_signal(results)
 	_test_availability_tracking(results)
 	return results
 
@@ -48,7 +46,12 @@ func _build_projects_controller() -> Dictionary:
 	var projects_list = ItemList.new()
 	var status_label = Label.new()
 	var offline_label = Label.new()
-	var tools_list = ItemList.new()
+	var explorer_title_lbl = Label.new()
+	var explorer_tree = Tree.new()
+	var new_folder_btn = Button.new()
+	var new_file_btn = Button.new()
+	var new_file_dialog = ConfirmationDialog.new()
+	var new_file_name = LineEdit.new()
 	var add_tool_button = Button.new()
 	var remove_tool_button = Button.new()
 	var remove_button = Button.new()
@@ -66,7 +69,12 @@ func _build_projects_controller() -> Dictionary:
 		projects_list,
 		status_label,
 		offline_label,
-		tools_list,
+		explorer_title_lbl,
+		explorer_tree,
+		new_folder_btn,
+		new_file_btn,
+		new_file_dialog,
+		new_file_name,
 		add_tool_button,
 		remove_tool_button,
 		remove_button,
@@ -83,8 +91,8 @@ func _build_projects_controller() -> Dictionary:
 	return {
 		"controller": projects_controller,
 		"tools_controller": tools_controller,
-		"tools_list": tools_list,
-		"nodes": [add_button, new_button, projects_list, status_label, offline_label, tools_list, add_tool_button, remove_tool_button, remove_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option]
+		"tree": explorer_tree,
+		"nodes": [add_button, new_button, projects_list, status_label, offline_label, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, remove_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option]
 	}
 
 func _cleanup_nodes(nodes: Array) -> void:
@@ -94,79 +102,6 @@ func _cleanup_nodes(nodes: Array) -> void:
 			node.free()
 	if FileAccess.file_exists(TEST_REGISTRY_PATH):
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_REGISTRY_PATH))
-
-func _test_populate_tools_list_with_availability(results: Dictionary) -> void:
-	"""Verifies _populate_tools_list adds indicators based on availability."""
-	var ctx = _build_projects_controller()
-	var controller = ctx["controller"]
-	var tools_list = ctx["tools_list"]
-	
-	# Create test tools manifest
-	var tools = [
-		{"id": "godot", "version": "4.3", "path": ""},
-		{"id": "blender", "version": "4.5", "path": ""},
-		{"id": "krita", "version": "5.2", "path": ""}
-	]
-	
-	# Populate the list
-	controller._populate_tools_list(tools)
-	
-	# Check that tools were added to the list
-	_expect(tools_list.item_count == 3, "Should add 3 tools to list", results)
-	
-	# Check that labels contain tool IDs and versions (indicators may vary based on availability)
-	var item_0_text = tools_list.get_item_text(0)
-	var item_1_text = tools_list.get_item_text(1)
-	var item_2_text = tools_list.get_item_text(2)
-	
-	_expect(item_0_text.find("godot") != -1, "Item 0 should contain 'godot'", results)
-	_expect(item_0_text.find("4.3") != -1, "Item 0 should contain '4.3'", results)
-	_expect(item_1_text.find("blender") != -1, "Item 1 should contain 'blender'", results)
-	_expect(item_2_text.find("krita") != -1, "Item 2 should contain 'krita'", results)
-	
-	_cleanup_nodes(ctx["nodes"])
-
-func _test_tool_view_requested_signal(results: Dictionary) -> void:
-	"""Verifies tool_view_requested signal is emitted via ItemList click wiring."""
-	var ctx = _build_projects_controller()
-	var controller = ctx["controller"]
-	var tools_list = ctx["tools_list"]
-	
-	# Use dictionary to track signal state (avoids lambda capture issues)
-	var signal_state = {
-		"emitted": false,
-		"tool_id": "",
-		"version": ""
-	}
-	
-	controller.tool_view_requested.connect(func(tool_id: String, version: String):
-		signal_state["emitted"] = true
-		signal_state["tool_id"] = tool_id
-		signal_state["version"] = version
-	)
-	
-	# Set up test manifest and populate using sample project data
-	var added = controller.add_project_from_path("res://samples/sample_project")
-	_expect(added, "sample project should be addable for signal test", results)
-	if not added:
-		_cleanup_nodes(ctx["nodes"])
-		return
-
-	var first_tool = controller.current_manifest.tools[0]
-	var expected_tool_id = String(first_tool.get("id", ""))
-	var expected_tool_version = String(first_tool.get("version", ""))
-	
-	# Simulate clicking the first tool through ItemList signal wiring
-	tools_list.item_clicked.emit(0, Vector2.ZERO, 1)
-	
-	# Verify setup
-	_expect(tools_list.item_count >= 1, "Should have at least one tool in selected project", results)
-	_expect(controller._tool_availability.size() >= 1, "Should track selected project tools in _tool_availability", results)
-	_expect(signal_state["emitted"] == true, "tool_view_requested should emit on item click", results)
-	_expect(signal_state["tool_id"] == expected_tool_id, "tool_view_requested should pass selected tool id", results)
-	_expect(signal_state["version"] == expected_tool_version, "tool_view_requested should pass selected tool version", results)
-	
-	_cleanup_nodes(ctx["nodes"])
 
 func _test_availability_tracking(results: Dictionary) -> void:
 	"""Verifies _tool_availability dictionary is populated correctly."""

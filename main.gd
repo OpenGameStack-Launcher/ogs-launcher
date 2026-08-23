@@ -50,15 +50,23 @@ const TOOL_ICON_PATHS := {
 
 @onready var btn_add_project = $AppLayout/Content/PageProjects/ProjectsControls/AddButton
 @onready var btn_new_project = $AppLayout/Content/PageProjects/ProjectsControls/NewProjectButton
-@onready var projects_list = $AppLayout/Content/PageProjects/ProjectsList
+@onready var projects_tabs = $AppLayout/Content/PageProjects/ProjectsTabs
+@onready var projects_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsList"
 @onready var lbl_project_status = $AppLayout/Content/PageProjects/ProjectsStatusLabel
 @onready var lbl_offline_status = $AppLayout/Content/PageProjects/OfflineStatusLabel
-@onready var tools_list = $AppLayout/Content/PageProjects/ToolsList
-@onready var btn_add_tool = $AppLayout/Content/PageProjects/ToolControlsContainer/ToolActionRow/AddToolButton
-@onready var btn_remove_tool = $AppLayout/Content/PageProjects/ToolControlsContainer/ToolActionRow/RemoveToolButton
-@onready var btn_launch_tool = $AppLayout/Content/PageProjects/ToolControlsContainer/ToolActionRow/LaunchButton
-@onready var btn_remove_project = $AppLayout/Content/PageProjects/ToolControlsContainer/ProjectActionRow/RemoveButton
-@onready var btn_seal_for_delivery = $AppLayout/Content/PageProjects/ToolControlsContainer/ProjectActionRow/SealButton
+@onready var project_tools_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectToolsList"
+@onready var lbl_tools_list_title = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/ExplorerLabel"
+@onready var project_explorer_tree = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectExplorerTree"
+@onready var new_folder_btn = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/NewFolderBtn"
+@onready var new_file_btn = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/NewFileBtn"
+@onready var new_file_dialog = $NewFileDialog
+@onready var new_file_name_line_edit = $NewFileDialog/VBoxContainer/FileNameLineEdit
+@onready var btn_add_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/AddToolButton"
+@onready var btn_remove_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/RemoveToolButton"
+@onready var btn_change_version = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/ChangeVersionButton"
+@onready var btn_launch_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/LaunchButton"
+@onready var btn_remove_project = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/RemoveButton"
+@onready var btn_seal_for_delivery = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/SealButton"
 @onready var project_dir_dialog = $ProjectDirDialog
 @onready var remove_project_dialog = $RemoveProjectDialog
 @onready var remove_tool_dialog = $RemoveToolDialog
@@ -116,7 +124,57 @@ func _resolve_ogs_root_path() -> String:
 		return local_app_data.path_join("OGS")
 	return OS.get_user_data_dir().path_join("OGS")
 
+func _apply_global_theme() -> void:
+	var global_theme = Theme.new()
+	var normal_style = StyleBoxFlat.new()
+	normal_style.bg_color = Color(0.25, 0.3, 0.35) # Distinct blue-gray background
+	normal_style.corner_radius_top_left = 6
+	normal_style.corner_radius_top_right = 6
+	normal_style.corner_radius_bottom_left = 6
+	normal_style.corner_radius_bottom_right = 6
+	normal_style.content_margin_left = 12
+	normal_style.content_margin_right = 12
+	normal_style.content_margin_top = 8
+	normal_style.content_margin_bottom = 8
+	
+	var hover_style = normal_style.duplicate()
+	hover_style.bg_color = Color(0.32, 0.38, 0.45) # Lighter on hover
+	
+	var pressed_style = normal_style.duplicate()
+	pressed_style.bg_color = Color(0.18, 0.22, 0.26) # Darker on press
+	
+	var disabled_style = normal_style.duplicate()
+	disabled_style.bg_color = Color(0.2, 0.2, 0.2, 0.5) # Faded when disabled
+	
+	global_theme.set_stylebox("normal", "Button", normal_style)
+	global_theme.set_stylebox("hover", "Button", hover_style)
+	global_theme.set_stylebox("pressed", "Button", pressed_style)
+	global_theme.set_stylebox("disabled", "Button", disabled_style)
+	
+	var tree_panel = StyleBoxFlat.new()
+	tree_panel.bg_color = Color(0.16, 0.16, 0.16, 1) # Darker/distinct from window background
+	tree_panel.border_width_bottom = 1
+	tree_panel.border_width_top = 1
+	tree_panel.border_width_left = 1
+	tree_panel.border_width_right = 1
+	tree_panel.border_color = Color(0.25, 0.25, 0.25, 1)
+	tree_panel.corner_radius_top_left = 4
+	tree_panel.corner_radius_top_right = 4
+	tree_panel.corner_radius_bottom_left = 4
+	tree_panel.corner_radius_bottom_right = 4
+	project_explorer_tree.add_theme_stylebox_override("panel", tree_panel)
+	project_tools_list.add_theme_stylebox_override("panel", tree_panel)
+	global_theme.set_stylebox("panel", "Tree", tree_panel)
+	
+	self.theme = global_theme
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_APPLICATION_FOCUS_IN:
+		if projects_controller != null and projects_controller.has_meta("project_explorer_instance"):
+			projects_controller.get_meta("project_explorer_instance").refresh()
+
 func _ready():
+	_apply_global_theme()
 	OgsLogger.enable_console(true)
 	OgsLogger.set_level(OgsLogger.Level.DEBUG)
 	OgsLogger.info("launcher_started", {"component": "app"})
@@ -169,13 +227,19 @@ func _ready():
 
 	# Projects page controller (now ToolsController is available to pass)
 	projects_controller = ProjectsControllerScript.new()
+	projects_controller.lbl_tools_for_project = lbl_tools_list_title
 	projects_controller.setup(
 		btn_add_project,
 		btn_new_project,
 		projects_list,
 		lbl_project_status,
 		lbl_offline_status,
-		tools_list,
+		lbl_tools_list_title,
+		project_explorer_tree,
+		new_folder_btn,
+		new_file_btn,
+		new_file_dialog,
+		new_file_name_line_edit,
 		btn_add_tool,
 		btn_remove_tool,
 		btn_remove_project,
@@ -186,7 +250,10 @@ func _ready():
 		new_project_name_line_edit,
 		add_tool_dialog,
 		add_tool_option_list,
-		tools_controller
+		tools_controller,
+		projects_tabs,
+		project_tools_list,
+		btn_change_version
 	)
 	projects_controller.offline_state_changed.connect(_on_offline_state_changed)
 	projects_controller.project_selection_changed.connect(_on_project_selection_changed)

@@ -36,10 +36,15 @@ const PICKER_ACTION_ADD_PROJECT := "add_project"
 
 var btn_add_project: Button
 var btn_new_project: Button
-var projects_list: ItemList
+var projects_list: Control
 var lbl_project_status: Label
 var lbl_offline_status: Label
-var tools_list: ItemList
+var lbl_tools_for_project: Label
+var explorer_tree: Tree
+var btn_new_folder: Button
+var btn_new_file: Button
+var new_file_dialog: ConfirmationDialog
+var new_file_name_edit: LineEdit
 var btn_add_tool: Button
 var btn_remove_tool: Button
 var btn_remove_project: Button
@@ -56,10 +61,14 @@ var current_project_dir := ""
 var current_manifest: StackManifest = null
 var current_project_config: OgsConfig = null
 var environment_validator: ProjectEnvironmentValidator
-var tools_controller: ToolsController
+var tools_controller
+var projects_tabs: TabContainer
+var project_tools_list: ItemList
+var btn_change_version: Button
 var _tool_availability: Dictionary = {}  # Maps {tool_id: {version: {available: bool}}}
 var _library_manager: LibraryManager = null
 var _tracked_projects: Array = []
+var _last_selected_project_path: String = ""
 var _selected_project_index: int = -1
 var _selected_tool_index: int = -1
 var _projects_index_path := DEFAULT_PROJECTS_INDEX_PATH
@@ -68,68 +77,70 @@ var _picker_state_monitoring := false
 var _add_tool_candidates: Array = []
 
 func setup(
-	add_button: Button,
-	new_button: Button,
-	projects_list_control: ItemList,
-	status_label: Label,
-	offline_label: Label,
-	tools_list_control: ItemList,
-	add_tool_button: Button,
-	remove_tool_button: Button,
-	remove_button: Button,
-	launch_button: Button,
+	add_project_btn: Button,
+	new_project_btn: Button,
+	list_node: Control,
+	status_lbl: Label,
+	offline_lbl: Label,
+	explorer_title_lbl: Label,
+	explorer_tree_node: Tree,
+	new_folder_btn: Button,
+	new_file_btn: Button,
+	file_dialog: ConfirmationDialog,
+	file_name_edit: LineEdit,
+	add_tool_btn: Button,
+	remove_tool_btn: Button,
+	remove_project_btn: Button,
+	launch_tool_btn: Button,
 	dir_dialog: FileDialog,
-	remove_dialog: ConfirmationDialog,
+	rm_project_dialog: ConfirmationDialog,
 	new_dialog: ConfirmationDialog,
 	new_name_line_edit: LineEdit,
 	tool_dialog: ConfirmationDialog,
 	tool_option_list: ItemList,
-	tools_ctrl: ToolsController = null
+	tools_ctrl,
+	tabs_node: TabContainer = null,
+	tools_list_node: ItemList = null,
+	change_version_btn: Button = null
 ) -> void:
-	"""Wires Projects page controls for persistent project-library behaviors.
-
-	Parameters:
-	  add_button (Button): Opens folder picker for adding an OGS project
-	  new_button (Button): Opens new project dialog for creating project scaffolds
-	  projects_list_control (ItemList): Persistent list of tracked projects
-	  status_label (Label): Primary status output for project operations
-	  offline_label (Label): Displays active offline mode state
-	  tools_list_control (ItemList): Tool list for selected project
-	  add_tool_button (Button): Adds selected catalog tool to project stack
-	  remove_tool_button (Button): Removes selected tool from project stack
-	  remove_button (Button): Removes selected project from persistent library
-	  launch_button (Button): Launches selected tool from selected project
-	  dir_dialog (FileDialog): Folder picker used by Add Project workflow
-	  remove_dialog (ConfirmationDialog): Confirmation dialog for project removal
-	  new_dialog (ConfirmationDialog): Dialog for entering new project name
-	  new_name_line_edit (LineEdit): Text entry for new project display/folder name
-	  tool_dialog (ConfirmationDialog): Dialog for selecting tool to add
-	  tool_option_list (ItemList): List of available catalog tools
-	  tools_ctrl (ToolsController): Optional tools catalog controller for indicators
-	"""
-	btn_add_project = add_button
-	btn_new_project = new_button
-	projects_list = projects_list_control
-	lbl_project_status = status_label
-	lbl_offline_status = offline_label
-	tools_list = tools_list_control
-	btn_add_tool = add_tool_button
-	btn_remove_tool = remove_tool_button
-	btn_remove_project = remove_button
-	btn_launch_tool = launch_button
+	btn_add_project = add_project_btn
+	btn_new_project = new_project_btn
+	projects_list = list_node
+	lbl_project_status = status_lbl
+	lbl_offline_status = offline_lbl
+	
+	explorer_tree = explorer_tree_node
+	lbl_tools_for_project = explorer_title_lbl
+	btn_new_folder = new_folder_btn
+	btn_new_file = new_file_btn
+	new_file_dialog = file_dialog
+	new_file_name_edit = file_name_edit
+	
+	btn_add_tool = add_tool_btn
+	btn_remove_tool = remove_tool_btn
+	btn_remove_project = remove_project_btn
+	btn_launch_tool = launch_tool_btn
 	project_dir_dialog = dir_dialog
-	remove_project_dialog = remove_dialog
+	remove_project_dialog = rm_project_dialog
 	new_project_dialog = new_dialog
 	new_project_name_line_edit = new_name_line_edit
 	add_tool_dialog = tool_dialog
 	add_tool_option_list = tool_option_list
 	tools_controller = tools_ctrl
+	projects_tabs = tabs_node
+	project_tools_list = tools_list_node
+	btn_change_version = change_version_btn
 
 	btn_add_project.pressed.connect(_on_add_project_pressed)
 	btn_new_project.pressed.connect(_on_new_project_pressed)
 	btn_add_tool.pressed.connect(_on_add_tool_pressed)
 	btn_remove_tool.pressed.connect(_on_remove_tool_pressed)
+	if btn_change_version != null:
+		btn_change_version.pressed.connect(_on_change_version_pressed)
 	projects_list.item_selected.connect(_on_project_selected)
+	if project_tools_list != null:
+		project_tools_list.item_selected.connect(_on_tool_item_selected)
+		project_tools_list.item_activated.connect(_on_tool_item_activated)
 	btn_remove_project.pressed.connect(_on_remove_project_pressed)
 	btn_launch_tool.pressed.connect(_on_launch_tool_pressed)
 	remove_project_dialog.confirmed.connect(_on_remove_project_confirmed)
@@ -159,11 +170,27 @@ func setup(
 	if create_button != null:
 		create_button.disabled = true
 	project_dir_dialog.ok_button_text = "Open"
-	tools_list.item_clicked.connect(func(index: int, _at_position: Vector2, _mouse_button_index: int):
-		_on_tool_item_clicked(index)
-	)
-	tools_list.item_selected.connect(_on_tool_item_selected)
-	tools_list.item_activated.connect(_on_tool_item_activated)
+	
+	# Initialize ProjectExplorer wrapper
+	if explorer_tree != null:
+		# Since ProjectExplorer is a new script, we can just instantiate it.
+		# Note: we haven't loaded ProjectExplorer explicitly, so we use load()
+		var explorer_script = load("res://scripts/projects/project_explorer.gd")
+		if explorer_script != null:
+			# We attach it as a property to keep it alive
+			self.set_meta("project_explorer_instance", explorer_script.new(explorer_tree))
+			var explorer = self.get_meta("project_explorer_instance")
+			explorer.file_selected.connect(_on_explorer_file_selected)
+			explorer.folder_selected.connect(_on_explorer_folder_selected)
+			
+	if btn_new_folder != null:
+		btn_new_folder.pressed.connect(_on_new_folder_pressed)
+	if btn_new_file != null:
+		btn_new_file.pressed.connect(_on_new_file_pressed)
+	if new_file_name_edit != null:
+		new_file_name_edit.text_submitted.connect(func(_t): _on_new_file_confirmed())
+	if new_file_dialog != null:
+		new_file_dialog.confirmed.connect(_on_new_file_confirmed)
 	
 	environment_validator = ProjectEnvironmentValidator.new()
 	_library_manager = LibraryManager.new()
@@ -179,16 +206,33 @@ func setup(
 
 	_load_project_registry()
 	_refresh_projects_list()
+	
+	var restored_project = false
 	if not _tracked_projects.is_empty():
-		_select_project(0)
-	else:
+		if not _last_selected_project_path.is_empty():
+			var index = _find_project_index_by_path(_last_selected_project_path)
+			if index != -1:
+				_select_project(index)
+				restored_project = true
+				
+	if not restored_project:
+		if projects_tabs != null:
+			projects_tabs.current_tab = 0 # Default to Project Library tab
 		_disable_remove_button()
-		_update_status("Status: No projects added yet. Click Add to register an OGS project.")
+		if _tracked_projects.is_empty():
+			_update_status("Status: No projects added yet. Click Add to register an OGS project.")
+		else:
+			_update_status("Status: Select a project from the library.")
 
 func _on_new_project_pressed() -> void:
 	"""Shows New Project dialog for creating an empty OGS project scaffold."""
 	new_project_name_line_edit.text = ""
 	_on_new_project_name_changed("")
+	
+	var label = new_project_dialog.get_node_or_null("VBoxContainer/InstructionsLabel")
+	if label:
+		label.text = "Enter project name. A folder will be created under:\n%s" % _get_default_projects_dir()
+		
 	new_project_dialog.popup_centered_ratio(0.4)
 	new_project_name_line_edit.grab_focus()
 
@@ -317,17 +361,28 @@ func _save_json_file(file_path: String, payload: Dictionary) -> bool:
 	return true
 
 func _resolve_ogs_projects_root_path() -> String:
-	"""Resolves platform-appropriate OGS/Projects directory root.
+	"""Determines where the root OGS Projects folder should be.
 
 	Returns:
-	  String: Absolute path to OGS Projects folder
+	  String: Absolute path to the projects root folder
 	"""
 	if not _projects_root_override.is_empty():
 		return _projects_root_override
-	var local_app_data = OS.get_environment("LOCALAPPDATA")
-	if not local_app_data.is_empty():
-		return local_app_data.path_join("OGS").path_join("Projects")
-	return OS.get_user_data_dir().path_join("OGS").path_join("Projects")
+	return _get_default_projects_dir()
+
+func _get_default_projects_dir() -> String:
+	"""Resolves the default root directory where new projects are created.
+
+	Returns:
+	  String: Absolute path to OGS_Projects folder
+	"""
+	var home_dir = OS.get_environment("USERPROFILE")
+	if home_dir.is_empty():
+		home_dir = OS.get_environment("HOME")
+
+	if not home_dir.is_empty():
+		return home_dir.path_join("OGS_Projects")
+	return OS.get_user_data_dir().path_join("OGS_Projects")
 
 func _sanitize_project_name(raw_name: String) -> String:
 	"""Normalizes project name for safe folder naming (spaces -> underscores).
@@ -355,12 +410,44 @@ func _sanitize_project_name(raw_name: String) -> String:
 		sanitized = sanitized.replace("__", "_")
 	return sanitized.strip_edges().trim_prefix("_").trim_suffix("_")
 
-func _on_add_tool_pressed() -> void:
+func _on_change_version_pressed() -> void:
+	if current_manifest == null or _selected_tool_index < 0 or _selected_tool_index >= current_manifest.tools.size():
+		return
+	var tool_entry = current_manifest.tools[_selected_tool_index]
+	var tool_id = String(tool_entry.get("id", ""))
+	if tool_id.is_empty():
+		return
+	add_tool_dialog.set_meta("change_version_target", tool_id)
+	_on_add_tool_pressed("Change Version for " + tool_id)
+
+func _on_add_tool_pressed(title_override: String = "Add Tool") -> void:
 	"""Opens catalog picker for adding a new tool entry to current project stack."""
+	if title_override == "Add Tool":
+		add_tool_dialog.set_meta("change_version_target", "")
+	add_tool_dialog.title = title_override
 	if current_manifest == null or current_project_dir.is_empty():
 		_update_status("Status: Select a project before adding tools.")
 		return
 
+	var target_tool_id = String(add_tool_dialog.get_meta("change_version_target")) if add_tool_dialog.has_meta("change_version_target") else ""
+	var is_change_version = not target_tool_id.is_empty()
+	var add_button = add_tool_dialog.get_ok_button()
+	if add_button != null:
+		add_button.disabled = true
+		add_button.text = "Change to version..." if is_change_version else "Add Tool"
+		
+	var instructions = add_tool_dialog.get_node_or_null("VBoxContainer/InstructionsLabel")
+	if instructions != null:
+		if is_change_version:
+			var current_version = "?"
+			for tool in current_manifest.tools:
+				if String(tool.get("id", "")) == target_tool_id:
+					current_version = String(tool.get("version", ""))
+					break
+			instructions.text = "Current %s version is %s.\nSelect a version to change to:" % [target_tool_id, current_version]
+		else:
+			instructions.text = "Select a tool/version to add to this project."
+			
 	_populate_add_tool_options()
 	if _add_tool_candidates.is_empty():
 		_update_status("Status: No additional tools available to add.")
@@ -374,20 +461,39 @@ func _populate_add_tool_options() -> void:
 	add_tool_option_list.clear()
 
 	var existing_keys: Dictionary = {}
+	var existing_tool_ids: Dictionary = {}
 	if current_manifest != null:
 		for entry in current_manifest.tools:
-			var key = "%s_%s" % [String(entry.get("id", "")), String(entry.get("version", ""))]
+			var id = String(entry.get("id", ""))
+			var key = "%s_%s" % [id, String(entry.get("version", ""))]
 			existing_keys[key] = true
+			existing_tool_ids[id] = true
 
+	var target_tool_id = ""
+	if add_tool_dialog.has_meta("change_version_target"):
+		target_tool_id = add_tool_dialog.get_meta("change_version_target")
+		
 	var seen_keys: Dictionary = {}
 	for tool in _collect_add_tool_catalog_entries():
 		var tool_id = String(tool.get("id", "")).strip_edges()
 		var version = String(tool.get("version", "")).strip_edges()
 		if tool_id.is_empty() or version.is_empty():
 			continue
+			
 		var key = "%s_%s" % [tool_id, version]
-		if existing_keys.has(key) or seen_keys.has(key):
+		
+		if not target_tool_id.is_empty():
+			if tool_id != target_tool_id:
+				continue
+			if existing_keys.has(key):
+				continue
+		else:
+			if existing_tool_ids.has(tool_id):
+				continue
+				
+		if seen_keys.has(key):
 			continue
+			
 		seen_keys[key] = true
 		_add_tool_candidates.append({
 			"id": tool_id,
@@ -404,12 +510,14 @@ func _populate_add_tool_options() -> void:
 		var label = "%s v%s" % [String(candidate.get("id", "")), String(candidate.get("version", ""))]
 		add_tool_option_list.add_item(label)
 
-	if add_tool_option_list.item_count > 0:
-		add_tool_option_list.select(0)
-
 	var add_button = add_tool_dialog.get_ok_button()
 	if add_button != null:
+		add_button.custom_minimum_size = Vector2(350, 40)
 		add_button.disabled = _add_tool_candidates.is_empty()
+
+	if add_tool_option_list.item_count > 0:
+		add_tool_option_list.select(0)
+		_on_add_tool_item_selected(0)
 
 func _collect_add_tool_catalog_entries() -> Array:
 	"""Collects tool/version entries from remote catalog and local fallback sources.
@@ -491,6 +599,14 @@ func _on_add_tool_item_selected(index: int) -> void:
 	var add_button = add_tool_dialog.get_ok_button()
 	if add_button != null:
 		add_button.disabled = (index < 0 or index >= _add_tool_candidates.size())
+		if not add_button.disabled:
+			var candidate = _add_tool_candidates[index]
+			var tool_id = String(candidate.get("id", ""))
+			var version = String(candidate.get("version", ""))
+			if add_tool_dialog.has_meta("change_version_target") and not String(add_tool_dialog.get_meta("change_version_target")).is_empty():
+				add_button.text = "Change to %s version %s" % [tool_id, version]
+			else:
+				add_button.text = "Add %s version %s" % [tool_id, version]
 
 func _on_add_tool_item_activated(index: int) -> void:
 	"""Adds tool immediately on double-click activation from Add Tool list.
@@ -502,6 +618,7 @@ func _on_add_tool_item_activated(index: int) -> void:
 		return
 	add_tool_option_list.select(index)
 	_on_add_tool_confirmed()
+	add_tool_dialog.hide()
 
 func _on_add_tool_confirmed() -> void:
 	"""Adds selected catalog tool entry to current project's stack manifest."""
@@ -534,15 +651,49 @@ func add_tool_to_current_project(tool_id: String, version: String) -> bool:
 		_update_status("Status: Invalid tool selection.")
 		return false
 
+	var found_existing = false
 	for entry in current_manifest.tools:
-		if String(entry.get("id", "")) == tool_id and String(entry.get("version", "")) == version:
-			_update_status("Status: %s v%s is already in this project." % [tool_id, version])
-			return false
+		if String(entry.get("id", "")) == tool_id:
+			if String(entry.get("version", "")) == version:
+				_update_status("Status: %s v%s is already in this project." % [tool_id, version])
+				return false
+			else:
+				var old_version = String(entry.get("version", ""))
+				entry["version"] = version
+				_update_status("Status: Updated %s from v%s to v%s." % [tool_id, old_version, version])
+				found_existing = true
+				break
 
-	current_manifest.tools.append({
-		"id": tool_id,
-		"version": version
-	})
+	if not found_existing:
+		current_manifest.tools.append({
+			"id": tool_id,
+			"version": version
+		})
+	
+	# Automatically scaffold project directories for the newly added tool
+	var tool_category = ToolCategoryMapper.get_category(tool_id)
+	if tool_category == "Unknown":
+		tool_category = "Other"
+		
+	if tools_controller != null and tools_controller.repository != null:
+		for t in tools_controller.repository.tools:
+			if String(t.get("id", "")) == tool_id and String(t.get("version", "")) == version:
+				var cat = String(t.get("category", "")).strip_edges()
+				if not cat.is_empty():
+					tool_category = cat
+				break
+				
+	if tool_id == "godot":
+		var godot_project_dir = ToolLauncher._find_existing_godot_project_dir(current_project_dir)
+		if godot_project_dir.is_empty():
+			godot_project_dir = current_project_dir.path_join("game")
+			var project_name = ToolLauncher._resolve_ogs_project_name(current_project_dir)
+			ToolLauncher._create_godot_project_file(godot_project_dir, project_name)
+	else:
+		var asset_dir = current_project_dir.path_join("assets").path_join(tool_category).path_join(tool_id)
+		if not DirAccess.dir_exists_absolute(asset_dir):
+			DirAccess.make_dir_recursive_absolute(asset_dir)
+
 	if not _save_current_stack_manifest():
 		return false
 
@@ -558,6 +709,9 @@ func add_tool_to_current_project(tool_id: String, version: String) -> bool:
 
 func _on_remove_tool_pressed() -> void:
 	"""Removes currently selected tool entry from project stack manifest."""
+	if current_manifest == null or _selected_tool_index < 0 or _selected_tool_index >= current_manifest.tools.size():
+		return
+	
 	remove_tool_at_index(_selected_tool_index)
 
 func remove_tool_at_index(index: int) -> bool:
@@ -640,11 +794,21 @@ func _remove_project_at_index(index: int) -> void:
 
 	var removed_entry: Dictionary = _tracked_projects[index]
 	var removed_name = String(removed_entry.get("stack_name", "Unnamed Stack"))
+	var removed_path = String(removed_entry.get("path", ""))
+	
+	if _last_selected_project_path == removed_path:
+		_last_selected_project_path = ""
+		
 	_tracked_projects.remove_at(index)
 	_save_project_registry()
 	_refresh_projects_list()
 
 	if _tracked_projects.is_empty():
+		if lbl_tools_for_project:
+			lbl_tools_for_project.text = "Project Explorer"
+		if projects_tabs != null:
+			projects_tabs.set_tab_title(1, "Project Details")
+		current_project_dir = ""
 		_disable_launch_button()
 		_disable_remove_button()
 		_apply_offline_config(null)
@@ -894,9 +1058,10 @@ func _refresh_projects_list() -> void:
 		var display_name = String(entry.get("stack_name", "Unnamed Stack"))
 		var tools: Array = entry.get("tools", [])
 		var summary = _summarize_tools(tools)
-		var label = "%s — %s" % [display_name, summary]
+		var project_path = String(entry.get("path", ""))
+		var label = "%s — %s\n%s" % [display_name, summary, project_path]
 		projects_list.add_item(label)
-		projects_list.set_item_tooltip(index, String(entry.get("path", "")))
+		projects_list.set_item_tooltip(index, project_path)
 
 func _summarize_tools(tools: Array) -> String:
 	"""Builds compact tool summary text for project list entries.
@@ -946,7 +1111,21 @@ func _select_project(index: int) -> void:
 	_update_tool_action_buttons()
 
 	var entry: Dictionary = _tracked_projects[index]
+	var stack_name = String(entry.get("stack_name", "Selected Project"))
+	
+	if projects_tabs != null:
+		projects_tabs.set_tab_title(1, stack_name)
+		projects_tabs.current_tab = 1
+		
 	var project_dir = String(entry.get("path", ""))
+	
+	if _last_selected_project_path != project_dir:
+		_last_selected_project_path = project_dir
+		_save_project_registry()
+	
+	if lbl_tools_for_project != null:
+		lbl_tools_for_project.text = "Project Explorer - " + project_dir
+		
 	if project_dir.is_empty():
 		_update_status("Status: Selected project entry is invalid.")
 		_disable_launch_for_selected_project()
@@ -1069,6 +1248,9 @@ func _load_project_registry() -> void:
 		var project_dir = String(raw_entry.get("path", ""))
 		if _is_addable_project_dir(project_dir):
 			_tracked_projects.append(raw_entry)
+			
+	if parsed.has("last_selected_project_path"):
+		_last_selected_project_path = String(parsed.get("last_selected_project_path", ""))
 
 	OgsLogger.info("project_registry_loaded", {
 		"component": "projects",
@@ -1080,6 +1262,7 @@ func _save_project_registry() -> void:
 	var payload = {
 		"version": 1,
 		"projects": _tracked_projects,
+		"last_selected_project_path": _last_selected_project_path,
 		"updated_at": Time.get_unix_time_from_system()
 	}
 	var file = FileAccess.open(_projects_index_path, FileAccess.WRITE)
@@ -1115,10 +1298,13 @@ func _populate_tools_list(tools: Array) -> void:
 	Parameters:
 	  tools (Array): Array of tool entries from stack.json
 	"""
-	tools_list.clear()
 	_tool_availability.clear()
 	_selected_tool_index = -1
 	_update_tool_action_buttons()
+	
+	if explorer_tree != null and self.has_meta("project_explorer_instance"):
+		var explorer = self.get_meta("project_explorer_instance")
+		explorer.load_project(current_project_dir)
 	
 	# Build availability map from ToolsController
 	var available_tools = _get_available_tools()
@@ -1129,6 +1315,9 @@ func _populate_tools_list(tools: Array) -> void:
 	var unknown_count = 0
 	var installed_count = 0
 	
+	if project_tools_list != null:
+		project_tools_list.clear()
+
 	for tool_entry in tools:
 		var tool_id = String(tool_entry.get("id", "unknown"))
 		var tool_version = String(tool_entry.get("version", "?"))
@@ -1137,10 +1326,11 @@ func _populate_tools_list(tools: Array) -> void:
 		# Check if tool is installed in library
 		var is_installed = _library_manager.tool_exists(tool_id, tool_version)
 		
+		var availability = {"available": false, "installed": is_installed}
+		
 		# Build label with indicator
 		var label = "%s v%s" % [tool_id, tool_version]
 		var indicator = ""
-		var availability = {"available": false, "installed": is_installed}
 		
 		if not is_installed:
 			missing_count += 1
@@ -1167,8 +1357,9 @@ func _populate_tools_list(tools: Array) -> void:
 			label = "%s - %s%s" % [label, tool_path, indicator]
 		else:
 			label = label + indicator
-		
-		tools_list.add_item(label)
+			
+		if project_tools_list != null:
+			project_tools_list.add_item(label)
 	
 	OgsLogger.info("project_tools_list_populated", {
 		"component": "projects",
@@ -1237,8 +1428,8 @@ func _on_tool_item_clicked(index: int) -> void:
 	"""
 	_selected_tool_index = index
 	_update_tool_action_buttons()
-	if tools_list != null and index >= 0 and index < tools_list.item_count:
-		tools_list.select(index)
+	if project_tools_list != null and index >= 0 and index < project_tools_list.item_count:
+		project_tools_list.select(index)
 
 	if current_manifest == null or index < 0 or index >= current_manifest.tools.size():
 		OgsLogger.debug("tool_item_clicked_invalid_index", {
@@ -1282,8 +1473,8 @@ func _on_tool_item_activated(index: int) -> void:
 	  index (int): Activated (double-clicked) tool index
 	"""
 	_selected_tool_index = index
-	if tools_list != null and index >= 0 and index < tools_list.item_count:
-		tools_list.select(index)
+	if project_tools_list != null and index >= 0 and index < project_tools_list.item_count:
+		project_tools_list.select(index)
 	_on_launch_tool_pressed()
 	
 
@@ -1327,33 +1518,111 @@ func refresh_project_tools_state() -> void:
 		"tool_count": current_manifest.tools.size()
 	})
 
+var _selected_launch_target_path: String = ""
+var _selected_launch_tool_id: String = ""
+
+func _on_explorer_file_selected(file_path: String, tool_id: String) -> void:
+	_selected_launch_target_path = file_path
+	_selected_launch_tool_id = tool_id
+	btn_remove_tool.disabled = true
+	_update_tool_action_buttons()
+
+func _on_explorer_folder_selected(folder_path: String, tool_id: String) -> void:
+	_selected_launch_target_path = folder_path
+	_selected_launch_tool_id = tool_id
+	btn_remove_tool.disabled = tool_id.is_empty()
+	_update_tool_action_buttons()
+	
+func _on_new_folder_pressed() -> void:
+	if not self.has_meta("project_explorer_instance"): return
+	var explorer = self.get_meta("project_explorer_instance")
+	var selected_path = explorer.get_selected_path()
+	var new_dir = selected_path.path_join("New Folder")
+	var count = 1
+	while DirAccess.dir_exists_absolute(new_dir):
+		new_dir = selected_path.path_join("New Folder (%d)" % count)
+		count += 1
+	DirAccess.make_dir_recursive_absolute(new_dir)
+	explorer.refresh()
+
+func _on_new_file_pressed() -> void:
+	if new_file_name_edit != null:
+		new_file_name_edit.text = ""
+		new_file_dialog.popup_centered(Vector2(300, 150))
+		new_file_name_edit.grab_focus()
+
+func _on_new_file_confirmed() -> void:
+	if not self.has_meta("project_explorer_instance") or new_file_name_edit == null: return
+	var explorer = self.get_meta("project_explorer_instance")
+	var selected_path = explorer.get_selected_path()
+	var folder_path = selected_path if DirAccess.dir_exists_absolute(selected_path) else selected_path.get_base_dir()
+	
+	var file_name = new_file_name_edit.text.strip_edges()
+	if file_name.is_empty(): return
+	
+	var tool_id = explorer._infer_tool_from_folder(folder_path)
+	var ext = FileTypeMapper.get_extension_for_tool(tool_id)
+	
+	if not ext.is_empty() and not file_name.ends_with("." + ext):
+		file_name += "." + ext
+		
+	var new_file_path = folder_path.path_join(file_name)
+	
+	# Binary tools like GIMP and Blender crash when given 0-byte files.
+	# We only create empty text files on disk. For binary assets, we 
+	# just launch the tool empty so the user can 'Save As' from the tool.
+	var is_text = ext in ["txt", "json", "md", "gd"]
+	
+	if is_text or ext.is_empty():
+		var file = FileAccess.open(new_file_path, FileAccess.WRITE)
+		if file != null:
+			file.store_string("")
+			file.close()
+		_selected_launch_target_path = new_file_path
+	else:
+		# Don't pass the non-existent file path, just launch the tool empty
+		_selected_launch_target_path = ""
+		
+	explorer.refresh()
+	new_file_dialog.hide()
+	
+	# Launch automatically
+	_selected_launch_tool_id = tool_id
+	if not tool_id.is_empty():
+		_on_launch_tool_pressed()
+
 func _on_launch_tool_pressed() -> void:
-	"""Launches the currently selected tool from the tools list."""
+	"""Launches the currently selected tool and file from the project explorer."""
 	if current_manifest == null:
 		_update_status("Status: No project loaded. Cannot launch tool.")
 		return
 	
-	var selected_indices = tools_list.get_selected_items()
+	if _selected_launch_tool_id.is_empty():
+		_update_status("Status: No known tool associated with this file/folder.")
+		return
+		
+	var tool_entry = null
 	var selected_index = -1
-	if not selected_indices.is_empty():
-		selected_index = selected_indices[0]
-	elif _selected_tool_index >= 0:
-		selected_index = _selected_tool_index
-
-	if selected_index < 0:
-		_update_status("Status: No tool selected. Select a tool from the list first.")
+	for i in range(current_manifest.tools.size()):
+		if current_manifest.tools[i].get("id") == _selected_launch_tool_id:
+			tool_entry = current_manifest.tools[i]
+			selected_index = i
+			break
+			
+	if tool_entry == null:
+		_update_status("Status: Tool '%s' is not in this project's stack. Please add it first." % _selected_launch_tool_id)
 		return
 
-	if selected_index >= current_manifest.tools.size():
-		_update_status("Status: Invalid tool selection.")
-		return
-	
-	var tool_entry = current_manifest.tools[selected_index]
-	var result = ToolLauncher.launch(tool_entry, current_project_dir)
+	# If the target is a directory, don't pass it as a file argument. 
+	# If the tool is Godot, we let ToolLauncher handle finding the project.godot
+	var target_file = _selected_launch_target_path
+	if DirAccess.dir_exists_absolute(target_file):
+		target_file = ""
+
+	var result = ToolLauncher.launch(tool_entry, current_project_dir, target_file)
 	
 	if result["success"]:
-		var tool_id = String(tool_entry.get("id", "unknown"))
-		_update_status("Status: Launched %s (PID: %d)" % [tool_id, result["pid"]])
+		_update_status("Status: Launched %s (PID: %d)" % [_selected_launch_tool_id, result["pid"]])
 	else:
 		_update_status("Status: Launch failed - %s" % result["error_message"])
 
@@ -1371,7 +1640,11 @@ func _disable_launch_button() -> void:
 	current_manifest = null
 	_selected_project_index = -1
 	_selected_tool_index = -1
-	tools_list.clear()
+	
+	if explorer_tree != null and self.has_meta("project_explorer_instance"):
+		var explorer = self.get_meta("project_explorer_instance")
+		explorer.load_project("")
+		
 	btn_add_tool.disabled = true
 	btn_remove_tool.disabled = true
 	_disable_remove_button()
@@ -1383,7 +1656,11 @@ func _disable_launch_for_selected_project() -> void:
 	current_project_dir = ""
 	current_manifest = null
 	_selected_tool_index = -1
-	tools_list.clear()
+	
+	if explorer_tree != null and self.has_meta("project_explorer_instance"):
+		var explorer = self.get_meta("project_explorer_instance")
+		explorer.load_project("")
+		
 	btn_add_tool.disabled = true
 	btn_remove_tool.disabled = true
 	_enable_remove_button()
@@ -1396,6 +1673,9 @@ func _update_tool_action_buttons() -> void:
 	if btn_remove_tool != null:
 		var can_remove = has_project and _selected_tool_index >= 0 and _selected_tool_index < current_manifest.tools.size()
 		btn_remove_tool.disabled = not can_remove
+	if btn_change_version != null:
+		var can_change = has_project and _selected_tool_index >= 0 and _selected_tool_index < current_manifest.tools.size()
+		btn_change_version.disabled = not can_change
 
 func _enable_remove_button() -> void:
 	"""Enables Remove Project button when a project is currently selected."""

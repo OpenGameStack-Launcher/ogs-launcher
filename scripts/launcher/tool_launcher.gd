@@ -30,7 +30,8 @@ enum LaunchError {
 	TOOL_PATH_OUTSIDE_ROOT = 7, ## Tool path resolves outside the project root
 	TOOL_HASH_INVALID = 8,      ## Tool sha256 value is invalid or unreadable
 	TOOL_HASH_MISMATCH = 9,     ## Tool sha256 does not match file contents
-	GODOT_PROJECT_INIT_FAILED = 10 ## Godot project.godot discovery/creation failed
+	GODOT_PROJECT_INIT_FAILED = 10, ## Godot project.godot discovery/creation failed
+	INVALID_TOOL_ENTRY = 11      ## Missing required tool ID or version
 }
 
 
@@ -39,16 +40,20 @@ enum LaunchError {
 ## @param tool_entry: Dictionary with keys: id, version, (optional) path
 ## @param project_dir: Absolute path to the project root (where stack.json lives)
 ## @return: Dictionary with keys: success (bool), error_code (int), error_message (String), pid (int, -1 if failed)
-static func launch(tool_entry: Dictionary, project_dir: String) -> Dictionary:
+static func launch(tool_entry: Dictionary, project_dir: String, target_file: String = "") -> Dictionary:
 	# Validate inputs
 	if project_dir.is_empty():
 		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "empty_project_dir"})
 		return _error_result(LaunchError.INVALID_PROJECT_DIR, "Project directory path is empty.")
 	
 	var tool_id = String(tool_entry.get("id", "unknown"))
-	var tool_version = String(tool_entry.get("version", ""))
+	var tool_version = String(tool_entry.get("version", "unknown"))
 	var full_tool_path := ""
 	
+	if tool_id == "unknown" or tool_version == "unknown":
+		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "invalid_entry"})
+		return _error_result(LaunchError.INVALID_TOOL_ENTRY, "Invalid tool entry in stack.json")
+		
 	# Check if path is provided (legacy support for project-relative paths)
 	if tool_entry.has("path"):
 		var tool_path = String(tool_entry["path"])
@@ -66,15 +71,14 @@ static func launch(tool_entry: Dictionary, project_dir: String) -> Dictionary:
 			return _error_result(LaunchError.TOOL_PATH_OUTSIDE_ROOT, "Tool path escapes project root.")
 	else:
 		# Path not provided - resolve from library
-		var library = LibraryManager.new()
-		var library_result = _resolve_tool_from_library(library, tool_id, tool_version)
-		if not library_result["success"]:
-			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "library_resolution_failed", "tool": tool_id})
-			return _error_result(library_result["error_code"], library_result["error_message"])
-		full_tool_path = library_result["executable_path"]
-	
+		var resolver_result = _resolve_tool_from_library(LibraryManager.new(), tool_id, tool_version)
+		if not resolver_result["success"]:
+			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "not_installed", "tool": tool_id})
+			return _error_result(resolver_result["error_code"], resolver_result["error_message"])
+		full_tool_path = String(resolver_result["executable_path"])
+		
 	if not FileAccess.file_exists(full_tool_path):
-		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "not_found", "tool": tool_id})
+		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "not_found", "path": full_tool_path})
 		return _error_result(LaunchError.TOOL_NOT_FOUND, "Tool executable not found at: %s" % full_tool_path)
 
 	var hash_check = _validate_tool_hash(tool_entry, full_tool_path)
@@ -91,7 +95,7 @@ static func launch(tool_entry: Dictionary, project_dir: String) -> Dictionary:
 		launch_project_dir = String(godot_project_result["launch_project_dir"])
 	
 	# Build tool-specific arguments
-	var args = _build_launch_arguments(tool_id, launch_project_dir)
+	var args = _build_launch_arguments(tool_id, launch_project_dir, target_file)
 	if OfflineEnforcer.is_offline():
 		var inject = ToolConfigInjector.apply(tool_id, project_dir)
 		if not inject["success"]:
@@ -153,9 +157,8 @@ static func _resolve_godot_project_dir(project_dir: String) -> Dictionary:
 ##
 ## Different tools require different arguments to operate in the project context:
 ## - Godot: --editor --path <project_dir> (opens the project in editor mode)
-## - Blender: (no special args needed, opens blank scene)
-## - Other tools: (no special args for now)
-static func _build_launch_arguments(tool_id: String, project_dir: String) -> PackedStringArray:
+## - Blender, GIMP, Krita: (pass the target file directly if provided)
+static func _build_launch_arguments(tool_id: String, project_dir: String, target_file: String = "") -> PackedStringArray:
 	var args = PackedStringArray()
 	
 	match tool_id:
@@ -164,12 +167,9 @@ static func _build_launch_arguments(tool_id: String, project_dir: String) -> Pac
 			args.append("--editor")
 			args.append("--path")
 			args.append(project_dir)
-		"blender":
-			# Blender opens with default scene, no special args needed
-			pass
 		_:
-			# Unknown tools launch without special args
-			pass
+			if not target_file.is_empty():
+				args.append(target_file)
 	
 	return args
 
@@ -297,7 +297,27 @@ static func _resolve_tool_from_library(library: LibraryManager, tool_id: String,
 			"executable_path": ""
 		}
 	
-	# Find executable within tool directory
+	# Try to find the exact executable path from the installed tool's portable metadata
+	var metadata_path = tool_dir.path_join("ogs_metadata.json")
+	if FileAccess.file_exists(metadata_path):
+		var file = FileAccess.open(metadata_path, FileAccess.READ)
+		if file:
+			var text = file.get_as_text()
+			file.close()
+			var json = JSON.new()
+			if json.parse(text) == OK:
+				var metadata = json.data
+				if typeof(metadata) == TYPE_DICTIONARY and metadata.has("executable_path"):
+					var exe_path = tool_dir.path_join(metadata["executable_path"])
+					if FileAccess.file_exists(exe_path):
+						return {
+							"success": true,
+							"error_code": LaunchError.SUCCESS,
+							"error_message": "",
+							"executable_path": exe_path
+						}
+	
+	# Fallback: Find executable within tool directory using legacy heuristics
 	var executable_path = _find_executable_in_directory(tool_dir, tool_id)
 	if executable_path.is_empty():
 		return {
