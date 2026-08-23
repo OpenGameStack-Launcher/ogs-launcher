@@ -378,17 +378,37 @@ static func _find_executable_in_directory(directory: String, tool_id: String) ->
 			if FileAccess.file_exists(audacity_exe):
 				return audacity_exe
 	
-	# Fallback: find first .exe file in directory
+	# Fallback: better executable search
 	dir.list_dir_begin()
 	var file_name = dir.get_next()
+	var exe_files = []
 	while file_name != "":
 		if not dir.current_is_dir() and file_name.to_lower().ends_with(".exe"):
-			var exe_path = directory.path_join(file_name)
-			if FileAccess.file_exists(exe_path):
-				dir.list_dir_end()
-				return exe_path
+			exe_files.append(file_name)
 		file_name = dir.get_next()
 	dir.list_dir_end()
+	
+	if exe_files.is_empty():
+		return ""
+		
+	# 1. Exact match with tool_id
+	for exe in exe_files:
+		if exe.get_basename().to_lower() == tool_id.to_lower():
+			return directory.path_join(exe)
+			
+	# 2. Contains tool_id
+	for exe in exe_files:
+		if exe.to_lower().contains(tool_id.to_lower()):
+			return directory.path_join(exe)
+			
+	# 3. Filter out common uninstaller/setup names and pick the first
+	for exe in exe_files:
+		var lower_name = exe.to_lower()
+		if not lower_name.begins_with("unins") and not lower_name.begins_with("setup"):
+			return directory.path_join(exe)
+			
+	# 4. Absolute fallback
+	return directory.path_join(exe_files[0])
 	
 	return ""
 
