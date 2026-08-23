@@ -183,16 +183,6 @@ func download_tool(tool_id: String, version: String) -> Dictionary:
 	
 	return result
 
-## Legacy static method for backward compatibility with existing code.
-## Creates a temporary instance and downloads.
-## DEPRECATED: Use instance methods instead.
-static func download_tool_legacy(tool_id: String, version: String, _target_path: String) -> Dictionary:
-	"""Legacy interface for backward compatibility.
-	DEPRECATED: Use instance methods instead.
-	"""
-	var downloader = ToolDownloader.new()
-	return downloader.download_tool(tool_id, version)
-
 # Private helper: downloads archive from mirror
 func _download_archive(tool_id: String, version: String) -> Dictionary:
 	"""Downloads tool archive to temp directory.
