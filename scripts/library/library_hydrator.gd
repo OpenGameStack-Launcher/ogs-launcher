@@ -25,7 +25,6 @@ class_name LibraryHydrator
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 signal tool_download_started(tool_id: String, version: String)
-@warning_ignore("unused_signal")
 signal tool_download_progress(tool_id: String, version: String, bytes_received: int, bytes_total: int)
 signal tool_download_complete(tool_id: String, version: String, success: bool, error_message: String)
 signal hydration_complete(success: bool, failed_tools: Array)
