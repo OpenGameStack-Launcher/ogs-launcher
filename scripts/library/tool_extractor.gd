@@ -47,7 +47,7 @@ enum ExtractionError {
 
 var path_resolver: PathResolver
 
-func _init():
+func _init() -> void:
 	path_resolver = PathResolver.new()
 
 ## Extracts a tool archive to the library.

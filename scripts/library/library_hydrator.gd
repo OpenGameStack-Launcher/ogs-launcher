@@ -34,7 +34,7 @@ var mirror_url: String
 var downloader: ToolDownloader
 var library: LibraryManager
 
-func _init(mirror: String = ""):
+func _init(mirror: String = "") -> void:
 	"""Initialize the hydrator with a mirror URL.
 	Parameters:
 	  mirror (String): Base URL for the OGS mirror

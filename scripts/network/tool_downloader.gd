@@ -47,7 +47,7 @@ var extractor: ToolExtractor
 ## Temporary directory for downloads
 var temp_dir: String = ""
 
-func _init(mirror: String = ""):
+func _init(mirror: String = "") -> void:
 	"""Initialize the downloader with a mirror URL.
 	Parameters:
 	  mirror (String): Base URL for the OGS mirror (e.g., "https://mirror.ogs.io/tools")

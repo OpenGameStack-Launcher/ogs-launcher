@@ -184,7 +184,7 @@ func _notification(what: int) -> void:
 		if projects_controller != null and projects_controller.has_meta("project_explorer_instance"):
 			projects_controller.get_meta("project_explorer_instance").refresh()
 
-func _ready():
+func _ready() -> void:
 	_apply_global_theme()
 	_setup_download_dialog()
 	OgsLogger.enable_console(true)

@@ -24,7 +24,7 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 var library: LibraryManager
 
-func _init():
+func _init() -> void:
 	library = LibraryManager.new()
 
 ## Validates that all tools in a project's stack.json exist in the library or project.

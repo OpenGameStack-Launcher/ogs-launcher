@@ -42,7 +42,7 @@ var copier
 var config_writer
 var archiver
 
-func _init():
+func _init() -> void:
 	library = LibraryManager.new()
 	validator = SealValidatorScript.new()
 	copier = SealToolCopierScript.new()
