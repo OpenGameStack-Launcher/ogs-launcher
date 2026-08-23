@@ -39,21 +39,11 @@ var _last_error: String = ""
 var _is_online: bool = false
 var _currently_downloading: Dictionary = {}  # {tool_id+version: true}
 
-<<<<<<< HEAD
-func _init(tree: SceneTree, repo_url: String):
-	## Initializes the tools controller.
-## Parameters:
-## tree (SceneTree): Scene tree for signal handling
-## repo_url (String): Remote repository.json URL
-## 
-=======
 func _init(tree: SceneTree, repo_url: String) -> void:
-	"""Initializes the tools controller.
-	Parameters:
-	  tree (SceneTree): Scene tree for signal handling
-	  repo_url (String): Remote repository.json URL
-	"""
->>>>>>> origin/main
+	## Initializes the tools controller.
+	## Parameters:
+	##   tree (SceneTree): Scene tree for signal handling
+	##   repo_url (String): Remote repository.json URL
 	scene_tree = tree
 	remote_repository_url = repo_url
 	library = LibraryManager.new()
