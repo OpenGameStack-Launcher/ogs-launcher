@@ -22,6 +22,7 @@ func run() -> Dictionary:
 		{"name": "test_validate_tool_fails_for_missing", "func": test_validate_tool_fails_for_missing},
 		{"name": "test_get_tool_metadata_returns_dict", "func": test_get_tool_metadata_returns_dict},
 		{"name": "test_get_library_summary_returns_dict", "func": test_get_library_summary_returns_dict},
+		{"name": "test_calculate_dir_size_returns_correct_value", "func": test_calculate_dir_size_returns_correct_value},
 	]
 	
 	for test in tests:
@@ -161,4 +162,35 @@ func test_get_library_summary_returns_dict() -> Dictionary:
 	if summary["total_tools"] < 0:
 		return {"passed": false, "error": "total_tools should be >= 0"}
 	
+	return {"passed": true}
+
+func test_calculate_dir_size_returns_correct_value() -> Dictionary:
+	var library = LibraryManager.new()
+	var test_dir = "user://test_dir_size_calc"
+	var dir = DirAccess.open("user://")
+	
+	if dir != null:
+		if dir.dir_exists(test_dir):
+			library._remove_directory_contents(test_dir)
+		dir.make_dir_recursive(test_dir)
+		
+		var file = FileAccess.open(test_dir + "/test.txt", FileAccess.WRITE)
+		if file != null:
+			file.store_string("Hello World") # 11 bytes
+			file.close()
+			
+		dir.make_dir(test_dir + "/sub")
+		var file2 = FileAccess.open(test_dir + "/sub/test2.txt", FileAccess.WRITE)
+		if file2 != null:
+			file2.store_string("12345") # 5 bytes
+			file2.close()
+			
+	var size = library._calculate_dir_size(test_dir)
+	
+	# Cleanup
+	library._remove_directory_contents(test_dir)
+	
+	if size != 16:
+		return {"passed": false, "error": "Size should be 16 bytes, got " + str(size)}
+		
 	return {"passed": true}
