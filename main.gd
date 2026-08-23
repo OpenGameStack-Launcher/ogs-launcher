@@ -100,7 +100,7 @@ const TOOL_ICON_PATHS := {
 
 var network_ui_nodes: Array = []
 
-var projects_controller
+var projects_controller: ProjectsController
 var layout_controller: LayoutController
 var seal_controller: SealController
 var tools_controller: ToolsController
