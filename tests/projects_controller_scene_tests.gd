@@ -1,9 +1,9 @@
 ## ProjectsControllerSceneTests: Scene-style tests for ProjectsController
 ##
 ## Verifies Unity-Hub-style project-library behaviors with real UI nodes:
-##   - Add Project requires stack.json + ogs_config.json
-##   - Valid project adds to persistent list and selects automatically
-##   - Persisted entries reload on next controller setup
+## - Add Project requires stack.json + ogs_config.json
+## - Valid project adds to persistent list and selects automatically
+## - Persisted entries reload on next controller setup
 
 extends RefCounted
 class_name ProjectsControllerSceneTests
@@ -11,9 +11,9 @@ class_name ProjectsControllerSceneTests
 const ProjectsControllerScript = preload("res://scripts/projects/projects_controller.gd")
 
 func run() -> Dictionary:
-	"""Runs all ProjectsController scene tests.
-	Returns:
-	  Dictionary: {"passed": int, "failed": int, "failures": Array[String]}"""
+	## Runs all ProjectsController scene tests.
+## Returns:
+## Dictionary: {"passed": int, "failed": int, "failures": Array[String]}
 	var results := {
 		"passed": 0,
 		"failed": 0,
@@ -31,11 +31,11 @@ func run() -> Dictionary:
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
-	"""Records test assertion.
-	Parameters:
-	  condition (bool): If true, increments passed; if false, increments failed
-	  message (String): Failure description
-	  results (Dictionary): Test accumulator (modified in-place)"""
+	## Records test assertion.
+## Parameters:
+## condition (bool): If true, increments passed; if false, increments failed
+## message (String): Failure description
+## results (Dictionary): Test accumulator (modified in-place)
 	if condition:
 		results["passed"] += 1
 	else:
@@ -43,14 +43,14 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 		results["failures"].append(message)
 
 func _build_controller(storage_path: String) -> Dictionary:
-	"""Creates a controller with UI nodes wired for testing.
-
-	Parameters:
-	  storage_path (String): user:// path for isolated project index persistence
-
-	Returns:
-	  Dictionary: Controller and created nodes
-	"""
+	## Creates a controller with UI nodes wired for testing.
+## 
+## Parameters:
+## storage_path (String): user:// path for isolated project index persistence
+## 
+## Returns:
+## Dictionary: Controller and created nodes
+## 
 	var controller = ProjectsControllerScript.new()
 	controller.set_projects_index_path_for_tests(storage_path)
 	var add_button = Button.new()
@@ -115,20 +115,20 @@ func _build_controller(storage_path: String) -> Dictionary:
 	}
 
 func _cleanup_nodes(nodes: Array) -> void:
-	"""Frees UI nodes created during tests to avoid leaks."""
+	## Frees UI nodes created during tests to avoid leaks.
 	for node in nodes:
 		if node:
 			node.free()
 
 func _cleanup_registry(storage_path: String) -> void:
-	"""Deletes test project index file to keep tests isolated."""
+	## Deletes test project index file to keep tests isolated.
 	if not FileAccess.file_exists(storage_path):
 		return
 	var absolute = ProjectSettings.globalize_path(storage_path)
 	DirAccess.remove_absolute(absolute)
 
 func _cleanup_dir_recursive(user_or_abs_path: String) -> void:
-	"""Recursively removes a directory tree used by new-project tests."""
+	## Recursively removes a directory tree used by new-project tests.
 	if user_or_abs_path.is_empty():
 		return
 	var path = user_or_abs_path
@@ -151,7 +151,7 @@ func _cleanup_dir_recursive(user_or_abs_path: String) -> void:
 	DirAccess.remove_absolute(path)
 
 func _test_add_requires_both_project_files(results: Dictionary) -> void:
-	"""Verifies Add Project rejects folder missing required files."""
+	## Verifies Add Project rejects folder missing required files.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_missing_%s.json" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)
@@ -163,7 +163,7 @@ func _test_add_requires_both_project_files(results: Dictionary) -> void:
 	_cleanup_registry(storage_path)
 
 func _test_add_valid_project_populates_lists(results: Dictionary) -> void:
-	"""Verifies valid sample project is added and selected."""
+	## Verifies valid sample project is added and selected.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_valid_%s.json" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)
@@ -179,7 +179,7 @@ func _test_add_valid_project_populates_lists(results: Dictionary) -> void:
 	_cleanup_registry(storage_path)
 
 func _test_project_registry_persists_between_setups(results: Dictionary) -> void:
-	"""Verifies added projects are persisted and reloaded on next setup."""
+	## Verifies added projects are persisted and reloaded on next setup.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_persist_%s.json" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)
@@ -196,7 +196,7 @@ func _test_project_registry_persists_between_setups(results: Dictionary) -> void
 	_cleanup_registry(storage_path)
 
 func _test_project_removal(results: Dictionary) -> void:
-	"""Verifies projects can be removed and it persists."""
+	## Verifies projects can be removed and it persists.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_remove_%s.json" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)
@@ -222,7 +222,7 @@ func _test_project_removal(results: Dictionary) -> void:
 	_cleanup_registry(storage_path)
 
 func _test_new_project_creates_scaffold_and_adds(results: Dictionary) -> void:
-	"""Verifies New Project creates files and auto-adds project to library."""
+	## Verifies New Project creates files and auto-adds project to library.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_new_%s.json" % str(Time.get_ticks_msec())
 	var projects_root = "user://projects_controller_scene_new_root_%s" % str(Time.get_ticks_msec())
@@ -246,7 +246,7 @@ func _test_new_project_creates_scaffold_and_adds(results: Dictionary) -> void:
 	_cleanup_registry(storage_path)
 
 func _test_launch_button_disabled_initially(results: Dictionary) -> void:
-	"""Verifies launch button starts disabled."""
+	## Verifies launch button starts disabled.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_launch0_%s.json" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)
@@ -257,7 +257,7 @@ func _test_launch_button_disabled_initially(results: Dictionary) -> void:
 	_cleanup_registry(storage_path)
 
 func _test_launch_button_enabled_after_select(results: Dictionary) -> void:
-	"""Verifies launch button is enabled after selecting valid project."""
+	## Verifies launch button is enabled after selecting valid project.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_launch1_%s.json" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)
@@ -271,7 +271,7 @@ func _test_launch_button_enabled_after_select(results: Dictionary) -> void:
 	_cleanup_registry(storage_path)
 
 func _test_launch_after_click_uses_selected_tool(results: Dictionary) -> void:
-	"""Verifies clicked tool is treated as selected by launch handler."""
+	## Verifies clicked tool is treated as selected by launch handler.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_launch_click_%s.json" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)
@@ -291,7 +291,7 @@ func _test_launch_after_click_uses_selected_tool(results: Dictionary) -> void:
 	_cleanup_registry(storage_path)
 
 func _test_launch_no_selection(results: Dictionary) -> void:
-	"""Verifies launching with no tool selected shows error."""
+	## Verifies launching with no tool selected shows error.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_launch2_%s.json" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)
@@ -305,7 +305,7 @@ func _test_launch_no_selection(results: Dictionary) -> void:
 	_cleanup_registry(storage_path)
 
 func _test_offline_enforcer_updates(results: Dictionary) -> void:
-	"""Verifies loading a project applies offline enforcement state."""
+	## Verifies loading a project applies offline enforcement state.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_offline_%s.json" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)

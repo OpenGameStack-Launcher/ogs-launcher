@@ -12,13 +12,13 @@ const GODOT_SETTINGS_PRIMARY := "user://editor_settings-4.tres"
 const GODOT_SETTINGS_LEGACY := "user://editor_settings.tres"
 
 static func apply(tool_id: String, project_dir: String) -> Dictionary:
-	"""Applies offline configuration for a given tool.
-	Parameters:
-	  tool_id (String): Tool identifier (e.g., "godot")
-	  project_dir (String): Project directory for contextual paths
-	Returns:
-	  Dictionary: {"success": bool, "error_message": String, "args": PackedStringArray}
-	"""
+	## Applies offline configuration for a given tool.
+## Parameters:
+## tool_id (String): Tool identifier (e.g., "godot")
+## project_dir (String): Project directory for contextual paths
+## Returns:
+## Dictionary: {"success": bool, "error_message": String, "args": PackedStringArray}
+## 
 	var args = PackedStringArray()
 	match tool_id:
 		"godot":
@@ -51,7 +51,7 @@ static func apply(tool_id: String, project_dir: String) -> Dictionary:
 	}
 
 static func _apply_godot_overrides() -> Dictionary:
-	"""Writes editor settings overrides to disable network features."""
+	## Writes editor settings overrides to disable network features.
 	var settings_path = _get_godot_settings_path()
 	var config = ConfigFile.new()
 	var load_err = config.load(settings_path)
@@ -84,7 +84,7 @@ static func _apply_godot_overrides() -> Dictionary:
 	}
 
 static func _get_godot_settings_path() -> String:
-	"""Resolves the preferred editor settings path for Godot 4.x."""
+	## Resolves the preferred editor settings path for Godot 4.x.
 	if FileAccess.file_exists(GODOT_SETTINGS_PRIMARY):
 		return GODOT_SETTINGS_PRIMARY
 	if FileAccess.file_exists(GODOT_SETTINGS_LEGACY):
@@ -92,21 +92,21 @@ static func _get_godot_settings_path() -> String:
 	return GODOT_SETTINGS_PRIMARY
 
 static func _blender_offline_args() -> PackedStringArray:
-	"""Builds Blender arguments to disable online access at launch."""
+	## Builds Blender arguments to disable online access at launch.
 	var args = PackedStringArray()
 	args.append("--python-expr")
 	args.append("import bpy; bpy.context.preferences.system.use_online_access = False")
 	return args
 
 static func _apply_placeholder_override(tool_id: String, project_dir: String, args: PackedStringArray) -> Dictionary:
-	"""Writes a placeholder offline override file and sets env flags.
-	Parameters:
-	  tool_id (String): Tool identifier
-	  project_dir (String): Project directory for context
-	  args (PackedStringArray): Launch arguments
-	Returns:
-	  Dictionary: {"success": bool, "error_message": String, "args": PackedStringArray}
-	"""
+	## Writes a placeholder offline override file and sets env flags.
+## Parameters:
+## tool_id (String): Tool identifier
+## project_dir (String): Project directory for context
+## args (PackedStringArray): Launch arguments
+## Returns:
+## Dictionary: {"success": bool, "error_message": String, "args": PackedStringArray}
+## 
 	var write_result = _write_placeholder_override(tool_id, project_dir)
 	if not write_result["success"]:
 		OgsLogger.warn("tool_config_failed", {"component": "launcher", "tool": tool_id})
@@ -120,13 +120,13 @@ static func _apply_placeholder_override(tool_id: String, project_dir: String, ar
 	}
 
 static func _write_placeholder_override(tool_id: String, project_dir: String) -> Dictionary:
-	"""Creates a placeholder override file in user storage.
-	Parameters:
-	  tool_id (String): Tool identifier
-	  project_dir (String): Project directory for context
-	Returns:
-	  Dictionary: {"success": bool, "error_message": String, "args": PackedStringArray}
-	"""
+	## Creates a placeholder override file in user storage.
+## Parameters:
+## tool_id (String): Tool identifier
+## project_dir (String): Project directory for context
+## Returns:
+## Dictionary: {"success": bool, "error_message": String, "args": PackedStringArray}
+## 
 	var dir_path = "user://ogs_offline_overrides"
 	DirAccess.make_dir_recursive_absolute(dir_path)
 	var file_path = "%s/%s.json" % [dir_path, tool_id]

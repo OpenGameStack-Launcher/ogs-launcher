@@ -1,16 +1,16 @@
 ## ToolsController: Manages the Tools page UI and tool discovery.
 ##
 ## Responsibilities:
-##   - Fetch remote repository.json on startup (with offline fallback)
-##   - Determine which tools are installed vs available
-##   - Categorize tools using ToolCategoryMapper
-##   - Provide structured data for UI rendering
-##   - Handle tool download requests
+## - Fetch remote repository.json on startup (with offline fallback)
+## - Determine which tools are installed vs available
+## - Categorize tools using ToolCategoryMapper
+## - Provide structured data for UI rendering
+## - Handle tool download requests
 ##
 ## Usage:
-##   var controller = ToolsController.new(scene_tree, config)
-##   controller.refresh_tool_list()
-##   var tools = controller.get_categorized_tools()
+## var controller = ToolsController.new(scene_tree, config)
+## controller.refresh_tool_list()
+## var tools = controller.get_categorized_tools()
 
 extends RefCounted
 class_name ToolsController
@@ -40,11 +40,11 @@ var _is_online: bool = false
 var _currently_downloading: Dictionary = {}  # {tool_id+version: true}
 
 func _init(tree: SceneTree, repo_url: String):
-	"""Initializes the tools controller.
-	Parameters:
-	  tree (SceneTree): Scene tree for signal handling
-	  repo_url (String): Remote repository.json URL
-	"""
+	## Initializes the tools controller.
+## Parameters:
+## tree (SceneTree): Scene tree for signal handling
+## repo_url (String): Remote repository.json URL
+## 
 	scene_tree = tree
 	remote_repository_url = repo_url
 	library = LibraryManager.new()
@@ -60,7 +60,7 @@ func _init(tree: SceneTree, repo_url: String):
 
 ## Refreshes the tool list by fetching remote repository.json and scanning library.
 func refresh_tool_list() -> void:
-	"""Fetches repository.json and updates tool availability."""
+	## Fetches repository.json and updates tool availability.
 	if _is_loading:
 		return
 	
@@ -110,7 +110,7 @@ func refresh_tool_list() -> void:
 
 ## HTTP callback for repository.json fetch.
 func _on_repository_fetched(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, http: HTTPRequest) -> void:
-	"""Handles repository.json download completion."""
+	## Handles repository.json download completion.
 	http.queue_free()
 	
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
@@ -153,7 +153,7 @@ func _on_repository_fetched(result: int, response_code: int, _headers: PackedStr
 
 ## Scans the library for installed tools.
 func _scan_installed_tools() -> void:
-	"""Updates _installed_tools with library contents."""
+	## Updates _installed_tools with library contents.
 	_installed_tools.clear()
 	
 	var tool_ids = library.get_available_tools()
@@ -164,7 +164,7 @@ func _scan_installed_tools() -> void:
 
 ## Finalizes the refresh operation.
 func _finalize_refresh(success: bool) -> void:
-	"""Completes refresh and emits signals."""
+	## Completes refresh and emits signals.
 	_is_loading = false
 	
 	if success:
@@ -174,14 +174,14 @@ func _finalize_refresh(success: bool) -> void:
 
 ## Returns categorized tools for UI display.
 ## Returns:
-##   Dictionary: {
-##       "Engine": [{"id": "godot", "version": "4.3", "installed": true, ...}],
-##       "2D": [...],
-##       "3D": [...],
-##       "Audio": [...]
-##   }
+## Dictionary: {
+## "Engine": [{"id": "godot", "version": "4.3", "installed": true, ...}],
+## "2D": [...],
+## "3D": [...],
+## "Audio": [...]
+## }
 func get_categorized_tools() -> Dictionary:
-	"""Returns tools organized by category."""
+	## Returns tools organized by category.
 	var categorized: Dictionary = {}
 	
 	# Initialize categories
@@ -210,12 +210,12 @@ func get_categorized_tools() -> Dictionary:
 
 ## Checks if a specific tool version is installed.
 func _is_tool_installed(tool_id: String, version: String) -> bool:
-	"""Returns true if tool version exists in library."""
+	## Returns true if tool version exists in library.
 	return library.tool_exists(tool_id, version)
 
 ## Returns total count of installed tool versions.
 func _get_installed_count() -> int:
-	"""Counts installed tool versions."""
+	## Counts installed tool versions.
 	var count = 0
 	for versions in _installed_tools.values():
 		count += versions.size()
@@ -223,11 +223,11 @@ func _get_installed_count() -> int:
 
 ## Downloads and installs a tool from the remote repository.
 func download_tool(tool_id: String, version: String) -> void:
-	"""Initiates download and installation of a tool.
-	Parameters:
-	  tool_id (String): Tool identifier
-	  version (String): Version string
-	"""
+	## Initiates download and installation of a tool.
+## Parameters:
+## tool_id (String): Tool identifier
+## version (String): Version string
+## 
 	var key = "%s_%s" % [tool_id, version]
 	
 	# Check if already downloading
@@ -271,19 +271,19 @@ func download_tool(tool_id: String, version: String) -> void:
 
 ## Signal handlers for download progress.
 func _on_download_progress(tool_id: String, version: String, bytes_downloaded: int, total_bytes: int) -> void:
-	"""Forwards download progress signals."""
+	## Forwards download progress signals.
 	tool_download_progress.emit(tool_id, version, bytes_downloaded, total_bytes)
 
 func _on_install_started(tool_id: String, version: String) -> void:
-	"""Forwards install started signals."""
+	## Forwards install started signals.
 	tool_install_started.emit(tool_id, version)
 
 func _on_install_progress(tool_id: String, version: String, file_count: int, total_files: int) -> void:
-	"""Forwards install progress signals."""
+	## Forwards install progress signals.
 	tool_install_progress.emit(tool_id, version, file_count, total_files)
 
 func _on_install_complete(tool_id: String, version: String, success: bool, error_message: String) -> void:
-	"""Handles install completion."""
+	## Handles install completion.
 	var key = "%s_%s" % [tool_id, version]
 	_currently_downloading.erase(key)
 	
@@ -304,22 +304,22 @@ func _on_install_complete(tool_id: String, version: String, success: bool, error
 
 ## Returns true if currently loading repository.
 func is_loading() -> bool:
-	"""Returns true if refresh is in progress."""
+	## Returns true if refresh is in progress.
 	return _is_loading
 
 ## Returns the last error message if refresh failed.
 func get_last_error() -> String:
-	"""Returns last error message."""
+	## Returns last error message.
 	return _last_error
 
 ## Returns true if repository data is available.
 func has_repository_data() -> bool:
-	"""Returns true if tools have been loaded."""
+	## Returns true if tools have been loaded.
 	return not _available_tools.is_empty()
 
 ## Checks connectivity to GitHub by performing a lightweight HEAD request.
 func check_connectivity() -> void:
-	"""Performs a HEAD request to check if GitHub is reachable."""
+	## Performs a HEAD request to check if GitHub is reachable.
 	if remote_repository_url.is_empty():
 		_is_online = false
 		connectivity_checked.emit(false)
@@ -352,7 +352,7 @@ func check_connectivity() -> void:
 
 ## HTTP callback for connectivity check.
 func _on_connectivity_checked(result: int, response_code: int, _headers: PackedStringArray, _body: PackedByteArray, http: HTTPRequest) -> void:
-	"""Handles connectivity check completion."""
+	## Handles connectivity check completion.
 	http.queue_free()
 	
 	_is_online = (result == HTTPRequest.RESULT_SUCCESS and (response_code == 200 or response_code == 304))
@@ -367,27 +367,27 @@ func _on_connectivity_checked(result: int, response_code: int, _headers: PackedS
 
 ## Returns current online status.
 func is_online() -> bool:
-	"""Returns true if last connectivity check succeeded."""
+	## Returns true if last connectivity check succeeded.
 	return _is_online
 
 ## Returns true if a tool is currently downloading.
 func is_downloading(tool_id: String, version: String) -> bool:
-	"""Checks if a specific tool is currently being downloaded."""
+	## Checks if a specific tool is currently being downloaded.
 	var key = "%s_%s" % [tool_id, version]
 	return _currently_downloading.get(key, false)
 
 ## Returns true if any tool download is active.
 func has_active_downloads() -> bool:
-	"""Checks if any downloads are currently in progress."""
+	## Checks if any downloads are currently in progress.
 	return not _currently_downloading.is_empty()
 
 ## Cancels an active download (if supported by hydrator).
 func cancel_download(tool_id: String, version: String) -> void:
-	"""Attempts to cancel an ongoing download.
-	Parameters:
-	  tool_id (String): Tool identifier
-	  version (String): Version string
-	"""
+	## Attempts to cancel an ongoing download.
+## Parameters:
+## tool_id (String): Tool identifier
+## version (String): Version string
+## 
 	var key = "%s_%s" % [tool_id, version]
 	# Intentionally NOT erasing from _currently_downloading here so the UI knows it's still busy cancelling/cleaning up.
 	# The key will be erased when the hydrator emits tool_install_complete with success=false.

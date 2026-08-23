@@ -24,11 +24,11 @@ var worker_thread: Thread
 var scene_tree: SceneTree = null
 
 func _init(root_path: String = "", tree: SceneTree = null):
-	"""Initializes the mirror hydrator with a mirror root path.
-	Parameters:
-	  root_path (String): Path to the local mirror root
-	  tree (SceneTree): Optional scene tree for safe signal emission from threads
-	"""
+	## Initializes the mirror hydrator with a mirror root path.
+## Parameters:
+## root_path (String): Path to the local mirror root
+## tree (SceneTree): Optional scene tree for safe signal emission from threads
+## 
 	mirror_root = root_path
 	scene_tree = tree
 	repository = MirrorRepository.new()
@@ -38,21 +38,21 @@ func _init(root_path: String = "", tree: SceneTree = null):
 
 ## Sets the mirror root directory for this hydrator.
 func set_mirror_root(root_path: String) -> void:
-	"""Sets the mirror root directory."""
+	## Sets the mirror root directory.
 	mirror_root = root_path
 
 ## Hydrates missing tools from the mirror into the library.
 ## Parameters:
-##   tools_to_install (Array): Array of {"tool_id": String, "version": String}
+## tools_to_install (Array): Array of {"tool_id": String, "version": String}
 ## Returns:
-##   Dictionary: {"success": bool, "installed_count": int, "failed_count": int, "failed_tools": Array}
+## Dictionary: {"success": bool, "installed_count": int, "failed_count": int, "failed_tools": Array}
 func hydrate(tools_to_install: Array) -> Dictionary:
-	"""Installs tools from mirror archives into the library."""
+	## Installs tools from mirror archives into the library.
 	return _hydrate_internal(tools_to_install)
 
 ## Starts hydration in a background thread to keep the UI responsive.
 func hydrate_async(tools_to_install: Array) -> void:
-	"""Starts mirror hydration in a background thread."""
+	## Starts mirror hydration in a background thread.
 	if worker_thread != null and worker_thread.is_alive():
 		return
 	worker_thread = Thread.new()
@@ -60,20 +60,20 @@ func hydrate_async(tools_to_install: Array) -> void:
 
 ## Internal thread entry for hydration.
 func _hydrate_thread(tools_to_install: Array) -> void:
-	"""Runs hydration in a worker thread."""
+	## Runs hydration in a worker thread.
 	_hydrate_internal(tools_to_install)
 	call_deferred("_finish_async")
 
 ## Finalizes the async hydration thread.
 func _finish_async() -> void:
-	"""Joins and clears the hydration worker thread."""
+	## Joins and clears the hydration worker thread.
 	if worker_thread != null:
 		worker_thread.wait_to_finish()
 		worker_thread = null
 
 ## Performs the hydration workflow synchronously.
 func _hydrate_internal(tools_to_install: Array) -> Dictionary:
-	"""Installs tools from mirror archives into the library."""
+	## Installs tools from mirror archives into the library.
 	var result = {
 		"success": true,
 		"installed_count": 0,
@@ -226,41 +226,41 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 
 ## Thread-safe signal helpers.
 func _emit_tool_install_started(tool_id: String, version: String) -> void:
-	"""Emits tool_install_started safely across threads."""
+	## Emits tool_install_started safely across threads.
 	if scene_tree != null:
 		call_deferred("_emit_tool_install_started_now", tool_id, version)
 	else:
 		tool_install_started.emit(tool_id, version)
 
 func _emit_tool_install_started_now(tool_id: String, version: String) -> void:
-	"""Deferred emit for tool_install_started."""
+	## Deferred emit for tool_install_started.
 	tool_install_started.emit(tool_id, version)
 
 func _emit_tool_install_complete(tool_id: String, version: String, success: bool, error_message: String) -> void:
-	"""Emits tool_install_complete safely across threads."""
+	## Emits tool_install_complete safely across threads.
 	if scene_tree != null:
 		call_deferred("_emit_tool_install_complete_now", tool_id, version, success, error_message)
 	else:
 		tool_install_complete.emit(tool_id, version, success, error_message)
 
 func _emit_tool_install_complete_now(tool_id: String, version: String, success: bool, error_message: String) -> void:
-	"""Deferred emit for tool_install_complete."""
+	## Deferred emit for tool_install_complete.
 	tool_install_complete.emit(tool_id, version, success, error_message)
 
 func _emit_hydration_complete(success: bool, failed_tools: Array) -> void:
-	"""Emits hydration_complete safely across threads."""
+	## Emits hydration_complete safely across threads.
 	if scene_tree != null:
 		call_deferred("_emit_hydration_complete_now", success, failed_tools)
 	else:
 		hydration_complete.emit(success, failed_tools)
 
 func _emit_hydration_complete_now(success: bool, failed_tools: Array) -> void:
-	"""Deferred emit for hydration_complete."""
+	## Deferred emit for hydration_complete.
 	hydration_complete.emit(success, failed_tools)
 
 ## Copies an archive to a temp directory to avoid modifying mirror contents.
 func _copy_archive_to_temp(archive_path: String, tool_id: String, version: String) -> String:
-	"""Copies an archive to a temp location and returns the temp path."""
+	## Copies an archive to a temp location and returns the temp path.
 	var temp_dir = OS.get_cache_dir()
 	if temp_dir.is_empty():
 		temp_dir = OS.get_user_data_dir()
@@ -289,7 +289,7 @@ func _copy_archive_to_temp(archive_path: String, tool_id: String, version: Strin
 
 ## Computes sha256 for a file path using streaming reads.
 static func _compute_sha256(file_path: String) -> Dictionary:
-	"""Computes the SHA-256 hash for a file."""
+	## Computes the SHA-256 hash for a file.
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if file == null:
 		return {"success": false, "error_message": "Failed to read archive for hashing."}

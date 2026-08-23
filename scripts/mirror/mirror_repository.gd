@@ -18,45 +18,45 @@ var errors: Array[String] = []
 
 ## Loads a repository.json file from disk.
 ## Parameters:
-##   file_path (String): Absolute path to repository.json
+## file_path (String): Absolute path to repository.json
 ## Returns:
-##   MirrorRepository: Instance with validation errors in .errors
+## MirrorRepository: Instance with validation errors in .errors
 static func load_from_file(file_path: String) -> MirrorRepository:
-	"""Loads a mirror repository from disk."""
+	## Loads a mirror repository from disk.
 	var repo := MirrorRepository.new()
 	repo._load_from_file(file_path)
 	return repo
 
 ## Parses JSON text into a repository instance.
 ## Parameters:
-##   json_text (String): Raw JSON string
+## json_text (String): Raw JSON string
 ## Returns:
-##   MirrorRepository: Instance with validation errors in .errors
+## MirrorRepository: Instance with validation errors in .errors
 static func parse_json_string(json_text: String) -> MirrorRepository:
-	"""Parses repository JSON text into a MirrorRepository instance."""
+	## Parses repository JSON text into a MirrorRepository instance.
 	var repo := MirrorRepository.new()
 	repo._load_from_json_string(json_text)
 	return repo
 
 ## Builds a repository from a dictionary.
 ## Parameters:
-##   data (Dictionary): Parsed JSON or constructed object
+## data (Dictionary): Parsed JSON or constructed object
 ## Returns:
-##   MirrorRepository: Instance with validation errors in .errors
+## MirrorRepository: Instance with validation errors in .errors
 static func from_dict(data: Dictionary) -> MirrorRepository:
-	"""Builds a repository from a dictionary and validates required fields."""
+	## Builds a repository from a dictionary and validates required fields.
 	var repo := MirrorRepository.new()
 	repo._load_from_dict(data)
 	return repo
 
 ## Returns true if the repository has no validation errors.
 func is_valid() -> bool:
-	"""Returns true when repository validation passes."""
+	## Returns true when repository validation passes.
 	return errors.is_empty()
 
 ## Converts repository to a dictionary for serialization or inspection.
 func to_dict() -> Dictionary:
-	"""Serializes the repository to a dictionary."""
+	## Serializes the repository to a dictionary.
 	return {
 		"schema_version": schema_version,
 		"mirror_name": mirror_name,
@@ -65,12 +65,12 @@ func to_dict() -> Dictionary:
 
 ## Finds a tool entry by id and version.
 ## Parameters:
-##   tool_id (String): Tool identifier
-##   version (String): Version string
+## tool_id (String): Tool identifier
+## version (String): Version string
 ## Returns:
-##   Dictionary: Matching tool entry or empty dictionary if not found
+## Dictionary: Matching tool entry or empty dictionary if not found
 func get_tool_entry(tool_id: String, version: String) -> Dictionary:
-	"""Returns a matching tool entry or an empty dictionary."""
+	## Returns a matching tool entry or an empty dictionary.
 	for entry in tools:
 		if String(entry.get("id", "")) == tool_id and String(entry.get("version", "")) == version:
 			return entry
@@ -78,11 +78,11 @@ func get_tool_entry(tool_id: String, version: String) -> Dictionary:
 
 ## Validates a repository dictionary against the schema.
 ## Parameters:
-##   data (Dictionary): Parsed repository data
+## data (Dictionary): Parsed repository data
 ## Returns:
-##   Array[String]: List of validation error codes
+## Array[String]: List of validation error codes
 static func validate_data(data: Dictionary) -> Array[String]:
-	"""Validates repository content and returns a list of error codes."""
+	## Validates repository content and returns a list of error codes.
 	var found_errors: Array[String] = []
 	if not data.has("schema_version"):
 		found_errors.append("schema_version_missing")
@@ -126,7 +126,7 @@ static func validate_data(data: Dictionary) -> Array[String]:
 
 ## Validates a single tool entry.
 static func _validate_tool_entry(tool_entry: Dictionary, index: int, found_errors: Array[String]) -> void:
-	"""Validates a tool entry dictionary and appends errors."""
+	## Validates a tool entry dictionary and appends errors.
 	if not tool_entry.has("id"):
 		found_errors.append("tool_id_missing:%d" % index)
 	elif typeof(tool_entry["id"]) != TYPE_STRING or String(tool_entry["id"]).strip_edges() == "":
@@ -179,7 +179,7 @@ static func _validate_tool_entry(tool_entry: Dictionary, index: int, found_error
 
 ## Validates size fields for tool entries.
 static func _validate_size_field(tool_entry: Dictionary, field_name: String, index: int, found_errors: Array[String]) -> void:
-	"""Validates optional size fields for a tool entry."""
+	## Validates optional size fields for a tool entry.
 	if not tool_entry.has(field_name):
 		return
 	var size_value = tool_entry[field_name]
@@ -195,7 +195,7 @@ static func _validate_size_field(tool_entry: Dictionary, field_name: String, ind
 
 ## Validates sha256 hex format (64 hex characters).
 static func _is_hex_sha256(value: String) -> bool:
-	"""Returns true if value is a valid hex-encoded SHA-256 string."""
+	## Returns true if value is a valid hex-encoded SHA-256 string.
 	if value.length() != 64:
 		return false
 	for character in value:
@@ -208,7 +208,7 @@ static func _is_hex_sha256(value: String) -> bool:
 
 ## Internal: Loads JSON from disk.
 func _load_from_file(file_path: String) -> void:
-	"""Loads repository JSON from disk and validates it."""
+	## Loads repository JSON from disk and validates it.
 	errors.clear()
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if file == null:
@@ -221,7 +221,7 @@ func _load_from_file(file_path: String) -> void:
 
 ## Internal: Parses JSON string.
 func _load_from_json_string(json_text: String) -> void:
-	"""Loads repository data from JSON text while recording parse errors."""
+	## Loads repository data from JSON text while recording parse errors.
 	errors.clear()
 	if json_text.strip_edges().is_empty():
 		OgsLogger.warn("mirror_repo_parse_failed", {"component": "mirror"})
@@ -242,7 +242,7 @@ func _load_from_json_string(json_text: String) -> void:
 
 ## Internal: Populates fields from dictionary.
 func _load_from_dict(data: Dictionary) -> void:
-	"""Populates fields from a dictionary after validation."""
+	## Populates fields from a dictionary after validation.
 	errors = validate_data(data)
 	if not errors.is_empty():
 		OgsLogger.warn("mirror_repo_validation_failed", {"component": "mirror", "error_count": errors.size()})

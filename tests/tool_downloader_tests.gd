@@ -8,9 +8,9 @@ class_name ToolDownloaderTests
 const OgsConfigScript = preload("res://scripts/config/ogs_config.gd")
 
 func run() -> Dictionary:
-	"""Runs ToolDownloader unit tests.
-	Returns:
-	  Dictionary: {"passed": int, "failed": int, "failures": Array[String]}"""
+	## Runs ToolDownloader unit tests.
+## Returns:
+## Dictionary: {"passed": int, "failed": int, "failures": Array[String]}
 	var results = {
 		"passed": 0,
 		"failed": 0,
@@ -42,7 +42,7 @@ func run() -> Dictionary:
 	return results
 
 func _cleanup_library() -> void:
-	"""Removes test tool directories from the library."""
+	## Removes test tool directories from the library.
 	var appdata = OS.get_environment("LOCALAPPDATA")
 	if appdata.is_empty():
 		appdata = OS.get_user_data_dir()
@@ -55,7 +55,7 @@ func _cleanup_library() -> void:
 				_recursive_remove_dir(tool_dir)
 
 func _recursive_remove_dir(path: String) -> void:
-	"""Recursively removes a directory and all its contents."""
+	## Recursively removes a directory and all its contents.
 	var dir = DirAccess.open(path)
 	if dir:
 		dir.list_dir_begin()
@@ -70,7 +70,7 @@ func _recursive_remove_dir(path: String) -> void:
 	DirAccess.remove_absolute(path)
 
 func test_downloader_initializes() -> Dictionary:
-	"""Verifies downloader initializes with proper default state."""
+	## Verifies downloader initializes with proper default state.
 	var downloader = ToolDownloader.new("https://mirror.ogs.io")
 	
 	if downloader.mirror_url != "https://mirror.ogs.io":
@@ -85,7 +85,7 @@ func test_downloader_initializes() -> Dictionary:
 	return {"passed": true}
 
 func test_offline_blocks_download() -> Dictionary:
-	"""Verifies offline mode blocks download attempts."""
+	## Verifies offline mode blocks download attempts.
 	_cleanup_library()
 	OfflineEnforcer.reset()
 	var config = OgsConfigScript.from_dict({"offline_mode": true})
@@ -103,7 +103,7 @@ func test_offline_blocks_download() -> Dictionary:
 	return {"passed": true}
 
 func test_mirror_not_configured_fails() -> Dictionary:
-	"""Verifies download fails when mirror is not configured."""
+	## Verifies download fails when mirror is not configured.
 	_cleanup_library()
 	OfflineEnforcer.reset()
 	var config = OgsConfigScript.from_dict({"offline_mode": false})
@@ -122,7 +122,7 @@ func test_mirror_not_configured_fails() -> Dictionary:
 	return {"passed": true}
 
 func test_result_has_required_fields() -> Dictionary:
-	"""Verifies result dictionary has all required fields."""
+	## Verifies result dictionary has all required fields.
 	var downloader = ToolDownloader.new("https://mirror.ogs.io")
 	var result = downloader.download_tool("nonexistent", "1.0")
 	
@@ -144,7 +144,7 @@ func test_result_has_required_fields() -> Dictionary:
 	return {"passed": true}
 
 func test_already_existing_tool_returns_success() -> Dictionary:
-	"""Verifies that tools already in library return success without downloading."""
+	## Verifies that tools already in library return success without downloading.
 	OfflineEnforcer.reset()
 	var config = OgsConfigScript.from_dict({"offline_mode": false})
 	OfflineEnforcer.apply_config(config)

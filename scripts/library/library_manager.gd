@@ -5,25 +5,25 @@
 ## and the actual file system structure where frozen stack tools are stored.
 ##
 ## Responsibilities:
-##   - Query available tools and versions
-##   - Validate tool integrity
-##   - Provide metadata (path, size, last updated)
-##   - Detect missing/broken tools
-##   - Report readiness for project hydration
+## - Query available tools and versions
+## - Validate tool integrity
+## - Provide metadata (path, size, last updated)
+## - Detect missing/broken tools
+## - Report readiness for project hydration
 ##
 ## The library structure is:
-##   [LIBRARY_ROOT]/[tool_id]/[version]/[tool_files]
+## [LIBRARY_ROOT]/[tool_id]/[version]/[tool_files]
 ##
 ## Example queries:
-##   - "Is Godot 4.3 installed?" -> tool_exists("godot", "4.3")
-##   - "What tools do I have?" -> get_available_tools()
-##   - "What versions of Blender?" -> get_available_versions("blender")
-##   - "Where's Godot 4.3?" -> get_tool_path("godot", "4.3")
+## - "Is Godot 4.3 installed?" -> tool_exists("godot", "4.3")
+## - "What tools do I have?" -> get_available_tools()
+## - "What versions of Blender?" -> get_available_versions("blender")
+## - "Where's Godot 4.3?" -> get_tool_path("godot", "4.3")
 ##
 ## Usage:
-##   var library = LibraryManager.new()
-##   if library.tool_exists("godot", "4.3"):
-##       print("Ready to launch: " + library.get_tool_path("godot", "4.3"))
+## var library = LibraryManager.new()
+## if library.tool_exists("godot", "4.3"):
+## print("Ready to launch: " + library.get_tool_path("godot", "4.3"))
 
 extends RefCounted
 class_name LibraryManager
@@ -37,10 +37,10 @@ func _init():
 
 ## Returns the absolute path to a tool in the library.
 ## Parameters:
-##   tool_id (String): Tool identifier (e.g., "godot", "blender")
-##   version (String): Version string (e.g., "4.3")
+## tool_id (String): Tool identifier (e.g., "godot", "blender")
+## version (String): Version string (e.g., "4.3")
 ## Returns:
-##   String: Absolute path to the tool directory, or empty string if not found
+## String: Absolute path to the tool directory, or empty string if not found
 func get_tool_path(tool_id: String, version: String) -> String:
 	var path = path_resolver.get_tool_path(tool_id, version)
 	
@@ -66,17 +66,17 @@ func get_tool_path(tool_id: String, version: String) -> String:
 
 ## Checks if a tool version exists in the library.
 ## Parameters:
-##   tool_id (String): Tool identifier
-##   version (String): Version string
+## tool_id (String): Tool identifier
+## version (String): Version string
 ## Returns:
-##   bool: True if the tool directory exists
+## bool: True if the tool directory exists
 func tool_exists(tool_id: String, version: String) -> bool:
 	return path_resolver.tool_exists(tool_id, version)
 
 ## Removes one installed tool version from the central library.
 ## Returns a result dictionary with success and an error message for the OGS lifecycle.
 func remove_tool(tool_id: String, version: String) -> Dictionary:
-	"""Deletes only the resolved tool/version directory after containment checks."""
+	## Deletes only the resolved tool/version directory after containment checks.
 	var library_root = path_resolver.get_library_root().simplify_path()
 	var tool_path = path_resolver.get_tool_path(tool_id, version).simplify_path()
 	if library_root.is_empty() or tool_path.is_empty():
@@ -101,7 +101,7 @@ func remove_tool(tool_id: String, version: String) -> Dictionary:
 	return {"success": true, "error_message": ""}
 
 func _remove_directory_contents(directory_path: String) -> int:
-	"""Recursively removes a directory and its contents for tool uninstall."""
+	## Recursively removes a directory and its contents for tool uninstall.
 	var directory = DirAccess.open(directory_path)
 	if directory == null:
 		return ERR_CANT_OPEN
@@ -132,30 +132,30 @@ func _remove_directory_contents(directory_path: String) -> int:
 
 ## Returns a list of all tools currently in the library.
 ## Returns:
-##   Array[String]: Tool identifiers (e.g., ["godot", "blender"])
+## Array[String]: Tool identifiers (e.g., ["godot", "blender"])
 func get_available_tools() -> Array[String]:
 	return path_resolver.get_available_tools()
 
 ## Returns all versions of a specific tool in the library.
 ## Parameters:
-##   tool_id (String): Tool identifier
+## tool_id (String): Tool identifier
 ## Returns:
-##   Array[String]: Version strings, sorted
+## Array[String]: Version strings, sorted
 func get_available_versions(tool_id: String) -> Array[String]:
 	return path_resolver.get_available_versions(tool_id)
 
 ## Returns metadata about a tool in the library.
 ## Useful for UI display and validation.
 ## Parameters:
-##   tool_id (String): Tool identifier
-##   version (String): Version string
+## tool_id (String): Tool identifier
+## version (String): Version string
 ## Returns:
-##   Dictionary: {
-##       "exists": bool,
-##       "path": String,
-##       "size_bytes": int (0 if not found),
-##       "last_modified": int (unix timestamp, 0 if not found)
-##   }
+## Dictionary: {
+## "exists": bool,
+## "path": String,
+## "size_bytes": int (0 if not found),
+## "last_modified": int (unix timestamp, 0 if not found)
+## }
 func get_tool_metadata(tool_id: String, version: String) -> Dictionary:
 	var meta = {
 		"exists": false,
@@ -194,13 +194,13 @@ func get_tool_metadata(tool_id: String, version: String) -> Dictionary:
 ## Validates that a tool exists and is accessible.
 ## Performs sanity checks (directory exists, readable, etc).
 ## Parameters:
-##   tool_id (String): Tool identifier
-##   version (String): Version string
+## tool_id (String): Tool identifier
+## version (String): Version string
 ## Returns:
-##   Dictionary: {
-##       "valid": bool,
-##       "errors": Array[String]
-##   }
+## Dictionary: {
+## "valid": bool,
+## "errors": Array[String]
+## }
 func validate_tool(tool_id: String, version: String) -> Dictionary:
 	var result = {
 		"valid": true,
@@ -243,19 +243,19 @@ func validate_tool(tool_id: String, version: String) -> Dictionary:
 
 ## Returns the library root directory.
 ## Returns:
-##   String: Absolute path to library root
+## String: Absolute path to library root
 func get_library_root() -> String:
 	return path_resolver.get_library_root()
 
 ## Returns a summary of the library state.
 ## Useful for status UI and diagnostics.
 ## Returns:
-##   Dictionary: {
-##       "library_root": String,
-##       "total_tools": int,
-##       "total_versions": int,
-##       "tools": Dictionary of tool_id -> Array[String] (versions)
-##   }
+## Dictionary: {
+## "library_root": String,
+## "total_tools": int,
+## "total_versions": int,
+## "tools": Dictionary of tool_id -> Array[String] (versions)
+## }
 func get_library_summary() -> Dictionary:
 	var summary = {
 		"library_root": get_library_root(),
@@ -282,9 +282,9 @@ func get_library_summary() -> Dictionary:
 
 ## Recursively calculates the total size of a directory in bytes.
 ## Parameters:
-##   dir_path (String): Absolute path to the directory
+## dir_path (String): Absolute path to the directory
 ## Returns:
-##   int: Total size in bytes, or 0 if directory doesn't exist/can't be read
+## int: Total size in bytes, or 0 if directory doesn't exist/can't be read
 func _calculate_dir_size(dir_path: String) -> int:
 	var total_size: int = 0
 	var dir = DirAccess.open(dir_path)

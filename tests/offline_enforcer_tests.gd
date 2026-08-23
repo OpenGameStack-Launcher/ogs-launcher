@@ -7,9 +7,9 @@ class_name OfflineEnforcerTests
 const OgsConfigScript = preload("res://scripts/config/ogs_config.gd")
 
 func run() -> Dictionary:
-	"""Runs OfflineEnforcer unit tests.
-	Returns:
-	  Dictionary: {"passed": int, "failed": int, "failures": Array[String]}"""
+	## Runs OfflineEnforcer unit tests.
+## Returns:
+## Dictionary: {"passed": int, "failed": int, "failures": Array[String]}
 	var results := {"passed": 0, "failed": 0, "failures": []}
 	_test_null_config(results)
 	_test_offline_mode(results)
@@ -21,11 +21,11 @@ func run() -> Dictionary:
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
-	"""Records test assertions.
-	Parameters:
-	  condition (bool): Pass/fail condition
-	  message (String): Failure message
-	  results (Dictionary): Aggregated results"""
+	## Records test assertions.
+## Parameters:
+## condition (bool): Pass/fail condition
+## message (String): Failure message
+## results (Dictionary): Aggregated results
 	if condition:
 		results["passed"] += 1
 	else:
@@ -33,14 +33,14 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 		results["failures"].append(message)
 
 func _test_null_config(results: Dictionary) -> void:
-	"""Verifies null config disables offline enforcement."""
+	## Verifies null config disables offline enforcement.
 	OfflineEnforcer.reset()
 	OfflineEnforcer.apply_config(null)
 	_expect(not OfflineEnforcer.is_offline(), "null config should disable offline", results)
 	_expect(OfflineEnforcer.get_reason() == "unknown", "null config reason should be unknown", results)
 
 func _test_offline_mode(results: Dictionary) -> void:
-	"""Verifies offline_mode=true enables offline enforcement."""
+	## Verifies offline_mode=true enables offline enforcement.
 	OfflineEnforcer.reset()
 	var config = OgsConfigScript.from_dict({"offline_mode": true})
 	OfflineEnforcer.apply_config(config)
@@ -51,7 +51,7 @@ func _test_offline_mode(results: Dictionary) -> void:
 	_expect(result["error_code"] == OfflineEnforcer.BLOCKED_ERROR_CODE, "offline guard should return error code", results)
 
 func _test_force_offline(results: Dictionary) -> void:
-	"""Verifies force_offline=true enables offline enforcement."""
+	## Verifies force_offline=true enables offline enforcement.
 	OfflineEnforcer.reset()
 	var config = OgsConfigScript.from_dict({"force_offline": true})
 	OfflineEnforcer.apply_config(config)
@@ -59,7 +59,7 @@ func _test_force_offline(results: Dictionary) -> void:
 	_expect(OfflineEnforcer.get_reason() == "force_offline", "force_offline reason should be set", results)
 
 func _test_disabled(results: Dictionary) -> void:
-	"""Verifies offline_mode=false keeps enforcement disabled."""
+	## Verifies offline_mode=false keeps enforcement disabled.
 	OfflineEnforcer.reset()
 	var config = OgsConfigScript.from_dict({"offline_mode": false, "force_offline": false})
 	OfflineEnforcer.apply_config(config)
@@ -67,14 +67,14 @@ func _test_disabled(results: Dictionary) -> void:
 	_expect(OfflineEnforcer.get_reason() == "disabled", "disabled reason should be set", results)
 
 func _test_guard_allows_when_online(results: Dictionary) -> void:
-	"""Verifies guard allows network operations when offline is false."""
+	## Verifies guard allows network operations when offline is false.
 	OfflineEnforcer.reset()
 	var result = OfflineEnforcer.guard_network_call("unit_test")
 	_expect(result["allowed"], "online guard should allow network", results)
 	_expect(result["error_code"] == "", "online guard should return no error code", results)
 
 func _test_apply_allowlist_defaults(results: Dictionary) -> void:
-	"""Verifies reset/default config restores localhost-only allowlist."""
+	## Verifies reset/default config restores localhost-only allowlist.
 	OfflineEnforcer.reset()
 	SocketBlocker.set_allowlist(["example.com"])
 	OfflineEnforcer.apply_config(null)
@@ -84,7 +84,7 @@ func _test_apply_allowlist_defaults(results: Dictionary) -> void:
 	_expect(not external_result["success"], "default allowlist should block external hosts", results)
 
 func _test_apply_allowlist_from_config(results: Dictionary) -> void:
-	"""Verifies config allowlist is applied to socket policy."""
+	## Verifies config allowlist is applied to socket policy.
 	OfflineEnforcer.reset()
 	var config = OgsConfigScript.from_dict({
 		"offline_mode": false,

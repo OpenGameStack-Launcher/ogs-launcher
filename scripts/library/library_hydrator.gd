@@ -1,23 +1,23 @@
 ## LibraryHydrator: Orchestrates downloading and installing tools to the library.
 ##
 ## Manages the complete workflow of hydrating missing tools:
-##   1. Takes a list of missing tools
-##   2. Downloads each from the mirror
-##   3. Extracts to the library
-##   4. Reports progress and completion
+## 1. Takes a list of missing tools
+## 2. Downloads each from the mirror
+## 3. Extracts to the library
+## 4. Reports progress and completion
 ##
 ## Usage:
-##   var hydrator = LibraryHydrator.new("https://mirror.ogs.io")
-##   hydrator.tool_download_started.connect(_on_tool_download_started)
-##   hydrator.tool_download_complete.connect(_on_tool_download_complete)
-##   hydrator.hydration_complete.connect(_on_hydration_complete)
-##   var result = hydrator.hydrate([{"tool_id": "godot", "version": "4.3"}])
+## var hydrator = LibraryHydrator.new("https://mirror.ogs.io")
+## hydrator.tool_download_started.connect(_on_tool_download_started)
+## hydrator.tool_download_complete.connect(_on_tool_download_complete)
+## hydrator.hydration_complete.connect(_on_hydration_complete)
+## var result = hydrator.hydrate([{"tool_id": "godot", "version": "4.3"}])
 ##
 ## Signals:
-##   - tool_download_started(tool_id: String, version: String)
-##   - tool_download_progress(tool_id: String, version: String, bytes_received: int, bytes_total: int)
-##   - tool_download_complete(tool_id: String, version: String, success: bool)
-##   - hydration_complete(success: bool, failed_tools: Array)
+## - tool_download_started(tool_id: String, version: String)
+## - tool_download_progress(tool_id: String, version: String, bytes_received: int, bytes_total: int)
+## - tool_download_complete(tool_id: String, version: String, success: bool)
+## - hydration_complete(success: bool, failed_tools: Array)
 
 extends RefCounted
 class_name LibraryHydrator
@@ -35,26 +35,26 @@ var downloader: ToolDownloader
 var library: LibraryManager
 
 func _init(mirror: String = ""):
-	"""Initialize the hydrator with a mirror URL.
-	Parameters:
-	  mirror (String): Base URL for the OGS mirror
-	"""
+	## Initialize the hydrator with a mirror URL.
+## Parameters:
+## mirror (String): Base URL for the OGS mirror
+## 
 	mirror_url = mirror
 	downloader = ToolDownloader.new(mirror)
 	library = LibraryManager.new()
 
 ## Hydrates (downloads and installs) all missing tools.
 ## Parameters:
-##   tools_to_download (Array): Array of {"tool_id": String, "version": String}
+## tools_to_download (Array): Array of {"tool_id": String, "version": String}
 ## Returns:
-##   Dictionary: {
-##       "success": bool,
-##       "downloaded_count": int,
-##       "failed_count": int,
-##       "failed_tools": Array[Dictionary]
-##   }
+## Dictionary: {
+## "success": bool,
+## "downloaded_count": int,
+## "failed_count": int,
+## "failed_tools": Array[Dictionary]
+## }
 func hydrate(tools_to_download: Array) -> Dictionary:
-	"""Orchestrates downloading and installing all missing tools."""
+	## Orchestrates downloading and installing all missing tools.
 	var result = {
 		"success": true,
 		"downloaded_count": 0,
@@ -108,12 +108,12 @@ func hydrate(tools_to_download: Array) -> Dictionary:
 
 ## Downloads and installs a single tool.
 ## Parameters:
-##   tool_id (String): Tool identifier (e.g., "godot")
-##   version (String): Version string (e.g., "4.3")
+## tool_id (String): Tool identifier (e.g., "godot")
+## version (String): Version string (e.g., "4.3")
 ## Returns:
-##   Dictionary: {"success": bool, "error": String, "path": String}
+## Dictionary: {"success": bool, "error": String, "path": String}
 func _download_and_install_tool(tool_id: String, version: String) -> Dictionary:
-	"""Downloads a single tool and installs it to the library."""
+	## Downloads a single tool and installs it to the library.
 	tool_download_started.emit(tool_id, version)
 	
 	# Check if already in library (skip if present)
@@ -166,9 +166,9 @@ func _download_and_install_tool(tool_id: String, version: String) -> Dictionary:
 ## Returns count of tools already in library.
 ## Useful for UI to show what will be skipped.
 ## Parameters:
-##   tools (Array): Array of {"tool_id": String, "version": String}
+## tools (Array): Array of {"tool_id": String, "version": String}
 ## Returns:
-##   int: Count of tools already in library
+## int: Count of tools already in library
 func count_already_installed(tools: Array) -> int:
 	var count = 0
 	for tool_entry in tools:
@@ -180,6 +180,6 @@ func count_already_installed(tools: Array) -> int:
 
 ## Checks if mirror is configured.
 ## Returns:
-##   bool: True if mirror URL is non-empty
+## bool: True if mirror URL is non-empty
 func is_mirror_configured() -> bool:
 	return not mirror_url.is_empty()

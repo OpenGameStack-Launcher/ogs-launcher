@@ -27,11 +27,11 @@ var _cancelled_tools: Dictionary = {}
 var _cancel_mutex: Mutex = Mutex.new()
 
 func _init(repo_url: String = "", tree: SceneTree = null):
-	"""Initializes the remote mirror hydrator with a repository URL.
-	Parameters:
-	  repo_url (String): URL to the remote repository.json
-	  tree (SceneTree): Optional scene tree for safe signal emission from threads
-	"""
+	## Initializes the remote mirror hydrator with a repository URL.
+## Parameters:
+## repo_url (String): URL to the remote repository.json
+## tree (SceneTree): Optional scene tree for safe signal emission from threads
+## 
 	repository_url = repo_url
 	scene_tree = tree
 	repository = MirrorRepositoryScript.new()
@@ -40,12 +40,12 @@ func _init(repo_url: String = "", tree: SceneTree = null):
 
 ## Sets the repository.json URL for this hydrator.
 func set_repository_url(repo_url: String) -> void:
-	"""Sets the remote repository URL."""
+	## Sets the remote repository URL.
 	repository_url = repo_url
 	
 ## Flags an active download for cancellation.
 func cancel_download(tool_id: String, version: String) -> void:
-	"""Marks a tool for cancellation to abort the download loop."""
+	## Marks a tool for cancellation to abort the download loop.
 	var key = "%s_%s" % [tool_id, version]
 	_cancel_mutex.lock()
 	_cancelled_tools[key] = true
@@ -60,16 +60,16 @@ func _is_cancelled(tool_id: String, version: String) -> bool:
 
 ## Hydrates missing tools from the remote mirror into the library.
 ## Parameters:
-##   tools_to_install (Array): Array of {"tool_id": String, "version": String}
+## tools_to_install (Array): Array of {"tool_id": String, "version": String}
 ## Returns:
-##   Dictionary: {"success": bool, "installed_count": int, "failed_count": int, "failed_tools": Array}
+## Dictionary: {"success": bool, "installed_count": int, "failed_count": int, "failed_tools": Array}
 func hydrate(tools_to_install: Array) -> Dictionary:
-	"""Installs tools from remote mirror archives into the library."""
+	## Installs tools from remote mirror archives into the library.
 	return _hydrate_internal(tools_to_install)
 
 ## Starts hydration in a background thread to keep the UI responsive.
 func hydrate_async(tools_to_install: Array) -> void:
-	"""Starts remote hydration in a background thread."""
+	## Starts remote hydration in a background thread.
 	if worker_thread != null and worker_thread.is_alive():
 		return
 	worker_thread = Thread.new()
@@ -77,20 +77,20 @@ func hydrate_async(tools_to_install: Array) -> void:
 
 ## Internal thread entry for hydration.
 func _hydrate_thread(tools_to_install: Array) -> void:
-	"""Runs hydration in a worker thread."""
+	## Runs hydration in a worker thread.
 	_hydrate_internal(tools_to_install)
 	call_deferred("_finish_async")
 
 ## Finalizes the async hydration thread.
 func _finish_async() -> void:
-	"""Joins and clears the hydration worker thread."""
+	## Joins and clears the hydration worker thread.
 	if worker_thread != null:
 		worker_thread.wait_to_finish()
 		worker_thread = null
 
 ## Performs the hydration workflow synchronously.
 func _hydrate_internal(tools_to_install: Array) -> Dictionary:
-	"""Installs tools from remote mirror archives into the library."""
+	## Installs tools from remote mirror archives into the library.
 	var result = {
 		"success": true,
 		"installed_count": 0,
@@ -290,63 +290,63 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 
 ## Thread-safe signal helpers.
 func _emit_tool_install_started(tool_id: String, version: String) -> void:
-	"""Emits tool_install_started safely across threads."""
+	## Emits tool_install_started safely across threads.
 	if scene_tree != null:
 		call_deferred("_emit_tool_install_started_now", tool_id, version)
 	else:
 		tool_install_started.emit(tool_id, version)
 
 func _emit_tool_install_started_now(tool_id: String, version: String) -> void:
-	"""Deferred emit for tool_install_started."""
+	## Deferred emit for tool_install_started.
 	tool_install_started.emit(tool_id, version)
 
 func _emit_tool_install_progress(tool_id: String, version: String, file_count: int, total_files: int) -> void:
-	"""Emits tool_install_progress safely across threads."""
+	## Emits tool_install_progress safely across threads.
 	if scene_tree != null:
 		call_deferred("_emit_tool_install_progress_now", tool_id, version, file_count, total_files)
 	else:
 		tool_install_progress.emit(tool_id, version, file_count, total_files)
 
 func _emit_tool_install_progress_now(tool_id: String, version: String, file_count: int, total_files: int) -> void:
-	"""Deferred emit for tool_install_progress."""
+	## Deferred emit for tool_install_progress.
 	tool_install_progress.emit(tool_id, version, file_count, total_files)
 
 func _emit_tool_install_complete(tool_id: String, version: String, success: bool, error_message: String) -> void:
-	"""Emits tool_install_complete safely across threads."""
+	## Emits tool_install_complete safely across threads.
 	if scene_tree != null:
 		call_deferred("_emit_tool_install_complete_now", tool_id, version, success, error_message)
 	else:
 		tool_install_complete.emit(tool_id, version, success, error_message)
 
 func _emit_tool_install_complete_now(tool_id: String, version: String, success: bool, error_message: String) -> void:
-	"""Deferred emit for tool_install_complete."""
+	## Deferred emit for tool_install_complete.
 	tool_install_complete.emit(tool_id, version, success, error_message)
 
 func _emit_hydration_complete(success: bool, failed_tools: Array) -> void:
-	"""Emits hydration_complete safely across threads."""
+	## Emits hydration_complete safely across threads.
 	if scene_tree != null:
 		call_deferred("_emit_hydration_complete_now", success, failed_tools)
 	else:
 		hydration_complete.emit(success, failed_tools)
 
 func _emit_hydration_complete_now(success: bool, failed_tools: Array) -> void:
-	"""Deferred emit for hydration_complete."""
+	## Deferred emit for hydration_complete.
 	hydration_complete.emit(success, failed_tools)
 
 func _emit_tool_download_progress(tool_id: String, version: String, bytes_downloaded: int, total_bytes: int) -> void:
-	"""Emits tool_download_progress safely across threads."""
+	## Emits tool_download_progress safely across threads.
 	if scene_tree != null:
 		call_deferred("_emit_tool_download_progress_now", tool_id, version, bytes_downloaded, total_bytes)
 	else:
 		tool_download_progress.emit(tool_id, version, bytes_downloaded, total_bytes)
 
 func _emit_tool_download_progress_now(tool_id: String, version: String, bytes_downloaded: int, total_bytes: int) -> void:
-	"""Deferred emit for tool_download_progress."""
+	## Deferred emit for tool_download_progress.
 	tool_download_progress.emit(tool_id, version, bytes_downloaded, total_bytes)
 
 ## Loads repository.json from the configured URL.
 func _load_repository() -> Dictionary:
-	"""Loads and parses repository.json from the remote URL."""
+	## Loads and parses repository.json from the remote URL.
 	var text_result = _read_text_from_url(repository_url)
 	if not text_result["success"]:
 		return {"success": false, "error": text_result.get("error", "read_failed")}
@@ -355,7 +355,7 @@ func _load_repository() -> Dictionary:
 
 ## Reads text content from a URL or local file path.
 func _read_text_from_url(url: String) -> Dictionary:
-	"""Reads text content from a URL or local file path."""
+	## Reads text content from a URL or local file path.
 	if _is_local_reference(url):
 		var local_path = _resolve_local_path(url)
 		if local_path.is_empty() or not FileAccess.file_exists(local_path):
@@ -370,7 +370,7 @@ func _read_text_from_url(url: String) -> Dictionary:
 
 ## Stages an archive either by copying a local file or downloading remote content.
 func _stage_archive(archive_url: String, tool_id: String, version: String) -> String:
-	"""Stages a remote archive into a temp location and returns the path."""
+	## Stages a remote archive into a temp location and returns the path.
 	var temp_dir = OS.get_cache_dir()
 	if temp_dir.is_empty():
 		temp_dir = OS.get_user_data_dir()
@@ -399,7 +399,7 @@ func _stage_archive(archive_url: String, tool_id: String, version: String) -> St
 
 ## Copies an archive to a temp path.
 func _copy_archive_to_temp(source_path: String, temp_path: String) -> String:
-	"""Copies a local archive to a temp path and returns the temp path."""
+	## Copies a local archive to a temp path and returns the temp path.
 	var source = FileAccess.open(source_path, FileAccess.READ)
 	if source == null:
 		return ""
@@ -418,7 +418,7 @@ func _copy_archive_to_temp(source_path: String, temp_path: String) -> String:
 
 ## Returns true if the reference points to a local file path.
 func _is_local_reference(url: String) -> bool:
-	"""Returns true if the reference is a local path or file:// URL."""
+	## Returns true if the reference is a local path or file:// URL.
 	if url.begins_with("file://"):
 		return true
 	if url.find("://") != -1:
@@ -427,14 +427,14 @@ func _is_local_reference(url: String) -> bool:
 
 ## Resolves file:// URLs or raw paths into a usable local path.
 func _resolve_local_path(url: String) -> String:
-	"""Resolves a local file path from a URL or raw path."""
+	## Resolves a local file path from a URL or raw path.
 	if url.begins_with("file://"):
 		return url.replace("file://", "")
 	return url
 
 ## Downloads a URL and returns its contents as text.
 func _http_get_text(url: String) -> Dictionary:
-	"""Downloads a URL and returns response text."""
+	## Downloads a URL and returns response text.
 	var byte_result = _http_get_bytes(url)
 	if not byte_result["success"]:
 		return {"success": false, "error": byte_result.get("error", "http_failed")}
@@ -442,15 +442,15 @@ func _http_get_text(url: String) -> Dictionary:
 
 ## Downloads a URL to a local file.
 func _http_download_to_file(url: String, dest_path: String, _redirect_url: String = "", redirect_count: int = 0, tool_id: String = "", version: String = "") -> Dictionary:
-	"""Downloads a URL to a local file, following redirects.
-	Parameters:
-	  url: URL to download from
-	  dest_path: Destination file path
-	  _redirect_url: Internal parameter for recursion (unused, kept for compatibility)
-	  redirect_count: Current redirect count
-	  tool_id: Tool ID for progress signal emission
-	  version: Tool version for progress signal emission
-	"""
+	## Downloads a URL to a local file, following redirects.
+## Parameters:
+## url: URL to download from
+## dest_path: Destination file path
+## _redirect_url: Internal parameter for recursion (unused, kept for compatibility)
+## redirect_count: Current redirect count
+## tool_id: Tool ID for progress signal emission
+## version: Tool version for progress signal emission
+## 
 	if redirect_count > 5:
 		return {"success": false, "error": "redirect_limit"}
 	var parsed = _parse_url(url)
@@ -518,7 +518,7 @@ func _http_download_to_file(url: String, dest_path: String, _redirect_url: Strin
 
 ## Downloads a URL and returns the bytes.
 func _http_get_bytes(url: String, redirect_count: int = 0) -> Dictionary:
-	"""Downloads a URL and returns bytes, following redirects."""
+	## Downloads a URL and returns bytes, following redirects.
 	if redirect_count > 5:
 		return {"success": false, "error": "redirect_limit"}
 	var response = _http_request(url)
@@ -539,7 +539,7 @@ func _http_get_bytes(url: String, redirect_count: int = 0) -> Dictionary:
 
 ## Performs an HTTP request and returns response data.
 func _http_request(url: String) -> Dictionary:
-	"""Performs an HTTP GET request and returns status, headers, and body chunks."""
+	## Performs an HTTP GET request and returns status, headers, and body chunks.
 	var parsed = _parse_url(url)
 	if not parsed["success"]:
 		return {"success": false, "error": "invalid_url"}
@@ -623,7 +623,7 @@ func _http_request(url: String) -> Dictionary:
 
 ## Parses response headers into a dictionary.
 func _parse_headers(headers: Array) -> Dictionary:
-	"""Parses response headers into a lowercased dictionary."""
+	## Parses response headers into a lowercased dictionary.
 	var result: Dictionary = {}
 	for header in headers:
 		var parts = String(header).split(":", true, 1)
@@ -633,7 +633,7 @@ func _parse_headers(headers: Array) -> Dictionary:
 
 ## Helper to convert HTTPClient status code to name.
 func _status_name(status: int) -> String:
-	"""Converts HTTPClient status constant to readable name."""
+	## Converts HTTPClient status constant to readable name.
 	match status:
 		HTTPClient.STATUS_DISCONNECTED: return "DISCONNECTED"
 		HTTPClient.STATUS_RESOLVING: return "RESOLVING"
@@ -646,7 +646,7 @@ func _status_name(status: int) -> String:
 
 ## Parses a URL into host/port/path fields.
 func _parse_url(url: String) -> Dictionary:
-	"""Parses a URL into components for HTTPClient."""
+	## Parses a URL into components for HTTPClient.
 	if url.begins_with("https://"):
 		return _build_url_parts(url, "https://", true, 443)
 	if url.begins_with("http://"):
@@ -655,7 +655,7 @@ func _parse_url(url: String) -> Dictionary:
 
 ## Builds URL parts based on the scheme.
 func _build_url_parts(url: String, scheme: String, use_tls: bool, default_port: int) -> Dictionary:
-	"""Builds URL parts for HTTPClient."""
+	## Builds URL parts for HTTPClient.
 	var remainder = url.substr(scheme.length())
 	var slash_index = remainder.find("/")
 	var host = remainder
@@ -672,7 +672,7 @@ func _build_url_parts(url: String, scheme: String, use_tls: bool, default_port: 
 
 ## Computes sha256 for a file path using streaming reads.
 static func _compute_sha256(file_path: String) -> Dictionary:
-	"""Computes the SHA-256 hash for a file."""
+	## Computes the SHA-256 hash for a file.
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if file == null:
 		return {"success": false, "error_message": "Failed to read archive for hashing."}

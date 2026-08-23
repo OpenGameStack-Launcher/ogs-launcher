@@ -7,7 +7,7 @@ extends RefCounted
 class_name StartupTests
 
 func run() -> Dictionary:
-	"""Runs all startup verification tests."""
+	## Runs all startup verification tests.
 	var results := {"passed": 0, "failed": 0, "failures": []}
 	
 	_test_main_scene_loads(results)
@@ -19,7 +19,7 @@ func run() -> Dictionary:
 
 ## Test 1: Main scene loads without crashing.
 func _test_main_scene_loads(results: Dictionary) -> void:
-	"""Verifies that main.tscn can be instantiated without errors."""
+	## Verifies that main.tscn can be instantiated without errors.
 	var success = false
 	var message = "Main scene failed to load"
 	
@@ -58,7 +58,7 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 
 ## Test 2: All required UI nodes exist and are accessible.
 func _test_all_required_nodes_exist(results: Dictionary) -> void:
-	"""Verifies critical UI nodes needed by main.gd are present."""
+	## Verifies critical UI nodes needed by main.gd are present.
 	var main_scene = load("res://main.tscn")
 	if main_scene == null:
 		_expect(false, "Cannot verify nodes: main.tscn not found", results)
@@ -105,7 +105,7 @@ func _test_all_required_nodes_exist(results: Dictionary) -> void:
 
 ## Test 3: Controllers initialize without errors.
 func _test_controllers_initialize(results: Dictionary) -> void:
-	"""Verifies controller classes can be instantiated."""
+	## Verifies controller classes can be instantiated.
 	var success = true
 	var errors = []
 	
@@ -134,7 +134,7 @@ func _test_controllers_initialize(results: Dictionary) -> void:
 
 ## Test 4: Script validation - ensure main.gd has no syntax errors.
 func _test_no_runtime_errors(results: Dictionary) -> void:
-	"""Validates that main.gd script is properly formed and callable."""
+	## Validates that main.gd script is properly formed and callable.
 	var success = true
 	var message = "Main script validation passed"
 	
@@ -171,7 +171,7 @@ func _test_no_runtime_errors(results: Dictionary) -> void:
 
 ## Helper to record test results.
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
-	"""Records test pass/fail with descriptive message."""
+	## Records test pass/fail with descriptive message.
 	if condition:
 		results["passed"] += 1
 		#print("✓ " + message)

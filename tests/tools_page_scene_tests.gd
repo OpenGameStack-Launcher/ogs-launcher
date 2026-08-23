@@ -8,9 +8,9 @@ class_name ToolsPageSceneTests
 const ToolsControllerScript = preload("res://scripts/tools/tools_controller.gd")
 
 func run() -> Dictionary:
-	"""Runs Tools page scene tests.
-	Returns:
-	  Dictionary: {"passed": int, "failed": int, "failures": Array[String]}"""
+	## Runs Tools page scene tests.
+## Returns:
+## Dictionary: {"passed": int, "failed": int, "failures": Array[String]}
 	var results := {"passed": 0, "failed": 0, "failures": []}
 	_test_tools_nodes_exist(results)
 	_test_connectivity_status_label(results)
@@ -20,7 +20,7 @@ func run() -> Dictionary:
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
-	"""Records test assertion."""
+	## Records test assertion.
 	if condition:
 		results["passed"] += 1
 	else:
@@ -28,7 +28,7 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 		results["failures"].append(message)
 
 func _instantiate_main_scene(results: Dictionary) -> Node:
-	"""Loads and instantiates main scene."""
+	## Loads and instantiates main scene.
 	var scene = load("res://main.tscn")
 	_expect(scene != null, "main.tscn should load for tools page tests", results)
 	if scene == null:
@@ -36,7 +36,7 @@ func _instantiate_main_scene(results: Dictionary) -> Node:
 	return scene.instantiate()
 
 func _test_tools_nodes_exist(results: Dictionary) -> void:
-	"""Verifies Tools page nodes for Download tab exist."""
+	## Verifies Tools page nodes for Download tab exist.
 	var instance = _instantiate_main_scene(results)
 	if instance == null:
 		return
@@ -53,7 +53,7 @@ func _test_tools_nodes_exist(results: Dictionary) -> void:
 	instance.free()
 
 func _test_enforced_offline_status_label(results: Dictionary) -> void:
-	"""Verifies the Tools status identifies project-enforced offline mode."""
+	## Verifies the Tools status identifies project-enforced offline mode.
 	var instance = _instantiate_main_scene(results)
 	if instance == null:
 		return
@@ -75,7 +75,7 @@ func _test_enforced_offline_status_label(results: Dictionary) -> void:
 	instance.free()
 
 func _test_connectivity_status_label(results: Dictionary) -> void:
-	"""Verifies online/offline status updates the Tools status label."""
+	## Verifies online/offline status updates the Tools status label.
 	var instance = _instantiate_main_scene(results)
 	if instance == null:
 		return
@@ -95,7 +95,7 @@ func _test_connectivity_status_label(results: Dictionary) -> void:
 	instance.free()
 
 func _test_tool_card_style(results: Dictionary) -> void:
-	"""Verifies dynamically-created tool cards have explicit visual separation."""
+	## Verifies dynamically-created tool cards have explicit visual separation.
 	var instance = _instantiate_main_scene(results)
 	if instance == null:
 		return
@@ -110,7 +110,7 @@ func _test_tool_card_style(results: Dictionary) -> void:
 	instance.free()
 
 func _test_download_button_state(results: Dictionary) -> void:
-	"""Verifies download buttons disable while a download is active."""
+	## Verifies download buttons disable while a download is active.
 	var instance = _instantiate_main_scene(results)
 	if instance == null:
 		return

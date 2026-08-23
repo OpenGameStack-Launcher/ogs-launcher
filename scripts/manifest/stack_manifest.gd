@@ -6,33 +6,33 @@
 ## for UI-level reporting without external dependencies.
 ##
 ## Usage:
-##   # Load from disk
-##   var manifest = StackManifest.load_from_file("res://stack.json")
-##   if manifest.is_valid():
-##       for tool in manifest.tools:
-##           print("%s v%s at %s" % [tool["id"], tool["version"], tool["path"]])
+## # Load from disk
+## var manifest = StackManifest.load_from_file("res://stack.json")
+## if manifest.is_valid():
+## for tool in manifest.tools:
+## print("%s v%s at %s" % [tool["id"], tool["version"], tool["path"]])
 ##
-##   # Parse JSON text
-##   var manifest = StackManifest.parse_json_string(json_text)
+## # Parse JSON text
+## var manifest = StackManifest.parse_json_string(json_text)
 ##
-##   # Build from dictionary
-##   var manifest = StackManifest.from_dict({"schema_version": 1, ...})
+## # Build from dictionary
+## var manifest = StackManifest.from_dict({"schema_version": 1, ...})
 ##
 ## Schema Version:
-##   Currently supports schema_version=1 only. Unsupported versions fail validation.
+## Currently supports schema_version=1 only. Unsupported versions fail validation.
 ##
 ## Error Codes:
-##   - manifest_file_unreadable: File I/O failed
-##   - manifest_json_invalid: JSON parsing failed
-##   - manifest_root_not_object: Root must be a dictionary
-##   - schema_version_missing/not_int/unsupported: Schema version issues
-##   - stack_name_missing/not_string/empty: Stack name issues
-##   - tools_missing/not_array/empty: Tools array issues
-##   - tool_not_object:INDEX: Tool at INDEX is not a dictionary
-##   - tool_id_missing/invalid:INDEX: Tool ID at INDEX missing or invalid
-##   - tool_version_missing/invalid:INDEX: Tool version missing or invalid
-##   - tool_path_missing/invalid:INDEX: Tool path missing or invalid
-##   - tool_sha256_invalid:INDEX: SHA-256 checksum format invalid at INDEX
+## - manifest_file_unreadable: File I/O failed
+## - manifest_json_invalid: JSON parsing failed
+## - manifest_root_not_object: Root must be a dictionary
+## - schema_version_missing/not_int/unsupported: Schema version issues
+## - stack_name_missing/not_string/empty: Stack name issues
+## - tools_missing/not_array/empty: Tools array issues
+## - tool_not_object:INDEX: Tool at INDEX is not a dictionary
+## - tool_id_missing/invalid:INDEX: Tool ID at INDEX missing or invalid
+## - tool_version_missing/invalid:INDEX: Tool version missing or invalid
+## - tool_path_missing/invalid:INDEX: Tool path missing or invalid
+## - tool_sha256_invalid:INDEX: SHA-256 checksum format invalid at INDEX
 
 extends RefCounted
 class_name StackManifest
@@ -49,9 +49,9 @@ var errors: Array[String] = []
 ## Loads manifest from a file path on disk.
 ## Returns a StackManifest instance with validation errors in .errors if I/O or parsing fails.
 ## Parameters:
-##   file_path (String): Path to stack.json (e.g., "res://projects/game/stack.json")
+## file_path (String): Path to stack.json (e.g., "res://projects/game/stack.json")
 ## Returns:
-##   StackManifest: Callers should check .is_valid() before using fields.
+## StackManifest: Callers should check .is_valid() before using fields.
 static func load_from_file(file_path: String) -> StackManifest:
 	var manifest := StackManifest.new()
 	manifest._load_from_file(file_path)
@@ -59,38 +59,38 @@ static func load_from_file(file_path: String) -> StackManifest:
 
 ## Parses JSON text into a manifest.
 ## Parameters:
-##   json_text (String): Raw JSON string (e.g., from fileread or network)
+## json_text (String): Raw JSON string (e.g., from fileread or network)
 ## Returns:
-##   StackManifest: Check .is_valid() and .errors for parse/validation failures.
+## StackManifest: Check .is_valid() and .errors for parse/validation failures.
 static func parse_json_string(json_text: String) -> StackManifest:
-	"""Parses manifest JSON text into a validated StackManifest instance."""
+	## Parses manifest JSON text into a validated StackManifest instance.
 	var manifest := StackManifest.new()
 	manifest._load_from_json_string(json_text)
 	return manifest
 
 ## Builds a manifest from a dictionary.
 ## Parameters:
-##   data (Dictionary): Parsed JSON or manually-constructed object
+## data (Dictionary): Parsed JSON or manually-constructed object
 ## Returns:
-##   StackManifest: Instance with validation errors in .errors if data is invalid.
+## StackManifest: Instance with validation errors in .errors if data is invalid.
 static func from_dict(data: Dictionary) -> StackManifest:
-	"""Builds a manifest from a dictionary and validates required fields."""
+	## Builds a manifest from a dictionary and validates required fields.
 	var manifest := StackManifest.new()
 	manifest._load_from_dict(data)
 	return manifest
 
 ## Checks if manifest validation passed.
 ## Returns:
-##   bool: True if .errors is empty, false otherwise.
+## bool: True if .errors is empty, false otherwise.
 func is_valid() -> bool:
-	"""Returns true when the manifest has no validation errors."""
+	## Returns true when the manifest has no validation errors.
 	return errors.is_empty()
 
 ## Converts manifest to a dictionary for serialization or inspection.
 ## Returns:
-##   Dictionary: {"schema_version": int, "stack_name": string, "tools": Array[Dictionary]}
+## Dictionary: {"schema_version": int, "stack_name": string, "tools": Array[Dictionary]}
 func to_dict() -> Dictionary:
-	"""Serializes the manifest to a dictionary for storage or inspection."""
+	## Serializes the manifest to a dictionary for storage or inspection.
 	return {
 		"schema_version": schema_version,
 		"stack_name": stack_name,
@@ -100,11 +100,11 @@ func to_dict() -> Dictionary:
 ## Validates a manifest dictionary against the schema.
 ## This is a static helper used internally and by test suites.
 ## Parameters:
-##   data (Dictionary): Parsed manifest data to validate
+## data (Dictionary): Parsed manifest data to validate
 ## Returns:
-##   Array[String]: List of error codes. Empty array means validation passed.
+## Array[String]: List of error codes. Empty array means validation passed.
 static func validate_data(data: Dictionary) -> Array[String]:
-	"""Validates manifest content and returns a list of error codes."""
+	## Validates manifest content and returns a list of error codes.
 	var found_errors: Array[String] = []
 	if not data.has("schema_version"):
 		found_errors.append("schema_version_missing")
@@ -148,11 +148,11 @@ static func validate_data(data: Dictionary) -> Array[String]:
 
 ## Internal method: Validates a single tool entry in the tools array.
 ## Parameters:
-##   tool_entry (Dictionary): The tool object to validate (must have id, version, path)
-##   index (int): Position in the tools array (for error reporting)
-##   found_errors (Array[String]): Error list to append to
+## tool_entry (Dictionary): The tool object to validate (must have id, version, path)
+## index (int): Position in the tools array (for error reporting)
+## found_errors (Array[String]): Error list to append to
 static func _validate_tool_entry(tool_entry: Dictionary, index: int, found_errors: Array[String]) -> void:
-	"""Validates a single tool entry dictionary and records any errors."""
+	## Validates a single tool entry dictionary and records any errors.
 	if not tool_entry.has("id"):
 		found_errors.append("tool_id_missing:%d" % index)
 	elif typeof(tool_entry["id"]) != TYPE_STRING or String(tool_entry["id"]).strip_edges() == "":
@@ -176,11 +176,11 @@ static func _validate_tool_entry(tool_entry: Dictionary, index: int, found_error
 ## Internal method: Validates SHA-256 checksum format.
 ## Uses character-by-character ASCII checks to avoid external regex libraries.
 ## Parameters:
-##   value (String): Hex string to validate
+## value (String): Hex string to validate
 ## Returns:
-##   bool: True if value is exactly 64 hex chars (0-9, a-f, A-F), false otherwise.
+## bool: True if value is exactly 64 hex chars (0-9, a-f, A-F), false otherwise.
 static func _is_hex_sha256(value: String) -> bool:
-	"""Returns true when the string is a valid hex-encoded SHA-256."""
+	## Returns true when the string is a valid hex-encoded SHA-256.
 	if value.length() != 64:
 		return false
 	for character in value:
@@ -195,9 +195,9 @@ static func _is_hex_sha256(value: String) -> bool:
 ## Internal method: Loads JSON from disk.
 ## Private to this class; use load_from_file() instead.
 ## Parameters:
-##   file_path (String): Path to stack.json
+## file_path (String): Path to stack.json
 func _load_from_file(file_path: String) -> void:
-	"""Loads JSON from disk and validates it without contacting external services."""
+	## Loads JSON from disk and validates it without contacting external services.
 	errors.clear()
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if file == null:
@@ -211,9 +211,9 @@ func _load_from_file(file_path: String) -> void:
 ## Internal method: Parses JSON string.
 ## Private to this class; use parse_json_string() instead.
 ## Parameters:
-##   json_text (String): Raw JSON to parse
+## json_text (String): Raw JSON to parse
 func _load_from_json_string(json_text: String) -> void:
-	"""Loads manifest data from JSON text while recording parse errors."""
+	## Loads manifest data from JSON text while recording parse errors.
 	errors.clear()
 	if json_text.strip_edges().is_empty():
 		OgsLogger.warn("manifest_parse_failed", {"component": "manifest"})
@@ -236,9 +236,9 @@ func _load_from_json_string(json_text: String) -> void:
 ## Private to this class; use from_dict(), load_from_file(), or parse_json_string() instead.
 ## Performs validation and populates .errors if validation fails.
 ## Parameters:
-##   data (Dictionary): Object to load from
+## data (Dictionary): Object to load from
 func _load_from_dict(data: Dictionary) -> void:
-	"""Populates fields from a dictionary after validation."""
+	## Populates fields from a dictionary after validation.
 	errors = validate_data(data)
 	if not errors.is_empty():
 		OgsLogger.warn("manifest_validation_failed", {"component": "manifest", "error_count": errors.size()})

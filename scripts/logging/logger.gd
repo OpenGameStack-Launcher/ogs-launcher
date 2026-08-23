@@ -23,65 +23,65 @@ static var _enabled := true
 static var _console_enabled := Engine.is_editor_hint()
 
 static func set_level(level: int) -> void:
-	"""Sets the minimum log level for writing entries.
-	Parameters:
-	  level (int): OgsLogger.Level value
-	"""
+	## Sets the minimum log level for writing entries.
+## Parameters:
+## level (int): OgsLogger.Level value
+## 
 	_level = level as Level
 
 static func enable(enabled: bool) -> void:
-	"""Enables or disables logging at runtime.
-	Parameters:
-	  enabled (bool): True to enable logging
-	"""
+	## Enables or disables logging at runtime.
+## Parameters:
+## enabled (bool): True to enable logging
+## 
 	_enabled = enabled
 
 static func enable_console(enabled: bool) -> void:
-	"""Enables or disables console logging (editor Output panel).
-	Parameters:
-	  enabled (bool): True to write logs to console
-	"""
+	## Enables or disables console logging (editor Output panel).
+## Parameters:
+## enabled (bool): True to write logs to console
+## 
 	_console_enabled = enabled
 
 static func debug(message: String, context: Dictionary = {}) -> void:
-	"""Writes a debug log entry.
-	Parameters:
-	  message (String): Log message
-	  context (Dictionary): Structured context fields
-	"""
+	## Writes a debug log entry.
+## Parameters:
+## message (String): Log message
+## context (Dictionary): Structured context fields
+## 
 	write(Level.DEBUG, message, context)
 
 static func info(message: String, context: Dictionary = {}) -> void:
-	"""Writes an info log entry.
-	Parameters:
-	  message (String): Log message
-	  context (Dictionary): Structured context fields
-	"""
+	## Writes an info log entry.
+## Parameters:
+## message (String): Log message
+## context (Dictionary): Structured context fields
+## 
 	write(Level.INFO, message, context)
 
 static func warn(message: String, context: Dictionary = {}) -> void:
-	"""Writes a warning log entry.
-	Parameters:
-	  message (String): Log message
-	  context (Dictionary): Structured context fields
-	"""
+	## Writes a warning log entry.
+## Parameters:
+## message (String): Log message
+## context (Dictionary): Structured context fields
+## 
 	write(Level.WARN, message, context)
 
 static func error(message: String, context: Dictionary = {}) -> void:
-	"""Writes an error log entry.
-	Parameters:
-	  message (String): Log message
-	  context (Dictionary): Structured context fields
-	"""
+	## Writes an error log entry.
+## Parameters:
+## message (String): Log message
+## context (Dictionary): Structured context fields
+## 
 	write(Level.ERROR, message, context)
 
 static func write(level: int, message: String, context: Dictionary = {}) -> void:
-	"""Writes a structured log entry as JSON.
-	Parameters:
-	  level (int): OgsLogger.Level value
-	  message (String): Log message
-	  context (Dictionary): Structured context fields
-	"""
+	## Writes a structured log entry as JSON.
+## Parameters:
+## level (int): OgsLogger.Level value
+## message (String): Log message
+## context (Dictionary): Structured context fields
+## 
 	if not _enabled or level < _level:
 		return
 	_ensure_log_dir()
@@ -105,23 +105,23 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 	file.close()
 
 static func clear_logs_for_tests() -> void:
-	"""Removes log files for test isolation."""
+	## Removes log files for test isolation.
 	var base = _get_log_path()
 	_delete_file(base)
 	for index in range(1, MAX_BACKUPS + 1):
 		_delete_file(base + "." + str(index))
 
 static func _get_log_path() -> String:
-	"""Returns the user:// log file path."""
+	## Returns the user:// log file path.
 	return LOG_DIR + "/" + LOG_FILE
 
 static func _ensure_log_dir() -> void:
-	"""Ensures the log directory exists."""
+	## Ensures the log directory exists.
 	var absolute = ProjectSettings.globalize_path(LOG_DIR)
 	DirAccess.make_dir_recursive_absolute(absolute)
 
 static func _rotate_if_needed() -> void:
-	"""Rotates logs when the active log exceeds the size threshold."""
+	## Rotates logs when the active log exceeds the size threshold.
 	var log_path = _get_log_path()
 	if not FileAccess.file_exists(log_path):
 		return
@@ -138,7 +138,7 @@ static func _rotate_if_needed() -> void:
 	DirAccess.rename_absolute(absolute, first)
 
 static func _get_file_length(user_path: String) -> int:
-	"""Returns the file length for a user:// path or 0 if missing."""
+	## Returns the file length for a user:// path or 0 if missing.
 	if not FileAccess.file_exists(user_path):
 		return 0
 	var file = FileAccess.open(user_path, FileAccess.READ)
@@ -149,7 +149,7 @@ static func _get_file_length(user_path: String) -> int:
 	return length
 
 static func _sanitize_context(context: Dictionary) -> Dictionary:
-	"""Redacts sensitive keys from context before logging."""
+	## Redacts sensitive keys from context before logging.
 	var sanitized: Dictionary = {}
 	for key in context.keys():
 		var key_str = String(key)
@@ -160,7 +160,7 @@ static func _sanitize_context(context: Dictionary) -> Dictionary:
 	return sanitized
 
 static func _level_name(level: int) -> String:
-	"""Returns a human-readable level name."""
+	## Returns a human-readable level name.
 	match level:
 		Level.DEBUG:
 			return "debug"
@@ -174,7 +174,7 @@ static func _level_name(level: int) -> String:
 			return "unknown"
 
 static func _delete_file(user_path: String) -> void:
-	"""Deletes a user:// file if it exists."""
+	## Deletes a user:// file if it exists.
 	if not FileAccess.file_exists(user_path):
 		return
 	var absolute = ProjectSettings.globalize_path(user_path)

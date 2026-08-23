@@ -4,9 +4,9 @@
 ## and folder navigation. Provides a clean abstraction for sealing projects.
 ##
 ## Usage:
-##   var sealer = SealController.new()
-##   sealer.setup(seal_dialog, status_label, output_label, open_button)
-##   sealer.seal_for_delivery(project_path)
+## var sealer = SealController.new()
+## sealer.setup(seal_dialog, status_label, output_label, open_button)
+## sealer.seal_for_delivery(project_path)
 
 extends RefCounted
 class_name SealController
@@ -28,17 +28,17 @@ var _seal_started_at_msec: int = 0
 
 ## Sets up the seal controller with dialog and display components.
 ## Parameters:
-##   seal_dialog (AcceptDialog): The dialog to show results
-##   status_label (Label): Shows success/failure message
-##   output_label (Label): Shows detailed information
-##   open_folder_button (Button): Opens the sealed folder
+## seal_dialog (AcceptDialog): The dialog to show results
+## status_label (Label): Shows success/failure message
+## output_label (Label): Shows detailed information
+## open_folder_button (Button): Opens the sealed folder
 func setup(
 	seal_dialog: AcceptDialog,
 	status_label: Label,
 	output_label: Label,
 	open_folder_button: Button
 ) -> void:
-	"""Configures the seal controller."""
+	## Configures the seal controller.
 	_seal_dialog = seal_dialog
 	_status_label = status_label
 	_output_label = output_label
@@ -49,9 +49,9 @@ func setup(
 
 ## Seals a project for offline delivery.
 ## Parameters:
-##   project_path (String): Path to the project directory
+## project_path (String): Path to the project directory
 func seal_for_delivery(project_path: String) -> void:
-	"""Initiates the seal workflow."""
+	## Initiates the seal workflow.
 	if project_path.is_empty():
 		_show_error("No project loaded.", "Please load a project first.")
 		return
@@ -66,7 +66,7 @@ func seal_for_delivery(project_path: String) -> void:
 
 ## Runs seal operation in a background thread and updates UI while waiting.
 func _run_seal_async(project_path: String) -> void:
-	"""Executes sealing asynchronously to keep the UI responsive."""
+	## Executes sealing asynchronously to keep the UI responsive.
 	_seal_in_progress = true
 	_seal_started_at_msec = Time.get_ticks_msec()
 	_seal_thread = Thread.new()
@@ -106,13 +106,13 @@ func _run_seal_async(project_path: String) -> void:
 
 ## Worker thread entry point for project sealing.
 func _threaded_seal_operation(project_path: String) -> Dictionary:
-	"""Performs the full seal workflow off the main thread."""
+	## Performs the full seal workflow off the main thread.
 	var sealer = ProjectSealer.new()
 	return sealer.seal_project(project_path)
 
 ## Updates in-progress status text while background seal runs.
 func _update_progress_status() -> void:
-	"""Shows elapsed time and stage hints during long-running packaging."""
+	## Shows elapsed time and stage hints during long-running packaging.
 	var elapsed_seconds = int((Time.get_ticks_msec() - _seal_started_at_msec) / 1000.0)
 	var phase = "Validating and copying tools" if elapsed_seconds < 10 else "Packaging archive"
 	_status_label.text = "Sealing project... (%ds)" % elapsed_seconds
@@ -120,7 +120,7 @@ func _update_progress_status() -> void:
 
 ## Displays success state with result details.
 func _show_success(result: Dictionary) -> void:
-	"""Shows the successful seal result."""
+	## Shows the successful seal result.
 	_status_label.text = "✓ Project sealed successfully!"
 	
 	var size_text = "%.1f MB" % result.project_size_mb
@@ -145,7 +145,7 @@ func _show_success(result: Dictionary) -> void:
 
 ## Displays error state with error messages.
 func _show_error(title: String, errors: Variant) -> void:
-	"""Shows the error result."""
+	## Shows the error result.
 	_status_label.text = "✗ %s" % title
 	
 	var error_text: String = ""
@@ -165,7 +165,7 @@ func _show_error(title: String, errors: Variant) -> void:
 
 ## Displays progress state while sealing.
 func _show_progress() -> void:
-	"""Shows the progress dialog."""
+	## Shows the progress dialog.
 	_status_label.text = "Sealing project..."
 	_output_label.text = "Stage: Preparing\n\nCreating offline-ready artifact..."
 	_open_folder_button.visible = false
@@ -173,7 +173,7 @@ func _show_progress() -> void:
 
 ## Opens the folder containing the sealed zip.
 func _on_open_folder_pressed() -> void:
-	"""Opens Windows Explorer to the sealed folder."""
+	## Opens Windows Explorer to the sealed folder.
 	if _last_sealed_zip.is_empty():
 		OgsLogger.warn("open_folder_no_path", {"component": "sealer"})
 		return
