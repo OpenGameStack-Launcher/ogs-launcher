@@ -115,6 +115,17 @@ var removal_thread: Thread = null
 var removal_tool_id: String = ""
 var removal_tool_version: String = ""
 var removal_result: Dictionary = {}
+var _download_dialog: ConfirmationDialog
+var _download_progress: ProgressBar
+var _download_label: Label
+var _active_download_tool_id: String = ""
+var _active_download_version: String = ""
+
+func _on_download_dialog_canceled() -> void:
+	if not _active_download_tool_id.is_empty():
+		_download_dialog.get_cancel_button().text = "Cancelling..."
+		_download_dialog.get_cancel_button().disabled = true
+		_on_cancel_tool_download(_active_download_tool_id, _active_download_version)
 
 ## Resolves the base OGS data directory.
 func _resolve_ogs_root_path() -> String:
@@ -175,9 +186,35 @@ func _notification(what: int) -> void:
 
 func _ready():
 	_apply_global_theme()
+	_setup_download_dialog()
 	OgsLogger.enable_console(true)
 	OgsLogger.set_level(OgsLogger.Level.DEBUG)
 	OgsLogger.info("launcher_started", {"component": "app"})
+	
+
+func _setup_download_dialog() -> void:
+	_download_dialog = ConfirmationDialog.new()
+	_download_dialog.exclusive = true
+	_download_dialog.unresizable = true
+	_download_dialog.min_size = Vector2(400, 120)
+	_download_dialog.get_ok_button().hide()
+	_download_dialog.get_cancel_button().text = "Cancel"
+	_download_dialog.canceled.connect(_on_download_dialog_canceled)
+	
+	var vbox = VBoxContainer.new()
+	vbox.add_theme_constant_override("separation", 10)
+	
+	_download_label = Label.new()
+	_download_label.text = "Initializing..."
+	_download_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_CENTER
+	vbox.add_child(_download_label)
+	
+	_download_progress = ProgressBar.new()
+	_download_progress.custom_minimum_size.y = 24
+	vbox.add_child(_download_progress)
+	
+	_download_dialog.add_child(vbox)
+	add_child(_download_dialog)
 	
 	# Set up onboarding wizard for first-run experience
 	var ogs_root_path = _resolve_ogs_root_path()
@@ -213,7 +250,8 @@ func _ready():
 	tools_controller = ToolsControllerScript.new(get_tree(), repo_url)
 	tools_controller.tool_list_updated.connect(_on_tools_list_updated)
 	tools_controller.tool_list_refresh_failed.connect(_on_tools_refresh_failed)
-	tools_controller.tool_download_started.connect(_on_tool_download_started)
+	tools_controller.tool_install_started.connect(_on_tool_install_started)
+	tools_controller.tool_install_progress.connect(_on_tool_install_progress)
 	tools_controller.tool_download_complete.connect(_on_tool_download_complete)
 	tools_controller.tool_download_progress.connect(_on_tool_download_progress)
 	tools_controller.connectivity_checked.connect(_on_connectivity_checked)
@@ -625,8 +663,10 @@ func _on_tools_refresh_failed(_error_message: String) -> void:
 	# Keep offline message synced with connectivity only
 
 ## Signal handler: tool download completed.
-func _on_tool_download_complete(tool_id: String, version: String, success: bool, error_message: String) -> void:
-	"""Refreshes UI after tool download and completes progress tracking."""
+func _on_tool_download_complete(tool_id: String, version: String, success: bool, error_message: String = "") -> void:
+	"""Handles completion of a tool download/installation."""
+	_download_dialog.hide()
+	
 	if success:
 		OgsLogger.info("tool_download_complete_ui", {
 			"component": "tools",
@@ -670,7 +710,7 @@ func _create_download_error_label() -> Label:
 	return error_label
 
 ## Signal handler: tool install started (after download).
-func _on_tool_download_started(tool_id: String, version: String) -> void:
+func _on_tool_install_started(tool_id: String, version: String) -> void:
 	"""Transitions progress to install phase.
 	
 	Delegates to ProgressController to show indeterminate progress
@@ -685,6 +725,10 @@ func _on_tool_download_started(tool_id: String, version: String) -> void:
 		"tool_id": tool_id,
 		"version": version
 	})
+
+func _on_tool_install_progress(tool_id: String, version: String, file_count: int, total_files: int) -> void:
+	if progress_controller != null:
+		progress_controller.update_install_progress(tool_id, version, file_count, total_files)
 
 ## Signal handler: tool download progress updated.
 func _on_tool_download_progress(tool_id: String, version: String, bytes_downloaded: int, total_bytes: int) -> void:
@@ -874,26 +918,10 @@ func _create_tool_card(tool: Dictionary, is_installed: bool, show_remove_action:
 	
 	hbox.add_child(button)
 	
-	# Progress bar (initially hidden, shown during download)
-	var progress_container = HBoxContainer.new()
-	progress_container.visible = false
-	main_vbox.add_child(progress_container)
-	
-	var tool_progress_bar = ProgressBar.new()
-	tool_progress_bar.size_flags_horizontal = Control.SIZE_EXPAND_FILL
-	tool_progress_bar.show_percentage = false
-	progress_container.add_child(tool_progress_bar)
-	
-	var progress_label = Label.new()
-	progress_label.text = "0 / 0 MB"
-	progress_label.custom_minimum_size = Vector2(100, 0)
-	progress_label.horizontal_alignment = HORIZONTAL_ALIGNMENT_RIGHT
-	progress_container.add_child(progress_label)
-
 	var error_label = _create_download_error_label()
 	main_vbox.add_child(error_label)
 	
-	# Store card references for progress updates
+	# Store card references for error updates
 	if not is_installed:
 		var key = "%s_%s" % [tool["id"], tool["version"]]
 		tool_cards[key] = {
@@ -901,40 +929,15 @@ func _create_tool_card(tool: Dictionary, is_installed: bool, show_remove_action:
 			"button": button,
 			"tool_id": tool["id"],
 			"version": tool["version"],
-			"progress_bar": tool_progress_bar,
-			"progress_label": progress_label,
-			"progress_container": progress_container,
-			"error_label": error_label,
-			"phase": "download"
+			"error_label": error_label
 		}
 		
-		# Register progress tracking with ProgressController
-		if progress_controller != null:
-			progress_controller.track_inline_progress(
-				tool["id"],
-				tool["version"],
-				tool_progress_bar,
-				progress_label,
-				progress_container
-			)
-		
-		# Show progress if already downloading
-		var is_downloading = tools_controller.is_downloading(tool["id"], tool["version"])
-		if is_downloading:
-			progress_container.visible = true
-			OgsLogger.debug("tool_card_created_with_download", {
-				"component": "tools",
-				"tool_id": tool["id"],
-				"version": tool["version"],
-				"size_mb": tool.get("size_bytes", 0) / (1024.0 * 1024.0)
-			})
-		else:
-			OgsLogger.debug("tool_card_created", {
-				"component": "tools",
-				"tool_id": tool["id"],
-				"version": tool["version"],
-				"size_mb": tool.get("size_bytes", 0) / (1024.0 * 1024.0)
-			})
+		OgsLogger.debug("tool_card_created", {
+			"component": "tools",
+			"tool_id": tool["id"],
+			"version": tool["version"],
+			"size_mb": tool.get("size_bytes", 0) / (1024.0 * 1024.0)
+		})
 	else:
 		OgsLogger.debug("tool_card_created_installed", {
 			"component": "tools",
@@ -982,26 +985,22 @@ func _on_download_tool_pressed(tool_id: String, version: String) -> void:
 	})
 	
 	if tools_controller != null:
+		_active_download_tool_id = tool_id
+		_active_download_version = version
+		
+		_download_dialog.title = "Downloading %s %s" % [tool_id.capitalize(), version]
+		_download_dialog.get_cancel_button().text = "Cancel"
+		_download_dialog.get_cancel_button().disabled = false
+		
+		if progress_controller != null:
+			# Null container so progress_controller doesn't hide/show our exclusive dialog natively
+			progress_controller.track_inline_progress(tool_id, version, _download_progress, _download_label, null)
+		
 		tools_controller.download_tool(tool_id, version)
 		_update_tools_connectivity_status(tools_controller.is_online())
 		_update_download_button_states()
 		
-		# Update the button to Cancel and show progress bar
-		var key = "%s_%s" % [tool_id, version]
-		var card_data = tool_cards.get(key)
-		if card_data != null:
-			var button = card_data.get("button")
-			var progress_container = card_data.get("progress_container")
-			
-			if button != null:
-				button.text = "Cancel"
-				# Disconnect old signal and connect cancel handler
-				for connection in button.pressed.get_connections():
-					button.pressed.disconnect(connection["callable"])
-				button.pressed.connect(_on_cancel_tool_download.bind(tool_id, version))
-			
-			if progress_container != null:
-				progress_container.visible = true
+		_download_dialog.popup_centered()
 
 ## Signal handler: cancel tool download button pressed.
 func _on_cancel_tool_download(tool_id: String, version: String) -> void:
@@ -1015,13 +1014,6 @@ func _on_cancel_tool_download(tool_id: String, version: String) -> void:
 	if tools_controller != null:
 		tools_controller.cancel_download(tool_id, version)
 		_update_tools_connectivity_status(tools_controller.is_online())
-		
-		# Cancel progress tracking
-		if progress_controller != null:
-			progress_controller.cancel_progress(tool_id, version)
-		
-		# Refresh UI to reset button state
-		_populate_tools_ui()
 
 func _on_remove_tool_pressed(tool_id: String, version: String) -> void:
 	"""Shows confirmation before removing an installed tool version."""

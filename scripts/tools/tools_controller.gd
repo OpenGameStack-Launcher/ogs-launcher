@@ -22,6 +22,8 @@ signal tool_list_refresh_failed(error_message: String)
 signal tool_download_started(tool_id: String, version: String)
 signal tool_download_complete(tool_id: String, version: String, success: bool, error_message: String)
 signal tool_download_progress(tool_id: String, version: String, bytes_downloaded: int, total_bytes: int)
+signal tool_install_started(tool_id: String, version: String)
+signal tool_install_progress(tool_id: String, version: String, file_count: int, total_files: int)
 signal connectivity_checked(is_online: bool)
 
 var remote_repository_url: String
@@ -53,6 +55,7 @@ func _init(tree: SceneTree, repo_url: String):
 	# Connect hydrator signals for progress tracking
 	remote_hydrator.tool_download_progress.connect(_on_download_progress)
 	remote_hydrator.tool_install_started.connect(_on_install_started)
+	remote_hydrator.tool_install_progress.connect(_on_install_progress)
 	remote_hydrator.tool_install_complete.connect(_on_install_complete)
 
 ## Refreshes the tool list by fetching remote repository.json and scanning library.
@@ -273,7 +276,11 @@ func _on_download_progress(tool_id: String, version: String, bytes_downloaded: i
 
 func _on_install_started(tool_id: String, version: String) -> void:
 	"""Forwards install started signals."""
-	tool_download_started.emit(tool_id, version)
+	tool_install_started.emit(tool_id, version)
+
+func _on_install_progress(tool_id: String, version: String, file_count: int, total_files: int) -> void:
+	"""Forwards install progress signals."""
+	tool_install_progress.emit(tool_id, version, file_count, total_files)
 
 func _on_install_complete(tool_id: String, version: String, success: bool, error_message: String) -> void:
 	"""Handles install completion."""
@@ -382,13 +389,14 @@ func cancel_download(tool_id: String, version: String) -> void:
 	  version (String): Version string
 	"""
 	var key = "%s_%s" % [tool_id, version]
-	_currently_downloading.erase(key)
+	# Intentionally NOT erasing from _currently_downloading here so the UI knows it's still busy cancelling/cleaning up.
+	# The key will be erased when the hydrator emits tool_install_complete with success=false.
+	
+	if remote_hydrator != null and remote_hydrator.has_method("cancel_download"):
+		remote_hydrator.cancel_download(tool_id, version)
 	
 	OgsLogger.info("tool_download_cancelled", {
 		"component": "tools",
 		"tool_id": tool_id,
 		"version": version
 	})
-	
-	# Note: RemoteMirrorHydrator doesn't currently support cancellation mid-download
-	# This just clears the tracking state. Future enhancement would signal the hydrator.

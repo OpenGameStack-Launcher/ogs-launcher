@@ -10,6 +10,7 @@ class_name RemoteMirrorHydrator
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 signal tool_install_started(tool_id: String, version: String)
+signal tool_install_progress(tool_id: String, version: String, file_count: int, total_files: int)
 signal tool_install_complete(tool_id: String, version: String, success: bool, error_message: String)
 signal tool_download_progress(tool_id: String, version: String, bytes_downloaded: int, total_bytes: int)
 signal hydration_complete(success: bool, failed_tools: Array)
@@ -22,6 +23,8 @@ var extractor: ToolExtractor
 var library: LibraryManager
 var worker_thread: Thread
 var scene_tree: SceneTree = null
+var _cancelled_tools: Dictionary = {}
+var _cancel_mutex: Mutex = Mutex.new()
 
 func _init(repo_url: String = "", tree: SceneTree = null):
 	"""Initializes the remote mirror hydrator with a repository URL.
@@ -39,6 +42,21 @@ func _init(repo_url: String = "", tree: SceneTree = null):
 func set_repository_url(repo_url: String) -> void:
 	"""Sets the remote repository URL."""
 	repository_url = repo_url
+	
+## Flags an active download for cancellation.
+func cancel_download(tool_id: String, version: String) -> void:
+	"""Marks a tool for cancellation to abort the download loop."""
+	var key = "%s_%s" % [tool_id, version]
+	_cancel_mutex.lock()
+	_cancelled_tools[key] = true
+	_cancel_mutex.unlock()
+
+func _is_cancelled(tool_id: String, version: String) -> bool:
+	var key = "%s_%s" % [tool_id, version]
+	_cancel_mutex.lock()
+	var cancelled = _cancelled_tools.has(key)
+	_cancel_mutex.unlock()
+	return cancelled
 
 ## Hydrates missing tools from the remote mirror into the library.
 ## Parameters:
@@ -148,7 +166,10 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			result["failed_tools"].append(tool_entry)
 			continue
 
-		_emit_tool_install_started(tool_id, version)
+		var key = "%s_%s" % [tool_id, version]
+		_cancel_mutex.lock()
+		_cancelled_tools.erase(key)
+		_cancel_mutex.unlock()
 
 		if library.tool_exists(tool_id, version):
 			OgsLogger.debug("remote_tool_skip", {
@@ -210,7 +231,28 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 				_emit_tool_install_complete(tool_id, version, false, mismatch)
 				continue
 
-		var extract_result = extractor.extract_to_library(temp_archive, tool_id, version)
+		if _is_cancelled(tool_id, version):
+			if FileAccess.file_exists(temp_archive):
+				DirAccess.remove_absolute(temp_archive)
+			result["failed_count"] += 1
+			result["failed_tools"].append(tool_entry)
+			_emit_tool_install_complete(tool_id, version, false, "Cancelled")
+			continue
+
+		_emit_tool_install_started(tool_id, version)
+		var progress_cb = func(fc: int, tf: int): _emit_tool_install_progress(tool_id, version, fc, tf)
+		var extract_result = extractor.extract_to_library(temp_archive, tool_id, version, _is_cancelled.bind(tool_id, version), progress_cb)
+		
+		# Second cancellation checkpoint: Abort and delete if cancelled during extraction
+		if _is_cancelled(tool_id, version):
+			if FileAccess.file_exists(temp_archive):
+				DirAccess.remove_absolute(temp_archive)
+			library.remove_tool(tool_id, version)
+			result["failed_count"] += 1
+			result["failed_tools"].append(tool_entry)
+			_emit_tool_install_complete(tool_id, version, false, "Cancelled")
+			continue
+			
 		if not extract_result["success"]:
 			result["failed_count"] += 1
 			result["failed_tools"].append(tool_entry)
@@ -257,6 +299,17 @@ func _emit_tool_install_started(tool_id: String, version: String) -> void:
 func _emit_tool_install_started_now(tool_id: String, version: String) -> void:
 	"""Deferred emit for tool_install_started."""
 	tool_install_started.emit(tool_id, version)
+
+func _emit_tool_install_progress(tool_id: String, version: String, file_count: int, total_files: int) -> void:
+	"""Emits tool_install_progress safely across threads."""
+	if scene_tree != null:
+		call_deferred("_emit_tool_install_progress_now", tool_id, version, file_count, total_files)
+	else:
+		tool_install_progress.emit(tool_id, version, file_count, total_files)
+
+func _emit_tool_install_progress_now(tool_id: String, version: String, file_count: int, total_files: int) -> void:
+	"""Deferred emit for tool_install_progress."""
+	tool_install_progress.emit(tool_id, version, file_count, total_files)
 
 func _emit_tool_install_complete(tool_id: String, version: String, success: bool, error_message: String) -> void:
 	"""Emits tool_install_complete safely across threads."""
@@ -441,6 +494,13 @@ func _http_download_to_file(url: String, dest_path: String, _redirect_url: Strin
 	
 	var bytes_downloaded = 0
 	while client.get_status() == HTTPClient.STATUS_BODY:
+		if not tool_id.is_empty() and not version.is_empty():
+			if _is_cancelled(tool_id, version):
+				file.close()
+				if FileAccess.file_exists(dest_path):
+					DirAccess.remove_absolute(dest_path)
+				return {"success": false, "error": "cancelled"}
+				
 		client.poll()
 		var chunk = client.read_response_body_chunk()
 		if chunk.size() == 0:

@@ -65,7 +65,7 @@ func _init():
 ##       "tool_path": String (set if success),
 ##       "extracted_files": int (count of files extracted)
 ##   }
-func extract_to_library(archive_path: String, tool_id: String, version: String) -> Dictionary:
+func extract_to_library(archive_path: String, tool_id: String, version: String, is_cancelled_callback: Callable = Callable(), progress_callback: Callable = Callable()) -> Dictionary:
 	var result = {
 		"success": false,
 		"error_code": ExtractionError.INVALID_PARAMETERS,
@@ -125,8 +125,13 @@ func extract_to_library(archive_path: String, tool_id: String, version: String) 
 			return result
 	
 	# Perform extraction
-	var extraction_result = _extract_zip(archive_path, target_dir)
+	var extraction_result = _extract_zip(archive_path, target_dir, is_cancelled_callback, progress_callback)
 	if not extraction_result["success"]:
+		if extraction_result.get("error", "") == "cancelled":
+			result["error_code"] = ExtractionError.EXTRACTION_FAILED
+			result["error_message"] = "Extraction cancelled"
+			return result
+			
 		result["error_code"] = ExtractionError.EXTRACTION_FAILED
 		result["error_message"] = extraction_result["error"]
 		OgsLogger.error("extraction_failed", {
@@ -182,7 +187,7 @@ func validate_archive(archive_path: String) -> Dictionary:
 
 # Private helper: extract zip using ZipReader
 # MVP: Stubbed for Phase 2 - actual implementation requires ZipReader integration
-func _extract_zip(archive_path: String, _target_dir: String) -> Dictionary:
+func _extract_zip(archive_path: String, _target_dir: String, is_cancelled_callback: Callable = Callable(), progress_callback: Callable = Callable()) -> Dictionary:
 	var result = {
 		"success": false,
 		"error": "",
@@ -207,7 +212,13 @@ func _extract_zip(archive_path: String, _target_dir: String) -> Dictionary:
 
 	var root_prefix = _compute_common_root_prefix(normalized_files)
 	var file_count = 0
+	var total_files = normalized_files.size()
 	for file_path in normalized_files:
+		if is_cancelled_callback.is_valid() and is_cancelled_callback.call():
+			reader.close()
+			result["error"] = "cancelled"
+			return result
+			
 		if not _is_safe_zip_path(file_path):
 			reader.close()
 			result["error"] = "Unsafe path in archive"
@@ -237,6 +248,9 @@ func _extract_zip(archive_path: String, _target_dir: String) -> Dictionary:
 		out_file.store_buffer(data)
 		out_file.close()
 		file_count += 1
+		
+		if progress_callback.is_valid():
+			progress_callback.call(file_count, total_files)
 
 	reader.close()
 	result["success"] = true

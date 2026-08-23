@@ -177,6 +177,24 @@ func set_install_phase(tool_id: String, version: String) -> void:
 		label.text = "Installing..."
 		label.visible = true
 
+func update_install_progress(tool_id: String, version: String, file_count: int, total_files: int) -> void:
+	"""Update the progress bar and label for installation phase."""
+	var key = _make_key(tool_id, version)
+	var data = tracked_items.get(key)
+	
+	if data == null or data["phase"] != Phase.INSTALL:
+		return
+		
+	var progress_bar = data.get("progress_bar")
+	var label = data.get("label")
+	
+	if progress_bar != null and total_files > 0:
+		progress_bar.indeterminate = false
+		progress_bar.value = (file_count * 100.0) / total_files
+		
+	if label != null and total_files > 0:
+		label.text = "Installing... (%d / %d files)" % [file_count, total_files]
+
 ## Marks progress as complete and cleans up tracking.
 ##
 ## Hides progress UI, emits completion signal, and removes tracking data.
