@@ -8,12 +8,12 @@ class_name ProjectSealValidator
 
 ## Validates a project before seal operations begin.
 ## Parameters:
-##   project_path (String): Absolute path to project
-##   library (LibraryManager): Library manager instance for tool lookups
+## project_path (String): Absolute path to project
+## library (LibraryManager): Library manager instance for tool lookups
 ## Returns:
-##   Dictionary: {"success": bool, "errors": Array, "manifest": StackManifest}
+## Dictionary: {"success": bool, "errors": Array, "manifest": StackManifest}
 func validate_project(project_path: String, library: LibraryManager) -> Dictionary:
-	"""Checks project folder, manifest validity, and tool availability."""
+	## Checks project folder, manifest validity, and tool availability.
 	var result = {
 		"success": false,
 		"errors": [],

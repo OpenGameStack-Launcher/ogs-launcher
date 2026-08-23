@@ -7,11 +7,11 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 ## Creates zip archive for project and returns output metadata.
 ## Parameters:
-##   project_path (String): Absolute project path to archive
+## project_path (String): Absolute project path to archive
 ## Returns:
-##   Dictionary: {"success": bool, "errors": Array, "zip_path": String, "size_mb": float}
+## Dictionary: {"success": bool, "errors": Array, "zip_path": String, "size_mb": float}
 func create_sealed_zip(project_path: String) -> Dictionary:
-	"""Packages full project content into a timestamped zip archive."""
+	## Packages full project content into a timestamped zip archive.
 	var result = {
 		"success": false,
 		"errors": [],
@@ -137,11 +137,11 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 
 ## Recursively collects files under a directory.
 ## Parameters:
-##   dir_path (String): Absolute directory path to scan
+## dir_path (String): Absolute directory path to scan
 ## Returns:
-##   Array[String]: Absolute file paths
+## Array[String]: Absolute file paths
 func _collect_files_recursive(dir_path: String) -> Array[String]:
-	"""Builds a complete file list used by zip packaging."""
+	## Builds a complete file list used by zip packaging.
 	var files: Array[String] = []
 	var dir = DirAccess.open(dir_path)
 	if dir == null:

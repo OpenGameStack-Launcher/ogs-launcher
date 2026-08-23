@@ -1,11 +1,11 @@
 ## TestRunner: Headless Test Execution Entry Point
 ##
 ## Loads all test suites, aggregates results, and exits with status code:
-##   0 = All tests passed
-##   1 = One or more tests failed
+## 0 = All tests passed
+## 1 = One or more tests failed
 ##
 ## Usage:
-##   godot --headless --script res://tests/test_runner.gd
+## godot --headless --script res://tests/test_runner.gd
 
 extends SceneTree
 
@@ -13,12 +13,12 @@ var should_quit := false
 var exit_code := 0
 
 func _init() -> void:
-	"""Initializes the test runner."""
+	## Initializes the test runner.
 	# Schedule the actual tests to run in _process on the next frame
 	pass
 
 func _process(_delta: float) -> bool:
-	"""Called once per frame. Runs tests on first frame."""
+	## Called once per frame. Runs tests on first frame.
 	if should_quit:
 		return true
 	
@@ -126,7 +126,7 @@ func _process(_delta: float) -> bool:
 	return true
 
 func _setup_test_library() -> void:
-	"""Sets up an isolated test library directory and sets OGS_LIBRARY_ROOT env var."""
+	## Sets up an isolated test library directory and sets OGS_LIBRARY_ROOT env var.
 	var appdata = OS.get_environment("LOCALAPPDATA")
 	if appdata.is_empty():
 		# Fall back to user data dir on non-Windows
@@ -138,7 +138,7 @@ func _setup_test_library() -> void:
 	print("TestRunner: Test library isolated to %s" % test_library_root)
 
 func _cleanup_test_library() -> void:
-	"""Removes test library directory after tests complete."""
+	## Removes test library directory after tests complete.
 	var appdata = OS.get_environment("LOCALAPPDATA")
 	if appdata.is_empty():
 		appdata = OS.get_user_data_dir()
@@ -149,7 +149,7 @@ func _cleanup_test_library() -> void:
 		print("TestRunner: Cleaned up test library at %s" % test_library_root)
 
 func _recursive_remove_dir(path: String) -> void:
-	"""Recursively removes a directory and all its contents."""
+	## Recursively removes a directory and all its contents.
 	var dir = DirAccess.open(path)
 	if dir:
 		dir.list_dir_begin()

@@ -5,13 +5,13 @@
 ## enforces launcher behavior in air-gapped mode.
 ##
 ## Usage:
-##   OfflineEnforcer.apply_config(config)
-##   if OfflineEnforcer.is_offline():
-##       var result = OfflineEnforcer.guard_network_call("tool_download")
+## OfflineEnforcer.apply_config(config)
+## if OfflineEnforcer.is_offline():
+## var result = OfflineEnforcer.guard_network_call("tool_download")
 ##
 ## Notes:
-##   - When offline, sets OGS_OFFLINE=1 in the current process environment.
-##   - Guard methods return structured errors for consistent UI handling.
+## - When offline, sets OGS_OFFLINE=1 in the current process environment.
+## - Guard methods return structured errors for consistent UI handling.
 
 extends RefCounted
 class_name OfflineEnforcer
@@ -25,10 +25,10 @@ static var _offline_active := false
 static var _reason := "unknown"
 
 static func apply_config(config: OgsConfig) -> void:
-	"""Applies offline state from config and updates environment.
-	Parameters:
-	  config (OgsConfig): Loaded config or null
-	"""
+	## Applies offline state from config and updates environment.
+## Parameters:
+## config (OgsConfig): Loaded config or null
+## 
 	if config == null:
 		SOCKET_BLOCKER.reset_allowlist()
 		_set_offline(false, "unknown")
@@ -43,20 +43,20 @@ static func apply_config(config: OgsConfig) -> void:
 	_set_offline(false, "disabled")
 
 static func is_offline() -> bool:
-	"""Returns true when offline enforcement is active."""
+	## Returns true when offline enforcement is active.
 	return _offline_active
 
 static func get_reason() -> String:
-	"""Returns the current offline enforcement reason."""
+	## Returns the current offline enforcement reason.
 	return _reason
 
 static func guard_network_call(context: String) -> Dictionary:
-	"""Blocks network operations when offline.
-	Parameters:
-	  context (String): Short description for logging/UI
-	Returns:
-	  Dictionary: {"allowed": bool, "error_code": String, "error_message": String}
-	"""
+	## Blocks network operations when offline.
+## Parameters:
+## context (String): Short description for logging/UI
+## Returns:
+## Dictionary: {"allowed": bool, "error_code": String, "error_message": String}
+## 
 	if not _offline_active:
 		return {
 			"allowed": true,
@@ -70,26 +70,26 @@ static func guard_network_call(context: String) -> Dictionary:
 	}
 
 static func reset() -> void:
-	"""Resets offline enforcement state for tests."""
+	## Resets offline enforcement state for tests.
 	SOCKET_BLOCKER.reset_allowlist()
 	_set_offline(false, "reset")
 
 static func _apply_allowlist_config(config: OgsConfig) -> void:
-	"""Applies config-based socket allowlist with secure defaults.
-	Parameters:
-	  config (OgsConfig): Loaded config containing allowed hosts/ports
-	"""
+	## Applies config-based socket allowlist with secure defaults.
+## Parameters:
+## config (OgsConfig): Loaded config containing allowed hosts/ports
+## 
 	if config.allowed_hosts.is_empty() and config.allowed_ports.is_empty():
 		SOCKET_BLOCKER.reset_allowlist()
 		return
 	SOCKET_BLOCKER.set_allowlist(config.allowed_hosts, config.allowed_ports)
 
 static func _set_offline(active: bool, reason: String) -> void:
-	"""Updates internal state and environment flag.
-	Parameters:
-	  active (bool): Whether offline is active
-	  reason (String): Reason label for status displays
-	"""
+	## Updates internal state and environment flag.
+## Parameters:
+## active (bool): Whether offline is active
+## reason (String): Reason label for status displays
+## 
 	_offline_active = active
 	_reason = reason
 	OS.set_environment("OGS_OFFLINE", "1" if active else "0")

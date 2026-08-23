@@ -1,10 +1,10 @@
 ## ProjectsPageIndicatorsTests: Tests for tool availability indicators
 ##
 ## Verifies that the Projects page correctly displays:
-##   - ⚠️ indicator for missing but available tools
-##   - ❌ indicator for missing and unavailable tools
-##   - No indicator for installed tools
-##   - Click-through navigation to Tools page
+## - ⚠️ indicator for missing but available tools
+## - ❌ indicator for missing and unavailable tools
+## - No indicator for installed tools
+## - Click-through navigation to Tools page
 
 extends RefCounted
 class_name ProjectsPageIndicatorsTests
@@ -14,9 +14,9 @@ const ToolsControllerScript = preload("res://scripts/tools/tools_controller.gd")
 const TEST_REGISTRY_PATH := "user://projects_page_indicators_tests.json"
 
 func run() -> Dictionary:
-	"""Runs all Projects page indicator tests.
-	Returns:
-	  Dictionary: {"passed": int, "failed": int, "failures": Array[String]}"""
+	## Runs all Projects page indicator tests.
+## Returns:
+## Dictionary: {"passed": int, "failed": int, "failures": Array[String]}
 	var results := {
 		"passed": 0,
 		"failed": 0,
@@ -26,7 +26,7 @@ func run() -> Dictionary:
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
-	"""Records test assertion."""
+	## Records test assertion.
 	if condition:
 		results["passed"] += 1
 	else:
@@ -34,9 +34,9 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 		results["failures"].append(message)
 
 func _build_projects_controller() -> Dictionary:
-	"""Creates a projects controller with UI nodes and tools controller.
-	Returns:
-	  Dictionary: {"controller": ProjectsController, "tools_controller": ToolsController, ...}"""
+	## Creates a projects controller with UI nodes and tools controller.
+## Returns:
+## Dictionary: {"controller": ProjectsController, "tools_controller": ToolsController, ...}
 	var projects_controller = ProjectsControllerScript.new()
 	projects_controller.set_projects_index_path_for_tests(TEST_REGISTRY_PATH)
 	var tools_controller = ToolsControllerScript.new(null, "")  # null scene tree, empty URL
@@ -96,7 +96,7 @@ func _build_projects_controller() -> Dictionary:
 	}
 
 func _cleanup_nodes(nodes: Array) -> void:
-	"""Frees UI nodes created during tests to avoid leaks."""
+	## Frees UI nodes created during tests to avoid leaks.
 	for node in nodes:
 		if node is Node:
 			node.free()
@@ -104,7 +104,7 @@ func _cleanup_nodes(nodes: Array) -> void:
 		DirAccess.remove_absolute(ProjectSettings.globalize_path(TEST_REGISTRY_PATH))
 
 func _test_availability_tracking(results: Dictionary) -> void:
-	"""Verifies _tool_availability dictionary is populated correctly."""
+	## Verifies _tool_availability dictionary is populated correctly.
 	var ctx = _build_projects_controller()
 	var controller = ctx["controller"]
 	

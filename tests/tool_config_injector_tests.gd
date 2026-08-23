@@ -4,9 +4,9 @@ extends RefCounted
 class_name ToolConfigInjectorTests
 
 func run() -> Dictionary:
-	"""Runs ToolConfigInjector unit tests.
-	Returns:
-	  Dictionary: {"passed": int, "failed": int, "failures": Array[String]}"""
+	## Runs ToolConfigInjector unit tests.
+## Returns:
+## Dictionary: {"passed": int, "failed": int, "failures": Array[String]}
 	var results := {"passed": 0, "failed": 0, "failures": []}
 	_test_blender_args(results)
 	_test_godot_settings_written(results)
@@ -15,11 +15,11 @@ func run() -> Dictionary:
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
-	"""Records test assertions.
-	Parameters:
-	  condition (bool): Pass/fail condition
-	  message (String): Failure message
-	  results (Dictionary): Aggregated results"""
+	## Records test assertions.
+## Parameters:
+## condition (bool): Pass/fail condition
+## message (String): Failure message
+## results (Dictionary): Aggregated results
 	if condition:
 		results["passed"] += 1
 	else:
@@ -27,7 +27,7 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 		results["failures"].append(message)
 
 func _test_blender_args(results: Dictionary) -> void:
-	"""Verifies Blender offline args include python expression."""
+	## Verifies Blender offline args include python expression.
 	var result = ToolConfigInjector.apply("blender", "res://")
 	_expect(result["success"], "blender injection should succeed", results)
 	var args: PackedStringArray = result["args"]
@@ -35,7 +35,7 @@ func _test_blender_args(results: Dictionary) -> void:
 	_expect(args[0] == "--python-expr", "first arg should be --python-expr", results)
 
 func _test_godot_settings_written(results: Dictionary) -> void:
-	"""Verifies Godot settings file is written with offline overrides."""
+	## Verifies Godot settings file is written with offline overrides.
 	var result = ToolConfigInjector.apply("godot", "res://")
 	_expect(result["success"], "godot injection should succeed", results)
 	var settings_path = ToolConfigInjector._get_godot_settings_path()
@@ -46,7 +46,7 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 	_expect(int(config.get_value("network/debug", "bandwidth_limiter", 1)) == 0, "network/debug/bandwidth_limiter should be 0", results)
 
 func _test_krita_placeholder(results: Dictionary) -> void:
-	"""Verifies Krita placeholder override file and env flag are set."""
+	## Verifies Krita placeholder override file and env flag are set.
 	var result = ToolConfigInjector.apply("krita", "res://")
 	_expect(result["success"], "krita injection should succeed", results)
 	var file_path = "user://ogs_offline_overrides/krita.json"
@@ -60,7 +60,7 @@ func _test_krita_placeholder(results: Dictionary) -> void:
 		_expect(not payload.has("project_dir"), "krita override should not include project_dir", results)
 
 func _test_audacity_placeholder(results: Dictionary) -> void:
-	"""Verifies Audacity placeholder override file and env flag are set."""
+	## Verifies Audacity placeholder override file and env flag are set.
 	var result = ToolConfigInjector.apply("audacity", "res://")
 	_expect(result["success"], "audacity injection should succeed", results)
 	var file_path = "user://ogs_offline_overrides/audacity.json"

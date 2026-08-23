@@ -4,15 +4,15 @@
 ## Intended for the "New Project" workflow in the OGS Launcher UI.
 ##
 ## Standard Profile (OGS Default):
-##   - Godot 4.3 (Engine core)
-##   - Blender 4.2 LTS (3D modeling & animation)
-##   - Krita 5.2 (2D texture & UI assets)
-##   - Audacity 3.7 (Audio processing)
+## - Godot 4.3 (Engine core)
+## - Blender 4.2 LTS (3D modeling & animation)
+## - Krita 5.2 (2D texture & UI assets)
+## - Audacity 3.7 (Audio processing)
 ##
 ## Usage:
-##   var manifest = StackGenerator.create_default()
-##   StackGenerator.save_to_file(manifest, "res://stack.json")
-##   var json_text = StackGenerator.to_json_string(manifest, pretty=true)
+## var manifest = StackGenerator.create_default()
+## StackGenerator.save_to_file(manifest, "res://stack.json")
+## var json_text = StackGenerator.to_json_string(manifest, pretty=true)
 
 extends RefCounted
 class_name StackGenerator
@@ -24,9 +24,9 @@ const StackManifestScript = preload("res://scripts/manifest/stack_manifest.gd")
 
 ## Creates the standard OGS profile manifest.
 ## Returns:
-##   StackManifest: Pre-populated with Godot, Blender, Krita, Audacity (current versions)
+## StackManifest: Pre-populated with Godot, Blender, Krita, Audacity (current versions)
 static func create_default() -> StackManifest:
-	"""Creates the standard OGS profile with Godot, Blender, Krita, and Audacity."""
+	## Creates the standard OGS profile with Godot, Blender, Krita, and Audacity.
 	var manifest = StackManifestScript.new()
 	manifest.schema_version = SCHEMA_VERSION
 	manifest.stack_name = "OGS Standard Profile"
@@ -52,12 +52,12 @@ static func create_default() -> StackManifest:
 
 ## Converts a manifest to JSON string.
 ## Parameters:
-##   manifest (StackManifest): Manifest to serialize
-##   pretty (bool): If true, formats with tab indentation; if false, compact
+## manifest (StackManifest): Manifest to serialize
+## pretty (bool): If true, formats with tab indentation; if false, compact
 ## Returns:
-##   String: JSON representation of manifest (or empty if StackManifest is invalid)
+## String: JSON representation of manifest (or empty if StackManifest is invalid)
 static func to_json_string(manifest: StackManifest, pretty: bool = true) -> String:
-	"""Serializes a manifest to JSON with optional pretty-printing."""
+	## Serializes a manifest to JSON with optional pretty-printing.
 	var data = manifest.to_dict()
 	if pretty:
 		return JSON.stringify(data, "\t")
@@ -67,12 +67,12 @@ static func to_json_string(manifest: StackManifest, pretty: bool = true) -> Stri
 ## Saves a manifest to disk.
 ## Creates parent directories if needed (via Godot's FileAccess).
 ## Parameters:
-##   manifest (StackManifest): Manifest to save
-##   file_path (String): Destination path (e.g., "user://projects/myproject/stack.json")
+## manifest (StackManifest): Manifest to save
+## file_path (String): Destination path (e.g., "user://projects/myproject/stack.json")
 ## Returns:
-##   bool: True if write succeeded, false if file I/O failed
+## bool: True if write succeeded, false if file I/O failed
 static func save_to_file(manifest: StackManifest, file_path: String) -> bool:
-	"""Writes a manifest to disk. Returns true on success, false on I/O error."""
+	## Writes a manifest to disk. Returns true on success, false on I/O error.
 	var json_text = to_json_string(manifest, true)
 	var file = FileAccess.open(file_path, FileAccess.WRITE)
 	if file == null:

@@ -1,16 +1,16 @@
 ## OnboardingWizard: First-run welcome and default stack bootstrap.
 ##
 ## Manages the first-run experience:
-##   1. Detects if this is a first run
-##   2. Shows welcome screen with default stack information
-##   3. Handles one-click initialization of Godot 4.3 + Blender 4.2
-##   4. Marks wizard as complete
+## 1. Detects if this is a first run
+## 2. Shows welcome screen with default stack information
+## 3. Handles one-click initialization of Godot 4.3 + Blender 4.2
+## 4. Marks wizard as complete
 ##
 ## Usage:
-##   var wizard = OnboardingWizard.new()
-##   wizard.setup(scene_tree, library_root, onboarding_dialog, ogs_root_path)
-##   if wizard.should_show_wizard():
-##       wizard.show_wizard()
+## var wizard = OnboardingWizard.new()
+## wizard.setup(scene_tree, library_root, onboarding_dialog, ogs_root_path)
+## if wizard.should_show_wizard():
+## wizard.show_wizard()
 
 extends RefCounted
 class_name OnboardingWizard
@@ -28,12 +28,12 @@ var scene_tree: SceneTree = null
 
 ## Initializes the onboarding wizard.
 ## Parameters:
-##   tree (SceneTree): Scene tree for creating nodes
-##   library_root_path (String): Path where libraries are stored
-##   onboarding_dialog (AcceptDialog): The wizard dialog from the scene
-##   ogs_root_path (String): Base OGS data directory
+## tree (SceneTree): Scene tree for creating nodes
+## library_root_path (String): Path where libraries are stored
+## onboarding_dialog (AcceptDialog): The wizard dialog from the scene
+## ogs_root_path (String): Base OGS data directory
 func setup(tree: SceneTree, library_root_path: String, onboarding_dialog: AcceptDialog, ogs_root_path: String) -> void:
-	"""Sets up the wizard with required references."""
+	## Sets up the wizard with required references.
 	scene_tree = tree
 	library_root = library_root_path
 	dialog = onboarding_dialog
@@ -57,7 +57,7 @@ func setup(tree: SceneTree, library_root_path: String, onboarding_dialog: Accept
 
 ## Returns true if the wizard should be shown (first run).
 func should_show_wizard() -> bool:
-	"""Returns true if this is a first run and wizard hasn't been completed."""
+	## Returns true if this is a first run and wizard hasn't been completed.
 	# Check if wizard completion flag exists
 	if FileAccess.file_exists(wizard_complete_flag_path):
 		return false
@@ -77,14 +77,14 @@ func should_show_wizard() -> bool:
 
 ## Shows the wizard dialog.
 func show_wizard() -> void:
-	"""Displays the wizard dialog."""
+	## Displays the wizard dialog.
 	if dialog:
 		dialog.popup_centered()
 		OgsLogger.info("wizard_shown", {"component": "onboarding", "dialog_visible": dialog.visible})
 
 ## Marks the wizard as complete (won't show again).
 func mark_complete() -> void:
-	"""Writes completion flag to disk."""
+	## Writes completion flag to disk.
 	var file = FileAccess.open(wizard_complete_flag_path, FileAccess.WRITE)
 	if file != null:
 		file.store_string("completed")
@@ -92,7 +92,7 @@ func mark_complete() -> void:
 
 ## Signal handler: skip button pressed.
 func _on_skip_pressed() -> void:
-	"""User chose to skip wizard."""
+	## User chose to skip wizard.
 	if dialog:
 		dialog.hide()
 	mark_complete()
@@ -101,7 +101,7 @@ func _on_skip_pressed() -> void:
 
 ## Signal handler: start button pressed.
 func _on_start_pressed() -> void:
-	"""User chose to initialize default stack."""
+	## User chose to initialize default stack.
 	OgsLogger.info("wizard_start_pressed", {"component": "onboarding"})
 	if status_label:
 		status_label.text = "Initializing default stack..."
@@ -113,7 +113,7 @@ func _on_start_pressed() -> void:
 
 ## Initializes the default Stack (Godot 4.3 + Blender 4.2).
 func _initialize_default_stack() -> void:
-	"""Prepares the library for default stack tools."""
+	## Prepares the library for default stack tools.
 	# Create library directory structure
 	var lib_dir = library_root
 	if not DirAccess.dir_exists_absolute(lib_dir):

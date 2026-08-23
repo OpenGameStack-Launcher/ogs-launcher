@@ -36,7 +36,7 @@ func run() -> Dictionary:
 	return results
 
 func test_hydrator_initializes() -> Dictionary:
-	"""Verifies hydrator initializes properly."""
+	## Verifies hydrator initializes properly.
 	var hydrator = LibraryHydrator.new("https://mirror.ogs.io")
 	
 	if hydrator == null:
@@ -54,7 +54,7 @@ func test_hydrator_initializes() -> Dictionary:
 	return {"passed": true}
 
 func test_hydrate_empty_list_returns_success() -> Dictionary:
-	"""Verifies hydration returns success for empty tool list."""
+	## Verifies hydration returns success for empty tool list.
 	var hydrator = LibraryHydrator.new("https://mirror.ogs.io")
 	var result = hydrator.hydrate([])
 	
@@ -70,7 +70,7 @@ func test_hydrate_empty_list_returns_success() -> Dictionary:
 	return {"passed": true}
 
 func test_hydrate_returns_dict() -> Dictionary:
-	"""Verifies hydrate return structure."""
+	## Verifies hydrate return structure.
 	var hydrator = LibraryHydrator.new()
 	var result = hydrator.hydrate([])
 	
@@ -89,7 +89,7 @@ func test_hydrate_returns_dict() -> Dictionary:
 	return {"passed": true}
 
 func test_count_already_installed_returns_int() -> Dictionary:
-	"""Verifies count_already_installed returns an integer."""
+	## Verifies count_already_installed returns an integer.
 	var hydrator = LibraryHydrator.new()
 	var count = hydrator.count_already_installed([])
 	
@@ -102,7 +102,7 @@ func test_count_already_installed_returns_int() -> Dictionary:
 	return {"passed": true}
 
 func test_is_mirror_configured_false_when_empty() -> Dictionary:
-	"""Verifies mirror check returns false when empty."""
+	## Verifies mirror check returns false when empty.
 	var hydrator = LibraryHydrator.new("")
 	
 	if hydrator.is_mirror_configured():
@@ -111,7 +111,7 @@ func test_is_mirror_configured_false_when_empty() -> Dictionary:
 	return {"passed": true}
 
 func test_is_mirror_configured_true_when_set() -> Dictionary:
-	"""Verifies mirror check returns true when configured."""
+	## Verifies mirror check returns true when configured.
 	var hydrator = LibraryHydrator.new("https://mirror.ogs.io")
 	
 	if not hydrator.is_mirror_configured():

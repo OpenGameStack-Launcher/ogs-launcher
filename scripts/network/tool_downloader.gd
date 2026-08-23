@@ -4,20 +4,20 @@
 ## extracting them, and registering them in the central library.
 ##
 ## Workflow:
-##   1. Check if tool already in library → return success
-##   2. Guard: Check offline mode → block if offline
-##   3. Download: Fetch from mirror URL to temp location
-##   4. Extract: Use ToolExtractor to decompress into library
-##   5. Validate: Confirm tool is now in library
+## 1. Check if tool already in library → return success
+## 2. Guard: Check offline mode → block if offline
+## 3. Download: Fetch from mirror URL to temp location
+## 4. Extract: Use ToolExtractor to decompress into library
+## 5. Validate: Confirm tool is now in library
 ##
 ## This module respects the offline enforcement rules and will not attempt
 ## network access when offline_mode or force_offline is active.
 ##
 ## Usage:
-##   var downloader = ToolDownloader.new("https://mirror.ogs.io")
-##   var result = downloader.download_tool("godot", "4.3")
-##   if result.success:
-##       print("Tool ready: " + result.tool_path)
+## var downloader = ToolDownloader.new("https://mirror.ogs.io")
+## var result = downloader.download_tool("godot", "4.3")
+## if result.success:
+## print("Tool ready: " + result.tool_path)
 
 extends RefCounted
 class_name ToolDownloader
@@ -48,10 +48,9 @@ var extractor: ToolExtractor
 var temp_dir: String = ""
 
 func _init(mirror: String = "") -> void:
-	"""Initialize the downloader with a mirror URL.
-	Parameters:
-	  mirror (String): Base URL for the OGS mirror (e.g., "https://mirror.ogs.io/tools")
-	"""
+	## Initialize the downloader with a mirror URL.
+	## Parameters:
+	##   mirror (String): Base URL for the OGS mirror (e.g., "https://mirror.ogs.io/tools")
 	mirror_url = mirror
 	library = LibraryManager.new()
 	extractor = ToolExtractor.new()
@@ -63,20 +62,20 @@ func _init(mirror: String = "") -> void:
 
 ## Downloads and installs a tool to the central library.
 ## Parameters:
-##   tool_id (String): Tool identifier (e.g., "godot")
-##   version (String): Version string (e.g., "4.3")
+## tool_id (String): Tool identifier (e.g., "godot")
+## version (String): Version string (e.g., "4.3")
 ## Returns:
-##   Dictionary: {
-##       "success": bool,
-##       "error_code": int,
-##       "error_message": String,
-##       "tool_path": String (set if success),
-##       "already_exists": bool
-##   }
+## Dictionary: {
+## "success": bool,
+## "error_code": int,
+## "error_message": String,
+## "tool_path": String (set if success),
+## "already_exists": bool
+## }
 func download_tool(tool_id: String, version: String) -> Dictionary:
-	"""Attempts to download and install a tool.
-	Handles the complete workflow: check existence, download, extract, validate.
-	"""
+	## Attempts to download and install a tool.
+## Handles the complete workflow: check existence, download, extract, validate.
+## 
 	var result = {
 		"success": false,
 		"error_code": DownloadError.NOT_IMPLEMENTED,
@@ -185,11 +184,11 @@ func download_tool(tool_id: String, version: String) -> Dictionary:
 
 # Private helper: downloads archive from mirror
 func _download_archive(tool_id: String, version: String) -> Dictionary:
-	"""Downloads tool archive to temp directory.
-	STUBBED: Actual HTTP implementation will be added after Phase 2 infrastructure.
-	Returns:
-	  Dictionary: {"success": bool, "error": String, "archive_path": String}
-	"""
+	## Downloads tool archive to temp directory.
+## STUBBED: Actual HTTP implementation will be added after Phase 2 infrastructure.
+## Returns:
+## Dictionary: {"success": bool, "error": String, "archive_path": String}
+## 
 	var result = {
 		"success": false,
 		"error": "",
@@ -214,7 +213,7 @@ func _download_archive(tool_id: String, version: String) -> Dictionary:
 
 # Private helper: deletes archive after failed extraction
 func _cleanup_download(archive_path: String) -> void:
-	"""Attempts to clean up a failed download."""
+	## Attempts to clean up a failed download.
 	if FileAccess.file_exists(archive_path):
 		var err = DirAccess.remove_absolute(archive_path)
 		if err != OK:

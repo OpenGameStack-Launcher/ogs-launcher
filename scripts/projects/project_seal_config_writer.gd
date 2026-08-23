@@ -7,11 +7,11 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 ## Writes ogs_config.json configured for forced offline execution.
 ## Parameters:
-##   project_path (String): Absolute project path
+## project_path (String): Absolute project path
 ## Returns:
-##   Dictionary: {"success": bool, "errors": Array}
+## Dictionary: {"success": bool, "errors": Array}
 func write_offline_config(project_path: String) -> Dictionary:
-	"""Creates the forced-offline config file in project root."""
+	## Creates the forced-offline config file in project root.
 	var result = {
 		"success": false,
 		"errors": []

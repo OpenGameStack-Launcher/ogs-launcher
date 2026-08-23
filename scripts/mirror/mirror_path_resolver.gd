@@ -12,7 +12,7 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 ## Windows: %LOCALAPPDATA%/OGS/Mirror
 ## Unix:    ~/.config/ogs-launcher/mirror
 func get_mirror_root() -> String:
-	"""Returns the default mirror root directory for this platform."""
+	## Returns the default mirror root directory for this platform.
 	var root: String
 	if OS.get_name() == "Windows":
 		var appdata = OS.get_environment("LOCALAPPDATA")
@@ -44,11 +44,11 @@ func get_mirror_root() -> String:
 
 ## Normalizes a path string for consistent path handling.
 ## Parameters:
-##   path_str (String): Input path
+## path_str (String): Input path
 ## Returns:
-##   String: Normalized absolute path
+## String: Normalized absolute path
 func normalize_path(path_str: String) -> String:
-	"""Normalizes a path string to an absolute path."""
+	## Normalizes a path string to an absolute path.
 	if path_str.is_empty():
 		return ""
 	var normalized = path_str.replace("\\", "/")
@@ -66,12 +66,12 @@ func normalize_path(path_str: String) -> String:
 
 ## Resolves a mirror archive path and validates it is under the mirror root.
 ## Parameters:
-##   mirror_root (String): Base mirror directory
-##   archive_path (String): Relative archive path inside mirror
+## mirror_root (String): Base mirror directory
+## archive_path (String): Relative archive path inside mirror
 ## Returns:
-##   Dictionary: {"success": bool, "full_path": String, "error": String}
+## Dictionary: {"success": bool, "full_path": String, "error": String}
 func resolve_archive_path(mirror_root: String, archive_path: String) -> Dictionary:
-	"""Resolves and validates an archive path under the mirror root."""
+	## Resolves and validates an archive path under the mirror root.
 	var result = {"success": false, "full_path": "", "error": ""}
 	if mirror_root.is_empty():
 		result["error"] = "Mirror root is empty"
@@ -93,7 +93,7 @@ func resolve_archive_path(mirror_root: String, archive_path: String) -> Dictiona
 
 ## Checks if a path is under the given root directory.
 static func _is_path_under_root(full_path: String, root: String) -> bool:
-	"""Returns true if full_path is inside root (case-insensitive)."""
+	## Returns true if full_path is inside root (case-insensitive).
 	var normalized_root = root.simplify_path().to_lower()
 	var normalized_path = full_path.simplify_path().to_lower()
 	if normalized_path == normalized_root:

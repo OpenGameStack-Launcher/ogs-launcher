@@ -4,27 +4,27 @@
 ## from the central library and creates a sealed, offline-ready deliverable.
 ##
 ## Workflow:
-##   1. Validate project has stack.json and all required tools exist in library
-##   2. Create ./tools directory and copy tool binaries from library
-##   3. Write ogs_config.json with force_offline=true
-##   4. Create a sealed zip archive: [ProjectName]_Sealed_[Date].zip
+## 1. Validate project has stack.json and all required tools exist in library
+## 2. Create ./tools directory and copy tool binaries from library
+## 3. Write ogs_config.json with force_offline=true
+## 4. Create a sealed zip archive: [ProjectName]_Sealed_[Date].zip
 ##
 ## Result Dictionary:
-##   {
-##       "success": bool,
-##       "sealed_zip": String,        # Path to created zip (if success)
-##       "project_size_mb": float,    # Size of sealed artifact (if success)
-##       "tools_copied": Array[String], # Tool IDs that were copied
-##       "errors": Array[String]      # Error messages if failure
-##   }
+## {
+## "success": bool,
+## "sealed_zip": String,        # Path to created zip (if success)
+## "project_size_mb": float,    # Size of sealed artifact (if success)
+## "tools_copied": Array[String], # Tool IDs that were copied
+## "errors": Array[String]      # Error messages if failure
+## }
 ##
 ## Usage:
-##   var sealer = ProjectSealer.new()
-##   var result = sealer.seal_project("/path/to/project")
-##   if result.success:
-##       print("Sealed: " + result.sealed_zip)
-##   else:
-##       print("Error: " + str(result.errors))
+## var sealer = ProjectSealer.new()
+## var result = sealer.seal_project("/path/to/project")
+## if result.success:
+## print("Sealed: " + result.sealed_zip)
+## else:
+## print("Error: " + str(result.errors))
 
 extends RefCounted
 class_name ProjectSealer
@@ -51,9 +51,9 @@ func _init() -> void:
 
 ## Main entry point: seals a project for offline delivery.
 ## Parameters:
-##   project_path (String): Absolute path to the project directory
+## project_path (String): Absolute path to the project directory
 ## Returns:
-##   Dictionary: Seal operation result with success flag and metadata
+## Dictionary: Seal operation result with success flag and metadata
 func seal_project(project_path: String) -> Dictionary:
 	var result = {
 		"success": false,
@@ -142,23 +142,23 @@ func seal_project(project_path: String) -> Dictionary:
 ## Validates that the project exists, has stack.json, and all required tools are in library.
 ## Returns: {"success": bool, "errors": Array, "manifest": StackManifest}
 func _validate_project(project_path: String) -> Dictionary:
-	"""Delegates project pre-seal validation to ProjectSealValidator."""
+	## Delegates project pre-seal validation to ProjectSealValidator.
 	return validator.validate_project(project_path, library)
 
 ## Copies all tools from library to project's ./tools directory.
 ## Returns: {"success": bool, "errors": Array, "tools_copied": Array}
 func _copy_tools_to_local(project_path: String, manifest: StackManifest) -> Dictionary:
-	"""Delegates library-to-project tool copy operations to ProjectSealToolCopier."""
+	## Delegates library-to-project tool copy operations to ProjectSealToolCopier.
 	return copier.copy_tools_to_local(project_path, manifest, library)
 
 ## Writes ogs_config.json with force_offline=true to project root.
 ## Returns: {"success": bool, "errors": Array}
 func _write_offline_config(project_path: String) -> Dictionary:
-	"""Delegates offline config writing to ProjectSealConfigWriter."""
+	## Delegates offline config writing to ProjectSealConfigWriter.
 	return config_writer.write_offline_config(project_path)
 
 ## Creates a sealed zip archive of the entire project.
 ## Returns: {"success": bool, "errors": Array, "zip_path": String, "size_mb": float}
 func _create_sealed_zip(project_path: String) -> Dictionary:
-	"""Delegates zip packaging to ProjectSealArchiver."""
+	## Delegates zip packaging to ProjectSealArchiver.
 	return archiver.create_sealed_zip(project_path)

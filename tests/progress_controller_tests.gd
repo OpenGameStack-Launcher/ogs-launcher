@@ -9,7 +9,7 @@ class_name ProgressControllerTests
 const ProgressControllerScript = preload("res://scripts/tools/progress_controller.gd")
 
 func run() -> Dictionary:
-	"""Runs all ProgressController unit tests."""
+	## Runs all ProgressController unit tests.
 	var results = {
 		"passed": 0,
 		"failed": 0,
@@ -31,7 +31,7 @@ func run() -> Dictionary:
 
 ## Helper: Creates mock UI elements for testing.
 func _create_mock_ui() -> Dictionary:
-	"""Creates mock Progress Bar, Label, and Container nodes."""
+	## Creates mock Progress Bar, Label, and Container nodes.
 	return {
 		"progress_bar": ProgressBar.new(),
 		"label": Label.new(),
@@ -40,7 +40,7 @@ func _create_mock_ui() -> Dictionary:
 
 ## Helper: Frees mock UI elements.
 func _free_mock_ui(ui: Dictionary) -> void:
-	"""Frees all mock UI nodes."""
+	## Frees all mock UI nodes.
 	if ui.has("progress_bar") and ui["progress_bar"] != null:
 		ui["progress_bar"].free()
 	if ui.has("label") and ui["label"] != null:
@@ -50,7 +50,7 @@ func _free_mock_ui(ui: Dictionary) -> void:
 
 ## Helper: Assertion wrapper.
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
-	"""Records test result."""
+	## Records test result.
 	if condition:
 		results["passed"] += 1
 	else:
@@ -59,7 +59,7 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 
 ## Test: track_inline_progress registers tracking.
 func _test_track_inline_progress(results: Dictionary) -> void:
-	"""Verifies track_inline_progress registers progress tracking correctly."""
+	## Verifies track_inline_progress registers progress tracking correctly.
 	var controller = ProgressControllerScript.new()
 	var ui = _create_mock_ui()
 	
@@ -74,7 +74,7 @@ func _test_track_inline_progress(results: Dictionary) -> void:
 
 ## Test: update_progress shows progress UI.
 func _test_update_progress_basic(results: Dictionary) -> void:
-	"""Verifies update_progress shows and updates progress UI."""
+	## Verifies update_progress shows and updates progress UI.
 	var controller = ProgressControllerScript.new()
 	var ui = _create_mock_ui()
 	
@@ -93,7 +93,7 @@ func _test_update_progress_basic(results: Dictionary) -> void:
 
 ## Test: update_progress auto-transitions to install phase.
 func _test_update_progress_auto_install_transition(results: Dictionary) -> void:
-	"""Verifies update_progress auto-transitions to install when download completes."""
+	## Verifies update_progress auto-transitions to install when download completes.
 	var controller = ProgressControllerScript.new()
 	var ui = _create_mock_ui()
 	
@@ -108,7 +108,7 @@ func _test_update_progress_auto_install_transition(results: Dictionary) -> void:
 
 ## Test: set_install_phase transitions manually.
 func _test_set_install_phase(results: Dictionary) -> void:
-	"""Verifies set_install_phase transitions to install mode."""
+	## Verifies set_install_phase transitions to install mode.
 	var controller = ProgressControllerScript.new()
 	var ui = _create_mock_ui()
 	
@@ -124,7 +124,7 @@ func _test_set_install_phase(results: Dictionary) -> void:
 
 ## Test: complete_progress hides UI and cleans up.
 func _test_complete_progress(results: Dictionary) -> void:
-	"""Verifies complete_progress hides UI and removes tracking."""
+	## Verifies complete_progress hides UI and removes tracking.
 	var controller = ProgressControllerScript.new()
 	var ui = _create_mock_ui()
 	
@@ -140,7 +140,7 @@ func _test_complete_progress(results: Dictionary) -> void:
 
 ## Test: cancel_progress hides UI and cleans up.
 func _test_cancel_progress(results: Dictionary) -> void:
-	"""Verifies cancel_progress hides UI and removes tracking."""
+	## Verifies cancel_progress hides UI and removes tracking.
 	var controller = ProgressControllerScript.new()
 	var ui = _create_mock_ui()
 	
@@ -155,7 +155,7 @@ func _test_cancel_progress(results: Dictionary) -> void:
 
 ## Test: is_tracking works before and after tracking.
 func _test_is_tracking(results: Dictionary) -> void:
-	"""Verifies is_tracking returns correct state."""
+	## Verifies is_tracking returns correct state.
 	var controller = ProgressControllerScript.new()
 	var ui = _create_mock_ui()
 	
@@ -171,7 +171,7 @@ func _test_is_tracking(results: Dictionary) -> void:
 
 ## Test: get_phase returns correct phase.
 func _test_get_phase(results: Dictionary) -> void:
-	"""Verifies get_phase returns correct phase at each stage."""
+	## Verifies get_phase returns correct phase at each stage.
 	var controller = ProgressControllerScript.new()
 	var ui = _create_mock_ui()
 	
@@ -190,7 +190,7 @@ func _test_get_phase(results: Dictionary) -> void:
 
 ## Test: Multiple concurrent tool tracking.
 func _test_multiple_concurrent_tracking(results: Dictionary) -> void:
-	"""Verifies multiple tools can be tracked concurrently."""
+	## Verifies multiple tools can be tracked concurrently.
 	var controller = ProgressControllerScript.new()
 	var ui1 = _create_mock_ui()
 	var ui2 = _create_mock_ui()
@@ -222,7 +222,7 @@ func _test_multiple_concurrent_tracking(results: Dictionary) -> void:
 
 ## Test: Progress signals emitted correctly.
 func _test_progress_signals(results: Dictionary) -> void:
-	"""Verifies progress_completed and progress_cancelled signals emit."""
+	## Verifies progress_completed and progress_cancelled signals emit.
 	var controller = ProgressControllerScript.new()
 	var ui1 = _create_mock_ui()
 	var ui2 = _create_mock_ui()

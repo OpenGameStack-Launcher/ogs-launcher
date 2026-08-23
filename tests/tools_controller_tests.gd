@@ -11,15 +11,15 @@ class DummyHydrator:
 	var calls: Array = []
 
 	func _init() -> void:
-		"""Overrides parent initializer to avoid network setup."""
+		## Overrides parent initializer to avoid network setup.
 		pass
 
 	func hydrate_async(tools_to_install: Array) -> void:
-		"""Records hydrate requests without performing network work."""
+		## Records hydrate requests without performing network work.
 		calls.append(tools_to_install)
 
 func run() -> Dictionary:
-	"""Runs ToolsController unit tests."""
+	## Runs ToolsController unit tests.
 	var results = {"passed": 0, "failed": 0, "failures": []}
 	_test_download_tracking(results)
 	_test_download_not_found(results)
@@ -28,7 +28,7 @@ func run() -> Dictionary:
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
-	"""Records test assertions."""
+	## Records test assertions.
 	if condition:
 		results["passed"] += 1
 	else:
@@ -36,13 +36,13 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 		results["failures"].append(message)
 
 func _make_controller() -> ToolsController:
-	"""Creates a ToolsController with a dummy hydrator."""
+	## Creates a ToolsController with a dummy hydrator.
 	var controller = ToolsControllerScript.new(null, "https://example.com/repository.json")
 	controller.remote_hydrator = DummyHydrator.new()
 	return controller
 
 func _make_valid_repo() -> MirrorRepository:
-	"""Builds a valid repository with one tool entry."""
+	## Builds a valid repository with one tool entry.
 	var data = {
 		"schema_version": 1,
 		"mirror_name": "OGS",
@@ -58,7 +58,7 @@ func _make_valid_repo() -> MirrorRepository:
 	return MirrorRepositoryScript.from_dict(data)
 
 func _test_download_tracking(results: Dictionary) -> void:
-	"""Download should mark tool as active and clear on completion."""
+	## Download should mark tool as active and clear on completion.
 	var controller = _make_controller()
 	controller.repository = _make_valid_repo()
 
@@ -74,7 +74,7 @@ func _test_download_tracking(results: Dictionary) -> void:
 	_expect(not controller.has_active_downloads(), "active downloads should be false", results)
 
 func _test_download_not_found(results: Dictionary) -> void:
-	"""Download should not start when tool is missing."""
+	## Download should not start when tool is missing.
 	var controller = _make_controller()
 	controller.repository = MirrorRepositoryScript.from_dict({
 		"schema_version": 1,
@@ -90,7 +90,7 @@ func _test_download_not_found(results: Dictionary) -> void:
 	_expect(dummy.calls.is_empty(), "hydrate_async should not be called", results)
 
 func _test_download_already_active(results: Dictionary) -> void:
-	"""Second download request for same tool should be ignored."""
+	## Second download request for same tool should be ignored.
 	var controller = _make_controller()
 	controller.repository = _make_valid_repo()
 	controller._currently_downloading["godot_4.3"] = true
@@ -100,7 +100,7 @@ func _test_download_already_active(results: Dictionary) -> void:
 	_expect(dummy.calls.is_empty(), "duplicate download should not call hydrate_async", results)
 
 func _test_has_repository_data(results: Dictionary) -> void:
-	"""Repository data flag should reflect available tools list."""
+	## Repository data flag should reflect available tools list.
 	var controller = _make_controller()
 	controller._available_tools = []
 	_expect(not controller.has_repository_data(), "empty repository should report no data", results)

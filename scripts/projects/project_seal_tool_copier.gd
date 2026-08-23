@@ -10,13 +10,13 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 ## Copies all manifest tools from central library to project ./tools.
 ## Parameters:
-##   project_path (String): Absolute project path
-##   manifest (StackManifest): Parsed and validated stack manifest
-##   library (LibraryManager): Library manager instance for tool path resolution
+## project_path (String): Absolute project path
+## manifest (StackManifest): Parsed and validated stack manifest
+## library (LibraryManager): Library manager instance for tool path resolution
 ## Returns:
-##   Dictionary: {"success": bool, "errors": Array, "tools_copied": Array}
+## Dictionary: {"success": bool, "errors": Array, "tools_copied": Array}
 func copy_tools_to_local(project_path: String, manifest: StackManifest, library: LibraryManager) -> Dictionary:
-	"""Copies all required tools from library into the project-local tools folder."""
+	## Copies all required tools from library into the project-local tools folder.
 	var result = {
 		"success": false,
 		"errors": [],
@@ -64,12 +64,12 @@ func copy_tools_to_local(project_path: String, manifest: StackManifest, library:
 
 ## Recursively copies one directory to another.
 ## Parameters:
-##   source (String): Source directory path
-##   dest (String): Destination directory path
+## source (String): Source directory path
+## dest (String): Destination directory path
 ## Returns:
-##   int: Godot error code (OK on success)
+## int: Godot error code (OK on success)
 func _copy_directory_recursive(source: String, dest: String) -> int:
-	"""Copies nested directory content preserving structure."""
+	## Copies nested directory content preserving structure.
 	if not DirAccess.dir_exists_absolute(dest):
 		DirAccess.make_dir_recursive_absolute(dest)
 
@@ -101,12 +101,12 @@ func _copy_directory_recursive(source: String, dest: String) -> int:
 
 ## Copies a single file from source to destination.
 ## Parameters:
-##   source (String): Source file path
-##   dest (String): Destination file path
+## source (String): Source file path
+## dest (String): Destination file path
 ## Returns:
-##   int: Godot error code (OK on success)
+## int: Godot error code (OK on success)
 func _copy_file(source: String, dest: String) -> int:
-	"""Copies one file as raw bytes."""
+	## Copies one file as raw bytes.
 	var file = FileAccess.open(source, FileAccess.READ)
 	if file == null:
 		return FileAccess.get_open_error()

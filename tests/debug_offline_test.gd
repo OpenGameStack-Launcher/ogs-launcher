@@ -67,7 +67,7 @@ func _process(_delta: float) -> bool:
 	return true
 
 func _cleanup_library() -> void:
-	"""Removes test tool directories from the library."""
+	## Removes test tool directories from the library.
 	var appdata = OS.get_environment("LOCALAPPDATA")
 	if appdata.is_empty():
 		print("   LOCALAPPDATA not set, cannot cleanup")
@@ -84,7 +84,7 @@ func _cleanup_library() -> void:
 				print("   removed: ", tool_dir)
 
 func _recursive_remove_dir(path: String) -> void:
-	"""Recursively removes a directory and all its contents."""
+	## Recursively removes a directory and all its contents.
 	var dir = DirAccess.open(path)
 	if dir:
 		dir.list_dir_begin()

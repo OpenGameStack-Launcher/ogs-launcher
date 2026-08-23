@@ -6,19 +6,19 @@ class_name OgsLoggerTests
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 func run() -> Dictionary:
-	"""Runs Logger unit tests.
-	Returns:
-	  Dictionary: {"passed": int, "failed": int, "failures": Array[String]}"""
+	## Runs Logger unit tests.
+## Returns:
+## Dictionary: {"passed": int, "failed": int, "failures": Array[String]}
 	var results := {"passed": 0, "failed": 0, "failures": []}
 	_test_write_and_level_filter(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
-	"""Records test assertions.
-	Parameters:
-	  condition (bool): Pass/fail condition
-	  message (String): Failure message
-	  results (Dictionary): Aggregated results"""
+	## Records test assertions.
+## Parameters:
+## condition (bool): Pass/fail condition
+## message (String): Failure message
+## results (Dictionary): Aggregated results
 	if condition:
 		results["passed"] += 1
 	else:
@@ -26,7 +26,7 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 		results["failures"].append(message)
 
 func _test_write_and_level_filter(results: Dictionary) -> void:
-	"""Verifies log writes and level filtering."""
+	## Verifies log writes and level filtering.
 	OgsLogger.clear_logs_for_tests()
 	OgsLogger.set_level(OgsLogger.Level.WARN)
 	OgsLogger.info("info message", {"component": "test"})

@@ -4,21 +4,21 @@
 ## (embedded in tool cards) and future dialog-based progress for batch operations.
 ##
 ## Architecture:
-##   - Tracks multiple concurrent tool operations
-##   - Manages progress UI state (download → install phases)
-##   - Provides extensible design for future batch/queue operations
-##   - Emits completion/cancellation signals for coordination
+## - Tracks multiple concurrent tool operations
+## - Manages progress UI state (download → install phases)
+## - Provides extensible design for future batch/queue operations
+## - Emits completion/cancellation signals for coordination
 ##
 ## Usage (Inline Mode):
-##   var controller = ProgressController.new()
-##   controller.track_inline_progress("godot", "4.3", progress_bar, label, container)
-##   controller.update_progress("godot", "4.3", 1024000, 10240000)
-##   controller.set_install_phase("godot", "4.3")
-##   controller.complete_progress("godot", "4.3")
+## var controller = ProgressController.new()
+## controller.track_inline_progress("godot", "4.3", progress_bar, label, container)
+## controller.update_progress("godot", "4.3", 1024000, 10240000)
+## controller.set_install_phase("godot", "4.3")
+## controller.complete_progress("godot", "4.3")
 ##
 ## Future Usage (Dialog Mode):
-##   controller.track_dialog_progress(["godot_4.3", "blender_4.5.7"], dialog_node)
-##   controller.update_batch_progress(...)
+## controller.track_dialog_progress(["godot_4.3", "blender_4.5.7"], dialog_node)
+## controller.update_batch_progress(...)
 
 extends RefCounted
 class_name ProgressController
@@ -46,11 +46,11 @@ var tracked_items: Dictionary = {}
 ## label, container). Progress updates will be applied to these elements.
 ##
 ## Parameters:
-##   tool_id (String): Tool identifier (e.g., "godot")
-##   version (String): Tool version (e.g., "4.3")
-##   progress_bar (ProgressBar): The progress bar UI element
-##   label (Label): Label for progress text (e.g., "10.5 / 25.0 MB")
-##   container (Control): Container holding progress UI (for visibility control)
+## tool_id (String): Tool identifier (e.g., "godot")
+## version (String): Tool version (e.g., "4.3")
+## progress_bar (ProgressBar): The progress bar UI element
+## label (Label): Label for progress text (e.g., "10.5 / 25.0 MB")
+## container (Control): Container holding progress UI (for visibility control)
 func track_inline_progress(
 	tool_id: String,
 	version: String,
@@ -58,7 +58,7 @@ func track_inline_progress(
 	label: Label,
 	container: Control
 ) -> void:
-	"""Register inline progress tracking for a tool operation."""
+	## Register inline progress tracking for a tool operation.
 	var key = _make_key(tool_id, version)
 	
 	tracked_items[key] = {
@@ -88,17 +88,17 @@ func track_inline_progress(
 ## Automatically transitions to install phase when download completes.
 ##
 ## Parameters:
-##   tool_id (String): Tool identifier
-##   version (String): Tool version
-##   bytes_downloaded (int): Bytes downloaded so far
-##   total_bytes (int): Total bytes to download (0 = unknown)
+## tool_id (String): Tool identifier
+## version (String): Tool version
+## bytes_downloaded (int): Bytes downloaded so far
+## total_bytes (int): Total bytes to download (0 = unknown)
 func update_progress(
 	tool_id: String,
 	version: String,
 	bytes_downloaded: int,
 	total_bytes: int
 ) -> void:
-	"""Update download progress for a tracked tool."""
+	## Update download progress for a tracked tool.
 	var key = _make_key(tool_id, version)
 	var data = tracked_items.get(key)
 	
@@ -146,10 +146,10 @@ func update_progress(
 ## can be called manually when extraction starts.
 ##
 ## Parameters:
-##   tool_id (String): Tool identifier
-##   version (String): Tool version
+## tool_id (String): Tool identifier
+## version (String): Tool version
 func set_install_phase(tool_id: String, version: String) -> void:
-	"""Transition to installation phase with indeterminate progress."""
+	## Transition to installation phase with indeterminate progress.
 	var key = _make_key(tool_id, version)
 	var data = tracked_items.get(key)
 	
@@ -178,7 +178,7 @@ func set_install_phase(tool_id: String, version: String) -> void:
 		label.visible = true
 
 func update_install_progress(tool_id: String, version: String, file_count: int, total_files: int) -> void:
-	"""Update the progress bar and label for installation phase."""
+	## Update the progress bar and label for installation phase.
 	var key = _make_key(tool_id, version)
 	var data = tracked_items.get(key)
 	
@@ -201,10 +201,10 @@ func update_install_progress(tool_id: String, version: String, file_count: int, 
 ## Should be called when tool operation finishes successfully.
 ##
 ## Parameters:
-##   tool_id (String): Tool identifier
-##   version (String): Tool version
+## tool_id (String): Tool identifier
+## version (String): Tool version
 func complete_progress(tool_id: String, version: String) -> void:
-	"""Mark progress as complete and clean up."""
+	## Mark progress as complete and clean up.
 	var key = _make_key(tool_id, version)
 	var data = tracked_items.get(key)
 	
@@ -230,10 +230,10 @@ func complete_progress(tool_id: String, version: String) -> void:
 ## Should be called when user cancels operation or operation fails.
 ##
 ## Parameters:
-##   tool_id (String): Tool identifier
-##   version (String): Tool version
+## tool_id (String): Tool identifier
+## version (String): Tool version
 func cancel_progress(tool_id: String, version: String) -> void:
-	"""Cancel progress and clean up tracking."""
+	## Cancel progress and clean up tracking.
 	var key = _make_key(tool_id, version)
 	var data = tracked_items.get(key)
 	
@@ -254,26 +254,26 @@ func cancel_progress(tool_id: String, version: String) -> void:
 ## Checks if a tool is currently being tracked.
 ##
 ## Parameters:
-##   tool_id (String): Tool identifier
-##   version (String): Tool version
+## tool_id (String): Tool identifier
+## version (String): Tool version
 ##
 ## Returns:
-##   bool: True if tool is tracked, False otherwise
+## bool: True if tool is tracked, False otherwise
 func is_tracking(tool_id: String, version: String) -> bool:
-	"""Check if a tool is currently tracked."""
+	## Check if a tool is currently tracked.
 	var key = _make_key(tool_id, version)
 	return tracked_items.has(key)
 
 ## Gets the current phase for a tracked tool.
 ##
 ## Parameters:
-##   tool_id (String): Tool identifier
-##   version (String): Tool version
+## tool_id (String): Tool identifier
+## version (String): Tool version
 ##
 ## Returns:
-##   Phase: Current phase, or null if not tracked
+## Phase: Current phase, or null if not tracked
 func get_phase(tool_id: String, version: String):
-	"""Get current phase for a tracked tool."""
+	## Get current phase for a tracked tool.
 	var key = _make_key(tool_id, version)
 	var data = tracked_items.get(key)
 	if data != null:
@@ -282,5 +282,5 @@ func get_phase(tool_id: String, version: String):
 
 ## Internal: Creates a unique key for tool tracking.
 func _make_key(tool_id: String, version: String) -> String:
-	"""Generate unique key for tool."""
+	## Generate unique key for tool.
 	return "%s_%s" % [tool_id, version]

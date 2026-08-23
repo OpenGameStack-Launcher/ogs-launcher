@@ -36,7 +36,7 @@ func run() -> Dictionary:
 	return results
 
 func test_validator_initializes() -> Dictionary:
-	"""Verifies validator initializes with valid state."""
+	## Verifies validator initializes with valid state.
 	var validator = ProjectEnvironmentValidator.new()
 	
 	if validator == null:
@@ -48,7 +48,7 @@ func test_validator_initializes() -> Dictionary:
 	return {"passed": true}
 
 func test_validate_project_empty_dir_fails() -> Dictionary:
-	"""Verifies validation fails for empty directory."""
+	## Verifies validation fails for empty directory.
 	var validator = ProjectEnvironmentValidator.new()
 	var result = validator.validate_project("")
 	
@@ -61,7 +61,7 @@ func test_validate_project_empty_dir_fails() -> Dictionary:
 	return {"passed": true}
 
 func test_validate_project_missing_stack_fails() -> Dictionary:
-	"""Verifies validation fails when stack.json is missing."""
+	## Verifies validation fails when stack.json is missing.
 	var validator = ProjectEnvironmentValidator.new()
 	
 	# Use a directory that exists but has no stack.json
@@ -76,7 +76,7 @@ func test_validate_project_missing_stack_fails() -> Dictionary:
 	return {"passed": true}
 
 func test_validate_project_returns_dict() -> Dictionary:
-	"""Verifies validation result has required structure."""
+	## Verifies validation result has required structure.
 	var validator = ProjectEnvironmentValidator.new()
 	var result = validator.validate_project("user://")
 	
@@ -101,7 +101,7 @@ func test_validate_project_returns_dict() -> Dictionary:
 	return {"passed": true}
 
 func test_get_download_list_returns_array() -> Dictionary:
-	"""Verifies get_download_list returns proper structure."""
+	## Verifies get_download_list returns proper structure.
 	var validator = ProjectEnvironmentValidator.new()
 	
 	var missing_tools = [
@@ -123,7 +123,7 @@ func test_get_download_list_returns_array() -> Dictionary:
 	return {"passed": true}
 
 func test_is_library_accessible_returns_dict() -> Dictionary:
-	"""Verifies library accessibility check returns proper structure."""
+	## Verifies library accessibility check returns proper structure.
 	var validator = ProjectEnvironmentValidator.new()
 	var result = validator.is_library_accessible()
 	

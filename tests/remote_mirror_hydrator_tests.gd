@@ -6,7 +6,7 @@ class_name RemoteMirrorHydratorTests
 const RemoteMirrorHydratorScript = preload("res://scripts/mirror/remote_mirror_hydrator.gd")
 
 func run() -> Dictionary:
-	"""Runs RemoteMirrorHydrator unit tests."""
+	## Runs RemoteMirrorHydrator unit tests.
 	var results = {"passed": 0, "failed": 0, "failures": []}
 	_cleanup_library()
 	_test_missing_repository_url(results)
@@ -16,7 +16,7 @@ func run() -> Dictionary:
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
-	"""Records test assertions."""
+	## Records test assertions.
 	if condition:
 		results["passed"] += 1
 	else:
@@ -24,7 +24,7 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 		results["failures"].append(message)
 
 func _test_missing_repository_url(results: Dictionary) -> void:
-	"""Hydration should fail when repository_url is missing."""
+	## Hydration should fail when repository_url is missing.
 	OfflineEnforcer.reset()
 	var hydrator = RemoteMirrorHydratorScript.new("")
 	var result = hydrator.hydrate([
@@ -33,7 +33,7 @@ func _test_missing_repository_url(results: Dictionary) -> void:
 	_expect(result["success"] == false, "should fail without repository_url", results)
 
 func _test_invalid_repository_json(results: Dictionary) -> void:
-	"""Hydration should fail when repository.json is invalid."""
+	## Hydration should fail when repository.json is invalid.
 	OfflineEnforcer.reset()
 	var temp_root = OS.get_user_data_dir().path_join("remote_repo_invalid")
 	if not DirAccess.dir_exists_absolute(temp_root):
@@ -56,7 +56,7 @@ func _test_invalid_repository_json(results: Dictionary) -> void:
 		DirAccess.remove_absolute(temp_root)
 
 func _test_missing_archive_file(results: Dictionary) -> void:
-	"""Hydration should fail when archive_url points to a missing local file."""
+	## Hydration should fail when archive_url points to a missing local file.
 	OfflineEnforcer.reset()
 	var temp_root = OS.get_user_data_dir().path_join("remote_repo_missing_archive")
 	if not DirAccess.dir_exists_absolute(temp_root):
@@ -93,7 +93,7 @@ func _test_missing_archive_file(results: Dictionary) -> void:
 		DirAccess.remove_absolute(temp_root)
 
 func _cleanup_library() -> void:
-	"""Removes test tool directories from the library."""
+	## Removes test tool directories from the library.
 	var appdata = OS.get_environment("LOCALAPPDATA")
 	if appdata.is_empty():
 		appdata = OS.get_user_data_dir()
@@ -106,7 +106,7 @@ func _cleanup_library() -> void:
 				_recursive_remove_dir(tool_dir)
 
 func _recursive_remove_dir(path: String) -> void:
-	"""Recursively removes a directory and all its contents."""
+	## Recursively removes a directory and all its contents.
 	var dir = DirAccess.open(path)
 	if dir:
 		dir.list_dir_begin()

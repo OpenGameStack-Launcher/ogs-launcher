@@ -4,10 +4,10 @@
 ## especially air-gap enforcement and offline mode.
 ##
 ## Usage:
-##   var config = OgsConfig.load_from_file("res://ogs_config.json")
-##   if config.is_offline():
-##       # enforce sovereign mode
-##       pass
+## var config = OgsConfig.load_from_file("res://ogs_config.json")
+## if config.is_offline():
+## # enforce sovereign mode
+## pass
 
 extends RefCounted
 class_name OgsConfig
@@ -24,9 +24,9 @@ var allowed_ports: Array[int] = []
 var errors: Array[String] = []
 
 func to_dict() -> Dictionary:
-	"""Converts config to dictionary for serialization in the OGS lifecycle.
-	Returns:
-	  Dictionary: Config payload including offline and allowlist controls."""
+	## Converts config to dictionary for serialization in the OGS lifecycle.
+## Returns:
+## Dictionary: Config payload including offline and allowlist controls.
 	return {
 		"schema_version": schema_version,
 		"offline_mode": offline_mode,
@@ -36,49 +36,49 @@ func to_dict() -> Dictionary:
 	}
 
 static func load_from_file(file_path: String) -> OgsConfig:
-	"""Loads OGS config from disk or returns defaults when missing.
-	Parameters:
-	  file_path (String): Path to ogs_config.json
-	Returns:
-	  OgsConfig: Loaded config object for launcher startup policy."""
+	## Loads OGS config from disk or returns defaults when missing.
+## Parameters:
+## file_path (String): Path to ogs_config.json
+## Returns:
+## OgsConfig: Loaded config object for launcher startup policy.
 	var config := OgsConfig.new()
 	config._load_from_file(file_path)
 	return config
 
 static func parse_json_string(json_text: String) -> OgsConfig:
-	"""Parses config JSON text into an OgsConfig object.
-	Parameters:
-	  json_text (String): Raw JSON string
-	Returns:
-	  OgsConfig: Parsed config or validation-error instance."""
+	## Parses config JSON text into an OgsConfig object.
+## Parameters:
+## json_text (String): Raw JSON string
+## Returns:
+## OgsConfig: Parsed config or validation-error instance.
 	var config := OgsConfig.new()
 	config._load_from_json_string(json_text)
 	return config
 
 static func from_dict(data: Dictionary) -> OgsConfig:
-	"""Builds config from dictionary data.
-	Parameters:
-	  data (Dictionary): Input configuration dictionary
-	Returns:
-	  OgsConfig: Parsed config object with validation state."""
+	## Builds config from dictionary data.
+## Parameters:
+## data (Dictionary): Input configuration dictionary
+## Returns:
+## OgsConfig: Parsed config object with validation state.
 	var config := OgsConfig.new()
 	config._load_from_dict(data)
 	return config
 
 func is_offline() -> bool:
-	"""Returns whether sovereign/offline mode is active for launcher behavior."""
+	## Returns whether sovereign/offline mode is active for launcher behavior.
 	return offline_mode or force_offline
 
 func is_valid() -> bool:
-	"""Returns true when schema and field validation produced no errors."""
+	## Returns true when schema and field validation produced no errors.
 	return errors.is_empty()
 
 static func validate_data(data: Dictionary) -> Array[String]:
-	"""Validates schema and policy fields for launcher configuration.
-	Parameters:
-	  data (Dictionary): Config dictionary to validate
-	Returns:
-	  Array[String]: Validation error codes; empty means valid."""
+	## Validates schema and policy fields for launcher configuration.
+## Parameters:
+## data (Dictionary): Config dictionary to validate
+## Returns:
+## Array[String]: Validation error codes; empty means valid.
 	var found_errors: Array[String] = []
 
 	if data.has("schema_version"):
@@ -126,9 +126,9 @@ static func validate_data(data: Dictionary) -> Array[String]:
 	return found_errors
 
 func _load_from_file(file_path: String) -> void:
-	"""Internal loader for startup config from disk in OGS lifecycle.
-	Parameters:
-	  file_path (String): Config file path to read."""
+	## Internal loader for startup config from disk in OGS lifecycle.
+## Parameters:
+## file_path (String): Config file path to read.
 	errors.clear()
 	if not FileAccess.file_exists(file_path):
 		OgsLogger.debug("config_missing", {"component": "config"})
@@ -145,9 +145,9 @@ func _load_from_file(file_path: String) -> void:
 	_load_from_json_string(json_text)
 
 func _load_from_json_string(json_text: String) -> void:
-	"""Internal JSON parser for OGS config payloads.
-	Parameters:
-	  json_text (String): Raw config JSON string."""
+	## Internal JSON parser for OGS config payloads.
+## Parameters:
+## json_text (String): Raw config JSON string.
 	errors.clear()
 	if json_text.strip_edges().is_empty():
 		OgsLogger.warn("config_parse_failed", {"component": "config"})
@@ -167,9 +167,9 @@ func _load_from_json_string(json_text: String) -> void:
 	_load_from_dict(data)
 
 func _load_from_dict(data: Dictionary) -> void:
-	"""Internal field mapping and normalization from validated dictionary.
-	Parameters:
-	  data (Dictionary): Parsed config dictionary."""
+	## Internal field mapping and normalization from validated dictionary.
+## Parameters:
+## data (Dictionary): Parsed config dictionary.
 	errors = validate_data(data)
 	if not errors.is_empty():
 		OgsLogger.warn("config_validation_failed", {"component": "config", "error_count": errors.size()})

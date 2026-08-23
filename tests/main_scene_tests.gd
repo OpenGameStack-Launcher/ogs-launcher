@@ -6,9 +6,9 @@ extends RefCounted
 class_name MainSceneTests
 
 func run() -> Dictionary:
-	"""Runs main scene smoke tests.
-	Returns:
-	  Dictionary: {"passed": int, "failed": int, "failures": Array[String]}"""
+	## Runs main scene smoke tests.
+## Returns:
+## Dictionary: {"passed": int, "failed": int, "failures": Array[String]}
 	var results := {
 		"passed": 0,
 		"failed": 0,
@@ -19,11 +19,11 @@ func run() -> Dictionary:
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
-	"""Records test assertion.
-	Parameters:
-	  condition (bool): If true, increments passed; if false, increments failed
-	  message (String): Failure description
-	  results (Dictionary): Test accumulator (modified in-place)"""
+	## Records test assertion.
+## Parameters:
+## condition (bool): If true, increments passed; if false, increments failed
+## message (String): Failure description
+## results (Dictionary): Test accumulator (modified in-place)
 	if condition:
 		results["passed"] += 1
 	else:
@@ -31,7 +31,7 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 		results["failures"].append(message)
 
 func _test_main_scene_loads(results: Dictionary) -> void:
-	"""Verifies main.tscn loads and projects page is visible by default."""
+	## Verifies main.tscn loads and projects page is visible by default.
 	var scene = load("res://main.tscn")
 	_expect(scene != null, "main.tscn should load", results)
 	if scene == null:
@@ -67,7 +67,7 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 	instance.free()
 
 func _test_network_ui_disabled_offline(results: Dictionary) -> void:
-	"""Verifies network-related controls are disabled in offline mode."""
+	## Verifies network-related controls are disabled in offline mode.
 	var scene = load("res://main.tscn")
 	if scene == null:
 		_expect(false, "main.tscn should load for offline UI test", results)

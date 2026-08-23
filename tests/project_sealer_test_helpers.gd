@@ -5,11 +5,11 @@ class_name ProjectSealerTestHelpers
 
 ## Creates a temporary project + temporary library tool fixture for seal success tests.
 ## Parameters:
-##   prefix (String): Prefix for generated fixture directories
+## prefix (String): Prefix for generated fixture directories
 ## Returns:
-##   Dictionary: {"success": bool, "error": String, "project_dir": String, "tool_id": String, "version": String, "library_tool_root": String}
+## Dictionary: {"success": bool, "error": String, "project_dir": String, "tool_id": String, "version": String, "library_tool_root": String}
 func create_seal_success_fixture(prefix: String) -> Dictionary:
-	"""Builds a deterministic fixture that allows ProjectSealer success-path testing."""
+	## Builds a deterministic fixture that allows ProjectSealer success-path testing.
 	var suffix = str(Time.get_unix_time_from_system()) + "_" + str(Time.get_ticks_usec())
 	var project_dir = "user://%s_%s" % [prefix, suffix]
 	var tool_id = "sealer_tool_" + suffix
@@ -51,9 +51,9 @@ func create_seal_success_fixture(prefix: String) -> Dictionary:
 
 ## Cleans temporary fixture directories created for tests.
 ## Parameters:
-##   fixture (Dictionary): Fixture dictionary from create_seal_success_fixture()
+## fixture (Dictionary): Fixture dictionary from create_seal_success_fixture()
 func cleanup_seal_fixture(fixture: Dictionary) -> void:
-	"""Deletes test project and temporary library tool directories."""
+	## Deletes test project and temporary library tool directories.
 	if fixture.has("project_dir"):
 		remove_directory_recursive(String(fixture.project_dir))
 	if fixture.has("library_tool_root"):
@@ -61,9 +61,9 @@ func cleanup_seal_fixture(fixture: Dictionary) -> void:
 
 ## Removes a directory recursively if it exists.
 ## Parameters:
-##   path (String): Directory path to remove
+## path (String): Directory path to remove
 func remove_directory_recursive(path: String) -> void:
-	"""Recursively deletes files and directories for fixture cleanup."""
+	## Recursively deletes files and directories for fixture cleanup.
 	if path.is_empty() or not DirAccess.dir_exists_absolute(path):
 		return
 

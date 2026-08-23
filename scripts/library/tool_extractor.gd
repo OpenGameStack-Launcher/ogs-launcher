@@ -5,30 +5,30 @@
 ## actual tool binaries are in a subdirectory of the archive).
 ##
 ## Extraction workflow:
-##   1. Download tool .zip to a temporary location
-##   2. Call extract_to_library() with the .zip path
-##   3. Extractor unzips to [LIBRARY_ROOT]/[tool_id]/[version]/
-##   4. If extraction succeeds, temp .zip is deleted
-##   5. LibraryManager can then discover the tool
+## 1. Download tool .zip to a temporary location
+## 2. Call extract_to_library() with the .zip path
+## 3. Extractor unzips to [LIBRARY_ROOT]/[tool_id]/[version]/
+## 4. If extraction succeeds, temp .zip is deleted
+## 5. LibraryManager can then discover the tool
 ##
 ## Example nested structure handling:
-##   Archive: godot-4.3-windows-x64.zip
-##   Contents:
-##     godot-4.3-windows-x64/
-##       godot.exe
-##       ... other files
-##   Result after extraction:
-##     [LIBRARY_ROOT]/godot/4.3/godot.exe
+## Archive: godot-4.3-windows-x64.zip
+## Contents:
+## godot-4.3-windows-x64/
+## godot.exe
+## ... other files
+## Result after extraction:
+## [LIBRARY_ROOT]/godot/4.3/godot.exe
 ##
 ## Usage:
-##   var extractor = ToolExtractor.new()
-##   var result = extractor.extract_to_library(
-##       "C:/Downloads/godot-4.3.zip",
-##       "godot",
-##       "4.3"
-##   )
-##   if result.success:
-##       print("Tool ready at: " + result.tool_path)
+## var extractor = ToolExtractor.new()
+## var result = extractor.extract_to_library(
+## "C:/Downloads/godot-4.3.zip",
+## "godot",
+## "4.3"
+## )
+## if result.success:
+## print("Tool ready at: " + result.tool_path)
 
 extends RefCounted
 class_name ToolExtractor
@@ -53,18 +53,18 @@ func _init() -> void:
 ## Extracts a tool archive to the library.
 ##
 ## Parameters:
-##   archive_path (String): Full path to the .zip file
-##   tool_id (String): Tool identifier (e.g., "godot")
-##   version (String): Version string (e.g., "4.3")
+## archive_path (String): Full path to the .zip file
+## tool_id (String): Tool identifier (e.g., "godot")
+## version (String): Version string (e.g., "4.3")
 ##
 ## Returns:
-##   Dictionary: {
-##       "success": bool,
-##       "error_code": int,
-##       "error_message": String,
-##       "tool_path": String (set if success),
-##       "extracted_files": int (count of files extracted)
-##   }
+## Dictionary: {
+## "success": bool,
+## "error_code": int,
+## "error_message": String,
+## "tool_path": String (set if success),
+## "extracted_files": int (count of files extracted)
+## }
 func extract_to_library(archive_path: String, tool_id: String, version: String, is_cancelled_callback: Callable = Callable(), progress_callback: Callable = Callable()) -> Dictionary:
 	var result = {
 		"success": false,
@@ -171,9 +171,9 @@ func extract_to_library(archive_path: String, tool_id: String, version: String, 
 
 ## Validates that an archive is a valid zip file.
 ## Parameters:
-##   archive_path (String): Path to file to validate
+## archive_path (String): Path to file to validate
 ## Returns:
-##   Dictionary: {"valid": bool, "error": String}
+## Dictionary: {"valid": bool, "error": String}
 func validate_archive(archive_path: String) -> Dictionary:
 	if not FileAccess.file_exists(archive_path):
 		return {"valid": false, "error": "File not found"}
@@ -259,7 +259,7 @@ func _extract_zip(archive_path: String, _target_dir: String, is_cancelled_callba
 
 ## Computes a common root directory prefix from a list of archive paths.
 static func _compute_common_root_prefix(paths: Array[String]) -> String:
-	"""Returns a common root prefix ending with '/' if all files share it."""
+	## Returns a common root prefix ending with '/' if all files share it.
 	if paths.is_empty():
 		return ""
 	var candidate = ""
@@ -282,7 +282,7 @@ static func _compute_common_root_prefix(paths: Array[String]) -> String:
 
 ## Checks that a zip path is safe and relative (no traversal, no absolute paths).
 static func _is_safe_zip_path(path: String) -> bool:
-	"""Returns true if the path is safe for extraction."""
+	## Returns true if the path is safe for extraction.
 	if path.is_empty():
 		return false
 	if path.begins_with("/") or path.begins_with("\\"):
@@ -297,7 +297,7 @@ static func _is_safe_zip_path(path: String) -> bool:
 
 ## Checks if a path is under a target directory.
 static func _is_path_under_root(full_path: String, root: String) -> bool:
-	"""Returns true if full_path is inside root (case-insensitive)."""
+	## Returns true if full_path is inside root (case-insensitive).
 	var normalized_root = root.simplify_path().to_lower()
 	var normalized_path = full_path.simplify_path().to_lower()
 	if normalized_path == normalized_root:

@@ -4,11 +4,11 @@
 ## Provides a clean separation between layout logic and business logic.
 ##
 ## Usage:
-##   var layout = LayoutController.new()
-##   layout.setup(
-##       btn_projects, btn_tools, btn_settings,
-##       page_projects, page_tools, page_settings
-##   )
+## var layout = LayoutController.new()
+## layout.setup(
+## btn_projects, btn_tools, btn_settings,
+## page_projects, page_tools, page_settings
+## )
 
 extends RefCounted
 class_name LayoutController
@@ -22,8 +22,8 @@ var _current_page: String = ""
 
 ## Sets up the layout controller with sidebar buttons and content pages.
 ## Parameters:
-##   btn_projects, btn_tools, btn_settings: Sidebar buttons
-##   page_projects, page_tools, page_settings: Content pages
+## btn_projects, btn_tools, btn_settings: Sidebar buttons
+## page_projects, page_tools, page_settings: Content pages
 func setup(
 	btn_projects: Button,
 	btn_tools: Button,
@@ -32,7 +32,7 @@ func setup(
 	page_tools: Control,
 	page_settings: Control
 ) -> void:
-	"""Configures the layout with buttons and pages."""
+	## Configures the layout with buttons and pages.
 	_sidebar_buttons = {
 		"projects": btn_projects,
 		"tools": btn_tools,
@@ -55,9 +55,9 @@ func setup(
 
 ## Navigates to a specific page by name.
 ## Parameters:
-##   page_name (String): One of "projects", "tools", "settings"
+## page_name (String): One of "projects", "tools", "settings"
 func navigate_to(page_name: String) -> void:
-	"""Shows the specified page and hides others."""
+	## Shows the specified page and hides others.
 	if not _pages.has(page_name):
 		return
 	
@@ -73,10 +73,10 @@ func navigate_to(page_name: String) -> void:
 
 ## Returns the name of the currently visible page.
 func get_current_page() -> String:
-	"""Returns the current page name."""
+	## Returns the current page name.
 	return _current_page
 
 ## Internal handler for page button presses.
 func _on_page_button_pressed(page_name: String) -> void:
-	"""Called when a sidebar button is pressed."""
+	## Called when a sidebar button is pressed.
 	navigate_to(page_name)

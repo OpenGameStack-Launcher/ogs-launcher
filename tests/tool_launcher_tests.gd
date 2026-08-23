@@ -37,7 +37,7 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 		results["failures"].append(message)
 
 func _test_missing_path_field(results: Dictionary) -> void:
-	"""Validates that missing 'path' field resolves from library (and fails if not in library)."""
+	## Validates that missing 'path' field resolves from library (and fails if not in library).
 	var tool_entry = {"id": "godot", "version": "4.3"}
 	var result = ToolLauncher.launch(tool_entry, "C:/Projects/test")
 	
@@ -49,7 +49,7 @@ func _test_missing_path_field(results: Dictionary) -> void:
 	_expect(result["pid"] == -1, "failed launch should return pid -1", results)
 
 func _test_empty_path_field(results: Dictionary) -> void:
-	"""Validates that empty 'path' field returns TOOL_PATH_MISSING error."""
+	## Validates that empty 'path' field returns TOOL_PATH_MISSING error.
 	var tool_entry = {"id": "godot", "version": "4.3", "path": ""}
 	var result = ToolLauncher.launch(tool_entry, "C:/Projects/test")
 	
@@ -58,7 +58,7 @@ func _test_empty_path_field(results: Dictionary) -> void:
 		"empty path should return TOOL_PATH_MISSING", results)
 
 func _test_empty_project_dir(results: Dictionary) -> void:
-	"""Validates that empty project directory returns INVALID_PROJECT_DIR error."""
+	## Validates that empty project directory returns INVALID_PROJECT_DIR error.
 	var tool_entry = {"id": "godot", "version": "4.3", "path": "tools/godot.exe"}
 	var result = ToolLauncher.launch(tool_entry, "")
 	
@@ -67,7 +67,7 @@ func _test_empty_project_dir(results: Dictionary) -> void:
 		"empty project dir should return INVALID_PROJECT_DIR", results)
 
 func _test_tool_not_found(results: Dictionary) -> void:
-	"""Validates that non-existent tool path returns TOOL_NOT_FOUND error."""
+	## Validates that non-existent tool path returns TOOL_NOT_FOUND error.
 	var tool_entry = {"id": "godot", "version": "4.3", "path": "tools/nonexistent.exe"}
 	var result = ToolLauncher.launch(tool_entry, "C:/Projects/test")
 	
@@ -76,7 +76,7 @@ func _test_tool_not_found(results: Dictionary) -> void:
 		"nonexistent tool should return TOOL_NOT_FOUND", results)
 
 func _test_godot_arguments(results: Dictionary) -> void:
-	"""Validates that Godot tool launches in editor mode with project path."""
+	## Validates that Godot tool launches in editor mode with project path.
 	var args = ToolLauncher._build_launch_arguments("godot", "C:/Projects/MyGame")
 	
 	_expect(args.size() == 3, "godot should get 3 args (--editor + --path + dir)", results)
@@ -85,19 +85,19 @@ func _test_godot_arguments(results: Dictionary) -> void:
 	_expect(args[2] == "C:/Projects/MyGame", "third arg should be project dir", results)
 
 func _test_blender_arguments(results: Dictionary) -> void:
-	"""Validates that Blender tool receives no special arguments."""
+	## Validates that Blender tool receives no special arguments.
 	var args = ToolLauncher._build_launch_arguments("blender", "C:/Projects/MyGame")
 	
 	_expect(args.size() == 0, "blender should get no special args", results)
 
 func _test_unknown_tool_arguments(results: Dictionary) -> void:
-	"""Validates that unknown tools receive no special arguments."""
+	## Validates that unknown tools receive no special arguments.
 	var args = ToolLauncher._build_launch_arguments("krita", "C:/Projects/MyGame")
 	
 	_expect(args.size() == 0, "unknown tool should get no special args", results)
 
 func _test_absolute_path_handling(results: Dictionary) -> void:
-	"""Validates that absolute paths are rejected."""
+	## Validates that absolute paths are rejected.
 	var tool_entry = {"id": "test", "version": "1.0", "path": "C:/absolute/path/test.exe"}
 	var result = ToolLauncher.launch(tool_entry, "C:/Projects/MyGame")
 	
@@ -106,7 +106,7 @@ func _test_absolute_path_handling(results: Dictionary) -> void:
 		"absolute paths should be rejected", results)
 
 func _test_relative_path_handling(results: Dictionary) -> void:
-	"""Validates that relative paths are joined with project directory."""
+	## Validates that relative paths are joined with project directory.
 	var tool_entry = {"id": "test", "version": "1.0", "path": "tools/relative.exe"}
 	var result = ToolLauncher.launch(tool_entry, "C:/Projects/MyGame")
 	
@@ -115,7 +115,7 @@ func _test_relative_path_handling(results: Dictionary) -> void:
 		"error should show joined relative path", results)
 
 func _test_path_traversal_blocked(results: Dictionary) -> void:
-	"""Validates that path traversal outside the project root is blocked."""
+	## Validates that path traversal outside the project root is blocked.
 	var tool_entry = {"id": "test", "version": "1.0", "path": "../outside.exe"}
 	var result = ToolLauncher.launch(tool_entry, "C:/Projects/MyGame")
 	_expect(not result["success"], "path traversal should fail", results)
@@ -123,7 +123,7 @@ func _test_path_traversal_blocked(results: Dictionary) -> void:
 		"path traversal should return TOOL_PATH_OUTSIDE_ROOT", results)
 
 func _test_find_existing_godot_project(results: Dictionary) -> void:
-	"""Validates existing nested project.godot paths are detected for launch."""
+	## Validates existing nested project.godot paths are detected for launch.
 	var project_dir = ProjectSettings.globalize_path("user://tool_launcher_existing_project")
 	var godot_dir = project_dir.path_join("game")
 	var project_file = godot_dir.path_join("project.godot")
@@ -140,7 +140,7 @@ func _test_find_existing_godot_project(results: Dictionary) -> void:
 	_expect(not resolve_result["created"], "existing project should not be recreated", results)
 
 func _test_create_godot_project_when_missing(results: Dictionary) -> void:
-	"""Validates missing Godot project files are created under game/."""
+	## Validates missing Godot project files are created under game/.
 	var project_dir = ProjectSettings.globalize_path("user://tool_launcher_create_project")
 	DirAccess.make_dir_recursive_absolute(project_dir)
 	var existing_root_project = project_dir.path_join("project.godot")
@@ -181,7 +181,7 @@ func _test_create_godot_project_when_missing(results: Dictionary) -> void:
 		_expect(false, "created project.godot should be readable", results)
 
 func _test_resolve_ogs_project_name_from_stack(results: Dictionary) -> void:
-	"""Validates stack.json stack_name is preferred for Godot project naming."""
+	## Validates stack.json stack_name is preferred for Godot project naming.
 	var project_dir = ProjectSettings.globalize_path("user://tool_launcher_stack_name")
 	DirAccess.make_dir_recursive_absolute(project_dir)
 	var stack_path = project_dir.path_join("stack.json")
@@ -197,7 +197,7 @@ func _test_resolve_ogs_project_name_from_stack(results: Dictionary) -> void:
 	_expect(resolved_name == "Named From Stack", "stack_name should be resolved from stack.json", results)
 
 func _test_sha256_mismatch(results: Dictionary) -> void:
-	"""Validates sha256 mismatch is detected before spawning tools."""
+	## Validates sha256 mismatch is detected before spawning tools.
 	var project_dir = ProjectSettings.globalize_path("user://tool_launcher_tests")
 	var rel_path = "tools/mock_tool.bin"
 	var full_path = project_dir.path_join(rel_path)
@@ -218,7 +218,7 @@ func _test_sha256_mismatch(results: Dictionary) -> void:
 		"sha256 mismatch should return TOOL_HASH_MISMATCH", results)
 
 func _test_sha256_invalid(results: Dictionary) -> void:
-	"""Validates invalid sha256 values are rejected."""
+	## Validates invalid sha256 values are rejected.
 	var project_dir = ProjectSettings.globalize_path("user://tool_launcher_tests")
 	var rel_path = "tools/mock_tool_invalid.bin"
 	var full_path = project_dir.path_join(rel_path)
@@ -239,7 +239,7 @@ func _test_sha256_invalid(results: Dictionary) -> void:
 		"invalid sha256 should return TOOL_HASH_INVALID", results)
 
 func _test_offline_injection_failure(results: Dictionary) -> void:
-	"""Verifies offline injection errors are surfaced when config write fails."""
+	## Verifies offline injection errors are surfaced when config write fails.
 	var tool_entry = {"id": "godot", "version": "4.3", "path": "tools/missing.exe"}
 	var config = OgsConfigScript.from_dict({"offline_mode": true})
 	OfflineEnforcer.apply_config(config)
