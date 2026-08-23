@@ -26,12 +26,11 @@ var scene_tree: SceneTree = null
 var _cancelled_tools: Dictionary = {}
 var _cancel_mutex: Mutex = Mutex.new()
 
-func _init(repo_url: String = "", tree: SceneTree = null):
+func _init(repo_url: String = "", tree: SceneTree = null) -> void:
 	## Initializes the remote mirror hydrator with a repository URL.
-## Parameters:
-## repo_url (String): URL to the remote repository.json
-## tree (SceneTree): Optional scene tree for safe signal emission from threads
-## 
+	## Parameters:
+	##   repo_url (String): URL to the remote repository.json
+	##   tree (SceneTree): Optional scene tree for safe signal emission from threads
 	repository_url = repo_url
 	scene_tree = tree
 	repository = MirrorRepositoryScript.new()

@@ -184,7 +184,7 @@ func _notification(what: int) -> void:
 		if projects_controller != null and projects_controller.has_meta("project_explorer_instance"):
 			projects_controller.get_meta("project_explorer_instance").refresh()
 
-func _ready():
+func _ready() -> void:
 	_apply_global_theme()
 	_setup_download_dialog()
 	OgsLogger.enable_console(true)
@@ -333,10 +333,6 @@ func _setup_download_dialog() -> void:
 	# Start on the Projects page
 	layout_controller.navigate_to("projects")
 	
-	# Show onboarding wizard if first run
-	if onboarding_wizard.should_show_wizard():
-		onboarding_wizard.show_wizard()
-
 func _collect_network_ui_nodes() -> void:
 	## Collects all UI nodes tagged as network-related.
 	var found: Array = []

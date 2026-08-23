@@ -11,7 +11,6 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 signal tool_install_started(tool_id: String, version: String)
 signal tool_install_complete(tool_id: String, version: String, success: bool, error_message: String)
-@warning_ignore("unused_signal")
 signal tool_download_progress(tool_id: String, version: String, bytes_downloaded: int, total_bytes: int)
 signal hydration_complete(success: bool, failed_tools: Array)
 
@@ -23,12 +22,11 @@ var library: LibraryManager
 var worker_thread: Thread
 var scene_tree: SceneTree = null
 
-func _init(root_path: String = "", tree: SceneTree = null):
+func _init(root_path: String = "", tree: SceneTree = null) -> void:
 	## Initializes the mirror hydrator with a mirror root path.
-## Parameters:
-## root_path (String): Path to the local mirror root
-## tree (SceneTree): Optional scene tree for safe signal emission from threads
-## 
+	## Parameters:
+	##   root_path (String): Path to the local mirror root
+	##   tree (SceneTree): Optional scene tree for safe signal emission from threads
 	mirror_root = root_path
 	scene_tree = tree
 	repository = MirrorRepository.new()

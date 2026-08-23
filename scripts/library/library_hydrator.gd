@@ -25,7 +25,6 @@ class_name LibraryHydrator
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 signal tool_download_started(tool_id: String, version: String)
-@warning_ignore("unused_signal")
 signal tool_download_progress(tool_id: String, version: String, bytes_received: int, bytes_total: int)
 signal tool_download_complete(tool_id: String, version: String, success: bool, error_message: String)
 signal hydration_complete(success: bool, failed_tools: Array)
@@ -34,11 +33,10 @@ var mirror_url: String
 var downloader: ToolDownloader
 var library: LibraryManager
 
-func _init(mirror: String = ""):
+func _init(mirror: String = "") -> void:
 	## Initialize the hydrator with a mirror URL.
-## Parameters:
-## mirror (String): Base URL for the OGS mirror
-## 
+	## Parameters:
+	##   mirror (String): Base URL for the OGS mirror
 	mirror_url = mirror
 	downloader = ToolDownloader.new(mirror)
 	library = LibraryManager.new()
