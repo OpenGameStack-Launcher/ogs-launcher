@@ -280,8 +280,45 @@ func get_library_summary() -> Dictionary:
 	
 	return summary
 
-# Private helper: recursively calculate directory size (MVP: simplified - just return 0)
-func _calculate_dir_size(_dir_path: String) -> int:
-	# TODO: Implement proper directory size calculation in Phase 2
-	# For MVP, we don't need exact sizes, just validation
-	return 0
+## Recursively calculates the total size of a directory in bytes.
+## Parameters:
+##   dir_path (String): Absolute path to the directory
+## Returns:
+##   int: Total size in bytes, or 0 if directory doesn't exist/can't be read
+func _calculate_dir_size(dir_path: String) -> int:
+	var total_size: int = 0
+	var dir = DirAccess.open(dir_path)
+	
+	if dir == null:
+		OgsLogger.warn("calculate_dir_size_failed", {
+			"component": "library",
+			"path": dir_path,
+			"reason": "could not open directory",
+			"error": DirAccess.get_open_error()
+		})
+		return 0
+		
+	dir.list_dir_begin()
+	var file_name = dir.get_next()
+	
+	while not file_name.is_empty():
+		if file_name != "." and file_name != "..":
+			var path = dir_path.path_join(file_name)
+			if dir.current_is_dir():
+				total_size += _calculate_dir_size(path)
+			else:
+				var file = FileAccess.open(path, FileAccess.READ)
+				if file != null:
+					total_size += file.get_length()
+					file.close()
+				else:
+					OgsLogger.warn("calculate_file_size_failed", {
+						"component": "library",
+						"path": path,
+						"reason": "could not open file",
+						"error": FileAccess.get_open_error()
+					})
+		file_name = dir.get_next()
+		
+	dir.list_dir_end()
+	return total_size
