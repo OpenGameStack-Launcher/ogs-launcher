@@ -333,10 +333,6 @@ func _setup_download_dialog() -> void:
 	# Start on the Projects page
 	layout_controller.navigate_to("projects")
 	
-	# Show onboarding wizard if first run
-	if onboarding_wizard.should_show_wizard():
-		onboarding_wizard.show_wizard()
-
 func _collect_network_ui_nodes() -> void:
 	"""Collects all UI nodes tagged as network-related."""
 	var found: Array = []
