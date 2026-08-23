@@ -23,7 +23,7 @@ var library: LibraryManager
 var worker_thread: Thread
 var scene_tree: SceneTree = null
 
-func _init(root_path: String = "", tree: SceneTree = null):
+func _init(root_path: String = "", tree: SceneTree = null) -> void:
 	"""Initializes the mirror hydrator with a mirror root path.
 	Parameters:
 	  root_path (String): Path to the local mirror root

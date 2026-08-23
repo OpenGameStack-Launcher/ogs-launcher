@@ -12,7 +12,7 @@ signal folder_selected(folder_path: String, tool_id: String)
 var tree: Tree
 var current_project_dir: String = ""
 
-func _init(tree_node: Tree):
+func _init(tree_node: Tree) -> void:
 	tree = tree_node
 	tree.allow_rmb_select = true
 	tree.item_selected.connect(_on_item_selected)

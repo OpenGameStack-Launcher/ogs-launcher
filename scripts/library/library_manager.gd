@@ -32,7 +32,7 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 var path_resolver: PathResolver
 
-func _init():
+func _init() -> void:
 	path_resolver = PathResolver.new()
 
 ## Returns the absolute path to a tool in the library.
