@@ -8,7 +8,7 @@ static func compute_sha256(file_path: String) -> Dictionary:
 	## Computes the SHA-256 hash for a file.
 	var file = FileAccess.open(file_path, FileAccess.READ)
 	if file == null:
-		return {"success": false, "error_message": "Failed to read archive for hashing."}
+		return {"success": false, "error_message": "Failed to read file for hashing."}
 	var hasher = HashingContext.new()
 	var start_err = hasher.start(HashingContext.HASH_SHA256)
 	if start_err != OK:
