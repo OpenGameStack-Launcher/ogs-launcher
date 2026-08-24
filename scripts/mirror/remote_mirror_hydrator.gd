@@ -9,12 +9,6 @@ class_name RemoteMirrorHydrator
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
-signal tool_install_started(tool_id: String, version: String)
-signal tool_install_progress(tool_id: String, version: String, file_count: int, total_files: int)
-signal tool_install_complete(tool_id: String, version: String, success: bool, error_message: String)
-signal tool_download_progress(tool_id: String, version: String, bytes_downloaded: int, total_bytes: int)
-signal hydration_complete(success: bool, failed_tools: Array)
-
 const MirrorRepositoryScript = preload("res://scripts/mirror/mirror_repository.gd")
 
 var repository_url: String = ""
@@ -22,7 +16,6 @@ var repository: MirrorRepository
 var extractor: ToolExtractor
 var library: LibraryManager
 var worker_thread: Thread
-var scene_tree: SceneTree = null
 var _cancelled_tools: Dictionary = {}
 var _cancel_mutex: Mutex = Mutex.new()
 
@@ -286,62 +279,6 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 
 	_emit_hydration_complete(result["success"], result["failed_tools"])
 	return result
-
-## Thread-safe signal helpers.
-func _emit_tool_install_started(tool_id: String, version: String) -> void:
-	## Emits tool_install_started safely across threads.
-	if scene_tree != null:
-		call_deferred("_emit_tool_install_started_now", tool_id, version)
-	else:
-		tool_install_started.emit(tool_id, version)
-
-func _emit_tool_install_started_now(tool_id: String, version: String) -> void:
-	## Deferred emit for tool_install_started.
-	tool_install_started.emit(tool_id, version)
-
-func _emit_tool_install_progress(tool_id: String, version: String, file_count: int, total_files: int) -> void:
-	## Emits tool_install_progress safely across threads.
-	if scene_tree != null:
-		call_deferred("_emit_tool_install_progress_now", tool_id, version, file_count, total_files)
-	else:
-		tool_install_progress.emit(tool_id, version, file_count, total_files)
-
-func _emit_tool_install_progress_now(tool_id: String, version: String, file_count: int, total_files: int) -> void:
-	## Deferred emit for tool_install_progress.
-	tool_install_progress.emit(tool_id, version, file_count, total_files)
-
-func _emit_tool_install_complete(tool_id: String, version: String, success: bool, error_message: String) -> void:
-	## Emits tool_install_complete safely across threads.
-	if scene_tree != null:
-		call_deferred("_emit_tool_install_complete_now", tool_id, version, success, error_message)
-	else:
-		tool_install_complete.emit(tool_id, version, success, error_message)
-
-func _emit_tool_install_complete_now(tool_id: String, version: String, success: bool, error_message: String) -> void:
-	## Deferred emit for tool_install_complete.
-	tool_install_complete.emit(tool_id, version, success, error_message)
-
-func _emit_hydration_complete(success: bool, failed_tools: Array) -> void:
-	## Emits hydration_complete safely across threads.
-	if scene_tree != null:
-		call_deferred("_emit_hydration_complete_now", success, failed_tools)
-	else:
-		hydration_complete.emit(success, failed_tools)
-
-func _emit_hydration_complete_now(success: bool, failed_tools: Array) -> void:
-	## Deferred emit for hydration_complete.
-	hydration_complete.emit(success, failed_tools)
-
-func _emit_tool_download_progress(tool_id: String, version: String, bytes_downloaded: int, total_bytes: int) -> void:
-	## Emits tool_download_progress safely across threads.
-	if scene_tree != null:
-		call_deferred("_emit_tool_download_progress_now", tool_id, version, bytes_downloaded, total_bytes)
-	else:
-		tool_download_progress.emit(tool_id, version, bytes_downloaded, total_bytes)
-
-func _emit_tool_download_progress_now(tool_id: String, version: String, bytes_downloaded: int, total_bytes: int) -> void:
-	## Deferred emit for tool_download_progress.
-	tool_download_progress.emit(tool_id, version, bytes_downloaded, total_bytes)
 
 ## Loads repository.json from the configured URL.
 func _load_repository() -> Dictionary:
