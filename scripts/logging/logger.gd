@@ -9,6 +9,9 @@ const LOG_DIR := "user://logs"
 const LOG_FILE := "ogs_launcher.log"
 const MAX_BYTES := 1024 * 1024
 const MAX_BACKUPS := 3
+const CREATE_LOCK_SUFFIX := ".create_lock"
+const CREATE_LOCK_TIMEOUT_MSEC := 250
+const CREATE_LOCK_RETRY_MSEC := 5
 
 ## Log levels for filtering.
 enum Level {
@@ -24,6 +27,7 @@ static var _console_enabled := Engine.is_editor_hint()
 static var _dir_ensured := false
 static var _write_mutex: Mutex = Mutex.new()
 static var _test_open_error_overrides: Dictionary = {}
+static var _test_open_error_override_uses: Dictionary = {}
 static var _last_open_error: int = OK
 
 static func set_level(level: int) -> void:
@@ -124,17 +128,21 @@ static func clear_logs_for_tests() -> void:
 	_delete_file(base)
 	for index in range(1, MAX_BACKUPS + 1):
 		_delete_file(base + "." + str(index))
+	DirAccess.remove_absolute(_get_log_create_lock_path())
 
-static func set_open_error_override_for_tests(mode: int, error_code: int) -> void:
+static func set_open_error_override_for_tests(mode: int, error_code: int, remaining_uses: int = -1) -> void:
 	## Overrides logger file-open results during tests.
 	if error_code == OK:
 		_test_open_error_overrides.erase(mode)
+		_test_open_error_override_uses.erase(mode)
 	else:
 		_test_open_error_overrides[mode] = error_code
+		_test_open_error_override_uses[mode] = remaining_uses
 
 static func clear_open_error_overrides_for_tests() -> void:
 	## Clears logger file-open overrides after tests.
 	_test_open_error_overrides.clear()
+	_test_open_error_override_uses.clear()
 	_last_open_error = OK
 
 static func _get_log_path() -> String:
@@ -148,7 +156,7 @@ static func _open_log_file_for_append(log_path: String) -> FileAccess:
 		return file
 	if _last_open_error != ERR_FILE_NOT_FOUND:
 		return null
-	return _open_log_file(log_path, FileAccess.WRITE)
+	return _create_missing_log_file(log_path)
 
 static func _ensure_log_dir() -> void:
 	## Ensures the log directory exists.
@@ -159,10 +167,60 @@ static func _open_log_file(log_path: String, mode: int) -> FileAccess:
 	## Opens a log file while honoring test-only failure overrides.
 	if _test_open_error_overrides.has(mode):
 		_last_open_error = _test_open_error_overrides[mode]
+		_consume_open_error_override(mode)
 		return null
 	var file = FileAccess.open(log_path, mode)
 	_last_open_error = FileAccess.get_open_error()
 	return file
+
+static func _create_missing_log_file(log_path: String) -> FileAccess:
+	## Creates a missing log file without truncating a concurrently created log.
+	var lock_path = _get_log_create_lock_path()
+	if not _acquire_log_create_lock(lock_path):
+		return _open_log_file(log_path, FileAccess.READ_WRITE)
+	var file = _open_log_file(log_path, FileAccess.READ_WRITE)
+	if file == null and _last_open_error == ERR_FILE_NOT_FOUND:
+		var created = _open_log_file(log_path, FileAccess.WRITE)
+		if created != null:
+			created.close()
+			file = _open_log_file(log_path, FileAccess.READ_WRITE)
+	_release_log_create_lock(lock_path)
+	return file
+
+static func _get_log_create_lock_path() -> String:
+	## Returns the absolute path for the cross-process log creation lock.
+	return ProjectSettings.globalize_path(_get_log_path()) + CREATE_LOCK_SUFFIX
+
+static func _acquire_log_create_lock(lock_path: String) -> bool:
+	## Claims the cross-process lock used while creating the log file.
+	var deadline = Time.get_ticks_msec() + CREATE_LOCK_TIMEOUT_MSEC
+	while true:
+		var err = DirAccess.make_dir_absolute(lock_path)
+		if err == OK:
+			return true
+		if err != ERR_ALREADY_EXISTS:
+			return false
+		if Time.get_ticks_msec() >= deadline:
+			return false
+		OS.delay_msec(CREATE_LOCK_RETRY_MSEC)
+
+static func _release_log_create_lock(lock_path: String) -> void:
+	## Releases the cross-process lock used while creating the log file.
+	DirAccess.remove_absolute(lock_path)
+
+static func _consume_open_error_override(mode: int) -> void:
+	## Decrements and clears one-shot open error overrides during tests.
+	if not _test_open_error_override_uses.has(mode):
+		return
+	var remaining_uses = _test_open_error_override_uses[mode]
+	if remaining_uses < 0:
+		return
+	remaining_uses -= 1
+	if remaining_uses <= 0:
+		_test_open_error_override_uses.erase(mode)
+		_test_open_error_overrides.erase(mode)
+		return
+	_test_open_error_override_uses[mode] = remaining_uses
 
 static func _rotate_if_needed() -> void:
 	## Rotates logs when the active log exceeds the size threshold.

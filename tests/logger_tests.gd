@@ -12,6 +12,7 @@ func run() -> Dictionary:
 	var results := {"passed": 0, "failed": 0, "failures": []}
 	_test_write_and_level_filter(results)
 	_test_existing_log_survives_failed_append_open(results)
+	_test_missing_log_is_created_after_file_not_found(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -65,3 +66,20 @@ func _test_existing_log_survives_failed_append_open(results: Dictionary) -> void
 	file.close()
 	_expect(contents == "existing entry\n", "existing log contents should remain intact", results)
 	_expect(contents.find("blocked write") == -1, "failed append should not write a partial entry", results)
+
+func _test_missing_log_is_created_after_file_not_found(results: Dictionary) -> void:
+	## Verifies a missing log is created after a file-not-found append failure.
+	OgsLogger.clear_logs_for_tests()
+	OgsLogger.set_level(OgsLogger.Level.INFO)
+	var log_path = "user://logs/ogs_launcher.log"
+	OgsLogger.set_open_error_override_for_tests(FileAccess.READ_WRITE, ERR_FILE_NOT_FOUND, 1)
+	OgsLogger.info("created after missing file", {"component": "test"})
+	OgsLogger.clear_open_error_overrides_for_tests()
+	_expect(FileAccess.file_exists(log_path), "missing log should be created", results)
+	var file = FileAccess.open(log_path, FileAccess.READ)
+	if file == null:
+		_expect(false, "created log should be readable", results)
+		return
+	var contents = file.get_as_text()
+	file.close()
+	_expect(contents.find("created after missing file") != -1, "created log should contain the new entry", results)
