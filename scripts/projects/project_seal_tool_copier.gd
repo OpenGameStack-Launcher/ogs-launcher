@@ -119,12 +119,11 @@ func _copy_file(source: String, dest: String) -> int:
 		file.close()
 		return FileAccess.get_open_error()
 
-	var remaining = file.get_length()
-	while remaining > 0:
-		var chunk_size = mini(remaining, _COPY_CHUNK_SIZE)
-		var chunk = file.get_buffer(chunk_size)
+	while not file.eof_reached():
+		var chunk = file.get_buffer(_COPY_CHUNK_SIZE)
+		if chunk.size() == 0:
+			break
 		out_file.store_buffer(chunk)
-		remaining -= chunk_size
 
 	file.close()
 	out_file.close()
