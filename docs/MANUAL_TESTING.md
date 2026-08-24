@@ -23,7 +23,7 @@ Two sample projects are provided in `samples/` for testing:
 | **sample_project** | Development/linked-mode testing | force_offline=false | Tools expected in library (missing state) |
 | **sample_project_sealed** | Sealed/air-gapped project testing | force_offline=true | Tools physically embedded in project |
 
-Both samples have `stack.json` with Godot 4.7.2 and Blender 4.5.7.
+Both samples include a `stack.json` manifest; see each sample’s `stack.json` for the exact pinned tool versions used in that scenario.
 
 ---
 
