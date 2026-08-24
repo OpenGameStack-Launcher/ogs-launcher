@@ -21,6 +21,7 @@ enum Level {
 static var _level := Level.INFO
 static var _enabled := true
 static var _console_enabled := Engine.is_editor_hint()
+static var _dir_ensured := false
 
 static func set_level(level: int) -> void:
 	## Sets the minimum log level for writing entries.
@@ -77,15 +78,17 @@ static func error(message: String, context: Dictionary = {}) -> void:
 
 static func write(level: int, message: String, context: Dictionary = {}) -> void:
 	## Writes a structured log entry as JSON.
-## Parameters:
-## level (int): OgsLogger.Level value
-## message (String): Log message
-## context (Dictionary): Structured context fields
-## 
+	## Parameters:
+	##   level (int): OgsLogger.Level value
+	##   message (String): Log message
+	##   context (Dictionary): Structured context fields
 	if not _enabled or level < _level:
 		return
-	_ensure_log_dir()
-	_rotate_if_needed()
+		
+	if not _dir_ensured:
+		_ensure_log_dir()
+		_dir_ensured = true
+		
 	var entry = {
 		"ts": Time.get_datetime_string_from_system(false),
 		"level": _level_name(level),
@@ -94,15 +97,21 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 	}
 	if _console_enabled:
 		print(JSON.stringify(entry))
+		
 	var log_path = _get_log_path()
 	var file = FileAccess.open(log_path, FileAccess.READ_WRITE)
 	if file == null:
 		file = FileAccess.open(log_path, FileAccess.WRITE)
 		if file == null:
 			return
+			
 	file.seek_end()
 	file.store_string(JSON.stringify(entry) + "\n")
+	var current_length = file.get_length()
 	file.close()
+	
+	if current_length > MAX_BYTES:
+		_rotate_if_needed()
 
 static func clear_logs_for_tests() -> void:
 	## Removes log files for test isolation.
