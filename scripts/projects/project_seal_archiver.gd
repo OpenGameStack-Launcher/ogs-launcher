@@ -91,8 +91,20 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 		while remaining > 0:
 			var chunk_size = mini(remaining, chunk_size_limit)
 			var file_bytes = source_file.get_buffer(chunk_size)
+			var bytes_read = file_bytes.size()
+			if bytes_read == 0:
+				source_file.close()
+				zipper.close_file()
+				zipper.close()
+				result.errors.append("Failed to read bytes from file: %s" % relative_path)
+				OgsLogger.error("sealed_zip_read_zero_bytes", {
+					"component": "sealer",
+					"file": relative_path
+				})
+				return result
 			var write_error = zipper.write_file(file_bytes)
 			if write_error != OK:
+				source_file.close()
 				zipper.close_file()
 				zipper.close()
 				result.errors.append("Failed to write file to zip: %s" % relative_path)
@@ -102,7 +114,7 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 					"error": error_string(write_error)
 				})
 				return result
-			remaining -= chunk_size
+			remaining -= bytes_read
 
 		source_file.close()
 		zipper.close_file()
