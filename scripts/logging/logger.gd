@@ -99,11 +99,16 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 		print(JSON.stringify(entry))
 		
 	var log_path = _get_log_path()
+	# Create the file if it doesn't exist, then always open with READ_WRITE
+	# to avoid the WRITE fallback which would truncate existing logs.
+	if not FileAccess.file_exists(log_path):
+		var create_file = FileAccess.open(log_path, FileAccess.WRITE)
+		if create_file == null:
+			return
+		create_file.close()
 	var file = FileAccess.open(log_path, FileAccess.READ_WRITE)
 	if file == null:
-		file = FileAccess.open(log_path, FileAccess.WRITE)
-		if file == null:
-			return
+		return
 			
 	file.seek_end()
 	file.store_string(JSON.stringify(entry) + "\n")
