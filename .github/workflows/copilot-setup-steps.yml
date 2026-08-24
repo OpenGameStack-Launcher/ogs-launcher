@@ -18,10 +18,18 @@ jobs:
       contents: read
 
     steps:
-      # This repo uses Git LFS for binaries (Images/, sample tool .exe files, etc.)
-      # per .gitattributes; without this, Copilot's clone gets LFS pointer files
-      # instead of real content.
-      - name: Checkout repository (with Git LFS)
-        uses: actions/checkout@v6
+      # Keep checkout resilient for Copilot review runs. LFS fetch failures can
+      # block review entirely, while most review-relevant files are regular text.
+      - name: Checkout repository
+        uses: actions/checkout@v4
         with:
-          lfs: true
+          fetch-depth: 0
+          lfs: false
+
+      # Try to hydrate LFS objects when available, but do not fail setup if LFS
+      # storage has transient issues or missing historical objects.
+      - name: Attempt Git LFS pull (non-blocking)
+        continue-on-error: true
+        run: |
+          git lfs install --local
+          git lfs pull
