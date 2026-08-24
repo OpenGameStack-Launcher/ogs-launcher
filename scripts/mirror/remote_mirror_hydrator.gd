@@ -246,12 +246,12 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 				"error": thread_err
 			})
 			extract_result = extractor.extract_to_library(temp_archive, tool_id, version, _is_cancelled.bind(tool_id, version), progress_cb)
+		elif tree == null:
+			# No scene tree available: cannot yield frames, wait synchronously on main thread
+			extract_thread.wait_to_finish()
 		else:
 			while extract_thread.is_alive():
-				if tree != null:
-					await tree.process_frame
-				else:
-					break
+				await tree.process_frame
 			extract_thread.wait_to_finish()
 		
 		# Second cancellation checkpoint: Abort and delete if cancelled during extraction
@@ -455,7 +455,9 @@ func _http_get_bytes(url: String) -> Dictionary:
 	var code = result[1]
 	var body = result[3]
 	
-	if req_result != HTTPRequest.RESULT_SUCCESS or code < 200 or code >= 300:
+	if req_result != HTTPRequest.RESULT_SUCCESS:
+		return {"success": false, "error": "transport_error_%d" % req_result}
+	if code < 200 or code >= 300:
 		return {"success": false, "error": "http_status_%d" % code}
 		
 	return {"success": true, "bytes": body}
