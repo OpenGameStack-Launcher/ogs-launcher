@@ -129,9 +129,9 @@ func _copy_file(source: String, dest: String) -> int:
 			out_file.close()
 			return write_err
 
+	var final_write_err = out_file.get_error()
 	file.close()
 	out_file.close()
-	var final_write_err = out_file.get_error()
 	if final_write_err != OK:
 		return final_write_err
 	return OK
