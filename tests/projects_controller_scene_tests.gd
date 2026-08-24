@@ -169,7 +169,7 @@ func _test_add_valid_project_populates_lists(results: Dictionary) -> void:
 	var ctx = _build_controller(storage_path)
 	var controller = ctx["controller"]
 	var added = controller.add_project_from_path("res://samples/sample_project")
-	var projects_list: ItemList = ctx["projects"]
+	var projects_list: Control = ctx["projects"]
 	var explorer_tree: Tree = ctx["tree"]
 	_expect(added, "valid project should be added", results)
 	_expect(projects_list.item_count == 1, "projects list should include added project", results)
@@ -189,7 +189,7 @@ func _test_project_registry_persists_between_setups(results: Dictionary) -> void
 	_cleanup_nodes(ctx1["nodes"])
 
 	var ctx2 = _build_controller(storage_path)
-	var projects_list: ItemList = ctx2["projects"]
+	var projects_list: Control = ctx2["projects"]
 	_expect(projects_list.item_count == 1, "persisted project should reload on next setup", results)
 	_cleanup_nodes(ctx2["nodes"])
 	_cleanup_registry(storage_path)
@@ -204,7 +204,7 @@ func _test_project_removal(results: Dictionary) -> void:
 	var controller = ctx["controller"]
 	controller.add_project_from_path("res://samples/sample_project")
 	
-	var projects_list: ItemList = ctx["projects"]
+	var projects_list: Control = ctx["projects"]
 	var remove_dialog: ConfirmationDialog = ctx["remove_dialog"]
 	
 	_expect(projects_list.item_count == 1, "projects list should contain one project before removal", results)
@@ -215,7 +215,7 @@ func _test_project_removal(results: Dictionary) -> void:
 	_cleanup_nodes(ctx["nodes"])
 	
 	var ctx_reload = _build_controller(storage_path)
-	var projects_list_reload: ItemList = ctx_reload["projects"]
+	var projects_list_reload: Control = ctx_reload["projects"]
 	_expect(projects_list_reload.item_count == 0, "registry should persist project removal", results)
 	_cleanup_nodes(ctx_reload["nodes"])
 	_cleanup_registry(storage_path)
@@ -231,7 +231,7 @@ func _test_new_project_creates_scaffold_and_adds(results: Dictionary) -> void:
 	var ctx = _build_controller(storage_path)
 	var controller = ctx["controller"]
 	controller.set_projects_root_path_for_tests(projects_root)
-	var projects_list: ItemList = ctx["projects"]
+	var projects_list: Control = ctx["projects"]
 	var new_name: LineEdit = ctx["new_name"]
 	new_name.text = "Unit Test New Project"
 
@@ -277,7 +277,7 @@ func _test_launch_after_click_uses_selected_tool(results: Dictionary) -> void:
 	var ctx = _build_controller(storage_path)
 	var controller = ctx["controller"]
 	var status_label: Label = ctx["status"]
-	var tools_list: ItemList = ctx["list"]
+	var tools_list: Control = ctx["list"]
 	var added = controller.add_project_from_path("res://samples/sample_project")
 	_expect(added, "project should add successfully for launch-click test", results)
 	if added and tools_list.item_count > 0:

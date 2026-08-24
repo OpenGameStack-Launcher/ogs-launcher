@@ -116,12 +116,7 @@ func _run_tests_async() -> void:
 	
 	# Run all tests
 	for suite in test_suites:
-		var raw = suite.run()
-		var result: Dictionary
-		if raw is Signal:
-			result = await raw
-		else:
-			result = raw
+		var result: Dictionary = await suite.run()
 		summary["passed"] += result["passed"]
 		summary["failed"] += result["failed"]
 		summary["failures"].append_array(result["failures"])
