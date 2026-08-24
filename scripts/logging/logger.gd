@@ -12,6 +12,8 @@ const MAX_BACKUPS := 3
 const CREATE_LOCK_SUFFIX := ".create_lock"
 const CREATE_LOCK_TIMEOUT_MSEC := 250
 const CREATE_LOCK_RETRY_MSEC := 5
+const CREATE_LOCK_STALE_MSEC := 5000
+const CREATE_LOCK_TIMESTAMP_FILE := "lock_time"
 
 ## Log levels for filtering.
 enum Level {
@@ -128,7 +130,9 @@ static func clear_logs_for_tests() -> void:
 	_delete_file(base)
 	for index in range(1, MAX_BACKUPS + 1):
 		_delete_file(base + "." + str(index))
-	DirAccess.remove_absolute(_get_log_create_lock_path())
+	var lock_path = _get_log_create_lock_path()
+	DirAccess.remove_absolute(lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE)
+	DirAccess.remove_absolute(lock_path)
 
 static func set_open_error_override_for_tests(mode: int, error_code: int, remaining_uses: int = -1) -> void:
 	## Overrides logger file-open results during tests.
@@ -193,19 +197,52 @@ static func _get_log_create_lock_path() -> String:
 
 static func _acquire_log_create_lock(lock_path: String) -> bool:
 	## Claims the cross-process lock used while creating the log file.
+	## Recovers stale locks whose timestamp exceeds CREATE_LOCK_STALE_MSEC.
 	var deadline = Time.get_ticks_msec() + CREATE_LOCK_TIMEOUT_MSEC
+	var stale_recovered := false
 	while true:
 		var err = DirAccess.make_dir_absolute(lock_path)
 		if err == OK:
+			var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
+			var ts_file = FileAccess.open(ts_path, FileAccess.WRITE)
+			if ts_file != null:
+				ts_file.store_string(str(Time.get_ticks_msec()))
+				ts_file.close()
 			return true
 		if err != ERR_ALREADY_EXISTS:
 			return false
 		if Time.get_ticks_msec() >= deadline:
+			if not stale_recovered and _is_log_create_lock_stale(lock_path):
+				stale_recovered = true
+				_force_remove_stale_lock(lock_path)
+				continue
 			return false
 		OS.delay_msec(CREATE_LOCK_RETRY_MSEC)
 
 static func _release_log_create_lock(lock_path: String) -> void:
 	## Releases the cross-process lock used while creating the log file.
+	var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
+	DirAccess.remove_absolute(ts_path)
+	DirAccess.remove_absolute(lock_path)
+
+static func _is_log_create_lock_stale(lock_path: String) -> bool:
+	## Returns true when the lock directory has no valid timestamp or its
+	## recorded age exceeds CREATE_LOCK_STALE_MSEC, indicating a crash-orphaned lock.
+	var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
+	var ts_file = FileAccess.open(ts_path, FileAccess.READ)
+	if ts_file == null:
+		return true
+	var ts_text = ts_file.get_as_text().strip_edges()
+	ts_file.close()
+	if not ts_text.is_valid_int():
+		return true
+	var lock_age = Time.get_ticks_msec() - ts_text.to_int()
+	return lock_age >= CREATE_LOCK_STALE_MSEC
+
+static func _force_remove_stale_lock(lock_path: String) -> void:
+	## Removes a stale cross-process creation lock directory and its timestamp file.
+	var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
+	DirAccess.remove_absolute(ts_path)
 	DirAccess.remove_absolute(lock_path)
 
 static func _consume_open_error_override(mode: int) -> void:
