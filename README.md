@@ -13,8 +13,8 @@ Open Game Stack (OGS) is a **portable, pre-configured development environment** 
 Instead of installing Godot, Blender, Krita, and Audacity separately—and hoping their versions match your team's—OGS gives you a **"Frozen Stack."** 
 
 ### One Download. Zero Install.
-* **The Engine:** Godot 4.7.2 (Stable / Hardened)
-* **The Pipeline:** Blender LTS, Krita, Audacity
+* **The Engine:** Godot 4.7.2 (Stable / Hardened) — the version the Launcher itself is built with; the Tool Catalog also offers Godot 4.3 for projects that pin it
+* **The Pipeline:** Blender, Krita, Audacity, GIMP
 * **The Promise:** Everything runs from a single folder. No registry keys, no `%APPDATA%`, no installers.
 
 ---

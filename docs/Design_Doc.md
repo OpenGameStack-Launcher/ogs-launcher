@@ -92,16 +92,17 @@ My_Simulation_Project/
 ---
 
 ## 4. The Validated Toolchain (Standard Profile)
-The OGS-Launcher manages a "Standard OGS Profile" of tools known to be compliant with the "Hardened" spec.
+The OGS-Launcher manages a "Standard OGS Profile" of tools known to be compliant with the "Hardened" spec. The Tool Catalog (`repository.json`) offers multiple pre-validated versions per tool; a project pins exactly one version of each via its `stack.json`. The OGS Launcher **application itself** is built with Godot 4.7.2.
 
-| Tool | Version (Reference) | License | Role |
+| Tool | Versions (Catalog) | License | Role |
 | :--- | :--- | :--- | :--- |
-| **Godot Engine** | 4.7.2 (Hardened) | MIT | Simulation Core & Runtime |
-| **Blender** | 4.5.7 | GPL | 3D Modeling & Animation |
-| **Krita** | 5.2.15 | GPL | 2D Texture & UI Asset Creation |
-| **Audacity** | 3.7.7 | GPL | Audio Processing |
+| **Godot Engine** | 4.3 (Hardened), 4.7.2 (Hardened) | MIT | Simulation Core & Runtime |
+| **Blender** | 4.5.7, 5.2 | GPL | 3D Modeling & Animation |
+| **Krita** | 5.2.15, 5.3.3 | GPL | 2D Texture & UI Asset Creation |
+| **Audacity** | 3.7.7, 3.7.8 | GPL | Audio Processing |
+| **GIMP** | 3.2.4 | GPL | 2D Raster Editing |
 
-*Note: The Launcher enforces "White Box" security by only downloading these tools from the official OGS Mirror (local or remote), where they have been pre-validated and hashed.*
+*Note: The Launcher enforces "White Box" security by only downloading these tools from the official OGS Mirror (local or remote), where they have been pre-validated and hashed. See [FROZEN_STACKS.md](FROZEN_STACKS.md) for the authoritative, up-to-date catalog contents.*
 
 ---
 
