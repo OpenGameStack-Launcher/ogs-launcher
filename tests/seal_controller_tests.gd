@@ -73,6 +73,11 @@ func _test_predelete_joins_alive_thread(results: Dictionary) -> void:
 	# The thread itself must no longer be alive.
 	_expect(not thread.is_alive(), "Thread should no longer be alive after join", results)
 
+	# Safety: if the thread finished before the handler ran, join it here to
+	# avoid Godot orphaned-thread warnings regardless of scheduling.
+	if thread.is_alive():
+		thread.wait_to_finish()
+
 ## Test: _notification(NOTIFICATION_PREDELETE) is safe when _seal_thread is null.
 func _test_predelete_no_crash_when_thread_null(results: Dictionary) -> void:
 	## Verifies that the predelete handler does not crash when no thread is running.
