@@ -31,9 +31,10 @@ signal progress_cancelled(tool_id: String, version: String)
 
 ## Progress phases for a tool operation.
 enum Phase {
-	DOWNLOAD,    ## Downloading archive (can show percentage)
-	INSTALL,     ## Extracting/installing (indeterminate)
-	COMPLETE     ## Operation finished
+	NOT_TRACKED = -1,
+	DOWNLOAD = 0,    ## Downloading archive (can show percentage)
+	INSTALL = 1,     ## Extracting/installing (indeterminate)
+	COMPLETE = 2     ## Operation finished
 }
 
 ## Tracked progress items: {tool_key: progress_data}
@@ -271,14 +272,14 @@ func is_tracking(tool_id: String, version: String) -> bool:
 ## version (String): Tool version
 ##
 ## Returns:
-## Phase: Current phase, or null if not tracked
-func get_phase(tool_id: String, version: String):
+## Phase: Current phase, or Phase.NOT_TRACKED if not tracked
+func get_phase(tool_id: String, version: String) -> Phase:
 	## Get current phase for a tracked tool.
 	var key = _make_key(tool_id, version)
 	var data = tracked_items.get(key)
 	if data != null:
-		return data["phase"]
-	return null
+		return data["phase"] as Phase
+	return Phase.NOT_TRACKED
 
 ## Internal: Creates a unique key for tool tracking.
 func _make_key(tool_id: String, version: String) -> String:
