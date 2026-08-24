@@ -63,11 +63,11 @@ In Settings -> Copilot -> Code review, confirm:
 
 ## 4. Optional: use wider GitHub scope
 
-If reviews must reference data outside this repository, configure a personal access token as an Agents secret:
+If reviews must reference data outside this repository, configure a *fine-grained* personal access token with **read-only** permissions only (least privilege) and store it as an Agents secret:
 
 - COPILOT_MCP_GITHUB_PERSONAL_ACCESS_TOKEN
 
-Then customize the GitHub MCP server configuration per GitHub docs.
+Avoid classic PATs and avoid any write scopes. Then customize the GitHub MCP server configuration per GitHub docs.
 
 ## 5. Repository context already in place
 
