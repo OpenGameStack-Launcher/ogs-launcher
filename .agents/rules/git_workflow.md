@@ -5,7 +5,8 @@ When working on this repository, you MUST follow these Git workflow rules to pre
 1. **Use Git Worktrees**:
    - Instead of checking out branches directly in the main repository directory, **ALWAYS** use Git worktrees for your tasks.
    - It is best to create worktrees inside a dedicated directory, for example `c:\Projects\ogs-launcher\.worktrees\<branch_name>`.
-   - Command: `git worktree add .worktrees/<branch-name> -b <branch-name>`
+   - First, ensure you have the latest remote changes: `git fetch origin`
+   - Command: `git worktree add .worktrees/<branch-name> -b <branch-name> origin/main` (This ensures your new branch is based on the absolute latest main, avoiding the need to pull main locally first).
    - Run all your commands (tests, builds, commits) inside that worktree directory.
 
 2. **Clean Working Tree Check**:
