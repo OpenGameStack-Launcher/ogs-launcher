@@ -14,6 +14,8 @@ func run() -> Dictionary:
 	_test_existing_log_survives_failed_append_open(results)
 	_test_missing_log_is_created_after_file_not_found(results)
 	_test_stale_lock_is_recovered_and_log_created(results)
+	_test_existing_log_waits_for_pending_create_lock(results)
+	_test_hard_lock_acquire_failure_is_not_treated_as_contention(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -119,3 +121,50 @@ func _test_stale_lock_is_recovered_and_log_created(results: Dictionary) -> void:
 	var contents = read_file.get_as_text()
 	read_file.close()
 	_expect(contents.find("after stale lock recovery") != -1, "log should contain entry written after stale lock recovery", results)
+
+func _test_existing_log_waits_for_pending_create_lock(results: Dictionary) -> void:
+	## Verifies an existing log waits for a pending create lock before appending.
+	OgsLogger.clear_logs_for_tests()
+	OgsLogger.set_level(OgsLogger.Level.INFO)
+	var log_path = "user://logs/ogs_launcher.log"
+	var log_dir = ProjectSettings.globalize_path("user://logs")
+	DirAccess.make_dir_recursive_absolute(log_dir)
+	var existing = FileAccess.open(log_path, FileAccess.WRITE)
+	if existing == null:
+		_expect(false, "existing log should be creatable for pending-lock test", results)
+		return
+	existing.store_string("existing entry\n")
+	existing.close()
+	var lock_path = ProjectSettings.globalize_path(log_path) + ".create_lock"
+	DirAccess.make_dir_absolute(lock_path)
+	var ts_file = FileAccess.open(lock_path + "/lock_time", FileAccess.WRITE)
+	if ts_file == null:
+		_expect(false, "pending-lock timestamp should be writable", results)
+		return
+	ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0) - 10000))
+	ts_file.close()
+	var owner_file = FileAccess.open(lock_path + "/lock_owner", FileAccess.WRITE)
+	if owner_file == null:
+		_expect(false, "pending-lock owner should be writable", results)
+		return
+	owner_file.store_string("stale-owner")
+	owner_file.close()
+	OgsLogger.info("after pending create lock", {"component": "test"})
+	var file = FileAccess.open(log_path, FileAccess.READ)
+	if file == null:
+		_expect(false, "existing log should remain readable after pending-lock recovery", results)
+		return
+	var contents = file.get_as_text()
+	file.close()
+	_expect(contents.find("existing entry") != -1, "existing log contents should remain after pending-lock recovery", results)
+	_expect(contents.find("after pending create lock") != -1, "new entry should be appended after pending-lock recovery", results)
+
+func _test_hard_lock_acquire_failure_is_not_treated_as_contention(results: Dictionary) -> void:
+	## Verifies lock-acquire errors do not masquerade as lock contention.
+	var unique_root = "user://missing_lock_parent_%s" % str(Time.get_ticks_usec())
+	var lock_path = ProjectSettings.globalize_path(unique_root + "/child/ogs_launcher.log.create_lock")
+	var lock_result: Dictionary = OgsLogger._acquire_log_create_lock(lock_path)
+	var owner: String = lock_result["owner"]
+	var should_wait: bool = lock_result["should_wait"]
+	_expect(owner.is_empty(), "hard lock-acquire failure should not return an owner", results)
+	_expect(not should_wait, "hard lock-acquire failure should not trigger lock-contention waiting", results)
