@@ -2,9 +2,10 @@
 ##
 ## Covers the NOTIFICATION_PREDELETE join behavior added to SealController:
 ##   (a) thread is joined cleanly when the controller is freed while a thread
-##       is still alive, and
-##   (b) the Thread.start() failure path sets _seal_in_progress back to false
-##       and nulls the thread reference without crashing.
+##       is still alive,
+##   (b) the predelete handler is safe when no thread is running, and
+##   (c) the _seal_thread reference is cleared even when the thread has
+##       already finished before predelete fires.
 
 extends RefCounted
 class_name SealControllerTests
@@ -49,8 +50,11 @@ func _test_predelete_joins_alive_thread(results: Dictionary) -> void:
 	if start_err != OK:
 		return
 
-	# Give the thread a moment to actually start and block on the semaphore.
-	OS.delay_msec(20)
+	# Wait until the thread is actually alive (blocked on the semaphore),
+	# polling with a timeout to avoid timing flakiness on slow runners.
+	var deadline_msec = Time.get_ticks_msec() + 2000
+	while not thread.is_alive() and Time.get_ticks_msec() < deadline_msec:
+		OS.delay_msec(5)
 
 	_expect(thread.is_alive(), "Thread should be alive (blocked on semaphore)", results)
 
