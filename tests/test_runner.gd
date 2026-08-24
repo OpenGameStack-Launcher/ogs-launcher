@@ -9,7 +9,6 @@
 
 extends SceneTree
 
-var should_quit := false
 var exit_code := 0
 
 func _init() -> void:

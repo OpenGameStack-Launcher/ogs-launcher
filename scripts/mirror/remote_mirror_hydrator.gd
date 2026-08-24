@@ -235,7 +235,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			tree = Engine.get_main_loop() as SceneTree
 			scene_tree = tree
 		var thread_err = extract_thread.start(func():
-			extract_result = extractor.extract_to_library(temp_archive, tool_id, version, _is_cancelled.bind(tool_id, version), progress_cb)
+			return extractor.extract_to_library(temp_archive, tool_id, version, _is_cancelled.bind(tool_id, version), progress_cb)
 		)
 		if thread_err != OK:
 			# Thread failed to start: run extraction on the main thread as a fallback
@@ -248,11 +248,11 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			extract_result = extractor.extract_to_library(temp_archive, tool_id, version, _is_cancelled.bind(tool_id, version), progress_cb)
 		elif tree == null:
 			# No scene tree available: cannot yield frames, wait synchronously on main thread
-			extract_thread.wait_to_finish()
+			extract_result = extract_thread.wait_to_finish()
 		else:
 			while extract_thread.is_alive():
 				await tree.process_frame
-			extract_thread.wait_to_finish()
+			extract_result = extract_thread.wait_to_finish()
 		
 		# Second cancellation checkpoint: Abort and delete if cancelled during extraction
 		if _is_cancelled(tool_id, version):
@@ -386,6 +386,7 @@ func _http_download_to_file(url: String, dest_path: String, tool_id: String = ""
 	var http = HTTPRequest.new()
 	var tree = scene_tree if scene_tree != null else Engine.get_main_loop() as SceneTree
 	if tree == null:
+		http.free()
 		return {"success": false, "error": "no_scene_tree"}
 		
 	tree.root.call_deferred("add_child", http)
@@ -426,8 +427,12 @@ func _http_download_to_file(url: String, dest_path: String, tool_id: String = ""
 	http.queue_free()
 	
 	if request_result != HTTPRequest.RESULT_SUCCESS:
+		if FileAccess.file_exists(dest_path):
+			DirAccess.remove_absolute(dest_path)
 		return {"success": false, "error": "transport_error_%d" % request_result}
 	if response_code < 200 or response_code >= 300:
+		if FileAccess.file_exists(dest_path):
+			DirAccess.remove_absolute(dest_path)
 		return {"success": false, "error": "http_status_%d" % response_code}
 		
 	return {"success": true}
@@ -438,6 +443,7 @@ func _http_get_bytes(url: String) -> Dictionary:
 	var http = HTTPRequest.new()
 	var tree = scene_tree if scene_tree != null else Engine.get_main_loop() as SceneTree
 	if tree == null:
+		http.free()
 		return {"success": false, "error": "no_scene_tree"}
 		
 	tree.root.call_deferred("add_child", http)
