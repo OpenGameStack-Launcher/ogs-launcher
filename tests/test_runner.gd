@@ -49,6 +49,7 @@ func _run_tests_async() -> void:
 	load("res://scripts/projects/project_sealer.gd")
 	load("res://scripts/launcher/tool_launcher.gd")
 	load("res://scripts/launcher/tool_config_injector.gd")
+	load("res://scripts/launcher/seal_controller.gd")
 	load("res://scripts/logging/logger.gd")
 	load("res://scripts/network/offline_enforcer.gd")
 	load("res://scripts/network/socket_blocker.gd")
@@ -103,6 +104,7 @@ func _run_tests_async() -> void:
 		"res://tests/progress_controller_tests.gd",
 		"res://tests/onboarding_wizard_tests.gd",
 		"res://tests/startup_tests.gd",
+		"res://tests/seal_controller_tests.gd",
 	]
 	
 	for test_file in test_files:
