@@ -17,3 +17,4 @@ notes/*
 
 # Temporary files
 tmp/
+.worktrees/
