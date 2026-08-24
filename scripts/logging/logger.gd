@@ -110,16 +110,23 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 		
 	var log_path = _get_log_path()
 	_write_mutex.lock()
-	var file = _open_log_file_for_append(log_path)
+	var open_result = _open_log_file_for_append(log_path)
+	var file: FileAccess = open_result["file"]
+	var creation_lock_path: String = open_result["lock_path"]
+	var creation_lock_owner: String = open_result["lock_owner"]
 	if file == null:
+		if not creation_lock_path.is_empty():
+			_release_log_create_lock(creation_lock_path, creation_lock_owner)
 		_write_mutex.unlock()
 		return
-			
+
 	file.seek_end()
 	file.store_string(JSON.stringify(entry) + "\n")
 	var current_length = file.get_length()
 	file.close()
-	
+	if not creation_lock_path.is_empty():
+		_release_log_create_lock(creation_lock_path, creation_lock_owner)
+
 	if current_length > MAX_BYTES:
 		_rotate_if_needed()
 	_write_mutex.unlock()
@@ -155,13 +162,15 @@ static func _get_log_path() -> String:
 	## Returns the user:// log file path.
 	return LOG_DIR + "/" + LOG_FILE
 
-static func _open_log_file_for_append(log_path: String) -> FileAccess:
+static func _open_log_file_for_append(log_path: String) -> Dictionary:
 	## Opens the active log file without truncating an existing log.
+	## Returns {file, lock_path, lock_owner}. lock_path is non-empty when a
+	## creation lock is still held and must be released by the caller after writing.
 	var file = _open_log_file(log_path, FileAccess.READ_WRITE)
 	if file != null:
-		return file
+		return {"file": file, "lock_path": "", "lock_owner": ""}
 	if _last_open_error != ERR_FILE_NOT_FOUND:
-		return null
+		return {"file": null, "lock_path": "", "lock_owner": ""}
 	return _create_missing_log_file(log_path)
 
 static func _ensure_log_dir() -> void:
@@ -179,20 +188,30 @@ static func _open_log_file(log_path: String, mode: int) -> FileAccess:
 	_last_open_error = FileAccess.get_open_error()
 	return file
 
-static func _create_missing_log_file(log_path: String) -> FileAccess:
+static func _create_missing_log_file(log_path: String) -> Dictionary:
 	## Creates a missing log file without truncating a concurrently created log.
+	## Returns {file, lock_path, lock_owner}. The creation lock is NOT released;
+	## the caller must release it after the write so the lock is held through the
+	## append and another process cannot race its initial write.
 	var lock_path = _get_log_create_lock_path()
 	var lock_owner = _acquire_log_create_lock(lock_path)
 	if lock_owner.is_empty():
-		return _wait_for_log_creation_after_lock_contention(log_path)
+		return {"file": _wait_for_log_creation_after_lock_contention(log_path), "lock_path": "", "lock_owner": ""}
 	var file = _open_log_file(log_path, FileAccess.READ_WRITE)
 	if file == null and _last_open_error == ERR_FILE_NOT_FOUND:
+		# Revalidate ownership immediately before the truncating create so that
+		# a stale-lock recovery that revoked our lock is not followed by a WRITE
+		# that would truncate a concurrently created log.
+		if _read_log_create_lock_owner(lock_path) != lock_owner:
+			return {"file": _wait_for_log_creation_after_lock_contention(log_path), "lock_path": "", "lock_owner": ""}
 		var created = _open_log_file(log_path, FileAccess.WRITE)
 		if created != null:
 			created.close()
 			file = _open_log_file(log_path, FileAccess.READ_WRITE)
-	_release_log_create_lock(lock_path, lock_owner)
-	return file
+	if file == null:
+		_release_log_create_lock(lock_path, lock_owner)
+		return {"file": null, "lock_path": "", "lock_owner": ""}
+	return {"file": file, "lock_path": lock_path, "lock_owner": lock_owner}
 
 static func _get_log_create_lock_path() -> String:
 	## Returns the absolute path for the cross-process log creation lock.
@@ -216,7 +235,10 @@ static func _acquire_log_create_lock(lock_path: String) -> String:
 					ts_file.close()
 				if owner_file != null:
 					owner_file.close()
-				_force_remove_stale_lock(lock_path, owner_token)
+				# We created the lock dir but could not persist the metadata, so the
+				# on-disk owner token does not exist yet.  Skip the ownership check so
+				# the cleanup succeeds even though _read_log_create_lock_owner returns "".
+				_force_remove_stale_lock(lock_path)
 				return ""
 			ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0)))
 			ts_file.close()
