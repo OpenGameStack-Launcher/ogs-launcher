@@ -2,7 +2,7 @@ extends ScrollContainer
 class_name CustomItemList
 
 signal item_selected(index: int)
-signal empty_clicked()
+
 
 var _vbox: VBoxContainer
 var _items: Array[Button] = []
