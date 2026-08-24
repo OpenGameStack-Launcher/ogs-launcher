@@ -489,6 +489,11 @@ func test_project_seal_tool_copier_copies_large_files() -> Dictionary:
 	payload.resize(SealToolCopierScript._COPY_CHUNK_SIZE + 257)
 	for index in range(payload.size()):
 		payload[index] = index % 251
+
+	if payload.size() <= SealToolCopierScript._COPY_CHUNK_SIZE:
+		_helpers.remove_directory_recursive(temp_dir)
+		return {"passed": false, "error": "Test fixture did not exceed copy chunk size"}
+
 	source_file.store_buffer(payload)
 	source_file.close()
 
@@ -508,9 +513,6 @@ func test_project_seal_tool_copier_copies_large_files() -> Dictionary:
 	copied_file.close()
 
 	_helpers.remove_directory_recursive(temp_dir)
-
-	if payload.size() <= SealToolCopierScript._COPY_CHUNK_SIZE:
-		return {"passed": false, "error": "Test fixture did not exceed copy chunk size"}
 
 	if copied_size != payload.size():
 		return {"passed": false, "error": "Copied file size mismatch: expected %d, got %d" % [payload.size(), copied_size]}

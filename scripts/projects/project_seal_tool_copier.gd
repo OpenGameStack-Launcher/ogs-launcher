@@ -7,6 +7,7 @@ extends RefCounted
 class_name ProjectSealToolCopier
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
+const _COPY_CHUNK_SIZE := 1_048_576  # 1 MB
 
 ## Copies all manifest tools from central library to project ./tools.
 ## Parameters:
@@ -106,8 +107,6 @@ func _copy_directory_recursive(source: String, dest: String) -> int:
 ## dest (String): Destination file path
 ## Returns:
 ## int: Godot error code (OK on success)
-const _COPY_CHUNK_SIZE := 1_048_576  # 1 MB
-
 func _copy_file(source: String, dest: String) -> int:
 	## Copies one file in 1MB chunks to keep memory usage bounded.
 	var file = FileAccess.open(source, FileAccess.READ)
