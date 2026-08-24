@@ -33,6 +33,8 @@
 extends RefCounted
 class_name ToolExtractor
 
+const PathUtils = preload("res://scripts/utils/path_utils.gd")
+
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 ## Error codes for extraction failures
@@ -229,7 +231,7 @@ func _extract_zip(archive_path: String, _target_dir: String, is_cancelled_callba
 		if relative.is_empty():
 			continue
 		var output_path = _target_dir.path_join(relative).simplify_path()
-		if not _is_path_under_root(output_path, _target_dir):
+		if not PathUtils.is_path_under_root(output_path, _target_dir):
 			reader.close()
 			result["error"] = "Archive path escapes target directory"
 			return result
@@ -294,15 +296,6 @@ static func _is_safe_zip_path(path: String) -> bool:
 		if part == "..":
 			return false
 	return true
-
-## Checks if a path is under a target directory.
-static func _is_path_under_root(full_path: String, root: String) -> bool:
-	## Returns true if full_path is inside root (case-insensitive).
-	var normalized_root = root.simplify_path().to_lower()
-	var normalized_path = full_path.simplify_path().to_lower()
-	if normalized_path == normalized_root:
-		return true
-	return normalized_path.begins_with(normalized_root + "/")
 
 # Private helper: delete archive after successful extraction
 func _cleanup_archive(archive_path: String) -> Error:
