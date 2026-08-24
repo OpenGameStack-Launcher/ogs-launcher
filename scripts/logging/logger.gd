@@ -216,7 +216,7 @@ static func _acquire_log_create_lock(lock_path: String) -> String:
 					ts_file.close()
 				if owner_file != null:
 					owner_file.close()
-				_force_remove_stale_lock(lock_path)
+				_force_remove_stale_lock(lock_path, owner_token)
 				return ""
 			ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0)))
 			ts_file.close()
