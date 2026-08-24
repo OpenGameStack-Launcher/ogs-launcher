@@ -6,6 +6,8 @@
 extends RefCounted
 class_name MirrorPathResolver
 
+const PathUtils = preload("res://scripts/utils/path_utils.gd")
+
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 ## Returns the default mirror root directory for the current platform.
@@ -63,18 +65,9 @@ func resolve_archive_path(mirror_root: String, archive_path: String) -> Dictiona
 		return result
 	var normalized_archive = archive_path.replace("\\", "/")
 	var full_path = mirror_root.path_join(normalized_archive).simplify_path()
-	if not _is_path_under_root(full_path, mirror_root):
+	if not PathUtils.is_path_under_root(full_path, mirror_root):
 		result["error"] = "Archive path escapes mirror root"
 		return result
 	result["success"] = true
 	result["full_path"] = full_path
 	return result
-
-## Checks if a path is under the given root directory.
-static func _is_path_under_root(full_path: String, root: String) -> bool:
-	## Returns true if full_path is inside root (case-insensitive).
-	var normalized_root = root.simplify_path().to_lower()
-	var normalized_path = full_path.simplify_path().to_lower()
-	if normalized_path == normalized_root:
-		return true
-	return normalized_path.begins_with(normalized_root + "/")

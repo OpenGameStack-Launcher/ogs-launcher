@@ -6,6 +6,8 @@
 extends RefCounted
 class_name ToolLauncher
 
+const PathUtils = preload("res://scripts/utils/path_utils.gd")
+
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 ## Handles spawning external tools from the frozen stack with correct environment and working directory.
@@ -66,7 +68,7 @@ static func launch(tool_entry: Dictionary, project_dir: String, target_file: Str
 			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "absolute_path"})
 			return _error_result(LaunchError.TOOL_PATH_ABSOLUTE, "Tool path must be project-relative.")
 		full_tool_path = project_dir.path_join(tool_path)
-		if not _is_path_under_root(full_tool_path, project_dir):
+		if not PathUtils.is_path_under_root(full_tool_path, project_dir):
 			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "path_escape"})
 			return _error_result(LaunchError.TOOL_PATH_OUTSIDE_ROOT, "Tool path escapes project root.")
 	else:
@@ -263,14 +265,6 @@ static func _error_result(error_code: LaunchError, message: String) -> Dictionar
 		"error_message": message,
 		"pid": -1
 	}
-
-## Ensures the resolved path stays inside the project root.
-static func _is_path_under_root(full_path: String, project_root: String) -> bool:
-	var normalized_root = project_root.simplify_path().to_lower()
-	var normalized_path = full_path.simplify_path().to_lower()
-	if normalized_path == normalized_root:
-		return true
-	return normalized_path.begins_with(normalized_root + "/")
 
 ## Resolves tool executable path from the library.
 ## Parameters:
