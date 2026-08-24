@@ -26,6 +26,9 @@ func run() -> Dictionary:
 	_test_sha256_mismatch(results)
 	_test_sha256_invalid(results)
 	_test_offline_injection_failure(results)
+	_test_get_executable_extension(results)
+	_test_is_platform_supported(results)
+	_test_is_executable_filename(results)
 	
 	return results
 
@@ -248,3 +251,51 @@ func _test_offline_injection_failure(results: Dictionary) -> void:
 	_expect(result["error_code"] == ToolLauncher.LaunchError.OFFLINE_CONFIG_FAILED or result["error_code"] == ToolLauncher.LaunchError.TOOL_NOT_FOUND,
 		"offline errors should be surfaced", results)
 	OfflineEnforcer.apply_config(OgsConfigScript.from_dict({"offline_mode": false}))
+
+func _test_get_executable_extension(results: Dictionary) -> void:
+	## Validates _get_executable_extension returns platform-appropriate value.
+	var ext = ToolLauncher._get_executable_extension()
+	var os_name = OS.get_name()
+	if os_name == "Windows":
+		_expect(ext == ".exe", "_get_executable_extension should return .exe on Windows", results)
+	elif os_name == "macOS":
+		_expect(ext == ".app", "_get_executable_extension should return .app on macOS", results)
+	elif os_name in ["Linux", "FreeBSD", "NetBSD", "OpenBSD", "BSD"]:
+		_expect(ext == "", "_get_executable_extension should return empty string on Linux/BSD", results)
+	else:
+		# On unsupported platforms the extension defaults to empty
+		_expect(ext == "", "_get_executable_extension should return empty string on unsupported platform", results)
+
+func _test_is_platform_supported(results: Dictionary) -> void:
+	## Validates _is_platform_supported returns true on known platforms.
+	var supported = ToolLauncher._is_platform_supported()
+	var os_name = OS.get_name()
+	if os_name in ["Windows", "Linux", "macOS", "FreeBSD", "NetBSD", "OpenBSD", "BSD"]:
+		_expect(supported, "_is_platform_supported should be true on %s" % os_name, results)
+	else:
+		_expect(not supported, "_is_platform_supported should be false on unknown platform %s" % os_name, results)
+
+func _test_is_executable_filename(results: Dictionary) -> void:
+	## Validates _is_executable_filename correctly identifies executables per platform.
+	var os_name = OS.get_name()
+	if os_name == "Windows":
+		_expect(ToolLauncher._is_executable_filename("godot.exe"),
+			"godot.exe should be executable on Windows", results)
+		_expect(not ToolLauncher._is_executable_filename("godot.txt"),
+			"godot.txt should not be executable on Windows", results)
+		_expect(not ToolLauncher._is_executable_filename("blender"),
+			"blender (no ext) should not be executable on Windows", results)
+	elif os_name == "macOS":
+		_expect(ToolLauncher._is_executable_filename("Godot.app"),
+			"Godot.app should be executable on macOS", results)
+		_expect(not ToolLauncher._is_executable_filename("Godot.exe"),
+			"Godot.exe should not be executable on macOS", results)
+	elif os_name in ["Linux", "FreeBSD", "NetBSD", "OpenBSD", "BSD"]:
+		_expect(ToolLauncher._is_executable_filename("godot"),
+			"godot (no ext) should be executable on Linux/BSD", results)
+		_expect(ToolLauncher._is_executable_filename("Godot_v4.7.2-stable_linux.x86_64"),
+			"versioned binary with dots should be executable on Linux/BSD", results)
+		_expect(not ToolLauncher._is_executable_filename("libgodot.so"),
+			"libgodot.so should not be executable on Linux/BSD", results)
+		_expect(not ToolLauncher._is_executable_filename("config.json"),
+			"config.json should not be executable on Linux/BSD", results)
