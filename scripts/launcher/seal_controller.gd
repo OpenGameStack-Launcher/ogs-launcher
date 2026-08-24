@@ -85,7 +85,7 @@ func _run_seal_async(project_path: String) -> void:
 	# Yield one frame so the progress dialog renders before heavy work starts.
 	await _seal_dialog.get_tree().process_frame
 
-	var start_err = _seal_thread.start(Callable(self, "_threaded_seal_operation").bind(project_path))
+	var start_err = _start_seal_thread(project_path)
 	if start_err != OK:
 		_seal_thread = null
 		_seal_in_progress = false
@@ -115,6 +115,11 @@ func _run_seal_async(project_path: String) -> void:
 	else:
 		_show_error("Seal operation failed.", result.errors)
 		seal_completed.emit(false, "")
+
+## Starts the background seal worker thread for the requested project.
+func _start_seal_thread(project_path: String) -> int:
+	## Launches the worker entry point on the controller's thread instance.
+	return _seal_thread.start(Callable(self, "_threaded_seal_operation").bind(project_path))
 
 ## Worker thread entry point for project sealing.
 func _threaded_seal_operation(project_path: String) -> Dictionary:

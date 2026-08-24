@@ -5,12 +5,20 @@
 ##       is still alive,
 ##   (b) the predelete handler is safe when no thread is running, and
 ##   (c) the _seal_thread reference is cleared even when the thread has
-##       already finished before predelete fires.
+##       already finished before predelete fires, and
+##   (d) the thread start failure path clears seal state and emits failure.
 
 extends RefCounted
 class_name SealControllerTests
 
 const SealControllerScript = preload("res://scripts/launcher/seal_controller.gd")
+
+class FailingSealController:
+	extends SealController
+
+	func _start_seal_thread(_project_path: String) -> int:
+		## Forces a thread start failure so the controller's error path can be tested.
+		return ERR_CANT_CREATE
 
 func run() -> Dictionary:
 	## Runs all SealController unit tests.
@@ -23,6 +31,7 @@ func run() -> Dictionary:
 	_test_predelete_joins_alive_thread(results)
 	_test_predelete_no_crash_when_thread_null(results)
 	_test_thread_reference_cleared_after_predelete(results)
+	await _test_thread_start_failure_clears_state(results)
 
 	return results
 
@@ -73,8 +82,8 @@ func _test_predelete_joins_alive_thread(results: Dictionary) -> void:
 	# The thread itself must no longer be alive.
 	_expect(not thread.is_alive(), "Thread should no longer be alive after join", results)
 
-	# Safety: if the thread finished before the handler ran, join it here to
-	# avoid Godot orphaned-thread warnings regardless of scheduling.
+	# Safety: if the thread is still alive after the handler returns, join it
+	# here to avoid Godot orphaned-thread warnings in the test process.
 	if thread.is_alive():
 		thread.wait_to_finish()
 
@@ -106,3 +115,47 @@ func _test_thread_reference_cleared_after_predelete(results: Dictionary) -> void
 
 	var thread_field = controller.get("_seal_thread")
 	_expect(thread_field == null, "_seal_thread should be null after predelete on finished thread", results)
+
+## Test: _run_seal_async clears state and emits failure when Thread.start() fails.
+func _test_thread_start_failure_clears_state(results: Dictionary) -> void:
+	## Verifies the seal start failure path clears thread state and surfaces a failure.
+	var controller = FailingSealController.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	dialog.add_child(status_label)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	controller.setup(dialog, status_label, output_label, open_button)
+
+	var emitted := {
+		"called": false,
+		"success": true,
+		"zip_path": "unexpected"
+	}
+	controller.seal_completed.connect(func(success: bool, zip_path: String) -> void:
+		emitted["called"] = true
+		emitted["success"] = success
+		emitted["zip_path"] = zip_path
+	)
+
+	await controller._run_seal_async("res://tests")
+
+	_expect(controller.get("_seal_thread") == null, "_seal_thread should be cleared when thread start fails", results)
+	_expect(controller.get("_seal_in_progress") == false, "_seal_in_progress should reset when thread start fails", results)
+	_expect(
+		emitted["called"] and emitted["success"] == false and emitted["zip_path"] == "",
+		"seal_completed should emit failure when thread start fails",
+		results
+	)
+	_expect(status_label.text == "✗ Seal operation failed.", "start failure should show the seal error title", results)
+	_expect(
+		output_label.text.contains("Unable to start background packaging thread."),
+		"start failure should show the thread start error details",
+		results
+	)
+
+	dialog.free()
