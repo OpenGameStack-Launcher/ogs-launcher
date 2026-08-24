@@ -16,7 +16,8 @@ var repository_url: String = ""
 var repository: MirrorRepository
 var extractor: ToolExtractor
 var library: LibraryManager
-var worker_thread: Thread
+
+var _hydration_in_progress: bool = false
 var _cancelled_tools: Dictionary = {}
 var _cancel_mutex: Mutex = Mutex.new()
 
@@ -58,32 +59,20 @@ func _is_cancelled(tool_id: String, version: String) -> bool:
 ## Dictionary: {"success": bool, "installed_count": int, "failed_count": int, "failed_tools": Array}
 func hydrate(tools_to_install: Array) -> Dictionary:
 	## Installs tools from remote mirror archives into the library.
-	return _hydrate_internal(tools_to_install)
+	return await _hydrate_internal(tools_to_install)
 
-## Starts hydration in a background thread to keep the UI responsive.
+## Starts hydration asynchronously without blocking.
 func hydrate_async(tools_to_install: Array) -> void:
-	## Starts remote hydration in a background thread.
-	if worker_thread != null and worker_thread.is_alive():
+	## Starts remote hydration asynchronously. Returns immediately if a hydration is already in progress.
+	if _hydration_in_progress:
+		OgsLogger.warn("remote_hydration_already_in_progress", {"component": "mirror"})
 		return
-	worker_thread = Thread.new()
-	worker_thread.start(Callable(self, "_hydrate_thread").bind(tools_to_install))
-
-## Internal thread entry for hydration.
-func _hydrate_thread(tools_to_install: Array) -> void:
-	## Runs hydration in a worker thread.
 	_hydrate_internal(tools_to_install)
-	call_deferred("_finish_async")
-
-## Finalizes the async hydration thread.
-func _finish_async() -> void:
-	## Joins and clears the hydration worker thread.
-	if worker_thread != null:
-		worker_thread.wait_to_finish()
-		worker_thread = null
 
 ## Performs the hydration workflow synchronously.
 func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 	## Installs tools from remote mirror archives into the library.
+	_hydration_in_progress = true
 	var result = {
 		"success": true,
 		"installed_count": 0,
@@ -97,6 +86,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			"reason": "no tools to install"
 		})
 		_emit_hydration_complete(true, [])
+		_hydration_in_progress = false
 		return result
 
 	var guard = OfflineEnforcer.guard_network_call("remote_mirror_hydration")
@@ -109,6 +99,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			"reason": guard["error_message"]
 		})
 		_emit_hydration_complete(false, tools_to_install)
+		_hydration_in_progress = false
 		return result
 
 	if repository_url.is_empty():
@@ -120,9 +111,10 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			"reason": "repository_url_not_set"
 		})
 		_emit_hydration_complete(false, tools_to_install)
+		_hydration_in_progress = false
 		return result
 
-	var repo_result = _load_repository()
+	var repo_result = await _load_repository()
 	if not repo_result["success"]:
 		result["success"] = false
 		result["failed_count"] = tools_to_install.size()
@@ -132,6 +124,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			"reason": repo_result.get("error", "unknown")
 		})
 		_emit_hydration_complete(false, tools_to_install)
+		_hydration_in_progress = false
 		return result
 
 	repository = repo_result["repository"]
@@ -144,6 +137,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			"error_count": repository.errors.size()
 		})
 		_emit_hydration_complete(false, tools_to_install)
+		_hydration_in_progress = false
 		return result
 
 	OgsLogger.info("remote_hydration_started", {
@@ -196,7 +190,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			_emit_tool_install_complete(tool_id, version, false, archive_error)
 			continue
 
-		var temp_archive = _stage_archive(archive_url, tool_id, version)
+		var temp_archive = await _stage_archive(archive_url, tool_id, version)
 		if temp_archive.is_empty():
 			var download_error = "Failed to download remote archive"
 			result["failed_count"] += 1
@@ -234,7 +228,31 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 
 		_emit_tool_install_started(tool_id, version)
 		var progress_cb = func(fc: int, tf: int): _emit_tool_install_progress(tool_id, version, fc, tf)
-		var extract_result = extractor.extract_to_library(temp_archive, tool_id, version, _is_cancelled.bind(tool_id, version), progress_cb)
+		var extract_thread = Thread.new()
+		var extract_result: Dictionary
+		var tree = scene_tree
+		if tree == null:
+			tree = Engine.get_main_loop() as SceneTree
+			scene_tree = tree
+		var thread_err = extract_thread.start(func():
+			return extractor.extract_to_library(temp_archive, tool_id, version, _is_cancelled.bind(tool_id, version), progress_cb)
+		)
+		if thread_err != OK:
+			# Thread failed to start: run extraction on the main thread as a fallback
+			OgsLogger.warn("remote_extract_thread_failed", {
+				"component": "mirror",
+				"tool_id": tool_id,
+				"version": version,
+				"error": thread_err
+			})
+			extract_result = extractor.extract_to_library(temp_archive, tool_id, version, _is_cancelled.bind(tool_id, version), progress_cb)
+		elif tree == null:
+			# No scene tree available: cannot yield frames, wait synchronously on main thread
+			extract_result = extract_thread.wait_to_finish()
+		else:
+			while extract_thread.is_alive():
+				await tree.process_frame
+			extract_result = extract_thread.wait_to_finish()
 		
 		# Second cancellation checkpoint: Abort and delete if cancelled during extraction
 		if _is_cancelled(tool_id, version):
@@ -279,12 +297,13 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 	})
 
 	_emit_hydration_complete(result["success"], result["failed_tools"])
+	_hydration_in_progress = false
 	return result
 
 ## Loads repository.json from the configured URL.
 func _load_repository() -> Dictionary:
 	## Loads and parses repository.json from the remote URL.
-	var text_result = _read_text_from_url(repository_url)
+	var text_result = await _read_text_from_url(repository_url)
 	if not text_result["success"]:
 		return {"success": false, "error": text_result.get("error", "read_failed")}
 	var repo = MirrorRepositoryScript.parse_json_string(text_result["text"])
@@ -303,7 +322,7 @@ func _read_text_from_url(url: String) -> Dictionary:
 		var text = file.get_as_text()
 		file.close()
 		return {"success": true, "text": text}
-	return _http_get_text(url)
+	return await _http_get_text(url)
 
 ## Stages an archive either by copying a local file or downloading remote content.
 func _stage_archive(archive_url: String, tool_id: String, version: String) -> String:
@@ -324,7 +343,7 @@ func _stage_archive(archive_url: String, tool_id: String, version: String) -> St
 			return ""
 		return _copy_archive_to_temp(local_path, temp_path)
 
-	var download_result = _http_download_to_file(archive_url, temp_path, "", 0, tool_id, version)
+	var download_result = await _http_download_to_file(archive_url, temp_path, tool_id, version)
 	if not download_result["success"]:
 		OgsLogger.error("remote_archive_download_failed", {
 			"component": "mirror",
@@ -353,237 +372,98 @@ func _resolve_local_path(url: String) -> String:
 ## Downloads a URL and returns its contents as text.
 func _http_get_text(url: String) -> Dictionary:
 	## Downloads a URL and returns response text.
-	var byte_result = _http_get_bytes(url)
+	var byte_result = await _http_get_bytes(url)
 	if not byte_result["success"]:
 		return {"success": false, "error": byte_result.get("error", "http_failed")}
 	return {"success": true, "text": byte_result["bytes"].get_string_from_utf8()}
 
 ## Downloads a URL to a local file.
-func _http_download_to_file(url: String, dest_path: String, _redirect_url: String = "", redirect_count: int = 0, tool_id: String = "", version: String = "") -> Dictionary:
-	## Downloads a URL to a local file, following redirects.
-## Parameters:
-## url: URL to download from
-## dest_path: Destination file path
-## _redirect_url: Internal parameter for recursion (unused, kept for compatibility)
-## redirect_count: Current redirect count
-## tool_id: Tool ID for progress signal emission
-## version: Tool version for progress signal emission
-## 
-	if redirect_count > 5:
-		return {"success": false, "error": "redirect_limit"}
-	var parsed = _parse_url(url)
-	if not parsed["success"]:
-		return {"success": false, "error": "invalid_url"}
-	var client = HTTPClient.new()
-	var tls_options = TLSOptions.client() if parsed["use_tls"] else null
-	var err = client.connect_to_host(parsed["host"], parsed["port"], tls_options)
+func _http_download_to_file(url: String, dest_path: String, tool_id: String = "", version: String = "") -> Dictionary:
+	## Downloads a URL to a local file, following redirects automatically.
+	if FileAccess.file_exists(dest_path):
+		DirAccess.remove_absolute(dest_path)
+		
+	var http = HTTPRequest.new()
+	var tree = scene_tree if scene_tree != null else Engine.get_main_loop() as SceneTree
+	if tree == null:
+		http.free()
+		return {"success": false, "error": "no_scene_tree"}
+		
+	tree.root.call_deferred("add_child", http)
+	await tree.process_frame
+		
+	http.download_file = dest_path
+	var is_done = false
+	var request_result = 0
+	var response_code = 0
+	
+	http.request_completed.connect(func(res, code, _h, _b):
+		is_done = true
+		request_result = res
+		response_code = code
+	)
+	
+	var err = http.request(url, ["User-Agent: OGS-Launcher"])
 	if err != OK:
-		return {"success": false, "error": "connect_failed"}
-	while client.get_status() == HTTPClient.STATUS_CONNECTING or client.get_status() == HTTPClient.STATUS_RESOLVING:
-		client.poll()
-		OS.delay_msec(10)
-	if client.get_status() != HTTPClient.STATUS_CONNECTED:
-		return {"success": false, "error": "connection_failed"}
-	var request_err = client.request(HTTPClient.METHOD_GET, parsed["path"], ["User-Agent: OGS-Launcher"])
-	if request_err != OK:
+		http.queue_free()
 		return {"success": false, "error": "request_failed"}
-	while client.get_status() == HTTPClient.STATUS_REQUESTING:
-		client.poll()
-		OS.delay_msec(10)
-	var status_code = client.get_response_code()
-	var headers = _parse_headers(client.get_response_headers())
-	if status_code >= 300 and status_code < 400:
-		var location = String(headers.get("location", ""))
-		if location.is_empty():
-			return {"success": false, "error": "redirect_missing_location"}
-		return _http_download_to_file(location, dest_path, "", redirect_count + 1, tool_id, version)
-	if status_code < 200 or status_code >= 300:
-		return {"success": false, "error": "http_status_%d" % status_code}
-	var file = FileAccess.open(dest_path, FileAccess.WRITE)
-	if file == null:
-		return {"success": false, "error": "write_failed"}
-	
-	# Extract content-length from headers for progress tracking
-	var total_bytes = -1
-	if "content-length" in headers:
-		var content_length_str = String(headers.get("content-length", ""))
-		if content_length_str.is_valid_int():
-			total_bytes = int(content_length_str)
-	
-	var bytes_downloaded = 0
-	while client.get_status() == HTTPClient.STATUS_BODY:
+		
+	while not is_done:
 		if not tool_id.is_empty() and not version.is_empty():
 			if _is_cancelled(tool_id, version):
-				file.close()
+				http.cancel_request()
+				http.queue_free()
 				if FileAccess.file_exists(dest_path):
 					DirAccess.remove_absolute(dest_path)
 				return {"success": false, "error": "cancelled"}
 				
-		client.poll()
-		var chunk = client.read_response_body_chunk()
-		if chunk.size() == 0:
-			OS.delay_msec(10)
-			continue
-		file.store_buffer(chunk)
-		bytes_downloaded += chunk.size()
+			var downloaded = http.get_downloaded_bytes()
+			var total = http.get_body_size()
+			if downloaded > 0:
+				_emit_tool_download_progress(tool_id, version, downloaded, total if total > 0 else downloaded)
 		
-		# Emit progress signal if we have tool_id and version
-		if not tool_id.is_empty() and not version.is_empty():
-			_emit_tool_download_progress(tool_id, version, bytes_downloaded, total_bytes if total_bytes > 0 else bytes_downloaded)
+		await tree.create_timer(0.05).timeout
+		
+	http.queue_free()
 	
-	file.close()
+	if request_result != HTTPRequest.RESULT_SUCCESS:
+		if FileAccess.file_exists(dest_path):
+			DirAccess.remove_absolute(dest_path)
+		return {"success": false, "error": "transport_error_%d" % request_result}
+	if response_code < 200 or response_code >= 300:
+		if FileAccess.file_exists(dest_path):
+			DirAccess.remove_absolute(dest_path)
+		return {"success": false, "error": "http_status_%d" % response_code}
+		
 	return {"success": true}
 
 ## Downloads a URL and returns the bytes.
-func _http_get_bytes(url: String, redirect_count: int = 0) -> Dictionary:
-	## Downloads a URL and returns bytes, following redirects.
-	if redirect_count > 5:
-		return {"success": false, "error": "redirect_limit"}
-	var response = _http_request(url)
-	if not response["success"]:
-		return response
-	var status_code = int(response["status_code"])
-	if status_code >= 300 and status_code < 400:
-		var location = String(response.get("headers", {}).get("location", ""))
-		if location.is_empty():
-			return {"success": false, "error": "redirect_missing_location"}
-		return _http_get_bytes(location, redirect_count + 1)
-	if status_code < 200 or status_code >= 300:
-		return {"success": false, "error": "http_status_%d" % status_code}
-	var body = PackedByteArray()
-	for chunk in response["body_chunks"]:
-		body.append_array(chunk)
-	return {"success": true, "bytes": body}
-
-## Performs an HTTP request and returns response data.
-func _http_request(url: String) -> Dictionary:
-	## Performs an HTTP GET request and returns status, headers, and body chunks.
-	var parsed = _parse_url(url)
-	if not parsed["success"]:
-		return {"success": false, "error": "invalid_url"}
-	
-	var client = HTTPClient.new()
-	var tls_options = TLSOptions.client() if parsed["use_tls"] else null
-	
-	OgsLogger.debug("http_connecting", {
-		"component": "mirror",
-		"host": parsed["host"],
-		"port": parsed["port"],
-		"use_tls": parsed["use_tls"]
-	})
-	
-	var err = client.connect_to_host(parsed["host"], parsed["port"], tls_options)
+func _http_get_bytes(url: String) -> Dictionary:
+	## Downloads a URL and returns bytes, following redirects automatically.
+	var http = HTTPRequest.new()
+	var tree = scene_tree if scene_tree != null else Engine.get_main_loop() as SceneTree
+	if tree == null:
+		http.free()
+		return {"success": false, "error": "no_scene_tree"}
+		
+	tree.root.call_deferred("add_child", http)
+	await tree.process_frame
+		
+	var err = http.request(url, ["User-Agent: OGS-Launcher"])
 	if err != OK:
-		OgsLogger.error("http_connect_error", {
-			"component": "mirror",
-			"error_code": err,
-			"host": parsed["host"],
-			"port": parsed["port"]
-		})
-		return {"success": false, "error": "connect_failed"}
-	
-	# Wait for connection with timeout
-	var max_polls = 100  # ~1 second with 10ms delays
-	var poll_count = 0
-	while (client.get_status() == HTTPClient.STATUS_CONNECTING or 
-		   client.get_status() == HTTPClient.STATUS_RESOLVING) and poll_count < max_polls:
-		client.poll()
-		OS.delay_msec(10)
-		poll_count += 1
-	
-	var final_status = client.get_status()
-	OgsLogger.debug("http_after_connect", {
-		"component": "mirror",
-		"status": _status_name(final_status),
-		"poll_count": poll_count
-	})
-	
-	if final_status != HTTPClient.STATUS_CONNECTED:
-		OgsLogger.error("http_connection_failed", {
-			"component": "mirror",
-			"status": _status_name(final_status),
-			"host": parsed["host"],
-			"port": parsed["port"]
-		})
-		return {"success": false, "error": "connection_failed"}
-	
-	var request_err = client.request(HTTPClient.METHOD_GET, parsed["path"], ["User-Agent: OGS-Launcher"])
-	if request_err != OK:
-		OgsLogger.error("http_request_error", {
-			"component": "mirror",
-			"error_code": request_err,
-			"path": parsed["path"]
-		})
+		http.queue_free()
 		return {"success": false, "error": "request_failed"}
+		
+	var result = await http.request_completed
+	http.queue_free()
 	
-	while client.get_status() == HTTPClient.STATUS_REQUESTING:
-		client.poll()
-		OS.delay_msec(10)
+	var req_result = result[0]
+	var code = result[1]
+	var body = result[3]
 	
-	var status_code = client.get_response_code()
-	var headers = _parse_headers(client.get_response_headers())
-	var chunks: Array = []
-	while client.get_status() == HTTPClient.STATUS_BODY:
-		client.poll()
-		var chunk = client.read_response_body_chunk()
-		if chunk.size() == 0:
-			OS.delay_msec(10)
-			continue
-		chunks.append(chunk)
-	
-	OgsLogger.debug("http_response_received", {
-		"component": "mirror",
-		"status_code": status_code,
-		"chunk_count": chunks.size()
-	})
-	
-	return {"success": true, "status_code": status_code, "headers": headers, "body_chunks": chunks}
-
-## Parses response headers into a dictionary.
-func _parse_headers(headers: Array) -> Dictionary:
-	## Parses response headers into a lowercased dictionary.
-	var result: Dictionary = {}
-	for header in headers:
-		var parts = String(header).split(":", true, 1)
-		if parts.size() == 2:
-			result[parts[0].strip_edges().to_lower()] = parts[1].strip_edges()
-	return result
-
-## Helper to convert HTTPClient status code to name.
-func _status_name(status: int) -> String:
-	## Converts HTTPClient status constant to readable name.
-	match status:
-		HTTPClient.STATUS_DISCONNECTED: return "DISCONNECTED"
-		HTTPClient.STATUS_RESOLVING: return "RESOLVING"
-		HTTPClient.STATUS_CONNECTING: return "CONNECTING"
-		HTTPClient.STATUS_CONNECTED: return "CONNECTED"
-		HTTPClient.STATUS_REQUESTING: return "REQUESTING"
-		HTTPClient.STATUS_BODY: return "BODY"
-		HTTPClient.STATUS_CONNECTION_ERROR: return "CONNECTION_ERROR"
-		_: return "UNKNOWN(%d)" % status
-
-## Parses a URL into host/port/path fields.
-func _parse_url(url: String) -> Dictionary:
-	## Parses a URL into components for HTTPClient.
-	if url.begins_with("https://"):
-		return _build_url_parts(url, "https://", true, 443)
-	if url.begins_with("http://"):
-		return _build_url_parts(url, "http://", false, 80)
-	return {"success": false}
-
-## Builds URL parts based on the scheme.
-func _build_url_parts(url: String, scheme: String, use_tls: bool, default_port: int) -> Dictionary:
-	## Builds URL parts for HTTPClient.
-	var remainder = url.substr(scheme.length())
-	var slash_index = remainder.find("/")
-	var host = remainder
-	var path = "/"
-	if slash_index != -1:
-		host = remainder.substr(0, slash_index)
-		path = remainder.substr(slash_index)
-	if host.find(":") != -1:
-		var host_parts = host.split(":", true, 1)
-		host = host_parts[0]
-		var port = int(host_parts[1])
-		return {"success": true, "host": host, "port": port, "path": path, "use_tls": use_tls}
-	return {"success": true, "host": host, "port": default_port, "path": path, "use_tls": use_tls}
+	if req_result != HTTPRequest.RESULT_SUCCESS:
+		return {"success": false, "error": "transport_error_%d" % req_result}
+	if code < 200 or code >= 300:
+		return {"success": false, "error": "http_status_%d" % code}
+		
+	return {"success": true, "bytes": body}

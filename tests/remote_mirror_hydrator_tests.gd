@@ -9,9 +9,9 @@ func run() -> Dictionary:
 	## Runs RemoteMirrorHydrator unit tests.
 	var results = {"passed": 0, "failed": 0, "failures": []}
 	_cleanup_library()
-	_test_missing_repository_url(results)
-	_test_invalid_repository_json(results)
-	_test_missing_archive_file(results)
+	await _test_missing_repository_url(results)
+	await _test_invalid_repository_json(results)
+	await _test_missing_archive_file(results)
 	_cleanup_library()
 	return results
 
@@ -27,7 +27,7 @@ func _test_missing_repository_url(results: Dictionary) -> void:
 	## Hydration should fail when repository_url is missing.
 	OfflineEnforcer.reset()
 	var hydrator = RemoteMirrorHydratorScript.new("")
-	var result = hydrator.hydrate([
+	var result = await hydrator.hydrate([
 		{"tool_id": "godot", "version": "4.3"}
 	])
 	_expect(result["success"] == false, "should fail without repository_url", results)
@@ -45,7 +45,7 @@ func _test_invalid_repository_json(results: Dictionary) -> void:
 		file.close()
 
 	var hydrator = RemoteMirrorHydratorScript.new(repo_path)
-	var result = hydrator.hydrate([
+	var result = await hydrator.hydrate([
 		{"tool_id": "godot", "version": "4.3"}
 	])
 	_expect(result["success"] == false, "should fail on invalid repository json", results)
@@ -81,7 +81,7 @@ func _test_missing_archive_file(results: Dictionary) -> void:
 		file.close()
 
 	var hydrator = RemoteMirrorHydratorScript.new(repo_path)
-	var result = hydrator.hydrate([
+	var result = await hydrator.hydrate([
 		{"tool_id": "godot", "version": "4.3"}
 	])
 	_expect(result["success"] == false, "should fail when archive file is missing", results)
