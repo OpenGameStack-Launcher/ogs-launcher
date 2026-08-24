@@ -222,9 +222,12 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		extract_thread.start(func():
 			extract_result = extractor.extract_to_library(temp_archive, tool_id, version, _is_cancelled.bind(tool_id, version), progress_cb)
 		)
-		var tree = scene_tree if scene_tree != null else Engine.get_main_loop() as SceneTree
+		var tree = scene_tree
+		if tree == null:
+			tree = Engine.get_main_loop() as SceneTree
+			scene_tree = tree
 		while extract_thread.is_alive():
-			if tree:
+			if tree != null:
 				await tree.process_frame
 			else:
 				break
