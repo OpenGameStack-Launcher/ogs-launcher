@@ -218,7 +218,7 @@ static func _acquire_log_create_lock(lock_path: String) -> String:
 					owner_file.close()
 				_force_remove_stale_lock(lock_path)
 				return ""
-			ts_file.store_string(str(Time.get_unix_time_from_system() * 1000.0))
+			ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0)))
 			ts_file.close()
 			owner_file.store_string(owner_token)
 			owner_file.close()
@@ -284,7 +284,7 @@ static func _wait_for_log_creation_after_lock_contention(log_path: String) -> Fi
 
 static func _build_lock_owner_token() -> String:
 	## Returns a best-effort unique token for lock ownership checks.
-	return str(OS.get_process_id()) + ":" + str(Time.get_unix_time_from_system() * 1000.0) + ":" + str(Time.get_ticks_usec())
+	return str(OS.get_process_id()) + ":" + str(int(Time.get_unix_time_from_system() * 1000.0)) + ":" + str(Time.get_ticks_usec())
 
 static func _read_log_create_lock_owner(lock_path: String) -> String:
 	## Returns the current lock owner token or an empty string when unavailable.
