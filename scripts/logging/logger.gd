@@ -160,9 +160,10 @@ static func _get_file_length(user_path: String) -> int:
 static func _sanitize_context(context: Dictionary) -> Dictionary:
 	## Redacts sensitive keys from context before logging.
 	var sanitized: Dictionary = {}
+	var sensitive_keys = ["system_path", "absolute_path", "local_path"]
 	for key in context.keys():
 		var key_str = String(key)
-		if key_str.to_lower().find("path") != -1:
+		if sensitive_keys.has(key_str.to_lower()):
 			sanitized[key_str] = "<redacted>"
 		else:
 			sanitized[key_str] = context[key]
