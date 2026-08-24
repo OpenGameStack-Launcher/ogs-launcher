@@ -79,7 +79,7 @@ var _add_tool_candidates: Array = []
 class UIDeps extends RefCounted:
 	var btn_add_project: Button
 	var btn_new_project: Button
-	var projects_list: Control
+	var projects_list: ItemList
 	var lbl_project_status: Label
 	var lbl_offline_status: Label
 	var lbl_tools_for_project: Label
@@ -102,7 +102,7 @@ class UIDeps extends RefCounted:
 	var project_tools_list: ItemList
 	var btn_change_version: Button
 
-func setup(deps: UIDeps, tools_ctrl) -> void:
+func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	btn_add_project = deps.btn_add_project
 	btn_new_project = deps.btn_new_project
 	projects_list = deps.projects_list
