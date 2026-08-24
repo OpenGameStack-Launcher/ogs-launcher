@@ -4,7 +4,7 @@
 ## verifies hashes, and extracts archives into the library. This workflow
 ## is offline-only and performs no network access.
 
-extends RefCounted
+extends "res://scripts/mirror/base_hydrator.gd"
 class_name MirrorHydrator
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
@@ -187,7 +187,17 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 				_emit_tool_install_complete(tool_id, version, false, mismatch)
 				continue
 
-		var temp_archive = _copy_archive_to_temp(full_archive_path, tool_id, version)
+		var temp_dir = OS.get_cache_dir()
+		if temp_dir.is_empty():
+			temp_dir = OS.get_user_data_dir()
+		var temp_archive = ""
+		if not temp_dir.is_empty():
+			var safe_name = "%s_%s.zip" % [tool_id, version]
+			var temp_path = temp_dir.path_join("ogs_mirror_" + safe_name)
+			if FileAccess.file_exists(temp_path):
+				DirAccess.remove_absolute(temp_path)
+			temp_archive = _copy_archive_to_temp(full_archive_path, temp_path)
+
 		if temp_archive.is_empty():
 			var copy_error = "Failed to stage archive in temp directory"
 			result["failed_count"] += 1
@@ -255,35 +265,6 @@ func _emit_hydration_complete(success: bool, failed_tools: Array) -> void:
 func _emit_hydration_complete_now(success: bool, failed_tools: Array) -> void:
 	## Deferred emit for hydration_complete.
 	hydration_complete.emit(success, failed_tools)
-
-## Copies an archive to a temp directory to avoid modifying mirror contents.
-func _copy_archive_to_temp(archive_path: String, tool_id: String, version: String) -> String:
-	## Copies an archive to a temp location and returns the temp path.
-	var temp_dir = OS.get_cache_dir()
-	if temp_dir.is_empty():
-		temp_dir = OS.get_user_data_dir()
-	if temp_dir.is_empty():
-		return ""
-	var safe_name = "%s_%s.zip" % [tool_id, version]
-	var temp_path = temp_dir.path_join("ogs_mirror_" + safe_name)
-	if FileAccess.file_exists(temp_path):
-		DirAccess.remove_absolute(temp_path)
-
-	var source = FileAccess.open(archive_path, FileAccess.READ)
-	if source == null:
-		return ""
-	var dest = FileAccess.open(temp_path, FileAccess.WRITE)
-	if dest == null:
-		source.close()
-		return ""
-	while not source.eof_reached():
-		var chunk = source.get_buffer(1024 * 1024)
-		if chunk.size() == 0:
-			break
-		dest.store_buffer(chunk)
-	source.close()
-	dest.close()
-	return temp_path
 
 ## Computes sha256 for a file path using streaming reads.
 static func _compute_sha256(file_path: String) -> Dictionary:
