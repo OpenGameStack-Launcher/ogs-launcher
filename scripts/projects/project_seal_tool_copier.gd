@@ -99,25 +99,33 @@ func _copy_directory_recursive(source: String, dest: String) -> int:
 
 	return OK
 
-## Copies a single file from source to destination.
+## Copies a single file from source to destination using chunked reads.
+## Uses 1MB chunks to avoid loading entire large binaries into memory.
 ## Parameters:
 ## source (String): Source file path
 ## dest (String): Destination file path
 ## Returns:
 ## int: Godot error code (OK on success)
+const _COPY_CHUNK_SIZE := 1_048_576  # 1 MB
+
 func _copy_file(source: String, dest: String) -> int:
-	## Copies one file as raw bytes.
+	## Copies one file in 1MB chunks to keep memory usage bounded.
 	var file = FileAccess.open(source, FileAccess.READ)
 	if file == null:
 		return FileAccess.get_open_error()
 
-	var content = file.get_buffer(file.get_length())
-	file.close()
-	
 	var out_file = FileAccess.open(dest, FileAccess.WRITE)
 	if out_file == null:
+		file.close()
 		return FileAccess.get_open_error()
 
-	out_file.store_buffer(content)
+	var remaining = file.get_length()
+	while remaining > 0:
+		var chunk_size = mini(remaining, _COPY_CHUNK_SIZE)
+		var chunk = file.get_buffer(chunk_size)
+		out_file.store_buffer(chunk)
+		remaining -= chunk_size
+
+	file.close()
 	out_file.close()
 	return OK
