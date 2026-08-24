@@ -13,6 +13,10 @@ repository. Apply this on pull requests, diffs, or any request to review Godot c
 Walk the diff against each section below. Only comment on lines that are part of
 the diff (changed/added), unless a change clearly breaks surrounding code.
 
+Before finalizing findings, use configured MCP context when available (for
+example, linked issues, pull request discussion, workflow run status, and code
+scanning alerts) to avoid duplicate or stale feedback.
+
 ### 1. Godot 4.7.2 Syntax Correctness
 - Flag Godot 3.x-era APIs: `instance()` (must be `instantiate()`), `onready` without
   `@` (must be `@onready`), `export` without `@` (must be `@export`), `tool` without
