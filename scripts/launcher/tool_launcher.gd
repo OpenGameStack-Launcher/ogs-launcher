@@ -466,6 +466,7 @@ static func _is_hex_sha256(value: String) -> bool:
 		var code = character.unicode_at(0)
 		var is_digit = code >= 48 and code <= 57
 		var is_lower = code >= 97 and code <= 102
-		if not (is_digit or is_lower):
+		var is_upper = code >= 65 and code <= 70
+		if not (is_digit or is_lower or is_upper):
 			return false
 	return true
