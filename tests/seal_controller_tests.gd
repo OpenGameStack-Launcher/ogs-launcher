@@ -40,19 +40,26 @@ func _test_predelete_joins_alive_thread(results: Dictionary) -> void:
 	## wait_to_finish() and does not crash or leave Godot warnings.
 	var controller = SealControllerScript.new()
 
-	# Start a short-lived thread that does minimal work so it finishes quickly.
+	# Use a Semaphore to hold the thread alive until we release it, ensuring
+	# is_alive() returns true when NOTIFICATION_PREDELETE is triggered.
+	var sem = Semaphore.new()
 	var thread = Thread.new()
-	var start_err = thread.start(func() -> void: pass)
+	var start_err = thread.start(func() -> void: sem.wait())
 	_expect(start_err == OK, "Thread.start() should succeed in test environment", results)
 	if start_err != OK:
 		return
 
-	# Inject the live thread into the controller's private field via a helper
-	# workaround: assign via set() since GDScript allows it on RefCounted.
+	# Give the thread a moment to actually start and block on the semaphore.
+	OS.delay_msec(20)
+
+	_expect(thread.is_alive(), "Thread should be alive (blocked on semaphore)", results)
+
+	# Inject the live thread into the controller's private field.
 	controller.set("_seal_thread", thread)
 
-	# Trigger predelete manually (the same path taken by the GC).
-	# We call notification() directly so we can assert afterwards.
+	# Release the semaphore so the thread can exit, then immediately trigger
+	# predelete. The controller must join the thread safely.
+	sem.post()
 	controller.notification(NOTIFICATION_PREDELETE)
 
 	# After the notification the thread should have been joined and nulled.
