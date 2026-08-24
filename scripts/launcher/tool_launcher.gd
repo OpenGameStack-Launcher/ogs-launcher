@@ -34,7 +34,8 @@ enum LaunchError {
 	TOOL_HASH_INVALID = 8,      ## Tool sha256 value is invalid or unreadable
 	TOOL_HASH_MISMATCH = 9,     ## Tool sha256 does not match file contents
 	GODOT_PROJECT_INIT_FAILED = 10, ## Godot project.godot discovery/creation failed
-	INVALID_TOOL_ENTRY = 11      ## Missing required tool ID or version
+	INVALID_TOOL_ENTRY = 11,     ## Missing required tool ID or version
+	UNSUPPORTED_PLATFORM = 12    ## Current OS is not supported for executable discovery
 }
 
 
@@ -329,6 +330,33 @@ static func _resolve_tool_from_library(library: LibraryManager, tool_id: String,
 		"executable_path": executable_path
 	}
 
+## Returns the executable file extension for the current platform.
+static func _get_executable_extension() -> String:
+	var os_name = OS.get_name()
+	match os_name:
+		"Windows":
+			return ".exe"
+		"Linux", "FreeBSD", "NetBSD", "OpenBSD", "BSD":
+			return ""
+		"macOS":
+			return ".app"
+		_:
+			return ""
+
+## Returns true if the current platform is supported for executable discovery.
+static func _is_platform_supported() -> bool:
+	return OS.get_name() in ["Windows", "Linux", "macOS", "FreeBSD", "NetBSD", "OpenBSD", "BSD"]
+
+## Checks whether a filename looks like an executable on the current platform.
+static func _is_executable_filename(file_name: String) -> bool:
+	var ext = _get_executable_extension()
+	if ext.is_empty():
+		# On Linux/BSD, executables have no extension — accept files without a dot
+		# in the basename (filters out .txt, .so, .py, etc.)
+		return not file_name.get_basename().is_empty() and not file_name.contains(".")
+	else:
+		return file_name.to_lower().ends_with(ext)
+
 ## Finds the main executable within a tool directory.
 ## Uses tool-specific conventions to locate the executable.
 ## Parameters:
@@ -337,75 +365,80 @@ static func _resolve_tool_from_library(library: LibraryManager, tool_id: String,
 ## Returns:
 ##   String: Absolute path to executable, or empty string if not found
 static func _find_executable_in_directory(directory: String, tool_id: String) -> String:
+	if not _is_platform_supported():
+		OgsLogger.error("unsupported_platform", {
+			"component": "launcher",
+			"os": OS.get_name(),
+			"tool_id": tool_id
+		})
+		return ""
+
 	var dir = DirAccess.open(directory)
 	if dir == null:
 		return ""
-	
+
+	var ext = _get_executable_extension()
+
 	# Tool-specific executable naming conventions
 	match tool_id:
 		"godot":
-			# Look for Godot_*.exe or godot.exe
+			# Look for Godot_*<ext> or godot<ext>
 			dir.list_dir_begin()
 			var godot_file = dir.get_next()
 			while godot_file != "":
-				if godot_file.to_lower().begins_with("godot") and godot_file.to_lower().ends_with(".exe"):
+				if godot_file.to_lower().begins_with("godot") and _is_executable_filename(godot_file):
 					var exe_path = directory.path_join(godot_file)
 					if FileAccess.file_exists(exe_path):
 						return exe_path
 				godot_file = dir.get_next()
 			dir.list_dir_end()
 		"blender":
-			# Look for blender.exe
-			var blender_exe = directory.path_join("blender.exe")
+			var blender_exe = directory.path_join("blender" + ext)
 			if FileAccess.file_exists(blender_exe):
 				return blender_exe
 		"krita":
-			# Look for bin/krita.exe or krita.exe
-			var krita_bin = directory.path_join("bin").path_join("krita.exe")
+			var krita_bin = directory.path_join("bin").path_join("krita" + ext)
 			if FileAccess.file_exists(krita_bin):
 				return krita_bin
-			var krita_exe = directory.path_join("krita.exe")
+			var krita_exe = directory.path_join("krita" + ext)
 			if FileAccess.file_exists(krita_exe):
 				return krita_exe
 		"audacity":
-			# Look for audacity.exe
-			var audacity_exe = directory.path_join("audacity.exe")
+			var audacity_exe = directory.path_join("audacity" + ext)
 			if FileAccess.file_exists(audacity_exe):
 				return audacity_exe
-	
-	# Fallback: better executable search
+
+	# Fallback: scan for executable files in directory
 	dir.list_dir_begin()
 	var file_name = dir.get_next()
 	var exe_files = []
 	while file_name != "":
-		if not dir.current_is_dir() and file_name.to_lower().ends_with(".exe"):
+		if not dir.current_is_dir() and _is_executable_filename(file_name):
 			exe_files.append(file_name)
 		file_name = dir.get_next()
 	dir.list_dir_end()
-	
+
 	if exe_files.is_empty():
 		return ""
-		
+
 	# 1. Exact match with tool_id
 	for exe in exe_files:
 		if exe.get_basename().to_lower() == tool_id.to_lower():
 			return directory.path_join(exe)
-			
+
 	# 2. Contains tool_id
 	for exe in exe_files:
 		if exe.to_lower().contains(tool_id.to_lower()):
 			return directory.path_join(exe)
-			
+
 	# 3. Filter out common uninstaller/setup names and pick the first
 	for exe in exe_files:
 		var lower_name = exe.to_lower()
 		if not lower_name.begins_with("unins") and not lower_name.begins_with("setup"):
 			return directory.path_join(exe)
-			
+
 	# 4. Absolute fallback
 	return directory.path_join(exe_files[0])
-	
-	return ""
 
 
 ## Validates sha256 when present in the tool entry.
