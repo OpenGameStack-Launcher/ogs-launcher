@@ -15,7 +15,7 @@ class_name SealController
 ## Without this, an orphaned Thread causes Godot 4 warnings and potential crashes.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
-		if _seal_thread != null and _seal_thread.is_alive():
+		if _seal_thread != null and _seal_thread.is_started():
 			OgsLogger.warn("seal_thread_join_on_free", {
 				"component": "sealer"
 			})

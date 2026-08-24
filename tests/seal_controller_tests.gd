@@ -4,8 +4,8 @@
 ##   (a) thread is joined cleanly when the controller is freed while a thread
 ##       is still alive,
 ##   (b) the predelete handler is safe when no thread is running, and
-##   (c) the _seal_thread reference is cleared even when the thread has
-##       already finished before predelete fires, and
+##   (c) a finished-but-started thread is joined and cleared during predelete,
+##       and
 ##   (d) the thread start failure path clears seal state and emits failure.
 
 extends RefCounted
@@ -95,9 +95,9 @@ func _test_predelete_no_crash_when_thread_null(results: Dictionary) -> void:
 	controller.notification(NOTIFICATION_PREDELETE)
 	_expect(true, "NOTIFICATION_PREDELETE with null thread should not crash", results)
 
-## Test: _seal_thread reference is null after predelete even for an already-finished thread.
+## Test: _notification(NOTIFICATION_PREDELETE) joins a finished-but-started thread.
 func _test_thread_reference_cleared_after_predelete(results: Dictionary) -> void:
-	## Verifies _seal_thread is cleared to null when the thread is already done.
+	## Verifies predelete joins a finished thread that has not yet been waited on.
 	var controller = SealControllerScript.new()
 
 	var thread = Thread.new()
@@ -106,15 +106,21 @@ func _test_thread_reference_cleared_after_predelete(results: Dictionary) -> void
 	if start_err != OK:
 		return
 
-	# Wait for the thread to finish before triggering predelete.
-	thread.wait_to_finish()
-	_expect(not thread.is_alive(), "Thread should not be alive after wait_to_finish()", results)
+	# Let the thread finish on its own without joining it first.
+	var deadline_msec = Time.get_ticks_msec() + 2000
+	while not thread.is_started() and Time.get_ticks_msec() < deadline_msec:
+		OS.delay_msec(5)
+	while thread.is_alive() and Time.get_ticks_msec() < deadline_msec:
+		OS.delay_msec(5)
+	_expect(not thread.is_alive(), "Thread should finish on its own before predelete", results)
+	_expect(thread.is_started(), "Finished thread should remain started until joined", results)
 
 	controller.set("_seal_thread", thread)
 	controller.notification(NOTIFICATION_PREDELETE)
 
 	var thread_field = controller.get("_seal_thread")
 	_expect(thread_field == null, "_seal_thread should be null after predelete on finished thread", results)
+	_expect(not thread.is_started(), "Finished thread should be joined during predelete", results)
 
 ## Test: _run_seal_async clears state and emits failure when Thread.start() fails.
 func _test_thread_start_failure_clears_state(results: Dictionary) -> void:
