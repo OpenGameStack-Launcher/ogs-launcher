@@ -5,6 +5,7 @@ class_name ProjectExplorer
 
 const FileTypeMapper = preload("res://scripts/tools/file_type_mapper.gd")
 const ToolCategoryMapper = preload("res://scripts/tools/tool_category_mapper.gd")
+const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 signal file_selected(file_path: String, tool_id: String)
 signal folder_selected(folder_path: String, tool_id: String)
@@ -44,9 +45,18 @@ func _on_item_mouse_selected(position: Vector2, mouse_button_index: int) -> void
 func _on_context_menu_id_pressed(id: int) -> void:
 	if id == 0 and not context_target_path.is_empty():
 		var path_to_open = ProjectSettings.globalize_path(context_target_path)
+		
+		# Validate path to prevent arbitrary URL execution and ensure it stays inside the loaded project.
+		var normalized_root = current_project_dir.simplify_path().to_lower()
+		var normalized_path = path_to_open.simplify_path().to_lower()
+		if current_project_dir.is_empty() or not path_to_open.is_absolute_path() or path_to_open.contains("://") or (normalized_path != normalized_root and not normalized_path.begins_with(normalized_root + "/")):
+			OgsLogger.warn("invalid_shell_open_path", {"component": "project_explorer", "absolute_path": path_to_open})
+			return
+			
 		if not DirAccess.dir_exists_absolute(path_to_open):
 			path_to_open = path_to_open.get_base_dir()
-		OS.shell_open(path_to_open)
+			
+		OS.shell_show_in_file_manager(path_to_open)
 
 ## Loads a new project directory into the Tree.
 func load_project(project_dir: String) -> void:
