@@ -42,27 +42,6 @@ func get_mirror_root() -> String:
 	})
 	return root
 
-## Normalizes a path string for consistent path handling.
-## Parameters:
-## path_str (String): Input path
-## Returns:
-## String: Normalized absolute path
-func normalize_path(path_str: String) -> String:
-	## Normalizes a path string to an absolute path.
-	if path_str.is_empty():
-		return ""
-	var normalized = path_str.replace("\\", "/")
-	if normalized.begins_with("~"):
-		var home = OS.get_environment("HOME")
-		if not home.is_empty():
-			normalized = home + normalized.substr(1)
-	var abs_path = ProjectSettings.globalize_path(normalized)
-	OgsLogger.debug("mirror_path_normalized", {
-		"component": "mirror",
-		"input": path_str,
-		"output": abs_path
-	})
-	return abs_path
 
 ## Resolves a mirror archive path and validates it is under the mirror root.
 ## Parameters:
