@@ -4,7 +4,7 @@
 ## entries, fetches tool archives, verifies hashes, and extracts archives into
 ## the central library. This workflow respects offline enforcement.
 
-extends RefCounted
+extends "res://scripts/mirror/base_hydrator.gd"
 class_name RemoteMirrorHydrator
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
@@ -394,25 +394,6 @@ func _stage_archive(archive_url: String, tool_id: String, version: String) -> St
 		})
 		return ""
 
-	return temp_path
-
-## Copies an archive to a temp path.
-func _copy_archive_to_temp(source_path: String, temp_path: String) -> String:
-	## Copies a local archive to a temp path and returns the temp path.
-	var source = FileAccess.open(source_path, FileAccess.READ)
-	if source == null:
-		return ""
-	var dest = FileAccess.open(temp_path, FileAccess.WRITE)
-	if dest == null:
-		source.close()
-		return ""
-	while not source.eof_reached():
-		var chunk = source.get_buffer(1024 * 1024)
-		if chunk.size() == 0:
-			break
-		dest.store_buffer(chunk)
-	source.close()
-	dest.close()
 	return temp_path
 
 ## Returns true if the reference points to a local file path.
