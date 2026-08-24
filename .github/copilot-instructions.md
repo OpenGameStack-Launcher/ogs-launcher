@@ -60,9 +60,3 @@
 * Keep each snapshot brief: what changed, key decisions, next step, open items.
 * In a new session, read `notes/*.md` first to regain context quickly.
 
-### **7. MCP-Aware Code Review Guidance**
-
-* When performing code reviews, use configured MCP tools when relevant to validate context from pull requests, linked issues, CI/workflow state, and security findings.
-* Prioritize read-only MCP tools and least-privilege access.
-* Prefer concrete references (issue IDs, PR numbers, workflow runs) over assumptions when MCP context is available.
-* If MCP context cannot be accessed, clearly state that limitation in the review instead of speculating.
