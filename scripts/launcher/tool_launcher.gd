@@ -34,8 +34,14 @@ enum LaunchError {
 	TOOL_HASH_INVALID = 8,      ## Tool sha256 value is invalid or unreadable
 	TOOL_HASH_MISMATCH = 9,     ## Tool sha256 does not match file contents
 	GODOT_PROJECT_INIT_FAILED = 10, ## Godot project.godot discovery/creation failed
-	INVALID_TOOL_ENTRY = 11      ## Missing required tool ID or version
+	INVALID_TOOL_ENTRY = 11,     ## Missing required tool ID or version
+	UNSUPPORTED_PLATFORM = 12    ## Current OS is not supported for executable discovery
 }
+
+## File extensions that are never standalone executables on Linux/BSD platforms.
+const _NON_EXEC_EXTENSIONS: Array = [".so", ".py", ".txt", ".sh", ".json", ".xml",
+	".cfg", ".ini", ".md", ".png", ".svg", ".jpg", ".desktop", ".mo", ".po",
+	".a", ".la", ".pc"]
 
 
 ## Launches a tool from the manifest with the project directory as working context.
@@ -80,8 +86,8 @@ static func launch(tool_entry: Dictionary, project_dir: String, target_file: Str
 			return _error_result(resolver_result["error_code"], resolver_result["error_message"])
 		full_tool_path = String(resolver_result["executable_path"])
 		
-	if not FileAccess.file_exists(full_tool_path):
-		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "not_found", "path": full_tool_path})
+	if not _tool_path_exists(full_tool_path):
+		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "not_found", "absolute_path": full_tool_path})
 		return _error_result(LaunchError.TOOL_NOT_FOUND, "Tool executable not found at: %s" % full_tool_path)
 
 	var hash_check = _validate_tool_hash(tool_entry, full_tool_path)
@@ -107,7 +113,10 @@ static func launch(tool_entry: Dictionary, project_dir: String, target_file: Str
 		args.append_array(inject["args"])
 	
 	# Spawn the process
-	var pid = OS.create_process(full_tool_path, args)
+	var launch_path = _resolve_launch_path(full_tool_path, tool_id)
+	if launch_path.is_empty():
+		return _error_result(LaunchError.TOOL_NOT_FOUND, "macOS app bundle binary not found for tool: %s" % tool_id)
+	var pid = OS.create_process(launch_path, args)
 	if pid == -1:
 		OgsLogger.error("tool_launch_failed", {"component": "launcher", "reason": "spawn_failed", "tool": tool_id})
 		return _error_result(LaunchError.SPAWN_FAILED, "Failed to spawn process for tool: %s" % tool_id)
@@ -329,6 +338,70 @@ static func _resolve_tool_from_library(library: LibraryManager, tool_id: String,
 		"executable_path": executable_path
 	}
 
+## Returns the executable file extension for the current platform.
+static func _get_executable_extension() -> String:
+	var os_name = OS.get_name()
+	match os_name:
+		"Windows":
+			return ".exe"
+		"Linux", "FreeBSD", "NetBSD", "OpenBSD", "BSD":
+			return ""
+		"macOS":
+			return ".app"
+		_:
+			return ""
+
+## Returns true if the current platform is supported for executable discovery.
+static func _is_platform_supported() -> bool:
+	return OS.get_name() in ["Windows", "Linux", "macOS", "FreeBSD", "NetBSD", "OpenBSD", "BSD"]
+
+## Returns true if a tool path exists as a file or, on macOS, as a .app directory bundle.
+static func _tool_path_exists(tool_path: String) -> bool:
+	if FileAccess.file_exists(tool_path):
+		return true
+	# On macOS, .app bundles are directories; also accept them as valid tool paths.
+	if tool_path.to_lower().ends_with(".app") and DirAccess.dir_exists_absolute(tool_path):
+		return true
+	return false
+
+## Resolves the launchable executable path for a tool path.
+## On macOS, .app bundles are directories; this returns the binary inside the bundle.
+## On all other platforms, returns the path unchanged.
+## Returns an empty string when the bundle binary cannot be located on macOS.
+static func _resolve_launch_path(tool_path: String, tool_id: String) -> String:
+	if OS.get_name() == "macOS" and tool_path.to_lower().ends_with(".app"):
+		# macOS .app bundle: the binary lives at <Name>.app/Contents/MacOS/<Name>
+		var bundle_name = tool_path.get_file().get_basename()
+		var binary = tool_path.path_join("Contents/MacOS").path_join(bundle_name)
+		if FileAccess.file_exists(binary):
+			return binary
+		# Fallback: try the tool_id as the binary name
+		var fallback = tool_path.path_join("Contents/MacOS").path_join(tool_id)
+		if FileAccess.file_exists(fallback):
+			return fallback
+		# Binary not found inside bundle; return empty to signal launch failure.
+		OgsLogger.warn("tool_launch_failed", {
+			"component": "launcher",
+			"reason": "app_bundle_binary_not_found",
+			"tool_id": tool_id
+		})
+		return ""
+	return tool_path
+
+## Checks whether a filename looks like an executable on the current platform.
+static func _is_executable_filename(file_name: String) -> bool:
+	var ext = _get_executable_extension()
+	if ext.is_empty():
+		# On Linux/BSD, executables may or may not have dots (e.g. Godot_v4.7.2-stable_linux.x86_64).
+		# Reject files with known non-executable extensions (.so, .py, .txt, .sh, .json, etc.).
+		var lower = file_name.to_lower()
+		for nex in _NON_EXEC_EXTENSIONS:
+			if lower.ends_with(nex):
+				return false
+		return not file_name.get_basename().is_empty()
+	else:
+		return file_name.to_lower().ends_with(ext)
+
 ## Finds the main executable within a tool directory.
 ## Uses tool-specific conventions to locate the executable.
 ## Parameters:
@@ -337,75 +410,81 @@ static func _resolve_tool_from_library(library: LibraryManager, tool_id: String,
 ## Returns:
 ##   String: Absolute path to executable, or empty string if not found
 static func _find_executable_in_directory(directory: String, tool_id: String) -> String:
+	if not _is_platform_supported():
+		OgsLogger.error("unsupported_platform", {
+			"component": "launcher",
+			"os": OS.get_name(),
+			"tool_id": tool_id
+		})
+		return ""
+
 	var dir = DirAccess.open(directory)
 	if dir == null:
 		return ""
-	
+
+	var ext = _get_executable_extension()
+
 	# Tool-specific executable naming conventions
 	match tool_id:
 		"godot":
-			# Look for Godot_*.exe or godot.exe
+			# Look for Godot_*<ext> or godot<ext>
 			dir.list_dir_begin()
 			var godot_file = dir.get_next()
 			while godot_file != "":
-				if godot_file.to_lower().begins_with("godot") and godot_file.to_lower().ends_with(".exe"):
+				if godot_file.to_lower().begins_with("godot") and _is_executable_filename(godot_file):
 					var exe_path = directory.path_join(godot_file)
-					if FileAccess.file_exists(exe_path):
+					if _tool_path_exists(exe_path):
 						return exe_path
 				godot_file = dir.get_next()
 			dir.list_dir_end()
 		"blender":
-			# Look for blender.exe
-			var blender_exe = directory.path_join("blender.exe")
-			if FileAccess.file_exists(blender_exe):
+			var blender_exe = directory.path_join("blender" + ext)
+			if _tool_path_exists(blender_exe):
 				return blender_exe
 		"krita":
-			# Look for bin/krita.exe or krita.exe
-			var krita_bin = directory.path_join("bin").path_join("krita.exe")
-			if FileAccess.file_exists(krita_bin):
+			var krita_bin = directory.path_join("bin").path_join("krita" + ext)
+			if _tool_path_exists(krita_bin):
 				return krita_bin
-			var krita_exe = directory.path_join("krita.exe")
-			if FileAccess.file_exists(krita_exe):
+			var krita_exe = directory.path_join("krita" + ext)
+			if _tool_path_exists(krita_exe):
 				return krita_exe
 		"audacity":
-			# Look for audacity.exe
-			var audacity_exe = directory.path_join("audacity.exe")
-			if FileAccess.file_exists(audacity_exe):
+			var audacity_exe = directory.path_join("audacity" + ext)
+			if _tool_path_exists(audacity_exe):
 				return audacity_exe
-	
-	# Fallback: better executable search
+
+	# Fallback: scan for executable files or .app bundles in directory
 	dir.list_dir_begin()
 	var file_name = dir.get_next()
 	var exe_files = []
 	while file_name != "":
-		if not dir.current_is_dir() and file_name.to_lower().ends_with(".exe"):
+		var is_app_bundle = file_name.to_lower().ends_with(".app") and dir.current_is_dir()
+		if (not dir.current_is_dir() and _is_executable_filename(file_name)) or is_app_bundle:
 			exe_files.append(file_name)
 		file_name = dir.get_next()
 	dir.list_dir_end()
-	
+
 	if exe_files.is_empty():
 		return ""
-		
+
 	# 1. Exact match with tool_id
 	for exe in exe_files:
 		if exe.get_basename().to_lower() == tool_id.to_lower():
 			return directory.path_join(exe)
-			
+
 	# 2. Contains tool_id
 	for exe in exe_files:
 		if exe.to_lower().contains(tool_id.to_lower()):
 			return directory.path_join(exe)
-			
+
 	# 3. Filter out common uninstaller/setup names and pick the first
 	for exe in exe_files:
 		var lower_name = exe.to_lower()
 		if not lower_name.begins_with("unins") and not lower_name.begins_with("setup"):
 			return directory.path_join(exe)
-			
+
 	# 4. Absolute fallback
 	return directory.path_join(exe_files[0])
-	
-	return ""
 
 
 ## Validates sha256 when present in the tool entry.
