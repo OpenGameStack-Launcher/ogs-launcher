@@ -88,7 +88,7 @@ func get_tool_path(tool_id: String, version: String) -> String:
 ##   path_str (String): Path to normalize (may contain %VAR% or environment refs)
 ## Returns:
 ##   String: Absolute normalized path
-func normalize_path(path_str: String) -> String:
+static func normalize_path(path_str: String, log_component: String = "library") -> String:
 	if path_str.is_empty():
 		return ""
 	
@@ -106,7 +106,7 @@ func normalize_path(path_str: String) -> String:
 	var abs_path = ProjectSettings.globalize_path(normalized)
 	
 	OgsLogger.debug("path_normalized", {
-		"component": "library",
+		"component": log_component,
 		"input": path_str,
 		"output": abs_path
 	})

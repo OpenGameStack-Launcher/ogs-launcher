@@ -67,7 +67,7 @@ func test_normalize_path_handles_forward_slashes() -> Dictionary:
 	
 	# Test with backslashes
 	var backslash_path = "C:\\Users\\Test\\Path"
-	var normalized = resolver.normalize_path(backslash_path)
+	var normalized = PathResolver.normalize_path(backslash_path)
 	
 	if normalized.is_empty():
 		return {"passed": false, "error": "Normalized path is empty"}
