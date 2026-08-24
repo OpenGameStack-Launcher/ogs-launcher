@@ -174,7 +174,7 @@ func _finalize_refresh(success: bool) -> void:
 ## Returns categorized tools for UI display.
 ## Returns:
 ## Dictionary: {
-## "Engine": [{"id": "godot", "version": "4.3", "installed": true, ...}],
+## "Engine": [{"id": "godot", "version": "4.7.2", "installed": true, ...}],
 ## "2D": [...],
 ## "3D": [...],
 ## "Audio": [...]

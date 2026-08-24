@@ -11,9 +11,9 @@
 
 ### **2. Tech Stack & Syntax Preferences**
 
-* **Primary Engine:** **Godot 4.3 (Stable)**. Strictly use Godot 4.3 GDScript syntax (e.g., use `instantiate()` instead of `instance()`, and new `@export` annotations).
-* **Godot Executable (Windows):** `C:\Program Files\Godot\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe`
-* **Frozen Stack Tools:** Target compatibility for Blender 4.5.7, Krita 5.2.15, and Audacity 3.7.7.
+* **Primary Engine:** **Godot 4.7.2 (Stable)**. Strictly use Godot 4.7.2 GDScript syntax (e.g., use `instantiate()` instead of `instance()`, and new `@export` annotations).
+* **Godot Executable (Windows):** `C:\Program Files\Godot\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64.exe`
+* **Frozen Stack Tools:** Target compatibility for Blender (4.5.7, 5.2), Krita (5.2.15, 5.3.3), Audacity (3.7.7, 3.7.8), and GIMP (3.2.4). The Tool Catalog also still offers Godot 4.3 alongside 4.7.2 for projects that pin the older version; see [docs/FROZEN_STACKS.md](../docs/FROZEN_STACKS.md).
 * **Implementation Language:** Primarily GDScript for the launcher; Bash/PowerShell for tool management scripts.
 
 ### **3. Coding Standards for Copilot**
@@ -41,7 +41,7 @@
 * Tasks are marked as completed (✅) and in-progress (🔄) as work advances.
 * The plan ties directly to [docs/Design_Doc.md](../docs/Design_Doc.md) for architectural vision.
 * All pull requests must pass the manifest test suite:
-  - **Windows:** `$start = Get-Date; & "C:\Program Files\Godot\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe" --headless --script res://tests/test_runner.gd 2>&1 | Select-Object -Last 10; $elapsed = ((Get-Date) - $start).TotalSeconds; Write-Host "Exit code: $LASTEXITCODE (execution time: $elapsed seconds)"`
+  - **Windows:** `$start = Get-Date; & "C:\Program Files\Godot\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64.exe" --headless --script res://tests/test_runner.gd 2>&1 | Select-Object -Last 10; $elapsed = ((Get-Date) - $start).TotalSeconds; Write-Host "Exit code: $LASTEXITCODE (execution time: $elapsed seconds)"`
   - **Linux/macOS:** `godot --headless --script res://tests/test_runner.gd`
   - Note: The Windows command includes output piping (`2>&1 | Select-Object`) to ensure proper stdout/stderr handling and prevent terminal hangs.
 

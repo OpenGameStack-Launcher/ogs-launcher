@@ -4,9 +4,9 @@
   "tools": [
     {
       "id": "godot",
-      "version": "4.3",
+      "version": "4.7.2",
       "category": "Engine",
-      "archive_path": "tools/godot/4.3/godot_4.3_win64.zip",
+      "archive_path": "tools/godot/4.7.2/godot_4.7.2_win64.zip",
       "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "size": 123456789
     },

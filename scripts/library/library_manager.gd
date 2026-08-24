@@ -15,15 +15,15 @@
 ## [LIBRARY_ROOT]/[tool_id]/[version]/[tool_files]
 ##
 ## Example queries:
-## - "Is Godot 4.3 installed?" -> tool_exists("godot", "4.3")
+## - "Is Godot 4.7.2 installed?" -> tool_exists("godot", "4.7.2")
 ## - "What tools do I have?" -> get_available_tools()
 ## - "What versions of Blender?" -> get_available_versions("blender")
-## - "Where's Godot 4.3?" -> get_tool_path("godot", "4.3")
+## - "Where's Godot 4.7.2?" -> get_tool_path("godot", "4.7.2")
 ##
 ## Usage:
 ## var library = LibraryManager.new()
-## if library.tool_exists("godot", "4.3"):
-## print("Ready to launch: " + library.get_tool_path("godot", "4.3"))
+## if library.tool_exists("godot", "4.7.2"):
+## print("Ready to launch: " + library.get_tool_path("godot", "4.7.2"))
 
 extends RefCounted
 class_name LibraryManager
@@ -38,7 +38,7 @@ func _init() -> void:
 ## Returns the absolute path to a tool in the library.
 ## Parameters:
 ## tool_id (String): Tool identifier (e.g., "godot", "blender")
-## version (String): Version string (e.g., "4.3")
+## version (String): Version string (e.g., "4.7.2")
 ## Returns:
 ## String: Absolute path to the tool directory, or empty string if not found
 func get_tool_path(tool_id: String, version: String) -> String:

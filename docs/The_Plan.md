@@ -19,7 +19,7 @@ This plan realizes the core vision from `docs/Design_Doc.md`: **"Sovereignty Ove
 ### Success Criteria
 *   User runs `OGS_Setup.exe` to install the Launcher.
 *   Launcher detects missing tools in `stack.json` and downloads them to `%LOCALAPPDATA%/OGS/Library/`.
-*   User can have 3 projects using "Godot 4.3" while only having one copy of Godot on disk.
+*   User can have 3 projects using "Godot 4.7.2" while only having one copy of Godot on disk.
 *   User clicks **"Seal for Delivery,"** and the Launcher produces a standalone `.zip` file containing the project AND the embedded tools.
 *   That `.zip` file can be moved to a disconnected PC and run immediately.
 
@@ -90,7 +90,7 @@ The MVP is not complete until this full sequence works end to end:
     *   *Note:* Server infrastructure scale-out is post-MVP backlog
 *   [x] **Onboarding Wizard** — 100% Complete ✅
     *   *First Run Detection:* Checks if wizard has been completed and library is empty
-    *   *UI Dialog:* Welcoming screen with default stack information (Godot 4.3 + Blender 4.5.7)
+    *   *UI Dialog:* Welcoming screen with default stack information (Godot 4.7.2 + Blender 4.5.7)
     *   *Default Stack Bootstrap:* Creates library directory structure for default tools
     *   *Skip Option:* Users can skip wizard and configure manually
     *   *Completion Flag:* Persists to disk so wizard only shows once

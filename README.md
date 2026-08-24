@@ -1,7 +1,7 @@
 # Open Game Stack (OGS)
 
 ![Status](https://img.shields.io/badge/Status-Alpha-orange)
-![Engine](https://img.shields.io/badge/Godot-4.3-blue)
+![Engine](https://img.shields.io/badge/Godot-4.7.2-blue)
 ![License](https://img.shields.io/badge/License-MIT-green)
 [![Download Alpha](https://img.shields.io/badge/Download-v0.1.4--alpha-brightgreen)](https://github.com/OpenGameStack-Launcher/ogs-launcher/releases/tag/v0.1.4-alpha)
 
@@ -13,8 +13,8 @@ Open Game Stack (OGS) is a **portable, pre-configured development environment** 
 Instead of installing Godot, Blender, Krita, and Audacity separately—and hoping their versions match your team's—OGS gives you a **"Frozen Stack."** 
 
 ### One Download. Zero Install.
-* **The Engine:** Godot 4.3 (Stable / Hardened)
-* **The Pipeline:** Blender LTS, Krita, Audacity
+* **The Engine:** Godot 4.7.2 (Stable / Hardened) — the version the Launcher itself is built with; the Tool Catalog also offers Godot 4.3 for projects that pin it
+* **The Pipeline:** Blender, Krita, Audacity, GIMP
 * **The Promise:** Everything runs from a single folder. No registry keys, no `%APPDATA%`, no installers.
 
 ---
@@ -68,7 +68,7 @@ Extract the ZIP, keep `OGS-Launcher.exe` and `OGS-Launcher.pck` together, and ru
 
 ### Prerequisites
 * Windows 10/11 or Linux (Ubuntu 22.04+)
-* [Godot 4.3](https://godotengine.org) (To run the Launcher source)
+* [Godot 4.7.2](https://godotengine.org) (To run the Launcher source)
 
 ### Quick Start
 1.  **Clone the Repo:**

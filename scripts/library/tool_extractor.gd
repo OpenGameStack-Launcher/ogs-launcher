@@ -12,20 +12,20 @@
 ## 5. LibraryManager can then discover the tool
 ##
 ## Example nested structure handling:
-## Archive: godot-4.3-windows-x64.zip
+## Archive: godot-4.7.2-windows-x64.zip
 ## Contents:
-## godot-4.3-windows-x64/
+## godot-4.7.2-windows-x64/
 ## godot.exe
 ## ... other files
 ## Result after extraction:
-## [LIBRARY_ROOT]/godot/4.3/godot.exe
+## [LIBRARY_ROOT]/godot/4.7.2/godot.exe
 ##
 ## Usage:
 ## var extractor = ToolExtractor.new()
 ## var result = extractor.extract_to_library(
-## "C:/Downloads/godot-4.3.zip",
+## "C:/Downloads/godot-4.7.2.zip",
 ## "godot",
-## "4.3"
+## "4.7.2"
 ## )
 ## if result.success:
 ## print("Tool ready at: " + result.tool_path)
@@ -55,7 +55,7 @@ func _init() -> void:
 ## Parameters:
 ## archive_path (String): Full path to the .zip file
 ## tool_id (String): Tool identifier (e.g., "godot")
-## version (String): Version string (e.g., "4.3")
+## version (String): Version string (e.g., "4.7.2")
 ##
 ## Returns:
 ## Dictionary: {

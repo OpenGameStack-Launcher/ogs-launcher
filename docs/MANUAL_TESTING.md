@@ -23,7 +23,7 @@ Two sample projects are provided in `samples/` for testing:
 | **sample_project** | Development/linked-mode testing | force_offline=false | Tools expected in library (missing state) |
 | **sample_project_sealed** | Sealed/air-gapped project testing | force_offline=true | Tools physically embedded in project |
 
-Both samples have `stack.json` with Godot 4.3 and Blender 4.5.7.
+Both samples include a `stack.json` manifest; see each sample’s `stack.json` for the exact pinned tool versions used in that scenario.
 
 ---
 
@@ -143,7 +143,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 5. Observe tools list, visual indicators, button states, and status labels
 
 **Expected Results:**
-- ✅ Tools list populates with two entries: "godot v4.3" and "blender v4.5.7"
+- ✅ Tools list populates with two entries: "godot v4.7.2" and "blender v4.5.7"
 - ✅ Missing tools show **⚠️ yellow warning triangle** indicator (available but not installed)
 - ✅ Hovering over missing tool shows tooltip: "Tool not installed. Click to download."
 - ✅ "Seal for Delivery" button appears but is **disabled** (with reason: missing tools)
@@ -176,7 +176,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 4. Observe offline status, tool indicators, and button states
 
 **Expected Results:**
-- ✅ Tools list populates with "godot v4.3" and "blender v4.5.7"
+- ✅ Tools list populates with "godot v4.7.2" and "blender v4.5.7"
 - ✅ Missing tools show **❌ red X** indicator (unavailable due to offline mode)
 - ✅ Hovering over missing tool shows tooltip: "Tool not available in offline mode."
 - ✅ "Seal for Delivery" button remains **disabled** (tools missing from library)
@@ -323,7 +323,7 @@ dir "$env:LOCALAPPDATA\OGS\"
    - **Local Mirror:** Tool ZIP files exist in `%LOCALAPPDATA%\OGS\Mirror\` with correct structure:
      ```
      %LOCALAPPDATA%\OGS\Mirror\
-     ├── godot/4.3/godot_4.3.zip
+     ├── godot/4.7.2/godot_4.7.2.zip
      └── blender/4.5.7/blender_4.5.7.zip
      ```
    - **Remote Repository:** Remote URL is configured in Settings and points to a valid `repository.json` with downloadable tool links
@@ -334,14 +334,14 @@ dir "$env:LOCALAPPDATA\OGS\"
 1. Navigate to **Tools** page (click "Tools" button in sidebar)
 2. Click **"Download"** tab to view available tools
 3. Observe connectivity status indicator (should show "Online ✓" if network available)
-4. Locate "godot v4.3" in the tools list (under "Engine" category)
-5. Click the **"Download"** button next to godot v4.3
+4. Locate "godot v4.7.2" in the tools list (under "Engine" category)
+5. Click the **"Download"** button next to godot v4.7.2
 6. Watch progress bar as tool downloads/installs to `%LOCALAPPDATA%\OGS\Library\`
 7. Wait for completion (may take 30+ seconds depending on archive size)
 8. Observe final status when complete
-9. Switch to **"Installed"** tab and verify godot v4.3 now appears there
+9. Switch to **"Installed"** tab and verify godot v4.7.2 now appears there
 10. Return to **Projects** page and reload sample_project
-11. Verify godot v4.3 no longer shows ⚠️ warning indicator
+11. Verify godot v4.7.2 no longer shows ⚠️ warning indicator
 
 **Expected Results:**
 - ✅ Tools page loads without errors
@@ -352,9 +352,9 @@ dir "$env:LOCALAPPDATA\OGS\"
 - ✅ All other download buttons become disabled during active download
 - ✅ "Cancel" button appears (optional: click it and verify download stops)
 - ✅ Download progresses without crashes (status updates during process)
-- ✅ Tool is extracted to `%LOCALAPPDATA%\OGS\Library\godot\4.3\` correctly
+- ✅ Tool is extracted to `%LOCALAPPDATA%\OGS\Library\godot\4.7.2\` correctly
 - ✅ Download completes and button changes to show "Installed" or disappears from Download tab
-- ✅ Installed tab now lists godot v4.3
+- ✅ Installed tab now lists godot v4.7.2
 - ✅ Projects page updates to reflect tool availability (indicator removed)
 
 **Pass Criteria:**
@@ -379,7 +379,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 **Objective:** Verify seal button enables after successful tool downloads and perform a real seal operation.
 
 **Prerequisites:**
-- Editor Test 7 completed successfully (godot v4.3 now present in library)
+- Editor Test 7 completed successfully (godot v4.7.2 now present in library)
 - sample_project still loaded from Test 7
 
 **Steps:**
@@ -417,7 +417,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 - Archive is created and accessible
 
 **If test fails:**
-- Verify `%LOCALAPPDATA%\OGS\Library\godot\4.3\` and `%LOCALAPPDATA%\OGS\Library\blender\4.5.7\` contain files
+- Verify `%LOCALAPPDATA%\OGS\Library\godot\4.7.2\` and `%LOCALAPPDATA%\OGS\Library\blender\4.5.7\` contain files
 - Check console for seal operation errors
 - Confirm write permissions to output directory (typically user's home)
 - Verify SealController.seal_for_delivery() logic
@@ -431,8 +431,8 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 **Steps:**
 1. Load sample_project_sealed (which has force_offline=true)
-2. Tools list shows "godot v4.3" and "blender v4.5.7"
-3. Select "godot v4.3" from tools list
+2. Tools list shows "godot v4.7.2" and "blender v4.5.7"
+3. Select "godot v4.7.2" from tools list
 4. Try to click "Launch" button (or observe if it's disabled)
 5. If button is enabled, click it; if disabled, note the state
 
@@ -545,7 +545,7 @@ If onboarding wizard does NOT appear, fresh state was not achieved. Repeat the c
 
 **Expected Results:**
 - ✅ Project loads without errors
-- ✅ Tools list shows "godot v4.3" and "blender v4.5.7"
+- ✅ Tools list shows "godot v4.7.2" and "blender v4.5.7"
 - ✅ Missing tools show **⚠️ yellow warning triangle** indicators
 - ✅ "Seal for Delivery" button is disabled
 - ✅ Status reflects missing tools: "Manifest loaded. 2 tool(s) missing..."
@@ -604,8 +604,8 @@ If onboarding wizard does NOT appear, fresh state was not achieved. Repeat the c
   ```
   %LOCALAPPDATA%/OGS/Mirror/
   ├── godot/
-  │   └── 4.3/
-  │       └── godot_4.3.zip
+  │   └── 4.7.2/
+  │       └── godot_4.7.2.zip
   └── blender/
       └── 4.5.7/
           └── blender_4.5.7.zip
@@ -617,13 +617,13 @@ If onboarding wizard does NOT appear, fresh state was not achieved. Repeat the c
 1. Load sample_project on Projects page (should show tools with ⚠️ indicators)
 2. Navigate to **Tools** page (click "Tools" button in sidebar)
 3. Click **"Download"** tab
-4. Observe available tools list (should show godot v4.3 and blender v4.5.7)
-5. Click **"Download"** button next to godot v4.3
+4. Observe available tools list (should show godot v4.7.2 and blender v4.5.7)
+5. Click **"Download"** button next to godot v4.7.2
 6. Watch progress bar as tool downloads/installs to %LOCALAPPDATA%/OGS/Library/
 7. Allow process to complete
-8. Switch to **"Installed"** tab and verify godot v4.3 appears there
+8. Switch to **"Installed"** tab and verify godot v4.7.2 appears there
 9. Return to **Projects** page
-10. Reload sample_project and verify godot v4.3 no longer shows ⚠️ indicator
+10. Reload sample_project and verify godot v4.7.2 no longer shows ⚠️ indicator
 
 **Expected Results:**
 - ✅ Tools page loads and shows available tools in Download tab
@@ -631,7 +631,7 @@ If onboarding wizard does NOT appear, fresh state was not achieved. Repeat the c
 - ✅ Clicking "Download" starts the installation process
 - ✅ Progress bar displays download/install percentage
 - ✅ Other download buttons are disabled during active download
-- ✅ Tool is extracted to %LOCALAPPDATA%/OGS/Library/godot/4.3/ correctly
+- ✅ Tool is extracted to %LOCALAPPDATA%/OGS/Library/godot/4.7.2/ correctly
 - ✅ After completion, tool appears in "Installed" tab
 - ✅ Projects page automatically updates to reflect tool availability
 - ✅ No unhandled exceptions or crashes during download

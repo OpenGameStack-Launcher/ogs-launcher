@@ -9,9 +9,9 @@ Produce a single ZIP artifact containing the launcher executable and support fil
 ## Prerequisites
 
 - Windows 10/11 x64
-- Godot 4.3 Stable executable installed at:
-  - `C:\Program Files\Godot\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe`
-- Godot 4.3 export templates installed (Editor -> Manage Export Templates)
+- Godot 4.7.2 Stable executable installed at:
+  - `C:\Program Files\Godot\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64.exe`
+- Godot 4.7.2 export templates installed (Editor -> Manage Export Templates)
 - Existing launcher test suite passing
 - `rcedit-x64.exe` available locally (default script path: `C:\Tools\rcedit-x64.exe`)
 - Multi-size Windows icon file at `Images/logo.ico`
@@ -42,7 +42,7 @@ Keep local-only values out of committed presets whenever possible:
 - Keep optional signing fields empty in the shared preset unless the team adopts a shared signing workflow.
 - If a local machine needs temporary tweaks, revert those local-only values before committing.
 
-1. Open `project.godot` in Godot 4.3.
+1. Open `project.godot` in Godot 4.7.2.
 2. Open **Project -> Export**.
 3. Add preset: **Windows Desktop**.
 4. Keep preset name exactly: `Windows Desktop`.

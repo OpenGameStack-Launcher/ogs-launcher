@@ -276,7 +276,7 @@ static func _is_path_under_root(full_path: String, project_root: String) -> bool
 ## Parameters:
 ##   library (LibraryManager): Library manager instance
 ##   tool_id (String): Tool identifier (e.g., "godot", "blender")
-##   tool_version (String): Tool version (e.g., "4.3", "4.2")
+##   tool_version (String): Tool version (e.g., "4.7.2", "4.2")
 ## Returns:
 ##   Dictionary: {success: bool, error_code: int, error_message: String, executable_path: String}
 static func _resolve_tool_from_library(library: LibraryManager, tool_id: String, tool_version: String) -> Dictionary:
