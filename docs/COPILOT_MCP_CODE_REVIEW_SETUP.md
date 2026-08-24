@@ -33,11 +33,11 @@ Use this baseline configuration:
         "list_issue_comments",
         "list_workflow_runs",
         "list_workflow_jobs",
-        "list_code_scanning_alerts"
+        "list_code_scanning_alerts",
+        "list_secret_scanning_alerts"
       ],
       "headers": {
         "X-MCP-Toolsets": "pull_requests,issues,actions,code_security,secret_protection"
-      }
     }
   }
 }
