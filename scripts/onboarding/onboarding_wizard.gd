@@ -70,8 +70,10 @@ func should_show_wizard() -> bool:
 			var file_name = lib_dir.get_next()
 			while file_name != "":
 				if not file_name.starts_with("."):
+					lib_dir.list_dir_end()
 					return false  # Found a tool directory, not first run
 				file_name = lib_dir.get_next()
+			lib_dir.list_dir_end()
 	
 	return true
 
