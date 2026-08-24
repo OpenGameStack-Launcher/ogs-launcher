@@ -82,9 +82,9 @@ func _test_predelete_joins_alive_thread(results: Dictionary) -> void:
 	# The thread itself must no longer be alive.
 	_expect(not thread.is_alive(), "Thread should no longer be alive after join", results)
 
-	# Safety: if the thread is still alive after the handler returns, join it
+	# Safety: if the thread is still started after the handler returns, join it
 	# here to avoid Godot orphaned-thread warnings in the test process.
-	if thread.is_alive():
+	if thread.is_started():
 		thread.wait_to_finish()
 
 ## Test: _notification(NOTIFICATION_PREDELETE) is safe when _seal_thread is null.
@@ -142,7 +142,10 @@ func _test_thread_start_failure_clears_state(results: Dictionary) -> void:
 		emitted["zip_path"] = zip_path
 	)
 
-	await controller._run_seal_async("res://tests")
+	controller.seal_for_delivery("res://tests")
+	var tree = Engine.get_main_loop() as SceneTree
+	await tree.process_frame
+	await tree.process_frame
 
 	_expect(controller.get("_seal_thread") == null, "_seal_thread should be cleared when thread start fails", results)
 	_expect(controller.get("_seal_in_progress") == false, "_seal_in_progress should reset when thread start fails", results)
@@ -158,4 +161,5 @@ func _test_thread_start_failure_clears_state(results: Dictionary) -> void:
 		results
 	)
 
+	controller = null
 	dialog.free()
