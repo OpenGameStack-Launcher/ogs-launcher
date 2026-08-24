@@ -11,6 +11,17 @@
 extends RefCounted
 class_name SealController
 
+## Joins any in-flight seal thread before this object is garbage-collected.
+## Without this, an orphaned Thread causes Godot 4 warnings and potential crashes.
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		if _seal_thread != null and _seal_thread.is_started():
+			OgsLogger.warn("seal_thread_join_on_free", {
+				"component": "sealer"
+			})
+			_seal_thread.wait_to_finish()
+		_seal_thread = null
+
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 ## Emitted when seal operation completes (success or failure).
@@ -74,8 +85,9 @@ func _run_seal_async(project_path: String) -> void:
 	# Yield one frame so the progress dialog renders before heavy work starts.
 	await _seal_dialog.get_tree().process_frame
 
-	var start_err = _seal_thread.start(Callable(self, "_threaded_seal_operation").bind(project_path))
+	var start_err = _start_seal_thread(project_path)
 	if start_err != OK:
+		_seal_thread = null
 		_seal_in_progress = false
 		_show_error("Seal operation failed.", "Unable to start background packaging thread.")
 		OgsLogger.error("seal_thread_start_failed", {
@@ -103,6 +115,11 @@ func _run_seal_async(project_path: String) -> void:
 	else:
 		_show_error("Seal operation failed.", result.errors)
 		seal_completed.emit(false, "")
+
+## Starts the background seal worker thread for the requested project.
+func _start_seal_thread(project_path: String) -> int:
+	## Launches the worker entry point on the controller's thread instance.
+	return _seal_thread.start(Callable(self, "_threaded_seal_operation").bind(project_path))
 
 ## Worker thread entry point for project sealing.
 func _threaded_seal_operation(project_path: String) -> Dictionary:
