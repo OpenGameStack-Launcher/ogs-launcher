@@ -19,7 +19,9 @@ func run() -> Dictionary:
 		{"name": "test_normalize_path_handles_forward_slashes", "func": test_normalize_path_handles_forward_slashes},
 		{"name": "test_tool_exists_returns_false_for_missing", "func": test_tool_exists_returns_false_for_missing},
 		{"name": "test_get_available_tools_handles_missing_library", "func": test_get_available_tools_handles_missing_library},
+		{"name": "test_get_available_tools_with_fixture", "func": test_get_available_tools_with_fixture},
 		{"name": "test_get_available_versions_handles_missing_tool", "func": test_get_available_versions_handles_missing_tool},
+		{"name": "test_get_available_versions_with_fixture", "func": test_get_available_versions_with_fixture},
 	]
 	
 	for test in tests:
@@ -101,6 +103,36 @@ func test_get_available_tools_handles_missing_library() -> Dictionary:
 	# It's okay if empty (library may not exist yet)
 	return {"passed": true}
 
+func test_get_available_tools_with_fixture() -> Dictionary:
+	## Creates a real tool directory in the isolated test library and verifies
+	## that get_available_tools() discovers it, exercising the iterator cleanup path.
+	var resolver = PathResolver.new()
+	var root = resolver.get_library_root()
+	
+	if root.is_empty():
+		return {"passed": false, "error": "Library root is empty; cannot create fixture"}
+	
+	var fixture_tool = "fixture_tool_discovery_test"
+	var fixture_dir = root.path_join(fixture_tool)
+	
+	# Create the fixture tool directory
+	var err = DirAccess.make_dir_recursive_absolute(fixture_dir)
+	if err != OK:
+		return {"passed": false, "error": "Failed to create fixture directory: %s" % error_string(err)}
+	
+	var tools = resolver.get_available_tools()
+	
+	# Cleanup before asserting so the directory is always removed
+	DirAccess.remove_absolute(fixture_dir)
+	
+	if tools == null:
+		return {"passed": false, "error": "Should return array, not null"}
+	
+	if not tools.has(fixture_tool):
+		return {"passed": false, "error": "Fixture tool '%s' not found in discovered tools: %s" % [fixture_tool, str(tools)]}
+	
+	return {"passed": true}
+
 func test_get_available_versions_handles_missing_tool() -> Dictionary:
 	var resolver = PathResolver.new()
 	
@@ -113,5 +145,37 @@ func test_get_available_versions_handles_missing_tool() -> Dictionary:
 	# Should be empty
 	if not versions.is_empty():
 		return {"passed": false, "error": "Should return empty array for missing tool"}
+	
+	return {"passed": true}
+
+func test_get_available_versions_with_fixture() -> Dictionary:
+	## Creates a real version directory for a fixture tool and verifies that
+	## get_available_versions() discovers it, exercising the iterator cleanup path.
+	var resolver = PathResolver.new()
+	var root = resolver.get_library_root()
+	
+	if root.is_empty():
+		return {"passed": false, "error": "Library root is empty; cannot create fixture"}
+	
+	var fixture_tool = "fixture_tool_versions_test"
+	var fixture_version = "1.0.0"
+	var version_dir = root.path_join(fixture_tool).path_join(fixture_version)
+	
+	# Create the fixture tool+version directory
+	var err = DirAccess.make_dir_recursive_absolute(version_dir)
+	if err != OK:
+		return {"passed": false, "error": "Failed to create fixture directory: %s" % error_string(err)}
+	
+	var versions = resolver.get_available_versions(fixture_tool)
+	
+	# Cleanup before asserting so directories are always removed
+	DirAccess.remove_absolute(version_dir)
+	DirAccess.remove_absolute(root.path_join(fixture_tool))
+	
+	if versions == null:
+		return {"passed": false, "error": "Should return array, not null"}
+	
+	if not versions.has(fixture_version):
+		return {"passed": false, "error": "Fixture version '%s' not found in discovered versions: %s" % [fixture_version, str(versions)]}
 	
 	return {"passed": true}

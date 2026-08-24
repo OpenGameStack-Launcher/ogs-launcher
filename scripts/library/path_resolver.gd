@@ -143,6 +143,8 @@ func get_available_tools() -> Array[String]:
 				tools.append(file_name)
 		file_name = dir.get_next()
 	
+	dir.list_dir_end()
+	
 	OgsLogger.debug("available_tools_discovered", {
 		"component": "library",
 		"count": tools.size(),
@@ -184,6 +186,8 @@ func get_available_versions(tool_id: String) -> Array[String]:
 			if dir.current_is_dir():
 				versions.append(file_name)
 		file_name = dir.get_next()
+	
+	dir.list_dir_end()
 	
 	versions.sort()
 	
