@@ -17,12 +17,21 @@ func _init() -> void:
 	# Schedule the actual tests to run in _process on the next frame
 	pass
 
+var _tests_running := false
+var _tests_done := false
+
 func _process(_delta: float) -> bool:
 	## Called once per frame. Runs tests on first frame.
-	if should_quit:
+	if _tests_done:
 		return true
-	
-	should_quit = true
+		
+	if not _tests_running:
+		_tests_running = true
+		_run_tests_async()
+		
+	return false
+
+func _run_tests_async() -> void:
 	
 	# Set up test-isolated library path to prevent test/production conflicts
 	_setup_test_library()
@@ -102,7 +111,7 @@ func _process(_delta: float) -> bool:
 	
 	# Run all tests
 	for suite in test_suites:
-		var result = suite.run()
+		var result = await suite.run()
 		summary["passed"] += result["passed"]
 		summary["failed"] += result["failed"]
 		summary["failures"].append_array(result["failures"])
@@ -121,9 +130,9 @@ func _process(_delta: float) -> bool:
 	# Clean up test library
 	_cleanup_test_library()
 	
+	_tests_done = true
 	# Exit on the next frame
 	quit(exit_code)
-	return true
 
 func _setup_test_library() -> void:
 	## Sets up an isolated test library directory and sets OGS_LIBRARY_ROOT env var.
