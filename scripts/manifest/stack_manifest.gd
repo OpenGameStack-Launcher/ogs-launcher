@@ -134,15 +134,12 @@ static func validate_data(data: Dictionary) -> Array[String]:
 		found_errors.append("tools_not_array")
 	else:
 		var tool_list: Array = data["tools"]
-		if tool_list.is_empty():
-			found_errors.append("tools_empty")
-		else:
-			for index in tool_list.size():
-				var tool_entry = tool_list[index]
-				if typeof(tool_entry) != TYPE_DICTIONARY:
-					found_errors.append("tool_not_object:%d" % index)
-					continue
-				_validate_tool_entry(tool_entry, index, found_errors)
+		for index in tool_list.size():
+			var tool_entry = tool_list[index]
+			if typeof(tool_entry) != TYPE_DICTIONARY:
+				found_errors.append("tool_not_object:%d" % index)
+				continue
+			_validate_tool_entry(tool_entry, index, found_errors)
 
 	return found_errors
 
