@@ -87,7 +87,7 @@ static func launch(tool_entry: Dictionary, project_dir: String, target_file: Str
 		full_tool_path = String(resolver_result["executable_path"])
 		
 	if not _tool_path_exists(full_tool_path):
-		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "not_found", "path": full_tool_path})
+		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "not_found", "absolute_path": full_tool_path})
 		return _error_result(LaunchError.TOOL_NOT_FOUND, "Tool executable not found at: %s" % full_tool_path)
 
 	var hash_check = _validate_tool_hash(tool_entry, full_tool_path)
