@@ -76,61 +76,69 @@ var _projects_root_override := ""
 var _picker_state_monitoring := false
 var _add_tool_candidates: Array = []
 
-func setup(
-	add_project_btn: Button,
-	new_project_btn: Button,
-	list_node: Control,
-	status_lbl: Label,
-	offline_lbl: Label,
-	explorer_title_lbl: Label,
-	explorer_tree_node: Tree,
-	new_folder_btn: Button,
-	new_file_btn: Button,
-	file_dialog: ConfirmationDialog,
-	file_name_edit: LineEdit,
-	add_tool_btn: Button,
-	remove_tool_btn: Button,
-	remove_project_btn: Button,
-	launch_tool_btn: Button,
-	dir_dialog: FileDialog,
-	rm_project_dialog: ConfirmationDialog,
-	new_dialog: ConfirmationDialog,
-	new_name_line_edit: LineEdit,
-	tool_dialog: ConfirmationDialog,
-	tool_option_list: ItemList,
-	tools_ctrl,
-	tabs_node: TabContainer = null,
-	tools_list_node: ItemList = null,
-	change_version_btn: Button = null
-) -> void:
-	btn_add_project = add_project_btn
-	btn_new_project = new_project_btn
-	projects_list = list_node
-	lbl_project_status = status_lbl
-	lbl_offline_status = offline_lbl
-	
-	explorer_tree = explorer_tree_node
-	lbl_tools_for_project = explorer_title_lbl
-	btn_new_folder = new_folder_btn
-	btn_new_file = new_file_btn
-	new_file_dialog = file_dialog
-	new_file_name_edit = file_name_edit
-	
-	btn_add_tool = add_tool_btn
-	btn_remove_tool = remove_tool_btn
-	btn_remove_project = remove_project_btn
-	btn_launch_tool = launch_tool_btn
-	project_dir_dialog = dir_dialog
-	remove_project_dialog = rm_project_dialog
-	new_project_dialog = new_dialog
-	new_project_name_line_edit = new_name_line_edit
-	add_tool_dialog = tool_dialog
-	add_tool_option_list = tool_option_list
-	tools_controller = tools_ctrl
-	projects_tabs = tabs_node
-	project_tools_list = tools_list_node
-	btn_change_version = change_version_btn
+class UIDeps extends RefCounted:
+	var btn_add_project: Button
+	var btn_new_project: Button
+	var projects_list: ItemList
+	var lbl_project_status: Label
+	var lbl_offline_status: Label
+	var lbl_tools_for_project: Label
+	var explorer_tree: Tree
+	var btn_new_folder: Button
+	var btn_new_file: Button
+	var new_file_dialog: ConfirmationDialog
+	var new_file_name_edit: LineEdit
+	var btn_add_tool: Button
+	var btn_remove_tool: Button
+	var btn_remove_project: Button
+	var btn_launch_tool: Button
+	var project_dir_dialog: FileDialog
+	var remove_project_dialog: ConfirmationDialog
+	var new_project_dialog: ConfirmationDialog
+	var new_project_name_line_edit: LineEdit
+	var add_tool_dialog: ConfirmationDialog
+	var add_tool_option_list: ItemList
+	var projects_tabs: TabContainer
+	var project_tools_list: ItemList
+	var btn_change_version: Button
 
+func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
+	assert(deps != null, "ProjectsController.setup: deps is required")
+	for dep_name in [
+		"btn_add_project", "btn_new_project", "projects_list", "lbl_project_status", "lbl_offline_status",
+		"btn_add_tool", "btn_remove_tool", "btn_remove_project", "btn_launch_tool",
+		"project_dir_dialog", "remove_project_dialog", "new_project_dialog", "new_project_name_line_edit",
+		"add_tool_dialog", "add_tool_option_list"
+	]:
+		assert(deps.get(dep_name) != null, "ProjectsController.setup: deps.%s is required" % dep_name)
+	btn_add_project = deps.btn_add_project
+	btn_new_project = deps.btn_new_project
+	projects_list = deps.projects_list
+	lbl_project_status = deps.lbl_project_status
+	lbl_offline_status = deps.lbl_offline_status
+	
+	explorer_tree = deps.explorer_tree
+	lbl_tools_for_project = deps.lbl_tools_for_project
+	btn_new_folder = deps.btn_new_folder
+	btn_new_file = deps.btn_new_file
+	new_file_dialog = deps.new_file_dialog
+	new_file_name_edit = deps.new_file_name_edit
+	
+	btn_add_tool = deps.btn_add_tool
+	btn_remove_tool = deps.btn_remove_tool
+	btn_remove_project = deps.btn_remove_project
+	btn_launch_tool = deps.btn_launch_tool
+	project_dir_dialog = deps.project_dir_dialog
+	remove_project_dialog = deps.remove_project_dialog
+	new_project_dialog = deps.new_project_dialog
+	new_project_name_line_edit = deps.new_project_name_line_edit
+	add_tool_dialog = deps.add_tool_dialog
+	add_tool_option_list = deps.add_tool_option_list
+	projects_tabs = deps.projects_tabs
+	project_tools_list = deps.project_tools_list
+	btn_change_version = deps.btn_change_version
+	
+	tools_controller = tools_ctrl
 	btn_add_project.pressed.connect(_on_add_project_pressed)
 	btn_new_project.pressed.connect(_on_new_project_pressed)
 	btn_add_tool.pressed.connect(_on_add_tool_pressed)

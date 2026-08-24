@@ -75,31 +75,30 @@ func _build_controller(storage_path: String) -> Dictionary:
 	var add_tool_dialog = ConfirmationDialog.new()
 	var add_tool_option = ItemList.new()
 
-	# Setup without ToolsController (optional)
-	controller.setup(
-		add_button,
-		new_button,
-		projects_list,
-		status_label,
-		offline_label,
-		explorer_title_lbl,
-		explorer_tree,
-		new_folder_btn,
-		new_file_btn,
-		new_file_dialog,
-		new_file_name,
-		add_tool_button,
-		remove_tool_button,
-		remove_button,
-		launch_button,
-		dialog,
-		remove_dialog,
-		new_project_dialog,
-		new_project_name,
-		add_tool_dialog,
-		add_tool_option,
-		null  # tools_controller is optional
-	)
+	var deps = ProjectsController.UIDeps.new()
+	deps.btn_add_project = add_button
+	deps.btn_new_project = new_button
+	deps.projects_list = projects_list
+	deps.lbl_project_status = status_label
+	deps.lbl_offline_status = offline_label
+	deps.lbl_tools_for_project = explorer_title_lbl
+	deps.explorer_tree = explorer_tree
+	deps.btn_new_folder = new_folder_btn
+	deps.btn_new_file = new_file_btn
+	deps.new_file_dialog = new_file_dialog
+	deps.new_file_name_edit = new_file_name
+	deps.btn_add_tool = add_tool_button
+	deps.btn_remove_tool = remove_tool_button
+	deps.btn_remove_project = remove_button
+	deps.btn_launch_tool = launch_button
+	deps.project_dir_dialog = dialog
+	deps.remove_project_dialog = remove_dialog
+	deps.new_project_dialog = new_project_dialog
+	deps.new_project_name_line_edit = new_project_name
+	deps.add_tool_dialog = add_tool_dialog
+	deps.add_tool_option_list = add_tool_option
+	
+	controller.setup(deps, null)
 
 	return {
 		"controller": controller,

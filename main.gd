@@ -265,34 +265,33 @@ func _setup_download_dialog() -> void:
 
 	# Projects page controller (now ToolsController is available to pass)
 	projects_controller = ProjectsControllerScript.new()
-	projects_controller.lbl_tools_for_project = lbl_tools_list_title
-	projects_controller.setup(
-		btn_add_project,
-		btn_new_project,
-		projects_list,
-		lbl_project_status,
-		lbl_offline_status,
-		lbl_tools_list_title,
-		project_explorer_tree,
-		new_folder_btn,
-		new_file_btn,
-		new_file_dialog,
-		new_file_name_line_edit,
-		btn_add_tool,
-		btn_remove_tool,
-		btn_remove_project,
-		btn_launch_tool,
-		project_dir_dialog,
-		remove_project_dialog,
-		new_project_dialog,
-		new_project_name_line_edit,
-		add_tool_dialog,
-		add_tool_option_list,
-		tools_controller,
-		projects_tabs,
-		project_tools_list,
-		btn_change_version
-	)
+	var deps = ProjectsControllerScript.UIDeps.new()
+	deps.btn_add_project = btn_add_project
+	deps.btn_new_project = btn_new_project
+	deps.projects_list = projects_list
+	deps.lbl_project_status = lbl_project_status
+	deps.lbl_offline_status = lbl_offline_status
+	deps.lbl_tools_for_project = lbl_tools_list_title
+	deps.explorer_tree = project_explorer_tree
+	deps.btn_new_folder = new_folder_btn
+	deps.btn_new_file = new_file_btn
+	deps.new_file_dialog = new_file_dialog
+	deps.new_file_name_edit = new_file_name_line_edit
+	deps.btn_add_tool = btn_add_tool
+	deps.btn_remove_tool = btn_remove_tool
+	deps.btn_remove_project = btn_remove_project
+	deps.btn_launch_tool = btn_launch_tool
+	deps.project_dir_dialog = project_dir_dialog
+	deps.remove_project_dialog = remove_project_dialog
+	deps.new_project_dialog = new_project_dialog
+	deps.new_project_name_line_edit = new_project_name_line_edit
+	deps.add_tool_dialog = add_tool_dialog
+	deps.add_tool_option_list = add_tool_option_list
+	deps.projects_tabs = projects_tabs
+	deps.project_tools_list = project_tools_list
+	deps.btn_change_version = btn_change_version
+	
+	projects_controller.setup(deps, tools_controller)
 	projects_controller.offline_state_changed.connect(_on_offline_state_changed)
 	projects_controller.project_selection_changed.connect(_on_project_selection_changed)
 	projects_controller.tool_view_requested.connect(_on_tool_view_requested)
