@@ -246,6 +246,7 @@ func _load_from_dict(data: Dictionary) -> void:
 	errors = validate_data(data)
 	if not errors.is_empty():
 		OgsLogger.warn("mirror_repo_validation_failed", {"component": "mirror", "error_count": errors.size()})
+		return
 	schema_version = int(data.get("schema_version", 0))
 	mirror_name = String(data.get("mirror_name", ""))
 	var raw_tools = data.get("tools", [])

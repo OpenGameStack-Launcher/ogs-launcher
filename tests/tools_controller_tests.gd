@@ -51,6 +51,7 @@ func _make_valid_repo() -> MirrorRepository:
 				"id": "godot",
 				"version": "4.3",
 				"archive_url": "https://example.com/godot.zip",
+				"executable_path": "godot.exe",
 				"sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef"
 			}
 		]

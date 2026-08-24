@@ -173,6 +173,7 @@ func _load_from_dict(data: Dictionary) -> void:
 	errors = validate_data(data)
 	if not errors.is_empty():
 		OgsLogger.warn("config_validation_failed", {"component": "config", "error_count": errors.size()})
+		return
 
 	if data.has("schema_version"):
 		schema_version = int(data["schema_version"])
