@@ -12,7 +12,7 @@ This document records the **Tool Catalog**—the authoritative list of tools ava
 
 The following tools are currently available in the OGS Tool Catalog:
 
-- **Godot Engine:** 4.3 (stable, hardened build)
+- **Godot Engine:** 4.7.2 (stable, hardened build)
 - **Blender:** 4.5.7 (stable)
 - **Krita:** 5.2.15 (stable)
 - **Audacity:** 3.7.7 (stable)

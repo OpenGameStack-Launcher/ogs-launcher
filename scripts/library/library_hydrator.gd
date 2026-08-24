@@ -11,7 +11,7 @@
 ## hydrator.tool_download_started.connect(_on_tool_download_started)
 ## hydrator.tool_download_complete.connect(_on_tool_download_complete)
 ## hydrator.hydration_complete.connect(_on_hydration_complete)
-## var result = hydrator.hydrate([{"tool_id": "godot", "version": "4.3"}])
+## var result = hydrator.hydrate([{"tool_id": "godot", "version": "4.7.2"}])
 ##
 ## Signals:
 ## - tool_download_started(tool_id: String, version: String)
@@ -107,7 +107,7 @@ func hydrate(tools_to_download: Array) -> Dictionary:
 ## Downloads and installs a single tool.
 ## Parameters:
 ## tool_id (String): Tool identifier (e.g., "godot")
-## version (String): Version string (e.g., "4.3")
+## version (String): Version string (e.g., "4.7.2")
 ## Returns:
 ## Dictionary: {"success": bool, "error": String, "path": String}
 func _download_and_install_tool(tool_id: String, version: String) -> Dictionary:

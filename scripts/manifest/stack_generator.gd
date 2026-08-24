@@ -4,7 +4,7 @@
 ## Intended for the "New Project" workflow in the OGS Launcher UI.
 ##
 ## Standard Profile (OGS Default):
-## - Godot 4.3 (Engine core)
+## - Godot 4.7.2 (Engine core)
 ## - Blender 4.2 LTS (3D modeling & animation)
 ## - Krita 5.2 (2D texture & UI assets)
 ## - Audacity 3.7 (Audio processing)
@@ -33,7 +33,7 @@ static func create_default() -> StackManifest:
 	manifest.tools.clear()
 	manifest.tools.append({
 		"id": "godot",
-		"version": "4.3"
+		"version": "4.7.2"
 	})
 	manifest.tools.append({
 		"id": "blender",

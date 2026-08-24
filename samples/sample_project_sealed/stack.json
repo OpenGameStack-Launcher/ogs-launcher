@@ -4,8 +4,8 @@
 	"tools": [
 		{
 			"id": "godot",
-			"path": "tools/godot_4.3/Godot_v4.3-stable_win64.exe",
-			"version": "4.3"
+			"path": "tools/godot_4.7.2/Godot_v4.7.2-stable_win64.exe",
+			"version": "4.7.2"
 		}
 	]
 }

@@ -15,7 +15,7 @@
 ##
 ## Usage:
 ## var downloader = ToolDownloader.new("https://mirror.ogs.io")
-## var result = downloader.download_tool("godot", "4.3")
+## var result = downloader.download_tool("godot", "4.7.2")
 ## if result.success:
 ## print("Tool ready: " + result.tool_path)
 
@@ -63,7 +63,7 @@ func _init(mirror: String = "") -> void:
 ## Downloads and installs a tool to the central library.
 ## Parameters:
 ## tool_id (String): Tool identifier (e.g., "godot")
-## version (String): Version string (e.g., "4.3")
+## version (String): Version string (e.g., "4.7.2")
 ## Returns:
 ## Dictionary: {
 ## "success": bool,

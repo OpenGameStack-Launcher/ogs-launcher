@@ -629,7 +629,7 @@ grow_vertical = 2
 [node name="Welcome" type="Label" parent="OnboardingWizardDialog/VBoxContainer" unique_id=326475952]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
-text = "First-run setup: initialize the default frozen stack (Godot 4.3 + Blender 4.2 LTS) in your central library."
+text = "First-run setup: initialize the default frozen stack (Godot 4.7.2 + Blender 4.2 LTS) in your central library."
 autowrap_mode = 2
 
 [node name="StatusLabel" type="Label" parent="OnboardingWizardDialog/VBoxContainer" unique_id=2044879495]

@@ -4,7 +4,7 @@
   "tools": [
     {
       "id": "godot",
-      "version": "4.3"
+      "version": "4.7.2"
     },
     {
       "id": "blender",

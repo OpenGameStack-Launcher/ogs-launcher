@@ -1,7 +1,7 @@
 [CmdletBinding()]
 param(
     [string]$Version = "0.1.4-alpha",
-    [string]$GodotPath = "C:\Program Files\Godot\Godot_v4.3-stable_win64\Godot_v4.3-stable_win64.exe",
+    [string]$GodotPath = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64.exe",
     [string]$RcEditPath = "C:\Tools\rcedit-x64.exe",
     [string]$CompanyName = "Open Game Stack",
     [string]$ProductName = "OGS Launcher",

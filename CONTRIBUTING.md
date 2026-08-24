@@ -13,7 +13,7 @@ Every feature you add must adhere to one core rule: **It must work offline.**
 ## 🛠️ Getting Started
 
 ### Prerequisites
-* **Godot 4.3 (Stable):** We use the standard stable release. Please do not use betas or nightly builds for PRs unless specified.
+* **Godot 4.7.2 (Stable):** We use the standard stable release. Please do not use betas or nightly builds for PRs unless specified.
 * **Git:** You should be comfortable with branching and merging.
 
 ### Setup
@@ -49,7 +49,7 @@ Every feature you add must adhere to one core rule: **It must work offline.**
 ## 📝 Reporting Bugs
 If you find a bug, please open an Issue using the following template:
 * **OS:** (e.g., Windows 11, Ubuntu 22.04)
-* **Godot Version:** (e.g., 4.3 Stable)
+* **Godot Version:** (e.g., 4.7.2 Stable)
 * **What happened:**
 * **What you expected to happen:**
 * **Steps to reproduce:**

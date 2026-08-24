@@ -36,7 +36,7 @@ my-game/
 | Field | Type | Required | Description |
 |-------|------|----------|-------------|
 | `id` | String | Yes | Unique tool identifier (e.g., `"godot"`, `"blender"`). Used in logs and UI. |
-| `version` | String | Yes | Version string (e.g., `"4.3"`, `"4.2"`). No whitespace. |
+| `version` | String | Yes | Version string (e.g., `"4.7.2"`, `"4.2"`). No whitespace. |
 | `path` | String | **No** | **(Optional)** Relative path from project root (e.g., `"tools/godot/Godot.exe"`). If omitted, launcher resolves executable from central library at `[LIBRARY_ROOT]/[id]/[version]/`. |
 | `sha256` | String | No | SHA-256 checksum (lowercase hex, 64 chars). Used in Sovereign Mode to verify binary integrity. |
 
@@ -49,7 +49,7 @@ my-game/
   "tools": [
     {
       "id": "godot",
-      "version": "4.3"
+      "version": "4.7.2"
     },
     {
       "id": "blender",
@@ -80,8 +80,8 @@ For projects that bundle tools within their repository:
   "tools": [
     {
       "id": "godot",
-      "version": "4.3",
-      "path": "tools/godot/Godot_v4.3-stable_win64.exe",
+      "version": "4.7.2",
+      "path": "tools/godot/Godot_v4.7.2-stable_win64.exe",
       "sha256": "abc123...xyz789"
     },
     {
@@ -187,8 +187,8 @@ Before:
 ```json
 {
   "id": "godot",
-  "version": "4.3",
-  "path": "tools/godot/Godot_v4.3-stable_win64.exe"
+  "version": "4.7.2",
+  "path": "tools/godot/Godot_v4.7.2-stable_win64.exe"
 }
 ```
 
@@ -196,7 +196,7 @@ After:
 ```json
 {
   "id": "godot",
-  "version": "4.3"
+  "version": "4.7.2"
 }
 ```
 

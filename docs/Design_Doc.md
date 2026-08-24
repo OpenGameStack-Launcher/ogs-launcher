@@ -17,13 +17,13 @@ To avoid confusion, the OGS ecosystem operates on a three-tier architecture:
 ### 1.5.2 Central Library (Local)
 *   **What:** A machine-wide tool storage directory managed by the Launcher.
 *   **Location:** `%LOCALAPPDATA%/OGS/Library` (Windows) or `~/.config/ogs-launcher/library` (Unix).
-*   **Contains:** Extracted tool binaries organized by `[tool_id]/[version]/` (e.g., `Library/godot/4.3/`).
-*   **Purpose:** Shared storage for tool installations. Multiple projects can reference the same Godot 4.3 installation without duplicating gigabytes of binaries.
+*   **Contains:** Extracted tool binaries organized by `[tool_id]/[version]/` (e.g., `Library/godot/4.7.2/`).
+*   **Purpose:** Shared storage for tool installations. Multiple projects can reference the same Godot 4.7.2 installation without duplicating gigabytes of binaries.
 *   **Analogy:** Like `~/.nvm` (Node Version Manager) or Unity Hub's installation directory.
 
 ### 1.5.3 Frozen Stack (Per-Project)
 *   **What:** A **version-pinned toolchain specification** defined in each project's `stack.json`.
-*   **Contains:** Exact tool IDs and versions required to build/run that specific project (e.g., `"godot": "4.3"`, `"blender": "4.5.7"`).
+*   **Contains:** Exact tool IDs and versions required to build/run that specific project (e.g., `"godot": "4.7.2"`, `"blender": "4.5.7"`).
 *   **Purpose:** Guarantees reproducibility. A project's stack is "frozen" in time—tools never auto-update unless the developer explicitly modifies `stack.json`.
 *   **Two Forms:**
     *   **Linked (Development):** `stack.json` references tools in the Central Library. The `./tools/` folder is empty.
@@ -47,7 +47,7 @@ To support both modern CI/CD workflows and long-term archiving, OGS defines two 
 *   **Context:** Connected Developer Workstation.
 *   **Structure:** A lightweight root folder containing a `stack.json` manifest and the source assets.
 *   **Binaries:** The project does *not* contain heavy tool binaries. Instead, it "links" to a **Central Tool Library** managed by the Launcher (located in `%LOCALAPPDATA%/OGS/Library` on Windows, or `~/.config/ogs-launcher/library` on Unix).
-*   **Efficiency:** Multiple projects using "Godot 4.3" share the same single installation, mimicking the efficiency of Unity Hub or NVM.
+*   **Efficiency:** Multiple projects using "Godot 4.7.2" share the same single installation, mimicking the efficiency of Unity Hub or NVM.
 *   **Testing Note:** For automated testing, this path can be overridden via the `OGS_LIBRARY_ROOT` environment variable to isolate tests from production data. See [TESTING.md](TESTING.md#test-library-isolation).
 
 ### 2.2 State 2: The "Sealed" Artifact (Delivery)
@@ -76,7 +76,7 @@ My_Simulation_Project/
 *   **Context:** Unclassified environment with internet access.
 *   **Workflow:**
     1.  **Hydration (Link):** When a user opens a project, the Launcher reads `stack.json`.
-        *   *Check:* Is "Godot 4.3 (Hardened)" present in the Central Library?
+        *   *Check:* Is "Godot 4.7.2 (Hardened)" present in the Central Library?
         *   *Action:* If no, download from the OGS Mirror. If yes, launch the project using the central binary.
     2.  **Strict Pinning:** Updates are never automatic. If the user wants to upgrade to "Godot 4.4", they must explicitly click "Upgrade Project Stack" in the Launcher UI, which updates `stack.json`.
     3.  **Source Control:** The developer commits `stack.json` and `project_source/`. The `tools/` folder is ignored via `.gitignore`, keeping the repo lightweight.
@@ -96,7 +96,7 @@ The OGS-Launcher manages a "Standard OGS Profile" of tools known to be compliant
 
 | Tool | Version (Reference) | License | Role |
 | :--- | :--- | :--- | :--- |
-| **Godot Engine** | 4.3 (Hardened) | MIT | Simulation Core & Runtime |
+| **Godot Engine** | 4.7.2 (Hardened) | MIT | Simulation Core & Runtime |
 | **Blender** | 4.5.7 | GPL | 3D Modeling & Animation |
 | **Krita** | 5.2.15 | GPL | 2D Texture & UI Asset Creation |
 | **Audacity** | 3.7.7 | GPL | Audio Processing |
@@ -146,7 +146,7 @@ This is the critical utility that converts a **State 1 (Linked)** project into a
 For high-security deployments, the OGS-Launcher is paired with a **"Hardened Build"** of the Godot Engine.
 
 ### 7.1 Compilation Flags (SCons)
-When compiling the **Hardened Build** of Godot 4.3 for Sovereign Mode:
+When compiling the **Hardened Build** of Godot 4.7.2 for Sovereign Mode:
 *   `module_upnp_enabled=no` (Disables Universal Plug and Play)
 *   `module_webrtc_enabled=no` (Disables WebRTC)
 *   `module_websocket_enabled=no` (Disables WebSocket)

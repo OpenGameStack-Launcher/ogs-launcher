@@ -12,7 +12,7 @@ This schema supports both air-gapped local mirrors (archive paths) and remote re
 mirror_root/
 ├── repository.json
 └── tools/
-    ├── godot/4.3/godot_4.3_win64.zip
+    ├── godot/4.7.2/godot_4.7.2_win64.zip
     ├── blender/4.2/blender_4.2_win64.zip
     ├── krita/5.2/krita_5.2_win64.zip
     └── audacity/3.7/audacity_3.7_win64.zip
@@ -38,7 +38,7 @@ mirror_root/
 | Field | Type | Required | Description |
 |------|------|----------|-------------|
 | `id` | String | Yes | Tool identifier (e.g., `"godot"`, `"blender"`). |
-| `version` | String | Yes | Tool version (e.g., `"4.3"`). |
+| `version` | String | Yes | Tool version (e.g., `"4.7.2"`). |
 | `category` | String | No | Tool category for UI organization (e.g., `"Engine"`, `"2D"`, `"3D"`, `"Audio"`). Launcher provides fallback mapping if omitted. |
 | `archive_path` | String | Conditional | Relative path to the tool archive inside a local mirror. Required if `archive_url` is not provided. |
 | `archive_url` | String | Conditional | Full URL to a remote archive. Required if `archive_path` is not provided. |
@@ -56,10 +56,10 @@ mirror_root/
   "tools": [
     {
       "id": "godot",
-      "version": "4.3",
+      "version": "4.7.2",
       "category": "Engine",
-      "archive_path": "tools/godot/4.3/godot_4.3_win64.zip",
-      "info_url": "https://godotengine.org/releases/4.3/",
+      "archive_path": "tools/godot/4.7.2/godot_4.7.2_win64.zip",
+      "info_url": "https://godotengine.org/releases/4.7.2/",
       "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "size_bytes": 123456789
     },
@@ -84,10 +84,10 @@ mirror_root/
   "tools": [
     {
       "id": "godot",
-      "version": "4.3",
+      "version": "4.7.2",
       "category": "Engine",
-      "archive_url": "https://github.com/OpenGameStack-Launcher/ogs-frozen-stacks/releases/download/v1.0/godot-4.3-win64.zip",
-      "info_url": "https://godotengine.org/releases/4.3/",
+      "archive_url": "https://github.com/OpenGameStack-Launcher/ogs-frozen-stacks/releases/download/v1.0/godot-4.7.2-win64.zip",
+      "info_url": "https://godotengine.org/releases/4.7.2/",
       "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "size_bytes": 123456789
     }

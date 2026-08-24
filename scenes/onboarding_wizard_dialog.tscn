@@ -33,7 +33,7 @@ autowrap_mode = 2
 custom_minimum_size = Vector2(50, 0)
 layout_mode = 2
 text = "Default Stack:
-• Godot v4.3 (Game Engine)
+• Godot v4.7.2 (Game Engine)
 • Blender v4.2 LTS (3D Modeling)
 
 These tools will be downloaded to your central library."

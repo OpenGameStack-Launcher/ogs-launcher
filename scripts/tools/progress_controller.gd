@@ -11,13 +11,13 @@
 ##
 ## Usage (Inline Mode):
 ## var controller = ProgressController.new()
-## controller.track_inline_progress("godot", "4.3", progress_bar, label, container)
-## controller.update_progress("godot", "4.3", 1024000, 10240000)
-## controller.set_install_phase("godot", "4.3")
-## controller.complete_progress("godot", "4.3")
+## controller.track_inline_progress("godot", "4.7.2", progress_bar, label, container)
+## controller.update_progress("godot", "4.7.2", 1024000, 10240000)
+## controller.set_install_phase("godot", "4.7.2")
+## controller.complete_progress("godot", "4.7.2")
 ##
 ## Future Usage (Dialog Mode):
-## controller.track_dialog_progress(["godot_4.3", "blender_4.5.7"], dialog_node)
+## controller.track_dialog_progress(["godot_4.7.2", "blender_4.5.7"], dialog_node)
 ## controller.update_batch_progress(...)
 
 extends RefCounted
@@ -47,7 +47,7 @@ var tracked_items: Dictionary = {}
 ##
 ## Parameters:
 ## tool_id (String): Tool identifier (e.g., "godot")
-## version (String): Tool version (e.g., "4.3")
+## version (String): Tool version (e.g., "4.7.2")
 ## progress_bar (ProgressBar): The progress bar UI element
 ## label (Label): Label for progress text (e.g., "10.5 / 25.0 MB")
 ## container (Control): Container holding progress UI (for visibility control)

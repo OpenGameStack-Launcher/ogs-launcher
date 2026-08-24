@@ -3,7 +3,7 @@
 ## Manages the first-run experience:
 ## 1. Detects if this is a first run
 ## 2. Shows welcome screen with default stack information
-## 3. Handles one-click initialization of Godot 4.3 + Blender 4.2
+## 3. Handles one-click initialization of Godot 4.7.2 + Blender 4.2
 ## 4. Marks wizard as complete
 ##
 ## Usage:
@@ -111,7 +111,7 @@ func _on_start_pressed() -> void:
 	# In Phase 3, this would trigger actual tool downloads
 	_initialize_default_stack()
 
-## Initializes the default Stack (Godot 4.3 + Blender 4.2).
+## Initializes the default Stack (Godot 4.7.2 + Blender 4.2).
 func _initialize_default_stack() -> void:
 	## Prepares the library for default stack tools.
 	# Create library directory structure
@@ -120,7 +120,7 @@ func _initialize_default_stack() -> void:
 		DirAccess.make_dir_recursive_absolute(lib_dir)
 	
 	# Create tool subdirectories
-	var godot_dir = lib_dir.path_join("godot").path_join("4.3")
+	var godot_dir = lib_dir.path_join("godot").path_join("4.7.2")
 	var blender_dir = lib_dir.path_join("blender").path_join("4.2")
 	
 	# Ensure directories exist

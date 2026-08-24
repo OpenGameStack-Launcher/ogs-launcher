@@ -10,12 +10,12 @@
 ##
 ## Within the library, tools are organized as:
 ##   [LIBRARY_ROOT]/[tool_id]/[version]/[binaries]
-##   Example: %LOCALAPPDATA%/OGS/Library/godot/4.3/godot.exe
+##   Example: %LOCALAPPDATA%/OGS/Library/godot/4.7.2/godot.exe
 ##
 ## Usage:
 ##   var resolver = PathResolver.new()
 ##   var lib_root = resolver.get_library_root()
-##   var godot_path = resolver.get_tool_path("godot", "4.3")
+##   var godot_path = resolver.get_tool_path("godot", "4.7.2")
 
 extends RefCounted
 class_name PathResolver
@@ -73,7 +73,7 @@ func get_library_root() -> String:
 ## Returns the directory path for a specific tool version in the library.
 ## Parameters:
 ##   tool_id (String): Tool identifier (e.g., "godot", "blender")
-##   version (String): Version string (e.g., "4.3", "4.2")
+##   version (String): Version string (e.g., "4.7.2", "4.2")
 ## Returns:
 ##   String: Full path to the tool directory (may not exist yet)
 func get_tool_path(tool_id: String, version: String) -> String:
