@@ -1130,3 +1130,7 @@ func _update_download_button_states() -> void:
 			"buttons_updated": updated_count,
 			"any_active_downloads": any_active
 		})
+
+func _exit_tree() -> void:
+	if layout_controller != null:
+		layout_controller.cleanup()
