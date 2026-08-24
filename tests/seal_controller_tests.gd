@@ -108,8 +108,6 @@ func _test_thread_reference_cleared_after_predelete(results: Dictionary) -> void
 
 	# Let the thread finish on its own without joining it first.
 	var deadline_msec = Time.get_ticks_msec() + 2000
-	while not thread.is_started() and Time.get_ticks_msec() < deadline_msec:
-		OS.delay_msec(5)
 	while thread.is_alive() and Time.get_ticks_msec() < deadline_msec:
 		OS.delay_msec(5)
 	_expect(not thread.is_alive(), "Thread should finish on its own before predelete", results)
