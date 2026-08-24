@@ -35,7 +35,14 @@
 * **Security Best Practices:** Ensure that all code adheres to security best practices, especially when handling file operations or user input, to prevent vulnerabilities in the launcher or tool management scripts.
 * **Session Continuity (Local Notes):** To preserve context across long chats, periodically save short handoff summaries to `notes/` (local-only, ignored by git). Use `notes/tools/save_session_note.ps1` and append to the daily note file.
 
-### **4. Development Tracking**
+### **4. Git Workflow**
+
+* **Never commit directly to `main`.** Always create a branch from `main` first, for any change (including docs, config, and Copilot-authored edits).
+* **Simple changes:** branch, commit, then merge the branch into `main` directly (fast-forward or regular merge) once tests pass.
+* **Slightly more complex changes:** branch, commit, push, and open a pull request into `main` for review instead of merging locally.
+* When in doubt about complexity, prefer opening a pull request over merging locally.
+
+### **5. Development Tracking**
 
 * See [docs/The_Plan.md](../docs/The_Plan.md) for the MVP definition, current progress, and development roadmap.
 * Tasks are marked as completed (✅) and in-progress (🔄) as work advances.
@@ -45,7 +52,7 @@
   - **Linux/macOS:** `godot --headless --script res://tests/test_runner.gd`
   - Note: The Windows command includes output piping (`2>&1 | Select-Object`) to ensure proper stdout/stderr handling and prevent terminal hangs.
 
-### **5. Session Handoff Practice (Copilot Workflow)**
+### **6. Session Handoff Practice (Copilot Workflow)**
 
 * For long sessions, create a short handoff note at logical milestones (feature completion, blocker discovery, or before context gets crowded).
 * Use the VS Code task **"Notes: Save Session Snapshot"** or run:
