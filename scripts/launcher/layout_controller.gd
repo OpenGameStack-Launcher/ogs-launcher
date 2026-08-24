@@ -80,3 +80,14 @@ func get_current_page() -> String:
 func _on_page_button_pressed(page_name: String) -> void:
 	## Called when a sidebar button is pressed.
 	navigate_to(page_name)
+
+## Disconnects signals and clears references to prevent memory leaks.
+func cleanup() -> void:
+	for key in _sidebar_buttons:
+		var btn = _sidebar_buttons[key]
+		if is_instance_valid(btn):
+			for conn in btn.pressed.get_connections():
+				if conn["callable"].get_object() == self:
+					btn.pressed.disconnect(conn["callable"])
+	_sidebar_buttons.clear()
+	_pages.clear()
