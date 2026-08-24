@@ -17,6 +17,7 @@ var repository: MirrorRepository
 var extractor: ToolExtractor
 var library: LibraryManager
 
+var _hydration_in_progress: bool = false
 var _cancelled_tools: Dictionary = {}
 var _cancel_mutex: Mutex = Mutex.new()
 
@@ -62,12 +63,16 @@ func hydrate(tools_to_install: Array) -> Dictionary:
 
 ## Starts hydration asynchronously without blocking.
 func hydrate_async(tools_to_install: Array) -> void:
-	## Starts remote hydration asynchronously.
+	## Starts remote hydration asynchronously. Returns immediately if a hydration is already in progress.
+	if _hydration_in_progress:
+		OgsLogger.warn("remote_hydration_already_in_progress", {"component": "mirror"})
+		return
 	_hydrate_internal(tools_to_install)
 
 ## Performs the hydration workflow synchronously.
 func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 	## Installs tools from remote mirror archives into the library.
+	_hydration_in_progress = true
 	var result = {
 		"success": true,
 		"installed_count": 0,
@@ -81,6 +86,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			"reason": "no tools to install"
 		})
 		_emit_hydration_complete(true, [])
+		_hydration_in_progress = false
 		return result
 
 	var guard = OfflineEnforcer.guard_network_call("remote_mirror_hydration")
@@ -93,6 +99,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			"reason": guard["error_message"]
 		})
 		_emit_hydration_complete(false, tools_to_install)
+		_hydration_in_progress = false
 		return result
 
 	if repository_url.is_empty():
@@ -104,6 +111,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			"reason": "repository_url_not_set"
 		})
 		_emit_hydration_complete(false, tools_to_install)
+		_hydration_in_progress = false
 		return result
 
 	var repo_result = await _load_repository()
@@ -116,6 +124,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			"reason": repo_result.get("error", "unknown")
 		})
 		_emit_hydration_complete(false, tools_to_install)
+		_hydration_in_progress = false
 		return result
 
 	repository = repo_result["repository"]
@@ -128,6 +137,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			"error_count": repository.errors.size()
 		})
 		_emit_hydration_complete(false, tools_to_install)
+		_hydration_in_progress = false
 		return result
 
 	OgsLogger.info("remote_hydration_started", {
@@ -220,19 +230,29 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		var progress_cb = func(fc: int, tf: int): _emit_tool_install_progress(tool_id, version, fc, tf)
 		var extract_thread = Thread.new()
 		var extract_result: Dictionary
-		extract_thread.start(func():
-			extract_result = extractor.extract_to_library(temp_archive, tool_id, version, _is_cancelled.bind(tool_id, version), progress_cb)
-		)
 		var tree = scene_tree
 		if tree == null:
 			tree = Engine.get_main_loop() as SceneTree
 			scene_tree = tree
-		while extract_thread.is_alive():
-			if tree != null:
-				await tree.process_frame
-			else:
-				break
-		extract_thread.wait_to_finish()
+		var thread_err = extract_thread.start(func():
+			extract_result = extractor.extract_to_library(temp_archive, tool_id, version, _is_cancelled.bind(tool_id, version), progress_cb)
+		)
+		if thread_err != OK:
+			# Thread failed to start: run extraction on the main thread as a fallback
+			OgsLogger.warn("remote_extract_thread_failed", {
+				"component": "mirror",
+				"tool_id": tool_id,
+				"version": version,
+				"error": thread_err
+			})
+			extract_result = extractor.extract_to_library(temp_archive, tool_id, version, _is_cancelled.bind(tool_id, version), progress_cb)
+		else:
+			while extract_thread.is_alive():
+				if tree != null:
+					await tree.process_frame
+				else:
+					break
+			extract_thread.wait_to_finish()
 		
 		# Second cancellation checkpoint: Abort and delete if cancelled during extraction
 		if _is_cancelled(tool_id, version):
@@ -277,6 +297,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 	})
 
 	_emit_hydration_complete(result["success"], result["failed_tools"])
+	_hydration_in_progress = false
 	return result
 
 ## Loads repository.json from the configured URL.
@@ -371,11 +392,6 @@ func _http_download_to_file(url: String, dest_path: String, tool_id: String = ""
 	await tree.process_frame
 		
 	http.download_file = dest_path
-	var err = http.request(url, ["User-Agent: OGS-Launcher"])
-	if err != OK:
-		http.queue_free()
-		return {"success": false, "error": "request_failed"}
-		
 	var is_done = false
 	var request_result = 0
 	var response_code = 0
@@ -386,6 +402,11 @@ func _http_download_to_file(url: String, dest_path: String, tool_id: String = ""
 		response_code = code
 	)
 	
+	var err = http.request(url, ["User-Agent: OGS-Launcher"])
+	if err != OK:
+		http.queue_free()
+		return {"success": false, "error": "request_failed"}
+		
 	while not is_done:
 		if not tool_id.is_empty() and not version.is_empty():
 			if _is_cancelled(tool_id, version):
@@ -405,7 +426,7 @@ func _http_download_to_file(url: String, dest_path: String, tool_id: String = ""
 	http.queue_free()
 	
 	if request_result != HTTPRequest.RESULT_SUCCESS:
-		return {"success": false, "error": "http_status_%d" % response_code}
+		return {"success": false, "error": "transport_error_%d" % request_result}
 	if response_code < 200 or response_code >= 300:
 		return {"success": false, "error": "http_status_%d" % response_code}
 		

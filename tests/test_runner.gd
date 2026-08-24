@@ -32,6 +32,9 @@ func _process(_delta: float) -> bool:
 	return false
 
 func _run_tests_async() -> void:
+	## Orchestrates headless test execution: loads all suites, runs each one (handling
+	## both synchronous and async suites), aggregates results, and exits the process
+	## with code 0 (all passed) or 1 (one or more failures).
 	
 	# Set up test-isolated library path to prevent test/production conflicts
 	_setup_test_library()
@@ -112,7 +115,12 @@ func _run_tests_async() -> void:
 	
 	# Run all tests
 	for suite in test_suites:
-		var result = await suite.run()
+		var raw = suite.run()
+		var result: Dictionary
+		if raw is GDScriptFunctionState or raw is Signal:
+			result = await raw
+		else:
+			result = raw
 		summary["passed"] += result["passed"]
 		summary["failed"] += result["failed"]
 		summary["failures"].append_array(result["failures"])
