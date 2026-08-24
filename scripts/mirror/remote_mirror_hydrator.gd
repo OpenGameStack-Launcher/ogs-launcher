@@ -438,4 +438,3 @@ func _http_get_bytes(url: String) -> Dictionary:
 		return {"success": false, "error": "http_status_%d" % code}
 		
 	return {"success": true, "bytes": body}
-
