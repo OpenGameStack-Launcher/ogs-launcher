@@ -16,6 +16,7 @@ func run() -> Dictionary:
 	}
 	_test_main_scene_loads(results)
 	_test_network_ui_disabled_offline(results)
+	_test_mirror_root_browse_dialog_frees_on_close(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -80,3 +81,34 @@ func _test_network_ui_disabled_offline(results: Dictionary) -> void:
 		instance._on_offline_state_changed(true, "offline_mode")
 		_expect(check_updates.disabled == true, "network UI should be disabled when offline", results)
 	instance.free()
+
+func _test_mirror_root_browse_dialog_frees_on_close(results: Dictionary) -> void:
+	## Verifies mirror root browse dialog is queued for free when closed without a selection.
+	var scene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for mirror browse dialog close test", results)
+	if scene == null:
+		return
+	var instance = scene.instantiate()
+	(Engine.get_main_loop() as SceneTree).root.add_child(instance)
+	instance._on_mirror_root_browse_pressed()
+	var canceled_dialog = _find_new_file_dialog(instance, null)
+	_expect(canceled_dialog != null, "mirror root browse should create a file dialog", results)
+	if canceled_dialog != null:
+		canceled_dialog.canceled.emit()
+		_expect(canceled_dialog.is_queued_for_deletion(), "mirror root browse dialog should be queued for free on canceled", results)
+
+	instance._on_mirror_root_browse_pressed()
+	var closed_dialog = _find_new_file_dialog(instance, canceled_dialog)
+	_expect(closed_dialog != null, "mirror root browse should create a second file dialog", results)
+	if closed_dialog != null:
+		closed_dialog.close_requested.emit()
+		_expect(closed_dialog.is_queued_for_deletion(), "mirror root browse dialog should be queued for free on close_requested", results)
+	instance.free()
+
+func _find_new_file_dialog(parent: Node, exclude_dialog: FileDialog) -> FileDialog:
+	## Isolates the newest mirror-browse dialog so close-path regression checks target the correct node.
+	for idx in range(parent.get_child_count() - 1, -1, -1):
+		var child = parent.get_child(idx) as FileDialog
+		if child != null and child != exclude_dialog:
+			return child
+	return null
