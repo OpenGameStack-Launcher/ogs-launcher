@@ -162,4 +162,5 @@ func _collect_files_recursive(dir_path: String) -> Array[String]:
 
 		file_name = dir.get_next()
 
+	dir.list_dir_end()
 	return files
