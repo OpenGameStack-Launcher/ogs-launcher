@@ -112,9 +112,12 @@ func _copy_file(source: String, dest: String) -> int:
 		return FileAccess.get_open_error()
 
 	var content = file.get_buffer(file.get_length())
+	file.close()
+	
 	var out_file = FileAccess.open(dest, FileAccess.WRITE)
 	if out_file == null:
 		return FileAccess.get_open_error()
 
 	out_file.store_buffer(content)
+	out_file.close()
 	return OK
