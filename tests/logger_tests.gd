@@ -11,6 +11,7 @@ func run() -> Dictionary:
 ## Dictionary: {"passed": int, "failed": int, "failures": Array[String]}
 	var results := {"passed": 0, "failed": 0, "failures": []}
 	_test_write_and_level_filter(results)
+	_test_existing_log_survives_failed_append_open(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -39,3 +40,28 @@ func _test_write_and_level_filter(results: Dictionary) -> void:
 		file.close()
 		_expect(contents.find("info message") == -1, "info should be filtered", results)
 		_expect(contents.find("warn message") != -1, "warn should be logged", results)
+
+func _test_existing_log_survives_failed_append_open(results: Dictionary) -> void:
+	## Verifies failed append opens do not truncate an existing log file.
+	OgsLogger.clear_logs_for_tests()
+	OgsLogger.set_level(OgsLogger.Level.INFO)
+	var log_dir = ProjectSettings.globalize_path("user://logs")
+	DirAccess.make_dir_recursive_absolute(log_dir)
+	var log_path = "user://logs/ogs_launcher.log"
+	var existing = FileAccess.open(log_path, FileAccess.WRITE)
+	if existing == null:
+		_expect(false, "existing log should be creatable", results)
+		return
+	existing.store_string("existing entry\n")
+	existing.close()
+	OgsLogger.set_open_error_override_for_tests(FileAccess.READ_WRITE, ERR_CANT_OPEN)
+	OgsLogger.info("blocked write", {"component": "test"})
+	OgsLogger.clear_open_error_overrides_for_tests()
+	var file = FileAccess.open(log_path, FileAccess.READ)
+	if file == null:
+		_expect(false, "existing log should remain readable", results)
+		return
+	var contents = file.get_as_text()
+	file.close()
+	_expect(contents == "existing entry\n", "existing log contents should remain intact", results)
+	_expect(contents.find("blocked write") == -1, "failed append should not write a partial entry", results)

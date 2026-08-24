@@ -22,6 +22,9 @@ static var _level := Level.INFO
 static var _enabled := true
 static var _console_enabled := Engine.is_editor_hint()
 static var _dir_ensured := false
+static var _write_mutex: Mutex = Mutex.new()
+static var _test_open_error_overrides: Dictionary = {}
+static var _last_open_error: int = OK
 
 static func set_level(level: int) -> void:
 	## Sets the minimum log level for writing entries.
@@ -99,15 +102,10 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 		print(JSON.stringify(entry))
 		
 	var log_path = _get_log_path()
-	# Create the file if it doesn't exist, then always open with READ_WRITE
-	# to avoid the WRITE fallback which would truncate existing logs.
-	if not FileAccess.file_exists(log_path):
-		var create_file = FileAccess.open(log_path, FileAccess.WRITE)
-		if create_file == null:
-			return
-		create_file.close()
-	var file = FileAccess.open(log_path, FileAccess.READ_WRITE)
+	_write_mutex.lock()
+	var file = _open_log_file_for_append(log_path)
 	if file == null:
+		_write_mutex.unlock()
 		return
 			
 	file.seek_end()
@@ -117,22 +115,54 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 	
 	if current_length > MAX_BYTES:
 		_rotate_if_needed()
+	_write_mutex.unlock()
 
 static func clear_logs_for_tests() -> void:
 	## Removes log files for test isolation.
+	clear_open_error_overrides_for_tests()
 	var base = _get_log_path()
 	_delete_file(base)
 	for index in range(1, MAX_BACKUPS + 1):
 		_delete_file(base + "." + str(index))
 
+static func set_open_error_override_for_tests(mode: int, error_code: int) -> void:
+	## Overrides logger file-open results during tests.
+	if error_code == OK:
+		_test_open_error_overrides.erase(mode)
+	else:
+		_test_open_error_overrides[mode] = error_code
+
+static func clear_open_error_overrides_for_tests() -> void:
+	## Clears logger file-open overrides after tests.
+	_test_open_error_overrides.clear()
+	_last_open_error = OK
+
 static func _get_log_path() -> String:
 	## Returns the user:// log file path.
 	return LOG_DIR + "/" + LOG_FILE
+
+static func _open_log_file_for_append(log_path: String) -> FileAccess:
+	## Opens the active log file without truncating an existing log.
+	var file = _open_log_file(log_path, FileAccess.READ_WRITE)
+	if file != null:
+		return file
+	if _last_open_error != ERR_FILE_NOT_FOUND:
+		return null
+	return _open_log_file(log_path, FileAccess.WRITE)
 
 static func _ensure_log_dir() -> void:
 	## Ensures the log directory exists.
 	var absolute = ProjectSettings.globalize_path(LOG_DIR)
 	DirAccess.make_dir_recursive_absolute(absolute)
+
+static func _open_log_file(log_path: String, mode: int) -> FileAccess:
+	## Opens a log file while honoring test-only failure overrides.
+	if _test_open_error_overrides.has(mode):
+		_last_open_error = _test_open_error_overrides[mode]
+		return null
+	var file = FileAccess.open(log_path, mode)
+	_last_open_error = FileAccess.get_open_error()
+	return file
 
 static func _rotate_if_needed() -> void:
 	## Rotates logs when the active log exceeds the size threshold.
