@@ -103,6 +103,14 @@ class UIDeps extends RefCounted:
 	var btn_change_version: Button
 
 func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
+	assert(deps != null, "ProjectsController.setup: deps is required")
+	for dep_name in [
+		"btn_add_project", "btn_new_project", "projects_list", "lbl_project_status", "lbl_offline_status",
+		"btn_add_tool", "btn_remove_tool", "btn_remove_project", "btn_launch_tool",
+		"project_dir_dialog", "remove_project_dialog", "new_project_dialog", "new_project_name_line_edit",
+		"add_tool_dialog", "add_tool_option_list"
+	]:
+		assert(deps.get(dep_name) != null, "ProjectsController.setup: deps.%s is required" % dep_name)
 	btn_add_project = deps.btn_add_project
 	btn_new_project = deps.btn_new_project
 	projects_list = deps.projects_list
