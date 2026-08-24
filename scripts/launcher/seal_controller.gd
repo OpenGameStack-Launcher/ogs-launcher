@@ -189,7 +189,7 @@ func _on_open_folder_pressed() -> void:
 
 	# Validate path to prevent arbitrary URL execution
 	if not folder_path.is_absolute_path() or folder_path.contains("://"):
-		OgsLogger.warn("invalid_shell_open_path", {"component": "sealer", "path": folder_path})
+		OgsLogger.warn("invalid_shell_open_path", {"component": "sealer", "absolute_path": folder_path})
 		return
 
 	OS.shell_show_in_file_manager(folder_path)
