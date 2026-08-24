@@ -7,7 +7,7 @@ applyTo: "**/*.gd,**/*.tscn,**/*.tres,project.godot"
 
 These rules apply to any change touching GDScript, scenes, resources, or
 `project.godot` in this repository. See the full procedure in
-[.github/skills/godot-code-review/SKILL.md](../skills/godot-code-review/SKILL.md).
+[.github/skills/code-review/SKILL.md](../skills/code-review/SKILL.md).
 
 - Target engine is **Godot 4.7.2 (Stable)**. Reject Godot 3.x syntax:
   `instance()` → `instantiate()`, bare `onready`/`export`/`tool` → `@onready`/

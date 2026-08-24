@@ -1,5 +1,5 @@
 ---
-name: godot-code-review
+name: code-review
 description: 'Use when reviewing pull requests or diffs that touch Godot 4.7.2 GDScript (.gd), scenes (.tscn), resources (.tres), or project.godot files in the OGS Launcher. Performs a structured code review against Godot 4.7.2 syntax, OGS architectural rules (air-gap-first, zero dependencies, MOSA modularity), Logger conventions, and the repository test requirements. Triggers: "review this PR", "code review", "review my changes", automated review of a GDScript/.tscn diff.'
 ---
 
