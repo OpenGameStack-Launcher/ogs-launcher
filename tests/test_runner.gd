@@ -116,7 +116,7 @@ func _run_tests_async() -> void:
 	for suite in test_suites:
 		var raw = suite.run()
 		var result: Dictionary
-		if raw is GDScriptFunctionState or raw is Signal:
+		if raw is Signal:
 			result = await raw
 		else:
 			result = raw
