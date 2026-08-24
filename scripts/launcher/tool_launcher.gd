@@ -6,7 +6,10 @@
 extends RefCounted
 class_name ToolLauncher
 
+const PathUtils = preload("res://scripts/utils/path_utils.gd")
+
 const OgsLogger = preload("res://scripts/logging/logger.gd")
+const CryptoUtils = preload("res://scripts/utils/crypto_utils.gd")
 
 ## Handles spawning external tools from the frozen stack with correct environment and working directory.
 ##
@@ -66,7 +69,7 @@ static func launch(tool_entry: Dictionary, project_dir: String, target_file: Str
 			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "absolute_path"})
 			return _error_result(LaunchError.TOOL_PATH_ABSOLUTE, "Tool path must be project-relative.")
 		full_tool_path = project_dir.path_join(tool_path)
-		if not _is_path_under_root(full_tool_path, project_dir):
+		if not PathUtils.is_path_under_root(full_tool_path, project_dir):
 			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "path_escape"})
 			return _error_result(LaunchError.TOOL_PATH_OUTSIDE_ROOT, "Tool path escapes project root.")
 	else:
@@ -264,14 +267,6 @@ static func _error_result(error_code: LaunchError, message: String) -> Dictionar
 		"pid": -1
 	}
 
-## Ensures the resolved path stays inside the project root.
-static func _is_path_under_root(full_path: String, project_root: String) -> bool:
-	var normalized_root = project_root.simplify_path().to_lower()
-	var normalized_path = full_path.simplify_path().to_lower()
-	if normalized_path == normalized_root:
-		return true
-	return normalized_path.begins_with(normalized_root + "/")
-
 ## Resolves tool executable path from the library.
 ## Parameters:
 ##   library (LibraryManager): Library manager instance
@@ -424,7 +419,7 @@ static func _validate_tool_hash(tool_entry: Dictionary, full_tool_path: String) 
 			"error_code": LaunchError.TOOL_HASH_INVALID,
 			"error_message": "Tool sha256 value is invalid."
 		}
-	var hash_result = _compute_sha256(full_tool_path)
+	var hash_result = CryptoUtils.compute_sha256(full_tool_path)
 	if not hash_result["success"]:
 		return {
 			"success": false,
@@ -438,25 +433,6 @@ static func _validate_tool_hash(tool_entry: Dictionary, full_tool_path: String) 
 			"error_message": "Tool sha256 does not match file contents."
 		}
 	return {"success": true}
-
-## Computes sha256 for a file path using streaming reads.
-static func _compute_sha256(file_path: String) -> Dictionary:
-	var file = FileAccess.open(file_path, FileAccess.READ)
-	if file == null:
-		return {"success": false, "error_message": "Failed to read tool for hashing."}
-	var hasher = HashingContext.new()
-	var start_err = hasher.start(HashingContext.HASH_SHA256)
-	if start_err != OK:
-		file.close()
-		return {"success": false, "error_message": "Failed to initialize hash context."}
-	while not file.eof_reached():
-		var chunk = file.get_buffer(1024 * 1024)
-		if chunk.size() == 0:
-			break
-		hasher.update(chunk)
-	file.close()
-	var digest = hasher.finish()
-	return {"success": true, "sha256": digest.hex_encode().to_lower()}
 
 ## Validates sha256 hex format (64 hex characters).
 static func _is_hex_sha256(value: String) -> bool:

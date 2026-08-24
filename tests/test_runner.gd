@@ -99,6 +99,7 @@ func _run_tests_async() -> void:
 		"res://tests/tool_category_mapper_tests.gd",
 		"res://tests/tools_controller_tests.gd",
 		"res://tests/progress_controller_tests.gd",
+		"res://tests/onboarding_wizard_tests.gd",
 		"res://tests/startup_tests.gd",
 	]
 	

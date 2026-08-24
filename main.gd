@@ -511,6 +511,9 @@ func _on_mirror_root_browse_pressed() -> void:
 		_save_mirror_settings()
 		_update_mirror_status()
 	)
+	dialog.canceled.connect(func(): dialog.queue_free())
+	dialog.close_requested.connect(func(): dialog.queue_free())
+	dialog.dir_selected.connect(func(_path: String): dialog.queue_free())
 	add_child(dialog)
 	dialog.popup_centered_ratio(0.7)
 

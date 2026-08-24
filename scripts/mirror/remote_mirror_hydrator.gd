@@ -8,6 +8,7 @@ extends "res://scripts/mirror/base_hydrator.gd"
 class_name RemoteMirrorHydrator
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
+const CryptoUtils = preload("res://scripts/utils/crypto_utils.gd")
 
 const MirrorRepositoryScript = preload("res://scripts/mirror/mirror_repository.gd")
 
@@ -189,7 +190,7 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 
 		var sha_value = String(repo_entry.get("sha256", "")).strip_edges().to_lower()
 		if not sha_value.is_empty():
-			var hash_result = _compute_sha256(temp_archive)
+			var hash_result = CryptoUtils.compute_sha256(temp_archive)
 			if not hash_result["success"]:
 				result["failed_count"] += 1
 				result["failed_tools"].append(tool_entry)
@@ -438,22 +439,3 @@ func _http_get_bytes(url: String) -> Dictionary:
 		
 	return {"success": true, "bytes": body}
 
-## Computes sha256 for a file path using streaming reads.
-static func _compute_sha256(file_path: String) -> Dictionary:
-	## Computes the SHA-256 hash for a file.
-	var file = FileAccess.open(file_path, FileAccess.READ)
-	if file == null:
-		return {"success": false, "error_message": "Failed to read archive for hashing."}
-	var hasher = HashingContext.new()
-	var start_err = hasher.start(HashingContext.HASH_SHA256)
-	if start_err != OK:
-		file.close()
-		return {"success": false, "error_message": "Failed to initialize hash context."}
-	while not file.eof_reached():
-		var chunk = file.get_buffer(1024 * 1024)
-		if chunk.size() == 0:
-			break
-		hasher.update(chunk)
-	file.close()
-	var digest = hasher.finish()
-	return {"success": true, "sha256": digest.hex_encode().to_lower()}
