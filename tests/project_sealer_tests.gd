@@ -9,6 +9,7 @@ class_name ProjectSealerTests
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 const SealerTestHelpersScript = preload("res://tests/project_sealer_test_helpers.gd")
+const SealToolCopierScript = preload("res://scripts/projects/project_seal_tool_copier.gd")
 
 var _helpers = SealerTestHelpersScript.new()
 
@@ -34,6 +35,7 @@ func run() -> Dictionary:
 		{"name": "test_seal_project_creates_real_zip_archive", "func": test_seal_project_creates_real_zip_archive},
 		{"name": "test_sealed_zip_contains_expected_files", "func": test_sealed_zip_contains_expected_files},
 		{"name": "test_seal_project_writes_packaging_logs", "func": test_seal_project_writes_packaging_logs},
+		{"name": "test_project_seal_tool_copier_copies_large_files", "func": test_project_seal_tool_copier_copies_large_files},
 	]
 	
 	for test in tests:
@@ -464,5 +466,58 @@ func test_seal_project_writes_packaging_logs() -> Dictionary:
 
 	if not log_text.contains("seal_project_complete"):
 		return {"passed": false, "error": "Missing seal_project_complete log event"}
+
+	return {"passed": true}
+
+## Test: project seal tool copier preserves large file contents across chunk boundaries
+func test_project_seal_tool_copier_copies_large_files() -> Dictionary:
+	var temp_dir = "user://test_seal_tool_copy_large_%s" % str(Time.get_ticks_usec())
+	var source_dir = temp_dir.path_join("source")
+	var dest_dir = temp_dir.path_join("dest")
+	var source_path = source_dir.path_join("large.bin")
+	var dest_path = dest_dir.path_join("large.bin")
+
+	DirAccess.make_dir_recursive_absolute(source_dir)
+	DirAccess.make_dir_recursive_absolute(dest_dir)
+
+	var source_file = FileAccess.open(source_path, FileAccess.WRITE)
+	if source_file == null:
+		_helpers.remove_directory_recursive(temp_dir)
+		return {"passed": false, "error": "Cannot create large source file"}
+
+	var payload := PackedByteArray()
+	payload.resize(SealToolCopierScript._COPY_CHUNK_SIZE + 257)
+	for index in range(payload.size()):
+		payload[index] = index % 251
+
+	if payload.size() <= SealToolCopierScript._COPY_CHUNK_SIZE:
+		_helpers.remove_directory_recursive(temp_dir)
+		return {"passed": false, "error": "Test fixture did not exceed copy chunk size"}
+
+	source_file.store_buffer(payload)
+	source_file.close()
+
+	var copier = SealToolCopierScript.new()
+	var copy_err = copier._copy_file(source_path, dest_path)
+	if copy_err != OK:
+		_helpers.remove_directory_recursive(temp_dir)
+		return {"passed": false, "error": "Large file copy failed: %s" % error_string(copy_err)}
+
+	var copied_file = FileAccess.open(dest_path, FileAccess.READ)
+	if copied_file == null:
+		_helpers.remove_directory_recursive(temp_dir)
+		return {"passed": false, "error": "Copied file was not created"}
+
+	var copied_size = copied_file.get_length()
+	var copied_payload = copied_file.get_buffer(copied_size)
+	copied_file.close()
+
+	_helpers.remove_directory_recursive(temp_dir)
+
+	if copied_size != payload.size():
+		return {"passed": false, "error": "Copied file size mismatch: expected %d, got %d" % [payload.size(), copied_size]}
+
+	if copied_payload != payload:
+		return {"passed": false, "error": "Copied file contents did not match source"}
 
 	return {"passed": true}

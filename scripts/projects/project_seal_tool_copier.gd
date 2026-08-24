@@ -7,6 +7,7 @@ extends RefCounted
 class_name ProjectSealToolCopier
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
+const _COPY_CHUNK_SIZE := 1_048_576  # 1 MB
 
 ## Copies all manifest tools from central library to project ./tools.
 ## Parameters:
@@ -99,25 +100,38 @@ func _copy_directory_recursive(source: String, dest: String) -> int:
 
 	return OK
 
-## Copies a single file from source to destination.
+## Copies a single file from source to destination using chunked reads.
+## Uses 1MB chunks to avoid loading entire large binaries into memory.
 ## Parameters:
 ## source (String): Source file path
 ## dest (String): Destination file path
 ## Returns:
 ## int: Godot error code (OK on success)
 func _copy_file(source: String, dest: String) -> int:
-	## Copies one file as raw bytes.
+	## Copies one file in 1MB chunks to keep memory usage bounded.
 	var file = FileAccess.open(source, FileAccess.READ)
 	if file == null:
 		return FileAccess.get_open_error()
 
-	var content = file.get_buffer(file.get_length())
-	file.close()
-	
 	var out_file = FileAccess.open(dest, FileAccess.WRITE)
 	if out_file == null:
+		file.close()
 		return FileAccess.get_open_error()
 
-	out_file.store_buffer(content)
+	while not file.eof_reached():
+		var chunk = file.get_buffer(_COPY_CHUNK_SIZE)
+		if chunk.size() == 0:
+			break
+		out_file.store_buffer(chunk)
+		var write_err = out_file.get_error()
+		if write_err != OK:
+			file.close()
+			out_file.close()
+			return write_err
+
+	var final_write_err = out_file.get_error()
+	file.close()
 	out_file.close()
+	if final_write_err != OK:
+		return final_write_err
 	return OK
