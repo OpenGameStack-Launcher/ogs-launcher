@@ -122,7 +122,11 @@ func _copy_file(source: String, dest: String) -> int:
 		var chunk = file.get_buffer(_COPY_CHUNK_SIZE)
 		if chunk.size() == 0:
 			break
-		out_file.store_buffer(chunk)
+		var write_err = out_file.store_buffer(chunk)
+		if write_err != OK:
+			file.close()
+			out_file.close()
+			return write_err
 
 	file.close()
 	out_file.close()
