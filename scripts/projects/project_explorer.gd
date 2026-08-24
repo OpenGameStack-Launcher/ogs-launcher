@@ -46,9 +46,11 @@ func _on_context_menu_id_pressed(id: int) -> void:
 	if id == 0 and not context_target_path.is_empty():
 		var path_to_open = ProjectSettings.globalize_path(context_target_path)
 		
-		# Validate path to prevent arbitrary URL execution
-		if not path_to_open.is_absolute_path() or path_to_open.contains("://"):
-			OgsLogger.warn("invalid_shell_open_path", {"component": "project_explorer", "path": path_to_open})
+		# Validate path to prevent arbitrary URL execution and ensure it stays inside the loaded project.
+		var normalized_root = current_project_dir.simplify_path().to_lower()
+		var normalized_path = path_to_open.simplify_path().to_lower()
+		if current_project_dir.is_empty() or not path_to_open.is_absolute_path() or path_to_open.contains("://") or (normalized_path != normalized_root and not normalized_path.begins_with(normalized_root + "/")):
+			OgsLogger.warn("invalid_shell_open_path", {"component": "project_explorer", "absolute_path": path_to_open})
 			return
 			
 		if not DirAccess.dir_exists_absolute(path_to_open):
