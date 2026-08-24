@@ -14,6 +14,7 @@ const CREATE_LOCK_TIMEOUT_MSEC := 250
 const CREATE_LOCK_RETRY_MSEC := 5
 const CREATE_LOCK_STALE_MSEC := 5000
 const CREATE_LOCK_TIMESTAMP_FILE := "lock_time"
+const CREATE_LOCK_OWNER_FILE := "lock_owner"
 
 ## Log levels for filtering.
 enum Level {
@@ -132,6 +133,7 @@ static func clear_logs_for_tests() -> void:
 		_delete_file(base + "." + str(index))
 	var lock_path = _get_log_create_lock_path()
 	DirAccess.remove_absolute(lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE)
+	DirAccess.remove_absolute(lock_path + "/" + CREATE_LOCK_OWNER_FILE)
 	DirAccess.remove_absolute(lock_path)
 
 static func set_open_error_override_for_tests(mode: int, error_code: int, remaining_uses: int = -1) -> void:
@@ -180,22 +182,23 @@ static func _open_log_file(log_path: String, mode: int) -> FileAccess:
 static func _create_missing_log_file(log_path: String) -> FileAccess:
 	## Creates a missing log file without truncating a concurrently created log.
 	var lock_path = _get_log_create_lock_path()
-	if not _acquire_log_create_lock(lock_path):
-		return _open_log_file(log_path, FileAccess.READ_WRITE)
+	var lock_owner = _acquire_log_create_lock(lock_path)
+	if lock_owner.is_empty():
+		return _wait_for_log_creation_after_lock_contention(log_path)
 	var file = _open_log_file(log_path, FileAccess.READ_WRITE)
 	if file == null and _last_open_error == ERR_FILE_NOT_FOUND:
 		var created = _open_log_file(log_path, FileAccess.WRITE)
 		if created != null:
 			created.close()
 			file = _open_log_file(log_path, FileAccess.READ_WRITE)
-	_release_log_create_lock(lock_path)
+	_release_log_create_lock(lock_path, lock_owner)
 	return file
 
 static func _get_log_create_lock_path() -> String:
 	## Returns the absolute path for the cross-process log creation lock.
 	return ProjectSettings.globalize_path(_get_log_path()) + CREATE_LOCK_SUFFIX
 
-static func _acquire_log_create_lock(lock_path: String) -> bool:
+static func _acquire_log_create_lock(lock_path: String) -> String:
 	## Claims the cross-process lock used while creating the log file.
 	## Recovers stale locks whose timestamp exceeds CREATE_LOCK_STALE_MSEC.
 	var deadline = Time.get_ticks_msec() + CREATE_LOCK_TIMEOUT_MSEC
@@ -203,26 +206,44 @@ static func _acquire_log_create_lock(lock_path: String) -> bool:
 	while true:
 		var err = DirAccess.make_dir_absolute(lock_path)
 		if err == OK:
+			var owner_token = _build_lock_owner_token()
 			var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
+			var owner_path = lock_path + "/" + CREATE_LOCK_OWNER_FILE
 			var ts_file = FileAccess.open(ts_path, FileAccess.WRITE)
-			if ts_file != null:
-				ts_file.store_string(str(Time.get_ticks_msec()))
-				ts_file.close()
-			return true
+			var owner_file = FileAccess.open(owner_path, FileAccess.WRITE)
+			if ts_file == null or owner_file == null:
+				if ts_file != null:
+					ts_file.close()
+				if owner_file != null:
+					owner_file.close()
+				_force_remove_stale_lock(lock_path)
+				return ""
+			ts_file.store_string(str(Time.get_unix_time_from_system() * 1000.0))
+			ts_file.close()
+			owner_file.store_string(owner_token)
+			owner_file.close()
+			return owner_token
 		if err != ERR_ALREADY_EXISTS:
-			return false
+			return ""
 		if Time.get_ticks_msec() >= deadline:
 			if not stale_recovered and _is_log_create_lock_stale(lock_path):
 				stale_recovered = true
-				_force_remove_stale_lock(lock_path)
+				var stale_owner = _read_log_create_lock_owner(lock_path)
+				_force_remove_stale_lock(lock_path, stale_owner)
 				continue
-			return false
+			return ""
 		OS.delay_msec(CREATE_LOCK_RETRY_MSEC)
 
-static func _release_log_create_lock(lock_path: String) -> void:
+static func _release_log_create_lock(lock_path: String, owner_token: String) -> void:
 	## Releases the cross-process lock used while creating the log file.
+	if owner_token.is_empty():
+		return
+	if _read_log_create_lock_owner(lock_path) != owner_token:
+		return
 	var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
+	var owner_path = lock_path + "/" + CREATE_LOCK_OWNER_FILE
 	DirAccess.remove_absolute(ts_path)
+	DirAccess.remove_absolute(owner_path)
 	DirAccess.remove_absolute(lock_path)
 
 static func _is_log_create_lock_stale(lock_path: String) -> bool:
@@ -236,14 +257,44 @@ static func _is_log_create_lock_stale(lock_path: String) -> bool:
 	ts_file.close()
 	if not ts_text.is_valid_int():
 		return true
-	var lock_age = Time.get_ticks_msec() - ts_text.to_int()
+	var lock_age = int(Time.get_unix_time_from_system() * 1000.0) - ts_text.to_int()
 	return lock_age >= CREATE_LOCK_STALE_MSEC
 
-static func _force_remove_stale_lock(lock_path: String) -> void:
+static func _force_remove_stale_lock(lock_path: String, expected_owner: String = "") -> void:
 	## Removes a stale cross-process creation lock directory and its timestamp file.
+	if not expected_owner.is_empty() and _read_log_create_lock_owner(lock_path) != expected_owner:
+		return
 	var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
+	var owner_path = lock_path + "/" + CREATE_LOCK_OWNER_FILE
 	DirAccess.remove_absolute(ts_path)
+	DirAccess.remove_absolute(owner_path)
 	DirAccess.remove_absolute(lock_path)
+
+static func _wait_for_log_creation_after_lock_contention(log_path: String) -> FileAccess:
+	## Waits for another process to finish creating a missing log file.
+	var deadline = Time.get_ticks_msec() + CREATE_LOCK_STALE_MSEC
+	while Time.get_ticks_msec() < deadline:
+		var file = _open_log_file(log_path, FileAccess.READ_WRITE)
+		if file != null:
+			return file
+		if _last_open_error != ERR_FILE_NOT_FOUND:
+			return null
+		OS.delay_msec(CREATE_LOCK_RETRY_MSEC)
+	return null
+
+static func _build_lock_owner_token() -> String:
+	## Returns a best-effort unique token for lock ownership checks.
+	return str(OS.get_process_id()) + ":" + str(Time.get_unix_time_from_system() * 1000.0) + ":" + str(Time.get_ticks_usec())
+
+static func _read_log_create_lock_owner(lock_path: String) -> String:
+	## Returns the current lock owner token or an empty string when unavailable.
+	var owner_path = lock_path + "/" + CREATE_LOCK_OWNER_FILE
+	var owner_file = FileAccess.open(owner_path, FileAccess.READ)
+	if owner_file == null:
+		return ""
+	var owner = owner_file.get_as_text().strip_edges()
+	owner_file.close()
+	return owner
 
 static func _consume_open_error_override(mode: int) -> void:
 	## Decrements and clears one-shot open error overrides during tests.

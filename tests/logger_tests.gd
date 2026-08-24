@@ -95,12 +95,19 @@ func _test_stale_lock_is_recovered_and_log_created(results: Dictionary) -> void:
 	DirAccess.make_dir_recursive_absolute(log_dir)
 	DirAccess.make_dir_absolute(lock_path)
 	var ts_path = lock_path + "/lock_time"
+	var owner_path = lock_path + "/lock_owner"
 	var ts_file = FileAccess.open(ts_path, FileAccess.WRITE)
 	if ts_file == null:
 		_expect(false, "stale lock timestamp should be writable", results)
 		return
-	ts_file.store_string(str(Time.get_ticks_msec() - 10000))
+	ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0) - 10000))
 	ts_file.close()
+	var owner_file = FileAccess.open(owner_path, FileAccess.WRITE)
+	if owner_file == null:
+		_expect(false, "stale lock owner should be writable", results)
+		return
+	owner_file.store_string("stale-owner")
+	owner_file.close()
 	OgsLogger.set_open_error_override_for_tests(FileAccess.READ_WRITE, ERR_FILE_NOT_FOUND, 1)
 	OgsLogger.info("after stale lock recovery", {"component": "test"})
 	OgsLogger.clear_open_error_overrides_for_tests()
