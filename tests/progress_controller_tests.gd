@@ -134,7 +134,7 @@ func _test_complete_progress(results: Dictionary) -> void:
 	
 	_expect(ui["container"].visible == false, "container should be hidden", results)
 	_expect(controller.is_tracking("audacity", "3.7") == false, "should no longer track", results)
-	_expect(controller.get_phase("audacity", "3.7") == null, "phase should be null", results)
+	_expect(controller.get_phase("audacity", "3.7") == ProgressControllerScript.Phase.NOT_TRACKED, "phase should be NOT_TRACKED", results)
 	
 	_free_mock_ui(ui)
 
@@ -175,7 +175,7 @@ func _test_get_phase(results: Dictionary) -> void:
 	var controller = ProgressControllerScript.new()
 	var ui = _create_mock_ui()
 	
-	_expect(controller.get_phase("godot", "4.3") == null, "phase should be null before tracking", results)
+	_expect(controller.get_phase("godot", "4.3") == ProgressControllerScript.Phase.NOT_TRACKED, "phase should be NOT_TRACKED before tracking", results)
 	
 	controller.track_inline_progress("godot", "4.3", ui["progress_bar"], ui["label"], ui["container"])
 	_expect(controller.get_phase("godot", "4.3") == ProgressControllerScript.Phase.DOWNLOAD, "phase should be DOWNLOAD", results)
@@ -184,7 +184,7 @@ func _test_get_phase(results: Dictionary) -> void:
 	_expect(controller.get_phase("godot", "4.3") == ProgressControllerScript.Phase.INSTALL, "phase should be INSTALL", results)
 	
 	controller.complete_progress("godot", "4.3")
-	_expect(controller.get_phase("godot", "4.3") == null, "phase should be null after completion", results)
+	_expect(controller.get_phase("godot", "4.3") == ProgressControllerScript.Phase.NOT_TRACKED, "phase should be NOT_TRACKED after completion", results)
 	
 	_free_mock_ui(ui)
 
