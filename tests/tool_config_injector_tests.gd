@@ -103,6 +103,9 @@ func _cleanup_dir(path: String) -> void:
 	dir.list_dir_begin()
 	var entry = dir.get_next()
 	while entry != "":
+		if entry == "." or entry == "..":
+			entry = dir.get_next()
+			continue
 		var full_path = absolute_path.path_join(entry)
 		if dir.current_is_dir():
 			_cleanup_dir(full_path)
