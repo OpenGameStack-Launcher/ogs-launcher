@@ -120,6 +120,12 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 		_write_mutex.unlock()
 		return
 
+	if not creation_lock_path.is_empty() and not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
+		file.close()
+		_release_log_create_lock(creation_lock_path, creation_lock_owner)
+		_write_mutex.unlock()
+		return
+
 	file.seek_end()
 	file.store_string(JSON.stringify(entry) + "\n")
 	var current_length = file.get_length()
@@ -164,18 +170,26 @@ static func _get_log_path() -> String:
 
 static func _open_log_file_for_append(log_path: String) -> Dictionary:
 	## Opens the active log file without truncating an existing log.
-	## Returns {file, lock_path, lock_owner}. lock_path is non-empty when a
-	## creation lock is still held and must be released by the caller after writing.
-	var file = _open_log_file(log_path, FileAccess.READ_WRITE)
-	if file != null:
-		var creation_lock_path = _get_log_create_lock_path()
-		if DirAccess.dir_exists_absolute(creation_lock_path):
-			file.close()
-			file = _wait_for_pending_log_creation(log_path, creation_lock_path)
-		return {"file": file, "lock_path": "", "lock_owner": ""}
-	if _last_open_error != ERR_FILE_NOT_FOUND:
+	## Returns {file, lock_path, lock_owner}. The caller must always release
+	## lock_path after appending so cross-process writes remain serialized.
+	var lock_path = _get_log_create_lock_path()
+	var lock_result = _acquire_log_create_lock_for_append(lock_path)
+	var lock_owner: String = lock_result["owner"]
+	if lock_owner.is_empty():
 		return {"file": null, "lock_path": "", "lock_owner": ""}
-	return _create_missing_log_file(log_path)
+	var file = _open_log_file(log_path, FileAccess.READ_WRITE)
+	if file == null and _last_open_error == ERR_FILE_NOT_FOUND:
+		if not _refresh_log_create_lock_timestamp(lock_path, lock_owner):
+			_release_log_create_lock(lock_path, lock_owner)
+			return {"file": null, "lock_path": "", "lock_owner": ""}
+		var created = _open_log_file(log_path, FileAccess.WRITE)
+		if created != null:
+			created.close()
+			file = _open_log_file(log_path, FileAccess.READ_WRITE)
+	if file == null:
+		_release_log_create_lock(lock_path, lock_owner)
+		return {"file": null, "lock_path": "", "lock_owner": ""}
+	return {"file": file, "lock_path": lock_path, "lock_owner": lock_owner}
 
 static func _ensure_log_dir() -> void:
 	## Ensures the log directory exists.
@@ -191,35 +205,6 @@ static func _open_log_file(log_path: String, mode: int) -> FileAccess:
 	var file = FileAccess.open(log_path, mode)
 	_last_open_error = FileAccess.get_open_error()
 	return file
-
-static func _create_missing_log_file(log_path: String) -> Dictionary:
-	## Creates a missing log file without truncating a concurrently created log.
-	## Returns {file, lock_path, lock_owner}. The creation lock is NOT released;
-	## the caller must release it after the write so the lock is held through the
-	## append and another process cannot race its initial write.
-	var lock_path = _get_log_create_lock_path()
-	var lock_result = _acquire_log_create_lock(lock_path)
-	var lock_owner: String = lock_result["owner"]
-	var should_wait: bool = lock_result["should_wait"]
-	if lock_owner.is_empty():
-		if not should_wait:
-			return {"file": null, "lock_path": "", "lock_owner": ""}
-		return {"file": _wait_for_log_creation_after_lock_contention(log_path), "lock_path": "", "lock_owner": ""}
-	var file = _open_log_file(log_path, FileAccess.READ_WRITE)
-	if file == null and _last_open_error == ERR_FILE_NOT_FOUND:
-		# Revalidate ownership immediately before the truncating create so that
-		# a stale-lock recovery that revoked our lock is not followed by a WRITE
-		# that would truncate a concurrently created log.
-		if _read_log_create_lock_owner(lock_path) != lock_owner:
-			return {"file": _wait_for_log_creation_after_lock_contention(log_path), "lock_path": "", "lock_owner": ""}
-		var created = _open_log_file(log_path, FileAccess.WRITE)
-		if created != null:
-			created.close()
-			file = _open_log_file(log_path, FileAccess.READ_WRITE)
-	if file == null:
-		_release_log_create_lock(lock_path, lock_owner)
-		return {"file": null, "lock_path": "", "lock_owner": ""}
-	return {"file": file, "lock_path": lock_path, "lock_owner": lock_owner}
 
 static func _get_log_create_lock_path() -> String:
 	## Returns the absolute path for the cross-process log creation lock.
@@ -277,18 +262,40 @@ static func _release_log_create_lock(lock_path: String, owner_token: String) -> 
 	DirAccess.remove_absolute(owner_path)
 	DirAccess.remove_absolute(lock_path)
 
+static func _refresh_log_create_lock_timestamp(lock_path: String, owner_token: String) -> bool:
+	## Renews lock timestamp only when the expected owner still holds the lock.
+	if owner_token.is_empty():
+		return false
+	if _read_log_create_lock_owner(lock_path) != owner_token:
+		return false
+	var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
+	var ts_file = FileAccess.open(ts_path, FileAccess.WRITE)
+	if ts_file == null:
+		return false
+	ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0)))
+	ts_file.close()
+	return true
+
 static func _is_log_create_lock_stale(lock_path: String) -> bool:
 	## Returns true when the lock directory has no valid timestamp or its
 	## recorded age exceeds CREATE_LOCK_STALE_MSEC, indicating a crash-orphaned lock.
 	var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
 	var ts_file = FileAccess.open(ts_path, FileAccess.READ)
 	if ts_file == null:
-		return true
+		return _is_log_create_lock_older_than_stale_window(lock_path)
 	var ts_text = ts_file.get_as_text().strip_edges()
 	ts_file.close()
 	if not ts_text.is_valid_int():
-		return true
+		return _is_log_create_lock_older_than_stale_window(lock_path)
 	var lock_age = int(Time.get_unix_time_from_system() * 1000.0) - ts_text.to_int()
+	return lock_age >= CREATE_LOCK_STALE_MSEC
+
+static func _is_log_create_lock_older_than_stale_window(lock_path: String) -> bool:
+	## Guards the metadata-initialization window by using lock dir mtime as fallback.
+	var lock_modified_unix = FileAccess.get_modified_time(lock_path)
+	if lock_modified_unix <= 0:
+		return true
+	var lock_age = int(Time.get_unix_time_from_system() * 1000.0) - int(lock_modified_unix * 1000.0)
 	return lock_age >= CREATE_LOCK_STALE_MSEC
 
 static func _force_remove_stale_lock(lock_path: String, expected_owner: String = "") -> void:
@@ -301,33 +308,34 @@ static func _force_remove_stale_lock(lock_path: String, expected_owner: String =
 	DirAccess.remove_absolute(owner_path)
 	DirAccess.remove_absolute(lock_path)
 
-static func _wait_for_log_creation_after_lock_contention(log_path: String) -> FileAccess:
-	## Waits for another process to finish creating a missing log file.
+static func _wait_for_log_create_lock_release(lock_path: String) -> bool:
+	## Waits for a contended lock to clear or be recovered before retrying ownership.
 	var deadline = Time.get_ticks_msec() + CREATE_LOCK_STALE_MSEC
-	while Time.get_ticks_msec() < deadline:
-		var file = _open_log_file(log_path, FileAccess.READ_WRITE)
-		if file != null:
-			return file
-		if _last_open_error != ERR_FILE_NOT_FOUND:
-			return null
-		OS.delay_msec(CREATE_LOCK_RETRY_MSEC)
-	return null
-
-static func _wait_for_pending_log_creation(log_path: String, lock_path: String) -> FileAccess:
-	## Waits for a concurrent log creator to release its creation lock before appending.
-	var deadline = Time.get_ticks_msec() + CREATE_LOCK_TIMEOUT_MSEC
 	var stale_recovered := false
 	while true:
 		if not DirAccess.dir_exists_absolute(lock_path):
-			return _open_log_file(log_path, FileAccess.READ_WRITE)
+			return true
 		if Time.get_ticks_msec() >= deadline:
 			if not stale_recovered and _is_log_create_lock_stale(lock_path):
 				stale_recovered = true
 				var stale_owner = _read_log_create_lock_owner(lock_path)
 				_force_remove_stale_lock(lock_path, stale_owner)
 				continue
-			return null
+			return false
 		OS.delay_msec(CREATE_LOCK_RETRY_MSEC)
+
+static func _acquire_log_create_lock_for_append(lock_path: String) -> Dictionary:
+	## Acquires the cross-process append lock, waiting through real contention once.
+	var lock_result = _acquire_log_create_lock(lock_path)
+	var lock_owner: String = lock_result["owner"]
+	var should_wait: bool = lock_result["should_wait"]
+	if not lock_owner.is_empty():
+		return lock_result
+	if not should_wait:
+		return {"owner": "", "should_wait": false}
+	if not _wait_for_log_create_lock_release(lock_path):
+		return {"owner": "", "should_wait": true}
+	return _acquire_log_create_lock(lock_path)
 
 static func _build_lock_owner_token() -> String:
 	## Returns a best-effort unique token for lock ownership checks.

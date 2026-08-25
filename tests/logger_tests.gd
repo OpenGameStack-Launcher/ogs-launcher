@@ -141,15 +141,21 @@ func _test_existing_log_waits_for_pending_create_lock(results: Dictionary) -> vo
 	if ts_file == null:
 		_expect(false, "pending-lock timestamp should be writable", results)
 		return
-	ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0) - 10000))
+	ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0)))
 	ts_file.close()
 	var owner_file = FileAccess.open(lock_path + "/lock_owner", FileAccess.WRITE)
 	if owner_file == null:
 		_expect(false, "pending-lock owner should be writable", results)
 		return
-	owner_file.store_string("stale-owner")
+	owner_file.store_string("active-owner")
 	owner_file.close()
+	var releaser := Thread.new()
+	var start_err = releaser.start(_release_pending_create_lock.bind(lock_path))
+	if start_err != OK:
+		_expect(false, "pending-lock releaser thread should start", results)
+		return
 	OgsLogger.info("after pending create lock", {"component": "test"})
+	releaser.wait_to_finish()
 	var file = FileAccess.open(log_path, FileAccess.READ)
 	if file == null:
 		_expect(false, "existing log should remain readable after pending-lock recovery", results)
@@ -168,3 +174,10 @@ func _test_hard_lock_acquire_failure_is_not_treated_as_contention(results: Dicti
 	var should_wait: bool = lock_result["should_wait"]
 	_expect(owner.is_empty(), "hard lock-acquire failure should not return an owner", results)
 	_expect(not should_wait, "hard lock-acquire failure should not trigger lock-contention waiting", results)
+
+func _release_pending_create_lock(lock_path: String) -> void:
+	## Releases a synthetic pending create-lock after a short delay.
+	OS.delay_msec(50)
+	DirAccess.remove_absolute(lock_path + "/lock_time")
+	DirAccess.remove_absolute(lock_path + "/lock_owner")
+	DirAccess.remove_absolute(lock_path)
