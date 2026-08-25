@@ -83,7 +83,7 @@ func _run_seal_async(project_path: String) -> void:
 	_seal_thread = Thread.new()
 
 	# Yield one frame so the progress dialog renders before heavy work starts.
-	if _seal_dialog != null and _seal_dialog.is_inside_tree():
+	if is_instance_valid(_seal_dialog) and _seal_dialog.is_inside_tree():
 		await _seal_dialog.get_tree().process_frame
 
 	var start_err = _start_seal_thread(project_path)
@@ -99,9 +99,9 @@ func _run_seal_async(project_path: String) -> void:
 		return
 
 	while _seal_thread != null and _seal_thread.is_alive():
-		_update_progress_status()
-		if _seal_dialog == null or not _seal_dialog.is_inside_tree():
+		if not is_instance_valid(_seal_dialog) or not _seal_dialog.is_inside_tree():
 			break
+		_update_progress_status()
 		await _seal_dialog.get_tree().create_timer(0.25).timeout
 
 	var result = _seal_thread.wait_to_finish() if _seal_thread != null else {
