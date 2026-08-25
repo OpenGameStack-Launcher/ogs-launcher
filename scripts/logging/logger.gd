@@ -312,7 +312,7 @@ static func _acquire_log_create_lock(lock_path: String) -> Dictionary:
 				_force_remove_stale_lock(lock_path, owner_token)
 				return {"owner": "", "should_wait": false}
 			return {"owner": owner_token, "should_wait": false}
-		if err != ERR_ALREADY_EXISTS:
+		if err != ERR_ALREADY_EXISTS or not DirAccess.dir_exists_absolute(lock_path):
 			return {"owner": "", "should_wait": false}
 		if Time.get_ticks_msec() >= deadline:
 			if not stale_recovered and _is_log_create_lock_stale(lock_path):
