@@ -305,6 +305,7 @@ static func _acquire_log_create_lock(lock_path: String) -> Dictionary:
 				continue
 			return {"owner": "", "should_wait": true}
 		OS.delay_msec(CREATE_LOCK_RETRY_MSEC)
+	return {"owner": "", "should_wait": false}
 
 static func _release_log_create_lock(lock_path: String, owner_token: String) -> void:
 	## Releases the cross-process lock used while creating the log file.
@@ -416,6 +417,7 @@ static func _wait_for_log_create_lock_release(lock_path: String) -> bool:
 				continue
 			return false
 		OS.delay_msec(CREATE_LOCK_RETRY_MSEC)
+	return false
 
 static func _acquire_log_create_lock_for_append(lock_path: String) -> Dictionary:
 	## Acquires the cross-process append lock, waiting through bounded contention.

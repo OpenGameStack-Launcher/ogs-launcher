@@ -9,10 +9,10 @@ class_name ToolConfigInjector
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 const GODOT_OFFLINE_CACHE_ROOT = "user://ogs_offline_godot"
 const GODOT_EDITOR_SETTINGS_SEED_ENV = "OGS_GODOT_EDITOR_SETTINGS_SEED"
-const GODOT_EDITOR_SETTINGS_FALLBACK_PATHS := PackedStringArray([
+const GODOT_EDITOR_SETTINGS_FALLBACK_PATHS = [
 	"user://editor_settings-4.tres",
 	"user://editor_settings.tres"
-])
+]
 
 static func apply(tool_id: String, project_dir: String, launch_project_dir: String = "") -> Dictionary:
 	## Applies offline configuration for a given tool.
@@ -215,7 +215,6 @@ static func _merge_editor_settings_resource(seed_text: String, profile_path: Str
 			if replaced:
 				continue
 		merged_lines.append(line)
-	}
 	if in_resource:
 		for key in pending_keys:
 			merged_lines.append("%s = %s" % [key, offline_values[key]])
