@@ -152,6 +152,11 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 			_write_mutex.unlock()
 			return
 
+	if not creation_lock_path.is_empty() and not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
+		file.close()
+		_release_log_create_lock(creation_lock_path, creation_lock_owner)
+		_write_mutex.unlock()
+		return
 	file.seek_end()
 	file.store_string(JSON.stringify(entry) + "\n")
 	file.close()
@@ -423,18 +428,12 @@ static func _create_log_file_if_missing(log_path: String, lock_path: String, loc
 	if temp_file == null:
 		return false
 	temp_file.close()
+	# Refresh immediately before the rename to minimise the gap where a
+	# contender could reclaim an expired lock and create the log file between
+	# our last existence check and the rename.
 	if not _refresh_log_create_lock_timestamp(lock_path, lock_owner):
 		DirAccess.remove_absolute(temp_path)
 		return false
-	if FileAccess.file_exists(log_path):
-		DirAccess.remove_absolute(temp_path)
-		return true
-	if not _refresh_log_create_lock_timestamp(lock_path, lock_owner):
-		DirAccess.remove_absolute(temp_path)
-		return false
-	if FileAccess.file_exists(log_path):
-		DirAccess.remove_absolute(temp_path)
-		return true
 	var rename_err = DirAccess.rename_absolute(temp_path, absolute_log_path)
 	if rename_err != OK:
 		DirAccess.remove_absolute(temp_path)

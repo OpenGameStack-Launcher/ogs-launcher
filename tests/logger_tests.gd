@@ -361,6 +361,7 @@ func _test_rotation_runs_after_pending_create_lock(results: Dictionary) -> void:
 	var rotated_contents = rotated.get_as_text()
 	rotated.close()
 	_expect(rotated_contents == original_contents, "rotation backup should preserve the pre-append oversized contents", results)
+	_expect(rotated_contents.find("entry after rotation contention") == -1, "rotation backup should not contain the new entry written after rotation", results)
 	var active = FileAccess.open(log_path, FileAccess.READ)
 	if active == null:
 		_expect(false, "active log should remain readable after rotation contention", results)
@@ -444,6 +445,5 @@ func _test_partial_metadata_init_failure_removes_lock_directory(results: Diction
 func _release_pending_create_lock(lock_path: String, delay_msec: int) -> void:
 	## Releases a synthetic pending create-lock after a caller-controlled delay.
 	OS.delay_msec(delay_msec)
-	DirAccess.remove_absolute(lock_path + "/lock_time")
-	DirAccess.remove_absolute(lock_path + "/lock_owner")
+	OgsLogger._remove_lock_directory_contents(lock_path)
 	DirAccess.remove_absolute(lock_path)
