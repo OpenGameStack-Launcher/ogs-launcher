@@ -107,7 +107,8 @@ func _cleanup_dir(path: String) -> void:
 			entry = dir.get_next()
 			continue
 		var full_path = absolute_path.path_join(entry)
-		if dir.current_is_dir():
+		var is_directory = dir.current_is_dir()
+		if is_directory:
 			_cleanup_dir(full_path)
 		else:
 			DirAccess.remove_absolute(full_path)

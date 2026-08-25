@@ -111,7 +111,7 @@ static func launch(tool_entry: Dictionary, project_dir: String, target_file: Str
 			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "offline_inject", "tool": tool_id})
 			return _error_result(LaunchError.OFFLINE_CONFIG_FAILED, inject["error_message"])
 		args.append_array(inject["args"])
-	elif tool_id == "godot":
+	else:
 		ToolConfigInjector.clear(tool_id, launch_project_dir)
 	
 	# Spawn the process
