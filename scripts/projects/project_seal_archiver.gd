@@ -77,6 +77,7 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 
 		var start_error = zipper.start_file(relative_path)
 		if start_error != OK:
+			source_file.close()
 			zipper.close()
 			result.errors.append("Failed to add file to zip: %s" % relative_path)
 			OgsLogger.error("sealed_zip_start_file_failed", {

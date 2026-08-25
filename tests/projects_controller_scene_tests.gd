@@ -277,10 +277,11 @@ func _test_launch_after_click_uses_selected_tool(results: Dictionary) -> void:
 	var ctx = _build_controller(storage_path)
 	var controller = ctx["controller"]
 	var status_label: Label = ctx["status"]
-	var tools_list: Control = ctx["list"]
+	var tools_list: Control = ctx.get("list")
+	_expect(tools_list != null, "tools list should exist in launch-click test context", results)
 	var added = controller.add_project_from_path("res://samples/sample_project")
 	_expect(added, "project should add successfully for launch-click test", results)
-	if added and tools_list.item_count > 0:
+	if added and tools_list != null and tools_list.item_count > 0:
 		tools_list.item_clicked.emit(0, Vector2.ZERO, 1)
 		controller._on_launch_tool_pressed()
 		_expect(status_label.text.find("No tool selected") == -1, "launch after click should not report no-selection", results)
