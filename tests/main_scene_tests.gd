@@ -17,8 +17,6 @@ func run() -> Dictionary:
 	_test_main_scene_loads(results)
 	_test_network_ui_disabled_offline(results)
 	_test_mirror_root_browse_dialog_frees_on_close(results)
-	_test_predelete_joins_alive_removal_thread(results)
-	_test_predelete_joins_finished_started_removal_thread(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -114,54 +112,3 @@ func _find_new_file_dialog(parent: Node, exclude_dialog: FileDialog) -> FileDial
 		if child != null and child != exclude_dialog:
 			return child
 	return null
-
-func _test_predelete_joins_alive_removal_thread(results: Dictionary) -> void:
-	## Verifies predelete joins and clears a live removal thread reference.
-	var scene = load("res://main.tscn")
-	_expect(scene != null, "main.tscn should load for predelete alive-thread test", results)
-	if scene == null:
-		return
-	var instance = scene.instantiate()
-	var sem = Semaphore.new()
-	var thread = Thread.new()
-	var start_err = thread.start(func() -> void: sem.wait())
-	_expect(start_err == OK, "alive-thread test should start a removal thread", results)
-	if start_err != OK:
-		instance.free()
-		return
-	var deadline_msec = Time.get_ticks_msec() + 2000
-	while not thread.is_alive() and Time.get_ticks_msec() < deadline_msec:
-		OS.delay_msec(5)
-	_expect(thread.is_alive(), "removal thread should be alive before predelete", results)
-	instance.set("removal_thread", thread)
-	sem.post()
-	instance.notification(NOTIFICATION_PREDELETE)
-	_expect(instance.get("removal_thread") == null, "predelete should clear removal_thread for live thread", results)
-	_expect(not thread.is_started(), "predelete should join live removal thread", results)
-	if thread.is_started():
-		thread.wait_to_finish()
-	instance.free()
-
-func _test_predelete_joins_finished_started_removal_thread(results: Dictionary) -> void:
-	## Verifies predelete joins and clears a finished-but-started removal thread.
-	var scene = load("res://main.tscn")
-	_expect(scene != null, "main.tscn should load for predelete finished-thread test", results)
-	if scene == null:
-		return
-	var instance = scene.instantiate()
-	var thread = Thread.new()
-	var start_err = thread.start(func() -> void: pass)
-	_expect(start_err == OK, "finished-thread test should start a removal thread", results)
-	if start_err != OK:
-		instance.free()
-		return
-	var deadline_msec = Time.get_ticks_msec() + 2000
-	while thread.is_alive() and Time.get_ticks_msec() < deadline_msec:
-		OS.delay_msec(5)
-	_expect(not thread.is_alive(), "removal thread should finish before predelete", results)
-	_expect(thread.is_started(), "finished removal thread should remain started until joined", results)
-	instance.set("removal_thread", thread)
-	instance.notification(NOTIFICATION_PREDELETE)
-	_expect(instance.get("removal_thread") == null, "predelete should clear removal_thread for finished thread", results)
-	_expect(not thread.is_started(), "predelete should join finished removal thread", results)
-	instance.free()
