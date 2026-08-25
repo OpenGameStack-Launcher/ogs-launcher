@@ -269,9 +269,16 @@ static func _acquire_log_create_lock(lock_path: String) -> Dictionary:
 				_force_remove_stale_lock(lock_path)
 				return {"owner": "", "should_wait": false}
 			ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0)))
+			ts_file.flush()
+			var ts_write_ok = ts_file.get_error() == OK
 			ts_file.close()
 			owner_file.store_string(owner_token)
+			owner_file.flush()
+			var owner_write_ok = owner_file.get_error() == OK
 			owner_file.close()
+			if not ts_write_ok or not owner_write_ok:
+				_force_remove_stale_lock(lock_path)
+				return {"owner": "", "should_wait": false}
 			return {"owner": owner_token, "should_wait": false}
 		if err != ERR_ALREADY_EXISTS:
 			return {"owner": "", "should_wait": false}
@@ -303,11 +310,28 @@ static func _refresh_log_create_lock_timestamp(lock_path: String, owner_token: S
 	if _read_log_create_lock_owner(lock_path) != owner_token:
 		return false
 	var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
-	var ts_file = FileAccess.open(ts_path, FileAccess.WRITE)
-	if ts_file == null:
+	var refreshed = _atomic_write_text_file(ts_path, str(int(Time.get_unix_time_from_system() * 1000.0)))
+	if not refreshed:
 		return false
-	ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0)))
-	ts_file.close()
+	return _read_log_create_lock_owner(lock_path) == owner_token
+
+static func _atomic_write_text_file(path: String, value: String) -> bool:
+	## Atomically updates a text file by writing a temp file then replacing.
+	var temp_path = path + ".tmp." + str(OS.get_process_id()) + "." + str(Time.get_ticks_usec())
+	var temp_file = FileAccess.open(temp_path, FileAccess.WRITE)
+	if temp_file == null:
+		return false
+	temp_file.store_string(value)
+	temp_file.flush()
+	var write_ok = temp_file.get_error() == OK
+	temp_file.close()
+	if not write_ok:
+		DirAccess.remove_absolute(temp_path)
+		return false
+	var rename_err = DirAccess.rename_absolute(temp_path, path)
+	if rename_err != OK:
+		DirAccess.remove_absolute(temp_path)
+		return false
 	return true
 
 static func _is_log_create_lock_stale(lock_path: String) -> bool:
