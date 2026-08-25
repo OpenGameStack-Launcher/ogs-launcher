@@ -51,13 +51,25 @@ static func apply(tool_id: String, project_dir: String, launch_project_dir: Stri
 
 static func _apply_godot_overrides(project_dir: String) -> Dictionary:
 	## Writes project-local overrides to disable network features.
-	var override_path = project_dir.path_join("override.cfg")
+	var editor_settings_dir = project_dir.path_join(".ogs_offline_editor_settings")
+	var absolute_editor_settings_dir = editor_settings_dir
+	if absolute_editor_settings_dir.begins_with("user://") or not absolute_editor_settings_dir.is_absolute_path():
+		absolute_editor_settings_dir = ProjectSettings.globalize_path(absolute_editor_settings_dir)
+	var mkdir_err = DirAccess.make_dir_recursive_absolute(absolute_editor_settings_dir)
+	if mkdir_err != OK and not DirAccess.dir_exists_absolute(absolute_editor_settings_dir):
+		return {
+			"success": false,
+			"error_message": "Failed to create editor settings directory: %s" % absolute_editor_settings_dir,
+			"args": PackedStringArray()
+		}
+
 	var config = ConfigFile.new()
-	var load_err = config.load(override_path)
+	var settings_path = absolute_editor_settings_dir.path_join("editor_settings-4.tres")
+	var load_err = config.load(settings_path)
 	if load_err != OK and load_err != ERR_FILE_NOT_FOUND:
 		return {
 			"success": false,
-			"error_message": "Failed to load override.cfg: %s" % override_path,
+			"error_message": "Failed to load editor settings: %s" % settings_path,
 			"args": PackedStringArray()
 		}
 	
@@ -66,12 +78,12 @@ static func _apply_godot_overrides(project_dir: String) -> Dictionary:
 	config.set_value("network/http_proxy", "enabled", false)
 	config.set_value("network/http_proxy", "host", "")
 	config.set_value("network/http_proxy", "port", 0)
-	var save_err = config.save(override_path)
+	var save_err = config.save(settings_path)
 	if save_err != OK:
 		OgsLogger.warn("tool_config_failed", {"component": "launcher", "tool": "godot"})
 		return {
 			"success": false,
-			"error_message": "Failed to save override.cfg: %s" % override_path,
+			"error_message": "Failed to save editor settings: %s" % settings_path,
 			"args": PackedStringArray()
 		}
 
@@ -80,7 +92,7 @@ static func _apply_godot_overrides(project_dir: String) -> Dictionary:
 	return {
 		"success": true,
 		"error_message": "",
-		"args": PackedStringArray()
+		"args": PackedStringArray(["--editor-settings", absolute_editor_settings_dir])
 	}
 
 static func clear(tool_id: String, project_dir: String) -> void:
@@ -104,6 +116,7 @@ static func _clear_godot_overrides(project_dir: String) -> void:
 ## void
 	var override_path = project_dir.path_join("override.cfg")
 	var profile_path = project_dir.path_join(".ogs_offline.profile")
+	var editor_settings_path = project_dir.path_join(".ogs_offline_editor_settings").path_join("editor_settings-4.tres")
 	var config = ConfigFile.new()
 	var load_err = config.load(override_path)
 	if load_err == OK:
@@ -125,6 +138,7 @@ static func _clear_godot_overrides(project_dir: String) -> void:
 		_remove_file_if_exists(profile_path)
 	else:
 		OgsLogger.warn("tool_config_cleanup_failed", {"component": "launcher", "tool": "godot"})
+	_remove_file_if_exists(editor_settings_path)
 
 static func _erase_empty_sections(config: ConfigFile, sections: Array[String]) -> void:
 	## Removes empty override sections so cleanup can delete fully managed files.
@@ -138,7 +152,13 @@ static func _remove_file_if_exists(file_path: String) -> void:
 		var absolute_path = file_path
 		if absolute_path.begins_with("user://") or not absolute_path.is_absolute_path():
 			absolute_path = ProjectSettings.globalize_path(absolute_path)
-		DirAccess.remove_absolute(absolute_path)
+		var remove_err = DirAccess.remove_absolute(absolute_path)
+		if remove_err != OK:
+			OgsLogger.warn("tool_config_cleanup_failed", {
+				"component": "launcher",
+				"absolute_path": absolute_path,
+				"error_code": remove_err
+			})
 
 static func _blender_offline_args() -> PackedStringArray:
 	## Builds Blender arguments to disable online access at launch.

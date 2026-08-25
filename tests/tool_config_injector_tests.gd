@@ -35,10 +35,11 @@ func _test_blender_args(results: Dictionary) -> void:
 	_expect(args[0] == "--python-expr", "first arg should be --python-expr", results)
 
 func _test_godot_settings_written(results: Dictionary) -> void:
-	## Verifies Godot override.cfg is written under the launched project and cleaned up.
+	## Verifies Godot offline editor settings are written under the launched project and cleaned up.
 	var test_dir = "user://test_injector_godot_%s" % str(Time.get_ticks_msec())
 	var launch_project_dir = test_dir.path_join("project_source")
-	DirAccess.make_dir_recursive_absolute(launch_project_dir)
+	var absolute_launch_project_dir = ProjectSettings.globalize_path(launch_project_dir)
+	DirAccess.make_dir_recursive_absolute(absolute_launch_project_dir)
 	var project_file = FileAccess.open(launch_project_dir.path_join("project.godot"), FileAccess.WRITE)
 	if project_file != null:
 		project_file.store_string("[application]\nconfig/name=\"ToolConfigInjectorTests\"\n")
@@ -49,11 +50,13 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 		stale_profile.close()
 	var result = ToolConfigInjector.apply("godot", test_dir, launch_project_dir)
 	_expect(result["success"], "godot injection should succeed", results)
-	_expect(not FileAccess.file_exists(test_dir.path_join("override.cfg")), "outer project root should not receive override.cfg", results)
-	var override_path = launch_project_dir.path_join("override.cfg")
+	var args: PackedStringArray = result["args"]
+	_expect(args.size() == 2, "godot injection should provide editor settings args", results)
+	_expect(args[0] == "--editor-settings", "first godot offline arg should be --editor-settings", results)
+	var settings_path = String(args[1]).path_join("editor_settings-4.tres")
 	var config = ConfigFile.new()
-	var load_err = config.load(override_path)
-	_expect(load_err == OK, "override.cfg should exist and load successfully", results)
+	var load_err = config.load(settings_path)
+	_expect(load_err == OK, "editor settings should exist and load successfully", results)
 	_expect(config.get_value("asset_library", "use_threads", true) == false, "asset_library/use_threads should be false", results)
 	_expect(int(config.get_value("network/debug", "bandwidth_limiter", 1)) == 0, "network/debug/bandwidth_limiter should be 0", results)
 	_expect(config.get_value("network/http_proxy", "enabled", true) == false, "network/http_proxy/enabled should be false", results)
@@ -61,7 +64,7 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 	_expect(int(config.get_value("network/http_proxy", "port", 1)) == 0, "network/http_proxy/port should be 0", results)
 	_expect(not FileAccess.file_exists(launch_project_dir.path_join(".ogs_offline.profile")), "stale offline profile should be removed", results)
 	ToolConfigInjector.clear("godot", launch_project_dir)
-	_expect(not FileAccess.file_exists(override_path), "override.cfg should be removed when offline cleanup runs", results)
+	_expect(not FileAccess.file_exists(settings_path), "editor settings should be removed when offline cleanup runs", results)
 	_cleanup_dir(test_dir)
 
 func _test_krita_placeholder(results: Dictionary) -> void:
