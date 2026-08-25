@@ -120,7 +120,8 @@ static func _erase_empty_sections(config: ConfigFile, sections: Array[String]) -
 static func _remove_file_if_exists(file_path: String) -> void:
 	## Deletes a file when present so stale offline artifacts do not affect later launches.
 	if FileAccess.file_exists(file_path):
-		DirAccess.remove_absolute(file_path)
+		var absolute_path = ProjectSettings.globalize_path(file_path) if file_path.begins_with("user://") else file_path
+		DirAccess.remove_absolute(absolute_path)
 
 static func _blender_offline_args() -> PackedStringArray:
 	## Builds Blender arguments to disable online access at launch.
