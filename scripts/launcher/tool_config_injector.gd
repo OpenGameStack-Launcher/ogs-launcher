@@ -330,7 +330,7 @@ static func _write_placeholder_override(tool_id: String, project_dir: String) ->
 	}
 
 static func _hash_project_id(project_dir: String) -> String:
-	var normalized = project_dir.strip_edges().to_lower()
+	var normalized = project_dir.strip_edges()
 	var hasher = HashingContext.new()
 	var start_err = hasher.start(HashingContext.HASH_SHA256)
 	if start_err != OK:

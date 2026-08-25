@@ -48,6 +48,13 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 	if existing_profile != null:
 		existing_profile.store_string("preexisting profile")
 		existing_profile.close()
+	var seed_settings_path = launch_project_dir.path_join("seed_editor_settings-4.tres")
+	var sentinel_seed_settings_text = "[gd_resource type=\"EditorSettings\" format=3]\n\n[resource]\ninterface/editor/editor_language = \"fr\"\n"
+	var seed_settings_file = FileAccess.open(seed_settings_path, FileAccess.WRITE)
+	_expect(seed_settings_file != null, "seed editor settings fixture should be writable", results)
+	if seed_settings_file != null:
+		seed_settings_file.store_string(sentinel_seed_settings_text)
+		seed_settings_file.close()
 	var global_settings_path = "user://editor_settings-4.tres"
 	var had_global_settings = FileAccess.file_exists(global_settings_path)
 	var original_global_settings_text = ""
@@ -57,14 +64,8 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 		if existing_global_settings != null:
 			original_global_settings_text = existing_global_settings.get_as_text()
 			existing_global_settings.close()
-	var sentinel_global_settings_text = "[gd_resource type=\"EditorSettings\" format=3]\n\n[resource]\ninterface/editor/editor_language = \"fr\"\n"
-	var global_settings_file = FileAccess.open(global_settings_path, FileAccess.WRITE)
-	_expect(global_settings_file != null, "global editor settings fixture should be writable", results)
-	if global_settings_file != null:
-		global_settings_file.store_string(sentinel_global_settings_text)
-		global_settings_file.close()
 	var previous_seed_env = OS.get_environment(ToolConfigInjector.GODOT_EDITOR_SETTINGS_SEED_ENV)
-	OS.set_environment(ToolConfigInjector.GODOT_EDITOR_SETTINGS_SEED_ENV, "")
+	OS.set_environment(ToolConfigInjector.GODOT_EDITOR_SETTINGS_SEED_ENV, seed_settings_path)
 	var result = ToolConfigInjector.apply("godot", test_dir, launch_project_dir)
 	OS.set_environment(ToolConfigInjector.GODOT_EDITOR_SETTINGS_SEED_ENV, previous_seed_env)
 	_expect(result["success"], "godot injection should succeed", results)
@@ -92,11 +93,14 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 	else:
 		_expect(false, "editor settings should exist and be readable", results)
 	var unchanged_global_settings = FileAccess.open(global_settings_path, FileAccess.READ)
-	if unchanged_global_settings != null:
-		_expect(unchanged_global_settings.get_as_text() == sentinel_global_settings_text, "global editor settings should remain unchanged after apply", results)
-		unchanged_global_settings.close()
+	if had_global_settings:
+		if unchanged_global_settings != null:
+			_expect(unchanged_global_settings.get_as_text() == original_global_settings_text, "global editor settings should remain unchanged after apply", results)
+			unchanged_global_settings.close()
+		else:
+			_expect(false, "global editor settings should remain readable after apply", results)
 	else:
-		_expect(false, "global editor settings should remain readable after apply", results)
+		_expect(unchanged_global_settings == null, "global editor settings should not be created by apply", results)
 	var profile = EditorFeatureProfile.new()
 	_expect(profile.load_from_file(profile_path) == OK, "offline profile should load through Godot's feature profile loader", results)
 	_expect(profile.is_feature_disabled(EditorFeatureProfile.FEATURE_ASSET_LIB), "offline profile should disable asset_lib", results)
@@ -110,14 +114,6 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 	_expect(not FileAccess.file_exists(settings_path), "editor settings should be removed when offline cleanup runs", results)
 	_expect(not FileAccess.file_exists(profile_path), "offline profile should be removed when offline cleanup runs", results)
 	_expect(FileAccess.file_exists(launch_project_dir.path_join(".ogs_offline.profile")), "cleanup should not remove existing offline profile", results)
-	if had_global_settings:
-		var restore_global_settings = FileAccess.open(global_settings_path, FileAccess.WRITE)
-		_expect(restore_global_settings != null, "global editor settings should restore after test", results)
-		if restore_global_settings != null:
-			restore_global_settings.store_string(original_global_settings_text)
-			restore_global_settings.close()
-	else:
-		DirAccess.remove_absolute(ProjectSettings.globalize_path(global_settings_path))
 	_cleanup_dir(test_dir)
 
 func _test_krita_placeholder(results: Dictionary) -> void:
