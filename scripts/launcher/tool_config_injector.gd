@@ -8,21 +8,20 @@ class_name ToolConfigInjector
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
-const GODOT_SETTINGS_PRIMARY := "user://editor_settings-4.tres"
-const GODOT_SETTINGS_LEGACY := "user://editor_settings.tres"
-
-static func apply(tool_id: String, project_dir: String) -> Dictionary:
+static func apply(tool_id: String, project_dir: String, launch_project_dir: String = "") -> Dictionary:
 	## Applies offline configuration for a given tool.
 ## Parameters:
 ## tool_id (String): Tool identifier (e.g., "godot")
 ## project_dir (String): Project directory for contextual paths
+## launch_project_dir (String): Resolved directory launched by the child tool
 ## Returns:
 ## Dictionary: {"success": bool, "error_message": String, "args": PackedStringArray}
 ## 
 	var args = PackedStringArray()
+	var target_project_dir = launch_project_dir if not launch_project_dir.is_empty() else project_dir
 	match tool_id:
 		"godot":
-			var result = _apply_godot_overrides(project_dir)
+			var result = _apply_godot_overrides(target_project_dir)
 			if not result["success"]:
 				OgsLogger.warn("tool_config_failed", {"component": "launcher", "tool": "godot"})
 				return result
@@ -62,7 +61,11 @@ static func _apply_godot_overrides(project_dir: String) -> Dictionary:
 			"args": PackedStringArray()
 		}
 	
-	config.set_value("editor", "feature_profile", "res://.ogs_offline.profile")
+	config.set_value("asset_library", "use_threads", false)
+	config.set_value("network/debug", "bandwidth_limiter", 0)
+	config.set_value("network/http_proxy", "enabled", false)
+	config.set_value("network/http_proxy", "host", "")
+	config.set_value("network/http_proxy", "port", 0)
 	var save_err = config.save(override_path)
 	if save_err != OK:
 		OgsLogger.warn("tool_config_failed", {"component": "launcher", "tool": "godot"})
@@ -72,30 +75,52 @@ static func _apply_godot_overrides(project_dir: String) -> Dictionary:
 			"args": PackedStringArray()
 		}
 
-	var profile_path = project_dir.path_join(".ogs_offline.profile")
-	var profile = FileAccess.open(profile_path, FileAccess.WRITE)
-	if profile != null:
-		var payload = {
-			"type": "feature_profile",
-			"disabled_features": [
-				"asset_lib"
-			]
-		}
-		profile.store_string(JSON.stringify(payload, "\t"))
-		profile.close()
-	else:
-		return {
-			"success": false,
-			"error_message": "Failed to write .ogs_offline.profile",
-			"args": PackedStringArray()
-		}
-		
+	_remove_file_if_exists(project_dir.path_join(".ogs_offline.profile"))
 	OgsLogger.info("tool_config_applied", {"component": "launcher", "tool": "godot"})
 	return {
 		"success": true,
 		"error_message": "",
 		"args": PackedStringArray()
 	}
+
+static func clear(tool_id: String, project_dir: String) -> void:
+	## Removes tool-specific offline configuration before a normal launch.
+	match tool_id:
+		"godot":
+			_clear_godot_overrides(project_dir)
+		_:
+			return
+
+static func _clear_godot_overrides(project_dir: String) -> void:
+	## Removes OGS-managed Godot offline overrides from the launched project.
+	var override_path = project_dir.path_join("override.cfg")
+	var config = ConfigFile.new()
+	var load_err = config.load(override_path)
+	if load_err == OK:
+		config.erase_section_key("asset_library", "use_threads")
+		config.erase_section_key("network/debug", "bandwidth_limiter")
+		config.erase_section_key("network/http_proxy", "enabled")
+		config.erase_section_key("network/http_proxy", "host")
+		config.erase_section_key("network/http_proxy", "port")
+		_erase_empty_sections(config, ["asset_library", "network/debug", "network/http_proxy"])
+		if config.get_sections().is_empty():
+			_remove_file_if_exists(override_path)
+		elif config.save(override_path) != OK:
+			OgsLogger.warn("tool_config_cleanup_failed", {"component": "launcher", "tool": "godot"})
+	elif load_err != ERR_FILE_NOT_FOUND:
+		OgsLogger.warn("tool_config_cleanup_failed", {"component": "launcher", "tool": "godot"})
+	_remove_file_if_exists(project_dir.path_join(".ogs_offline.profile"))
+
+static func _erase_empty_sections(config: ConfigFile, sections: Array[String]) -> void:
+	## Removes empty override sections so cleanup can delete fully managed files.
+	for section in sections:
+		if config.has_section(section) and config.get_section_keys(section).is_empty():
+			config.erase_section(section)
+
+static func _remove_file_if_exists(file_path: String) -> void:
+	## Deletes a file when present so stale offline artifacts do not affect later launches.
+	if FileAccess.file_exists(file_path):
+		DirAccess.remove_absolute(file_path)
 
 static func _blender_offline_args() -> PackedStringArray:
 	## Builds Blender arguments to disable online access at launch.

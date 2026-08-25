@@ -106,11 +106,13 @@ static func launch(tool_entry: Dictionary, project_dir: String, target_file: Str
 	# Build tool-specific arguments
 	var args = _build_launch_arguments(tool_id, launch_project_dir, target_file)
 	if OfflineEnforcer.is_offline():
-		var inject = ToolConfigInjector.apply(tool_id, project_dir)
+		var inject = ToolConfigInjector.apply(tool_id, project_dir, launch_project_dir)
 		if not inject["success"]:
 			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "offline_inject", "tool": tool_id})
 			return _error_result(LaunchError.OFFLINE_CONFIG_FAILED, inject["error_message"])
 		args.append_array(inject["args"])
+	elif tool_id == "godot":
+		ToolConfigInjector.clear(tool_id, launch_project_dir)
 	
 	# Spawn the process
 	var launch_path = _resolve_launch_path(full_tool_path, tool_id)

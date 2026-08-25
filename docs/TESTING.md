@@ -132,7 +132,7 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
 
 - **[tests/tool_config_injector_tests.gd](tests/tool_config_injector_tests.gd)** — Validates tool-specific offline config injection.
   - Blender launch args include python override
-  - Godot editor settings overrides are written
+  - Godot project-local override.cfg is written under the launched project and cleaned up
   - Krita and Audacity placeholder overrides are written
 
 - **[tests/socket_blocker_tests.gd](tests/socket_blocker_tests.gd)** — Validates socket blocking behavior.
