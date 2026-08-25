@@ -22,7 +22,7 @@ static func apply(tool_id: String, project_dir: String) -> Dictionary:
 	var args = PackedStringArray()
 	match tool_id:
 		"godot":
-			var result = _apply_godot_overrides()
+			var result = _apply_godot_overrides(project_dir)
 			if not result["success"]:
 				OgsLogger.warn("tool_config_failed", {"component": "launcher", "tool": "godot"})
 				return result
@@ -50,46 +50,52 @@ static func apply(tool_id: String, project_dir: String) -> Dictionary:
 		"args": args
 	}
 
-static func _apply_godot_overrides() -> Dictionary:
-	## Writes editor settings overrides to disable network features.
-	var settings_path = _get_godot_settings_path()
+static func _apply_godot_overrides(project_dir: String) -> Dictionary:
+	## Writes project-local overrides to disable network features.
+	var override_path = project_dir.path_join("override.cfg")
 	var config = ConfigFile.new()
-	var load_err = config.load(settings_path)
+	var load_err = config.load(override_path)
 	if load_err != OK and load_err != ERR_FILE_NOT_FOUND:
 		return {
 			"success": false,
-			"error_message": "Failed to load Godot settings: %s" % settings_path,
+			"error_message": "Failed to load override.cfg: %s" % override_path,
 			"args": PackedStringArray()
 		}
-	# Asset Library and networking limits
-	config.set_value("asset_library", "use_threads", false)
-	config.set_value("network/debug", "bandwidth_limiter", 0)
-	# Disable proxy settings to avoid external routing
-	config.set_value("network/http_proxy", "enabled", false)
-	config.set_value("network/http_proxy", "host", "")
-	config.set_value("network/http_proxy", "port", 0)
-	var save_err = config.save(settings_path)
+	
+	config.set_value("editor", "feature_profile", "res://.ogs_offline.profile")
+	var save_err = config.save(override_path)
 	if save_err != OK:
 		OgsLogger.warn("tool_config_failed", {"component": "launcher", "tool": "godot"})
 		return {
 			"success": false,
-			"error_message": "Failed to save Godot settings: %s" % settings_path,
+			"error_message": "Failed to save override.cfg: %s" % override_path,
 			"args": PackedStringArray()
 		}
+
+	var profile_path = project_dir.path_join(".ogs_offline.profile")
+	var profile = FileAccess.open(profile_path, FileAccess.WRITE)
+	if profile != null:
+		var payload = {
+			"type": "feature_profile",
+			"disabled_features": [
+				"asset_lib"
+			]
+		}
+		profile.store_string(JSON.stringify(payload, "\t"))
+		profile.close()
+	else:
+		return {
+			"success": false,
+			"error_message": "Failed to write .ogs_offline.profile",
+			"args": PackedStringArray()
+		}
+		
 	OgsLogger.info("tool_config_applied", {"component": "launcher", "tool": "godot"})
 	return {
 		"success": true,
 		"error_message": "",
 		"args": PackedStringArray()
 	}
-
-static func _get_godot_settings_path() -> String:
-	## Resolves the preferred editor settings path for Godot 4.x.
-	if FileAccess.file_exists(GODOT_SETTINGS_PRIMARY):
-		return GODOT_SETTINGS_PRIMARY
-	if FileAccess.file_exists(GODOT_SETTINGS_LEGACY):
-		return GODOT_SETTINGS_LEGACY
-	return GODOT_SETTINGS_PRIMARY
 
 static func _blender_offline_args() -> PackedStringArray:
 	## Builds Blender arguments to disable online access at launch.

@@ -35,15 +35,18 @@ func _test_blender_args(results: Dictionary) -> void:
 	_expect(args[0] == "--python-expr", "first arg should be --python-expr", results)
 
 func _test_godot_settings_written(results: Dictionary) -> void:
-	## Verifies Godot settings file is written with offline overrides.
-	var result = ToolConfigInjector.apply("godot", "res://")
+	## Verifies Godot override.cfg and profile are written with offline overrides.
+	var test_dir = "user://test_injector_godot"
+	DirAccess.make_dir_recursive_absolute(test_dir)
+	var result = ToolConfigInjector.apply("godot", test_dir)
 	_expect(result["success"], "godot injection should succeed", results)
-	var settings_path = ToolConfigInjector._get_godot_settings_path()
+	var override_path = test_dir.path_join("override.cfg")
 	var config = ConfigFile.new()
-	var load_err = config.load(settings_path)
-	_expect(load_err == OK or load_err == ERR_FILE_NOT_FOUND, "settings load should not error", results)
-	_expect(config.get_value("asset_library", "use_threads", true) == false, "asset_library/use_threads should be false", results)
-	_expect(int(config.get_value("network/debug", "bandwidth_limiter", 1)) == 0, "network/debug/bandwidth_limiter should be 0", results)
+	var load_err = config.load(override_path)
+	_expect(load_err == OK, "override.cfg should exist and load successfully", results)
+	_expect(config.get_value("editor", "feature_profile", "") == "res://.ogs_offline.profile", "editor/feature_profile should be set", results)
+	var profile_path = test_dir.path_join(".ogs_offline.profile")
+	_expect(FileAccess.file_exists(profile_path), "offline profile should exist", results)
 
 func _test_krita_placeholder(results: Dictionary) -> void:
 	## Verifies Krita placeholder override file and env flag are set.
