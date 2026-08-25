@@ -156,6 +156,9 @@ func _notification(what: int) -> void:
 	if what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		if projects_controller != null and projects_controller.has_meta("project_explorer_instance"):
 			projects_controller.get_meta("project_explorer_instance").refresh()
+	elif what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
+		if tools_page_controller != null:
+			tools_page_controller.cleanup()
 
 func _ready() -> void:
 	_apply_global_theme()
@@ -345,3 +348,5 @@ func _apply_offline_ui(active: bool) -> void:
 func _exit_tree() -> void:
 	if layout_controller != null:
 		layout_controller.cleanup()
+	if tools_page_controller != null:
+		tools_page_controller.cleanup()
