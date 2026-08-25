@@ -129,9 +129,18 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 		return
 
 	var pre_length = file.get_length()
-	if pre_length > MAX_BYTES and (creation_lock_path.is_empty() or _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner)):
+	if pre_length > MAX_BYTES:
+		if not creation_lock_path.is_empty() and not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
+			file.close()
+			_release_log_create_lock(creation_lock_path, creation_lock_owner)
+			_write_mutex.unlock()
+			return
 		file.close()
-		_rotate_if_needed()
+		if not _rotate_if_needed():
+			if not creation_lock_path.is_empty():
+				_release_log_create_lock(creation_lock_path, creation_lock_owner)
+			_write_mutex.unlock()
+			return
 		file = _open_log_file(log_path, FileAccess.WRITE)
 		if file == null:
 			if not creation_lock_path.is_empty():
@@ -142,6 +151,12 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 	file.seek_end()
 	file.store_string(JSON.stringify(entry) + "\n")
 	file.close()
+	if _get_file_length(log_path) > MAX_BYTES:
+		if not creation_lock_path.is_empty() and not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
+			_release_log_create_lock(creation_lock_path, creation_lock_owner)
+			_write_mutex.unlock()
+			return
+		_rotate_if_needed()
 	if not creation_lock_path.is_empty():
 		_release_log_create_lock(creation_lock_path, creation_lock_owner)
 	_write_mutex.unlock()
@@ -248,8 +263,13 @@ static func _acquire_log_create_lock(lock_path: String) -> Dictionary:
 			if _read_log_create_lock_owner(lock_path) != owner_token:
 				return {"owner": "", "should_wait": false}
 			return {"owner": owner_token, "should_wait": false}
-		if err != ERR_ALREADY_EXISTS or not DirAccess.dir_exists_absolute(lock_path):
+		if err != ERR_ALREADY_EXISTS:
 			return {"owner": "", "should_wait": false}
+		if not DirAccess.dir_exists_absolute(lock_path):
+			if FileAccess.file_exists(lock_path):
+				return {"owner": "", "should_wait": false}
+			OS.delay_msec(CREATE_LOCK_RETRY_MSEC)
+			continue
 		if Time.get_ticks_msec() >= deadline:
 			if not stale_recovered and _is_log_create_lock_stale(lock_path):
 				stale_recovered = true
@@ -392,7 +412,7 @@ static func _create_log_file_if_missing(log_path: String, lock_path: String, loc
 	if FileAccess.file_exists(log_path):
 		return true
 	var absolute_log_path = ProjectSettings.globalize_path(log_path)
-	var temp_path = absolute_log_path + ".create." + str(OS.get_process_id()) + "." + str(Time.get_ticks_usec())
+	var temp_path = lock_path + "/log_create." + str(OS.get_process_id()) + "." + str(Time.get_ticks_usec())
 	var temp_file = FileAccess.open(temp_path, FileAccess.WRITE)
 	if temp_file == null:
 		return false
@@ -483,22 +503,25 @@ static func _consume_open_error_override(mode: int) -> void:
 		return
 	_test_open_error_override_uses[mode] = remaining_uses
 
-static func _rotate_if_needed() -> void:
+static func _rotate_if_needed() -> bool:
 	## Rotates logs when the active log exceeds the size threshold.
 	var log_path = _get_log_path()
 	if not FileAccess.file_exists(log_path):
-		return
+		return true
 	if _get_file_length(log_path) <= MAX_BYTES:
-		return
+		return true
 	var absolute = ProjectSettings.globalize_path(log_path)
 	for index in range(MAX_BACKUPS, 0, -1):
 		var older_user = log_path + "." + str(index)
 		var older = absolute + "." + str(index)
 		var newer = absolute + "." + str(index + 1)
 		if FileAccess.file_exists(older_user):
-			DirAccess.rename_absolute(older, newer)
+			if DirAccess.rename_absolute(older, newer) != OK:
+				return false
 	var first = absolute + ".1"
-	DirAccess.rename_absolute(absolute, first)
+	if DirAccess.rename_absolute(absolute, first) != OK:
+		return false
+	return not FileAccess.file_exists(log_path)
 
 static func _get_file_length(user_path: String) -> int:
 	## Returns the file length for a user:// path or 0 if missing.

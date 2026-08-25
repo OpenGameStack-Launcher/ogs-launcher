@@ -22,7 +22,8 @@ func run() -> Dictionary:
 	_test_ownerless_stale_cleanup_does_not_delete_live_lock(results)
 	_test_write_aborts_when_lock_refresh_fails(results)
 	_test_rotation_runs_after_pending_create_lock(results)
-	_test_rotation_is_skipped_when_lock_refresh_fails(results)
+	_test_rotation_runs_after_append_crosses_threshold(results)
+	_test_rotation_path_aborts_when_lock_refresh_fails(results)
 	_test_partial_metadata_init_failure_removes_lock_directory(results)
 	return results
 
@@ -369,8 +370,32 @@ func _test_rotation_runs_after_pending_create_lock(results: Dictionary) -> void:
 	_expect(active_contents.find("entry after rotation contention") != -1, "active log should contain the new post-rotation entry", results)
 	_expect(active_contents.find("oversized entry") == -1, "active log should only contain the new entry after rotation", results)
 
-func _test_rotation_is_skipped_when_lock_refresh_fails(results: Dictionary) -> void:
-	## Verifies rotation is skipped when the post-write lock refresh fails.
+func _test_rotation_runs_after_append_crosses_threshold(results: Dictionary) -> void:
+	## Verifies append-triggered growth beyond MAX_BYTES rotates immediately.
+	OgsLogger.clear_logs_for_tests()
+	OgsLogger.set_level(OgsLogger.Level.INFO)
+	var log_path = "user://logs/ogs_launcher.log"
+	var log_dir = ProjectSettings.globalize_path("user://logs")
+	DirAccess.make_dir_recursive_absolute(log_dir)
+	var existing = FileAccess.open(log_path, FileAccess.WRITE)
+	if existing == null:
+		_expect(false, "near-threshold log should be creatable for post-append rotation test", results)
+		return
+	existing.store_string("near-threshold entry\n" + "y".repeat(OgsLogger.MAX_BYTES - 128))
+	existing.close()
+	OgsLogger.info("entry crossing threshold " + "z".repeat(512), {"component": "test"})
+	var rotated_path = log_path + ".1"
+	_expect(FileAccess.file_exists(rotated_path), "append crossing MAX_BYTES should rotate immediately", results)
+	var rotated = FileAccess.open(rotated_path, FileAccess.READ)
+	if rotated == null:
+		_expect(false, "post-append rotated backup should be readable", results)
+		return
+	var rotated_contents = rotated.get_as_text()
+	rotated.close()
+	_expect(rotated_contents.find("entry crossing threshold") != -1, "post-append rotation backup should include the appended entry", results)
+
+func _test_rotation_path_aborts_when_lock_refresh_fails(results: Dictionary) -> void:
+	## Verifies the pre-rotation ownership refresh aborts without appending.
 	OgsLogger.clear_logs_for_tests()
 	OgsLogger.set_level(OgsLogger.Level.INFO)
 	var log_path = "user://logs/ogs_launcher.log"
@@ -385,15 +410,15 @@ func _test_rotation_is_skipped_when_lock_refresh_fails(results: Dictionary) -> v
 	OgsLogger.set_lock_refresh_failure_call_for_tests(2)
 	OgsLogger.info("entry before skipped rotation", {"component": "test"})
 	OgsLogger.clear_lock_refresh_failure_override_for_tests()
-	_expect(not FileAccess.file_exists(log_path + ".1"), "rotation should be skipped when the post-write refresh fails", results)
+	_expect(not FileAccess.file_exists(log_path + ".1"), "rotation backup should not be created after a pre-rotation refresh failure", results)
 	var active = FileAccess.open(log_path, FileAccess.READ)
 	if active == null:
-		_expect(false, "active log should remain readable when rotation is skipped", results)
+		_expect(false, "active log should remain readable after pre-rotation refresh failure", results)
 		return
 	var contents = active.get_as_text()
 	active.close()
-	_expect(contents.find("oversized entry") != -1, "skipped rotation should keep the oversized contents in the active log", results)
-	_expect(contents.find("entry before skipped rotation") != -1, "skipped rotation should still preserve the appended entry", results)
+	_expect(contents.find("oversized entry") != -1, "pre-rotation refresh failure should keep oversized contents in active log", results)
+	_expect(contents.find("entry before skipped rotation") == -1, "pre-rotation refresh failure should abort the append", results)
 
 func _test_partial_metadata_init_failure_removes_lock_directory(results: Dictionary) -> void:
 	## Verifies a failed metadata write during lock acquisition removes the claimed directory.
