@@ -33,6 +33,8 @@ static var _test_open_error_overrides: Dictionary = {}
 static var _test_open_error_override_uses: Dictionary = {}
 static var _test_lock_refresh_fail_on_call := -1
 static var _test_lock_refresh_call_count := 0
+static var _test_write_fail_on_call := -1
+static var _test_write_call_count := 0
 static var _last_open_error: int = OK
 
 static func set_level(level: int) -> void:
@@ -136,16 +138,14 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 			_write_mutex.unlock()
 			return
 		file.close()
-		if not _rotate_if_needed():
-			if not creation_lock_path.is_empty():
+		if _rotate_if_needed():
+			if not creation_lock_path.is_empty() and not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
 				_release_log_create_lock(creation_lock_path, creation_lock_owner)
-			_write_mutex.unlock()
-			return
-		if not creation_lock_path.is_empty() and not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
-			_release_log_create_lock(creation_lock_path, creation_lock_owner)
-			_write_mutex.unlock()
-			return
-		file = _open_log_file(log_path, FileAccess.WRITE)
+				_write_mutex.unlock()
+				return
+			file = _open_log_file(log_path, FileAccess.WRITE)
+		else:
+			file = _open_log_file(log_path, FileAccess.READ_WRITE)
 		if file == null:
 			if not creation_lock_path.is_empty():
 				_release_log_create_lock(creation_lock_path, creation_lock_owner)
@@ -174,6 +174,7 @@ static func clear_logs_for_tests() -> void:
 	## Removes log files for test isolation.
 	clear_open_error_overrides_for_tests()
 	clear_lock_refresh_failure_override_for_tests()
+	clear_write_failure_override_for_tests()
 	var base = _get_log_path()
 	_delete_file(base)
 	for index in range(1, MAX_BACKUPS + 1):
@@ -207,6 +208,16 @@ static func clear_lock_refresh_failure_override_for_tests() -> void:
 	_test_lock_refresh_fail_on_call = -1
 	_test_lock_refresh_call_count = 0
 
+static func set_write_failure_call_for_tests(call_index: int) -> void:
+	## Forces the Nth WRITE-mode open attempt to fail during tests.
+	_test_write_fail_on_call = call_index
+	_test_write_call_count = 0
+
+static func clear_write_failure_override_for_tests() -> void:
+	## Clears write-open failure overrides after tests.
+	_test_write_fail_on_call = -1
+	_test_write_call_count = 0
+
 static func _get_log_path() -> String:
 	## Returns the user:// log file path.
 	return LOG_DIR + "/" + LOG_FILE
@@ -239,6 +250,11 @@ static func _ensure_log_dir() -> void:
 
 static func _open_log_file(log_path: String, mode: int) -> FileAccess:
 	## Opens a log file while honoring test-only failure overrides.
+	if mode == FileAccess.WRITE:
+		_test_write_call_count += 1
+		if _test_write_fail_on_call == _test_write_call_count:
+			_last_open_error = ERR_CANT_CREATE
+			return null
 	if _test_open_error_overrides.has(mode):
 		_last_open_error = _test_open_error_overrides[mode]
 		_consume_open_error_override(mode)
@@ -403,6 +419,8 @@ static func _wait_for_log_create_lock_release(lock_path: String) -> bool:
 
 static func _acquire_log_create_lock_for_append(lock_path: String) -> Dictionary:
 	## Acquires the cross-process append lock, waiting through bounded contention.
+	## Guarantees one acquisition retry after a successful stale-lock recovery,
+	## even when the outer deadline has elapsed during the wait.
 	var deadline = Time.get_ticks_msec() + CREATE_LOCK_STALE_MSEC
 	while Time.get_ticks_msec() < deadline:
 		var lock_result = _acquire_log_create_lock(lock_path)
@@ -414,6 +432,7 @@ static func _acquire_log_create_lock_for_append(lock_path: String) -> Dictionary
 			return {"owner": "", "should_wait": false}
 		if not _wait_for_log_create_lock_release(lock_path):
 			return {"owner": "", "should_wait": true}
+		return _acquire_log_create_lock(lock_path)
 	return {"owner": "", "should_wait": true}
 
 static func _create_log_file_if_missing(log_path: String, lock_path: String, lock_owner: String) -> bool:
@@ -424,7 +443,7 @@ static func _create_log_file_if_missing(log_path: String, lock_path: String, loc
 		return true
 	var absolute_log_path = ProjectSettings.globalize_path(log_path)
 	var temp_path = lock_path + "/log_create." + str(OS.get_process_id()) + "." + str(Time.get_ticks_usec())
-	var temp_file = FileAccess.open(temp_path, FileAccess.WRITE)
+	var temp_file = _open_log_file(temp_path, FileAccess.WRITE)
 	if temp_file == null:
 		return false
 	temp_file.close()

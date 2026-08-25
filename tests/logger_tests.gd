@@ -25,6 +25,7 @@ func run() -> Dictionary:
 	_test_rotation_runs_after_append_crosses_threshold(results)
 	_test_rotation_path_aborts_when_lock_refresh_fails(results)
 	_test_partial_metadata_init_failure_removes_lock_directory(results)
+	_test_creation_temp_open_failure_releases_lock(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -441,6 +442,32 @@ func _test_partial_metadata_init_failure_removes_lock_directory(results: Diction
 	file.close()
 	_expect(contents.find("should not be written due to lock init failure") == -1, "failed-init entry should not appear in log", results)
 	_expect(contents.find("should be written after lock init failure recovery") != -1, "recovery entry should appear in log", results)
+
+func _test_creation_temp_open_failure_releases_lock(results: Dictionary) -> void:
+	## Verifies that a failed creation temp-file open releases the lock so a
+	## subsequent write can succeed. Uses set_write_failure_call_for_tests to
+	## let the two lock-init WRITEs (ts temp, owner temp) and the two pre-creation
+	## refresh WRITEs succeed, then fail on the fifth WRITE (the creation temp).
+	OgsLogger.clear_logs_for_tests()
+	OgsLogger.set_level(OgsLogger.Level.INFO)
+	var log_path = "user://logs/ogs_launcher.log"
+	var lock_path = ProjectSettings.globalize_path(log_path) + ".create_lock"
+	OgsLogger.set_open_error_override_for_tests(FileAccess.READ_WRITE, ERR_FILE_NOT_FOUND, 1)
+	OgsLogger.set_write_failure_call_for_tests(5)
+	OgsLogger.info("blocked by creation temp failure", {"component": "test"})
+	OgsLogger.clear_open_error_overrides_for_tests()
+	OgsLogger.clear_write_failure_override_for_tests()
+	_expect(not DirAccess.dir_exists_absolute(lock_path), "lock directory should be released after creation temp open failure", results)
+	OgsLogger.info("written after creation temp failure recovery", {"component": "test"})
+	_expect(FileAccess.file_exists(log_path), "log should exist after recovery from creation temp failure", results)
+	var file = FileAccess.open(log_path, FileAccess.READ)
+	if file == null:
+		_expect(false, "log should be readable after creation temp failure recovery", results)
+		return
+	var contents = file.get_as_text()
+	file.close()
+	_expect(contents.find("blocked by creation temp failure") == -1, "failed-init entry should not appear in log", results)
+	_expect(contents.find("written after creation temp failure recovery") != -1, "recovery entry should appear in log", results)
 
 func _release_pending_create_lock(lock_path: String, delay_msec: int) -> void:
 	## Releases a synthetic pending create-lock after a caller-controlled delay.
