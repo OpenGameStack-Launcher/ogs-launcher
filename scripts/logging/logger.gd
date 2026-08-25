@@ -132,7 +132,7 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 	var heartbeat_mutex: Mutex = null
 	if not creation_lock_path.is_empty():
 		lock_heartbeat = Thread.new()
-		heartbeat_state = [false]
+		heartbeat_state = [false, false]
 		heartbeat_mutex = Mutex.new()
 		var heartbeat_start_err = lock_heartbeat.start(func():
 			while true:
@@ -147,6 +147,9 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 					OS.delay_msec(sleep_msec)
 					waited_msec += sleep_msec
 				if not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
+					heartbeat_mutex.lock()
+					heartbeat_state[1] = true
+					heartbeat_mutex.unlock()
 					return
 		)
 		if heartbeat_start_err != OK:
@@ -154,19 +157,28 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 			_release_log_create_lock(creation_lock_path, creation_lock_owner)
 			_write_mutex.unlock()
 			return
+		if _did_lock_heartbeat_fail(heartbeat_state, heartbeat_mutex):
+			file.close()
+			_stop_lock_heartbeat(lock_heartbeat, heartbeat_state, heartbeat_mutex)
+			_release_log_create_lock(creation_lock_path, creation_lock_owner)
+			_write_mutex.unlock()
+			return
 
 	file.seek_end()
 	file.store_string(JSON.stringify(entry) + "\n")
 	var current_length = file.get_length()
+	if lock_heartbeat != null and _did_lock_heartbeat_fail(heartbeat_state, heartbeat_mutex):
+		file.close()
+		_stop_lock_heartbeat(lock_heartbeat, heartbeat_state, heartbeat_mutex)
+		_release_log_create_lock(creation_lock_path, creation_lock_owner)
+		_write_mutex.unlock()
+		return
 	file.close()
 
 	if current_length > MAX_BYTES and (creation_lock_path.is_empty() or _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner)):
 		_rotate_if_needed()
 	if lock_heartbeat != null:
-		heartbeat_mutex.lock()
-		heartbeat_state[0] = true
-		heartbeat_mutex.unlock()
-		lock_heartbeat.wait_to_finish()
+		_stop_lock_heartbeat(lock_heartbeat, heartbeat_state, heartbeat_mutex)
 	if not creation_lock_path.is_empty():
 		_release_log_create_lock(creation_lock_path, creation_lock_owner)
 	_write_mutex.unlock()
@@ -215,9 +227,7 @@ static func _open_log_file_for_append(log_path: String) -> Dictionary:
 		if not _refresh_log_create_lock_timestamp(lock_path, lock_owner):
 			_release_log_create_lock(lock_path, lock_owner)
 			return {"file": null, "lock_path": "", "lock_owner": ""}
-		var created = _open_log_file(log_path, FileAccess.WRITE)
-		if created != null:
-			created.close()
+		if _create_log_file_if_missing(log_path, lock_path, lock_owner):
 			file = _open_log_file(log_path, FileAccess.READ_WRITE)
 	if file == null:
 		_release_log_create_lock(lock_path, lock_owner)
@@ -359,11 +369,18 @@ static func _is_log_create_lock_older_than_stale_window(lock_path: String) -> bo
 static func _force_remove_stale_lock(lock_path: String, expected_owner: String = "") -> void:
 	## Removes a stale cross-process creation lock directory and its timestamp file.
 	var cleanup_path = lock_path
-	if not expected_owner.is_empty():
-		cleanup_path = _claim_lock_for_cleanup(lock_path, expected_owner)
-		if cleanup_path.is_empty():
+	var owner = expected_owner
+	if owner.is_empty():
+		owner = _read_log_create_lock_owner(lock_path)
+		if owner.is_empty():
 			return
-	elif not DirAccess.dir_exists_absolute(lock_path):
+	if not DirAccess.dir_exists_absolute(lock_path):
+		return
+	cleanup_path = _claim_lock_for_cleanup(lock_path, owner)
+	if cleanup_path.is_empty():
+		return
+	if not _is_log_create_lock_stale(cleanup_path):
+		_restore_claimed_lock_directory(cleanup_path, lock_path)
 		return
 	_remove_lock_directory_contents(cleanup_path)
 	DirAccess.remove_absolute(cleanup_path)
@@ -385,17 +402,43 @@ static func _wait_for_log_create_lock_release(lock_path: String) -> bool:
 		OS.delay_msec(CREATE_LOCK_RETRY_MSEC)
 
 static func _acquire_log_create_lock_for_append(lock_path: String) -> Dictionary:
-	## Acquires the cross-process append lock, waiting through real contention once.
-	var lock_result = _acquire_log_create_lock(lock_path)
-	var lock_owner: String = lock_result["owner"]
-	var should_wait: bool = lock_result["should_wait"]
-	if not lock_owner.is_empty():
-		return lock_result
-	if not should_wait:
-		return {"owner": "", "should_wait": false}
-	if not _wait_for_log_create_lock_release(lock_path):
-		return {"owner": "", "should_wait": true}
-	return _acquire_log_create_lock(lock_path)
+	## Acquires the cross-process append lock, waiting through bounded contention.
+	var deadline = Time.get_ticks_msec() + CREATE_LOCK_STALE_MSEC
+	while Time.get_ticks_msec() < deadline:
+		var lock_result = _acquire_log_create_lock(lock_path)
+		var lock_owner: String = lock_result["owner"]
+		var should_wait: bool = lock_result["should_wait"]
+		if not lock_owner.is_empty():
+			return lock_result
+		if not should_wait:
+			return {"owner": "", "should_wait": false}
+		if not _wait_for_log_create_lock_release(lock_path):
+			return {"owner": "", "should_wait": true}
+	return {"owner": "", "should_wait": true}
+
+static func _create_log_file_if_missing(log_path: String, lock_path: String, lock_owner: String) -> bool:
+	## Creates a missing log without truncating a replacement owner's newer file.
+	if not _refresh_log_create_lock_timestamp(lock_path, lock_owner):
+		return false
+	if FileAccess.file_exists(log_path):
+		return true
+	var absolute_log_path = ProjectSettings.globalize_path(log_path)
+	var temp_path = absolute_log_path + ".create." + str(OS.get_process_id()) + "." + str(Time.get_ticks_usec())
+	var temp_file = FileAccess.open(temp_path, FileAccess.WRITE)
+	if temp_file == null:
+		return false
+	temp_file.close()
+	if not _refresh_log_create_lock_timestamp(lock_path, lock_owner):
+		DirAccess.remove_absolute(temp_path)
+		return false
+	if FileAccess.file_exists(log_path):
+		DirAccess.remove_absolute(temp_path)
+		return true
+	var rename_err = DirAccess.rename_absolute(temp_path, absolute_log_path)
+	if rename_err != OK:
+		DirAccess.remove_absolute(temp_path)
+		return rename_err == ERR_ALREADY_EXISTS
+	return true
 
 static func _build_lock_owner_token() -> String:
 	## Returns a best-effort unique token for lock ownership checks.
@@ -421,10 +464,29 @@ static func _claim_lock_for_cleanup(lock_path: String, expected_owner: String) -
 	if DirAccess.rename_absolute(lock_path, cleanup_path) != OK:
 		return ""
 	if _read_log_create_lock_owner(cleanup_path) != expected_owner:
-		if not DirAccess.dir_exists_absolute(lock_path):
-			DirAccess.rename_absolute(cleanup_path, lock_path)
+		_restore_claimed_lock_directory(cleanup_path, lock_path)
 		return ""
 	return cleanup_path
+
+static func _restore_claimed_lock_directory(cleanup_path: String, lock_path: String) -> void:
+	## Restores a claimed lock directory when ownership revalidation fails.
+	if DirAccess.dir_exists_absolute(lock_path):
+		return
+	DirAccess.rename_absolute(cleanup_path, lock_path)
+
+static func _did_lock_heartbeat_fail(heartbeat_state: Array, heartbeat_mutex: Mutex) -> bool:
+	## Returns true when lock-heartbeat renewal failed during a log write.
+	heartbeat_mutex.lock()
+	var did_fail: bool = heartbeat_state[1]
+	heartbeat_mutex.unlock()
+	return did_fail
+
+static func _stop_lock_heartbeat(lock_heartbeat: Thread, heartbeat_state: Array, heartbeat_mutex: Mutex) -> void:
+	## Stops the lock-heartbeat worker before releasing cross-process ownership.
+	heartbeat_mutex.lock()
+	heartbeat_state[0] = true
+	heartbeat_mutex.unlock()
+	lock_heartbeat.wait_to_finish()
 
 static func _remove_lock_directory_contents(lock_path: String) -> void:
 	## Removes all files/directories inside a lock directory before deleting it.

@@ -18,6 +18,8 @@ func run() -> Dictionary:
 	_test_hard_lock_acquire_failure_is_not_treated_as_contention(results)
 	_test_stale_lock_cleanup_removes_temp_files(results)
 	_test_claimed_lock_cleanup_does_not_touch_replacement_owner(results)
+	_test_ownerless_stale_cleanup_does_not_delete_live_lock(results)
+	_test_write_aborts_when_lock_refresh_fails(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -249,6 +251,48 @@ func _test_claimed_lock_cleanup_does_not_touch_replacement_owner(results: Dictio
 	var replacement_owner_read = OgsLogger._read_log_create_lock_owner(lock_path)
 	_expect(replacement_owner_read == "owner-b", "replacement owner token should remain intact", results)
 	OgsLogger._force_remove_stale_lock(lock_path)
+
+func _test_ownerless_stale_cleanup_does_not_delete_live_lock(results: Dictionary) -> void:
+	## Verifies ownerless stale cleanup avoids deleting a lock with no owner token.
+	OgsLogger.clear_logs_for_tests()
+	var log_path = "user://logs/ogs_launcher.log"
+	var lock_path = ProjectSettings.globalize_path(log_path) + ".create_lock"
+	var log_dir = ProjectSettings.globalize_path("user://logs")
+	DirAccess.make_dir_recursive_absolute(log_dir)
+	DirAccess.make_dir_absolute(lock_path)
+	var ts_file = FileAccess.open(lock_path + "/lock_time", FileAccess.WRITE)
+	if ts_file == null:
+		_expect(false, "ownerless lock timestamp should be writable", results)
+		return
+	ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0)))
+	ts_file.close()
+	OgsLogger._force_remove_stale_lock(lock_path)
+	_expect(DirAccess.dir_exists_absolute(lock_path), "ownerless lock should remain when owner token is missing", results)
+	OgsLogger._remove_lock_directory_contents(lock_path)
+	DirAccess.remove_absolute(lock_path)
+
+func _test_write_aborts_when_lock_refresh_fails(results: Dictionary) -> void:
+	## Verifies lock ownership loss aborts append before writing.
+	OgsLogger.clear_logs_for_tests()
+	OgsLogger.set_level(OgsLogger.Level.INFO)
+	var log_path = "user://logs/ogs_launcher.log"
+	var existing = FileAccess.open(log_path, FileAccess.WRITE)
+	if existing == null:
+		_expect(false, "existing log should be creatable for refresh-failure test", results)
+		return
+	existing.store_string("existing entry\n")
+	existing.close()
+	OgsLogger.set_open_error_override_for_tests(FileAccess.WRITE, ERR_CANT_OPEN, 1)
+	OgsLogger.info("should not be written after refresh failure", {"component": "test"})
+	OgsLogger.clear_open_error_overrides_for_tests()
+	var file = FileAccess.open(log_path, FileAccess.READ)
+	if file == null:
+		_expect(false, "existing log should remain readable after refresh failure", results)
+		return
+	var contents = file.get_as_text()
+	file.close()
+	_expect(contents == "existing entry\n", "refresh failure should abort append without modifying existing log", results)
+	_expect(contents.find("should not be written after refresh failure") == -1, "refresh failure should not write the aborted entry", results)
 
 func _release_pending_create_lock(lock_path: String, delay_msec: int) -> void:
 	## Releases a synthetic pending create-lock after a caller-controlled delay.
