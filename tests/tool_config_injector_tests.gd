@@ -44,16 +44,21 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 	if project_file != null:
 		project_file.store_string("[application]\nconfig/name=\"ToolConfigInjectorTests\"\n")
 		project_file.close()
-	var stale_profile = FileAccess.open(launch_project_dir.path_join(".ogs_offline.profile"), FileAccess.WRITE)
-	if stale_profile != null:
-		stale_profile.store_string("stale")
-		stale_profile.close()
+	var existing_override = FileAccess.open(launch_project_dir.path_join("override.cfg"), FileAccess.WRITE)
+	if existing_override != null:
+		existing_override.store_string("[application]\nconfig/name=\"PreserveOverride\"\n")
+		existing_override.close()
+	var existing_profile = FileAccess.open(launch_project_dir.path_join(".ogs_offline.profile"), FileAccess.WRITE)
+	if existing_profile != null:
+		existing_profile.store_string("preexisting profile")
+		existing_profile.close()
 	var result = ToolConfigInjector.apply("godot", test_dir, launch_project_dir)
 	_expect(result["success"], "godot injection should succeed", results)
 	var args: PackedStringArray = result["args"]
 	_expect(args.size() == 2, "godot injection should provide editor settings args", results)
 	_expect(args[0] == "--editor-settings", "first godot offline arg should be --editor-settings", results)
-	var settings_path = String(args[1]).path_join("editor_settings-4.tres")
+	var settings_path = absolute_launch_project_dir.path_join(".ogs_offline_editor_settings").path_join("editor_settings-4.tres")
+	_expect(args[1] == settings_path, "second godot offline arg should be absolute editor settings file path", results)
 	var config = ConfigFile.new()
 	var load_err = config.load(settings_path)
 	_expect(load_err == OK, "editor settings should exist and load successfully", results)
@@ -62,9 +67,22 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 	_expect(config.get_value("network/http_proxy", "enabled", true) == false, "network/http_proxy/enabled should be false", results)
 	_expect(config.get_value("network/http_proxy", "host", "proxy") == "", "network/http_proxy/host should be empty", results)
 	_expect(int(config.get_value("network/http_proxy", "port", 1)) == 0, "network/http_proxy/port should be 0", results)
-	_expect(not FileAccess.file_exists(launch_project_dir.path_join(".ogs_offline.profile")), "stale offline profile should be removed", results)
+	var preserved_override = FileAccess.open(launch_project_dir.path_join("override.cfg"), FileAccess.READ)
+	if preserved_override != null:
+		_expect(preserved_override.get_as_text().contains("PreserveOverride"), "existing override.cfg should be preserved", results)
+		preserved_override.close()
+	else:
+		_expect(false, "existing override.cfg should remain readable", results)
+	var preserved_profile = FileAccess.open(launch_project_dir.path_join(".ogs_offline.profile"), FileAccess.READ)
+	if preserved_profile != null:
+		_expect(preserved_profile.get_as_text() == "preexisting profile", "existing offline profile should be preserved", results)
+		preserved_profile.close()
+	else:
+		_expect(false, "existing offline profile should remain readable", results)
 	ToolConfigInjector.clear("godot", launch_project_dir)
 	_expect(not FileAccess.file_exists(settings_path), "editor settings should be removed when offline cleanup runs", results)
+	_expect(FileAccess.file_exists(launch_project_dir.path_join("override.cfg")), "cleanup should not remove existing override.cfg", results)
+	_expect(FileAccess.file_exists(launch_project_dir.path_join(".ogs_offline.profile")), "cleanup should not remove existing offline profile", results)
 	_cleanup_dir(test_dir)
 
 func _test_krita_placeholder(results: Dictionary) -> void:
@@ -80,6 +98,9 @@ func _test_krita_placeholder(results: Dictionary) -> void:
 		file.close()
 		_expect(payload.has("project_id"), "krita override should include project_id", results)
 		_expect(not payload.has("project_dir"), "krita override should not include project_dir", results)
+	ToolConfigInjector.clear("krita", "res://")
+	_expect(OS.get_environment("OGS_OFFLINE_TOOL_KRITA") == "", "krita env flag should clear on cleanup", results)
+	_expect(not FileAccess.file_exists(file_path), "krita override file should be removed on cleanup", results)
 
 func _test_audacity_placeholder(results: Dictionary) -> void:
 	## Verifies Audacity placeholder override file and env flag are set.
@@ -94,6 +115,9 @@ func _test_audacity_placeholder(results: Dictionary) -> void:
 		file.close()
 		_expect(payload.has("project_id"), "audacity override should include project_id", results)
 		_expect(not payload.has("project_dir"), "audacity override should not include project_dir", results)
+	ToolConfigInjector.clear("audacity", "res://")
+	_expect(OS.get_environment("OGS_OFFLINE_TOOL_AUDACITY") == "", "audacity env flag should clear on cleanup", results)
+	_expect(not FileAccess.file_exists(file_path), "audacity override file should be removed on cleanup", results)
 
 func _cleanup_dir(path: String) -> void:
 	## Recursively removes temporary test directories created for injector fixtures.

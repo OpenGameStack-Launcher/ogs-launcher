@@ -25,6 +25,7 @@ static func apply(tool_id: String, project_dir: String, launch_project_dir: Stri
 			if not result["success"]:
 				OgsLogger.warn("tool_config_failed", {"component": "launcher", "tool": "godot"})
 				return result
+			args.append_array(result["args"])
 		"blender":
 			args.append_array(_blender_offline_args())
 			OgsLogger.info("tool_config_applied", {"component": "launcher", "tool": "blender"})
@@ -87,12 +88,11 @@ static func _apply_godot_overrides(project_dir: String) -> Dictionary:
 			"args": PackedStringArray()
 		}
 
-	_remove_file_if_exists(project_dir.path_join(".ogs_offline.profile"))
 	OgsLogger.info("tool_config_applied", {"component": "launcher", "tool": "godot"})
 	return {
 		"success": true,
 		"error_message": "",
-		"args": PackedStringArray(["--editor-settings", absolute_editor_settings_dir])
+		"args": PackedStringArray(["--editor-settings", settings_path])
 	}
 
 static func clear(tool_id: String, project_dir: String) -> void:
@@ -105,6 +105,8 @@ static func clear(tool_id: String, project_dir: String) -> void:
 	match tool_id:
 		"godot":
 			_clear_godot_overrides(project_dir)
+		"krita", "audacity":
+			_clear_placeholder_override(tool_id)
 		_:
 			return
 
@@ -114,37 +116,8 @@ static func _clear_godot_overrides(project_dir: String) -> void:
 ## project_dir (String): Resolved project directory used by the child tool
 ## Returns:
 ## void
-	var override_path = project_dir.path_join("override.cfg")
-	var profile_path = project_dir.path_join(".ogs_offline.profile")
 	var editor_settings_path = project_dir.path_join(".ogs_offline_editor_settings").path_join("editor_settings-4.tres")
-	var config = ConfigFile.new()
-	var load_err = config.load(override_path)
-	if load_err == OK:
-		config.erase_section_key("asset_library", "use_threads")
-		config.erase_section_key("network/debug", "bandwidth_limiter")
-		config.erase_section_key("network/http_proxy", "enabled")
-		config.erase_section_key("network/http_proxy", "host")
-		config.erase_section_key("network/http_proxy", "port")
-		_erase_empty_sections(config, ["asset_library", "network/debug", "network/http_proxy"])
-		if config.get_sections().is_empty():
-			_remove_file_if_exists(override_path)
-		elif config.save(override_path) == OK:
-			pass
-		else:
-			OgsLogger.warn("tool_config_cleanup_failed", {"component": "launcher", "tool": "godot"})
-			return
-		_remove_file_if_exists(profile_path)
-	elif load_err == ERR_FILE_NOT_FOUND:
-		_remove_file_if_exists(profile_path)
-	else:
-		OgsLogger.warn("tool_config_cleanup_failed", {"component": "launcher", "tool": "godot"})
 	_remove_file_if_exists(editor_settings_path)
-
-static func _erase_empty_sections(config: ConfigFile, sections: Array[String]) -> void:
-	## Removes empty override sections so cleanup can delete fully managed files.
-	for section in sections:
-		if config.has_section(section) and config.get_section_keys(section).is_empty():
-			config.erase_section(section)
 
 static func _remove_file_if_exists(file_path: String) -> void:
 	## Deletes a file when present so stale offline artifacts do not affect later launches.
@@ -187,6 +160,12 @@ static func _apply_placeholder_override(tool_id: String, project_dir: String, ar
 		"error_message": "",
 		"args": args
 	}
+
+static func _clear_placeholder_override(tool_id: String) -> void:
+	## Removes placeholder offline artifacts and env flags for tools using user:// overrides.
+	var file_path = "user://ogs_offline_overrides/%s.json" % tool_id
+	_remove_file_if_exists(file_path)
+	OS.set_environment("OGS_OFFLINE_TOOL_%s" % tool_id.to_upper(), "")
 
 static func _write_placeholder_override(tool_id: String, project_dir: String) -> Dictionary:
 	## Creates a placeholder override file in user storage.
