@@ -20,6 +20,21 @@ class FailingSealController:
 		## Forces a thread start failure so the controller's error path can be tested.
 		return ERR_CANT_CREATE
 
+class DialogFreedSealController:
+	extends SealController
+
+	var gate: Semaphore
+
+	func _threaded_seal_operation(_project_path: String) -> Dictionary:
+		## Holds the worker thread until the test releases it, then returns success.
+		gate.wait()
+		return {
+			"success": true,
+			"sealed_zip": "user://sealed/project.zip",
+			"project_size_mb": 1.5,
+			"tools_copied": ["Godot"]
+		}
+
 func run() -> Dictionary:
 	## Runs all SealController unit tests.
 	var results = {
@@ -32,6 +47,7 @@ func run() -> Dictionary:
 	_test_predelete_no_crash_when_thread_null(results)
 	_test_thread_reference_cleared_after_predelete(results)
 	await _test_thread_start_failure_clears_state(results)
+	await _test_dialog_freed_while_thread_alive(results)
 
 	return results
 
@@ -167,3 +183,93 @@ func _test_thread_start_failure_clears_state(results: Dictionary) -> void:
 
 	controller = null
 	dialog.free()
+
+## Test: _run_seal_async exits loop safely when dialog is freed while thread is alive.
+func _test_dialog_freed_while_thread_alive(results: Dictionary) -> void:
+	## Verifies that freeing the seal dialog while the background thread is alive
+	## causes the wait-loop to exit without touching freed UI, and that thread
+	## state is cleaned up correctly after the coroutine finishes.
+	var controller = DialogFreedSealController.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	dialog.add_child(status_label)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	var sem = Semaphore.new()
+	controller.gate = sem
+	controller.setup(dialog, status_label, output_label, open_button)
+	controller.seal_for_delivery("res://tests")
+
+	var tree = Engine.get_main_loop() as SceneTree
+	var thread_start_deadline_msec = Time.get_ticks_msec() + 3000
+	while controller.get("_seal_thread") == null and Time.get_ticks_msec() < thread_start_deadline_msec:
+		await tree.process_frame
+
+	var thread = controller.get("_seal_thread") as Thread
+	_expect(thread != null, "_seal_thread should be created when sealing starts", results)
+	if thread == null:
+		dialog.free()
+		controller = null
+		return
+
+	var thread_alive_deadline_msec = Time.get_ticks_msec() + 3000
+	while not thread.is_alive() and Time.get_ticks_msec() < thread_alive_deadline_msec:
+		await tree.process_frame
+	_expect(thread.is_alive(), "Thread should be alive before dialog is freed", results)
+	if not thread.is_alive():
+		if thread.is_started():
+			sem.post()
+			thread.wait_to_finish()
+		dialog.free()
+		controller = null
+		return
+
+	var emitted := {
+		"called": false,
+		"success": false,
+		"zip_path": ""
+	}
+	controller.seal_completed.connect(func(success: bool, zip_path: String) -> void:
+		emitted["called"] = true
+		emitted["success"] = success
+		emitted["zip_path"] = zip_path
+	)
+
+	# Free the dialog while the thread is still alive — this simulates the UI
+	# being torn down (e.g. scene change) before the seal completes.
+	dialog.free()
+
+	# Release the semaphore so the worker can finish and the coroutine can
+	# continue through the result-handling path.
+	sem.post()
+
+	var completion_deadline_msec = Time.get_ticks_msec() + 3000
+	while not emitted["called"] and Time.get_ticks_msec() < completion_deadline_msec:
+		await tree.process_frame
+
+	# After loop exit the coroutine should have nulled the thread field and
+	# cleared in-progress state without crashing.
+	_expect(emitted["called"], "seal_completed should emit after dialog teardown", results)
+	_expect(
+		emitted["success"] == true and emitted["zip_path"] == "user://sealed/project.zip",
+		"dialog teardown should still emit the successful seal result",
+		results
+	)
+	_expect(
+		controller.get("_seal_thread") == null,
+		"_seal_thread should be cleared after dialog teardown",
+		results
+	)
+	_expect(
+		controller.get("_seal_in_progress") == false,
+		"_seal_in_progress should reset after dialog teardown",
+		results
+	)
+	# The controller itself must not have crashed (reaching here is the assertion).
+	_expect(true, "Controller survived dialog-freed-while-thread-alive without crash", results)
+
+	controller = null
