@@ -116,14 +116,9 @@ func _run_tests_async() -> void:
 	
 	# Run all tests
 	for suite in test_suites:
-		var raw = suite.run()
-		var result: Dictionary
-		if raw is Signal:
-			result = await raw
-		elif raw is GDScriptFunctionState:
-			result = await raw.completed
-		else:
-			result = raw
+		var raw = await suite.run()
+		var result: Dictionary = raw if typeof(raw) == TYPE_DICTIONARY else {}
+
 		summary["passed"] += result["passed"]
 		summary["failed"] += result["failed"]
 		summary["failures"].append_array(result["failures"])

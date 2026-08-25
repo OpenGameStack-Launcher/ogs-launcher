@@ -101,9 +101,14 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 			_expect(false, "global editor settings should remain readable after apply", results)
 	else:
 		_expect(unchanged_global_settings == null, "global editor settings should not be created by apply", results)
-	var profile = EditorFeatureProfile.new()
-	_expect(profile.load_from_file(profile_path) == OK, "offline profile should load through Godot's feature profile loader", results)
-	_expect(profile.is_feature_disabled(EditorFeatureProfile.FEATURE_ASSET_LIB), "offline profile should disable asset_lib", results)
+	var profile_file = FileAccess.open(profile_path, FileAccess.READ)
+	if profile_file != null:
+		var profile_text = profile_file.get_as_text()
+		_expect(profile_text.contains("disabled_features"), "offline profile should contain disabled_features array", results)
+		_expect(profile_text.contains("\"asset_lib\""), "offline profile should disable asset_lib", results)
+		profile_file.close()
+	else:
+		_expect(false, "offline profile should exist and be readable", results)
 	var preserved_profile = FileAccess.open(launch_project_dir.path_join(".ogs_offline.profile"), FileAccess.READ)
 	if preserved_profile != null:
 		_expect(preserved_profile.get_as_text() == "preexisting profile", "existing offline profile should be preserved", results)

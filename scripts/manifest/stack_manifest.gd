@@ -52,8 +52,8 @@ var errors: Array[String] = []
 ## file_path (String): Path to stack.json (e.g., "res://projects/game/stack.json")
 ## Returns:
 ## StackManifest: Callers should check .is_valid() before using fields.
-static func load_from_file(file_path: String) -> StackManifest:
-	var manifest := StackManifest.new()
+static func load_from_file(file_path: String) :
+	var manifest := new()
 	manifest._load_from_file(file_path)
 	return manifest
 
@@ -62,9 +62,9 @@ static func load_from_file(file_path: String) -> StackManifest:
 ## json_text (String): Raw JSON string (e.g., from fileread or network)
 ## Returns:
 ## StackManifest: Check .is_valid() and .errors for parse/validation failures.
-static func parse_json_string(json_text: String) -> StackManifest:
+static func parse_json_string(json_text: String) :
 	## Parses manifest JSON text into a validated StackManifest instance.
-	var manifest := StackManifest.new()
+	var manifest := new()
 	manifest._load_from_json_string(json_text)
 	return manifest
 
@@ -73,9 +73,9 @@ static func parse_json_string(json_text: String) -> StackManifest:
 ## data (Dictionary): Parsed JSON or manually-constructed object
 ## Returns:
 ## StackManifest: Instance with validation errors in .errors if data is invalid.
-static func from_dict(data: Dictionary) -> StackManifest:
+static func from_dict(data: Dictionary) :
 	## Builds a manifest from a dictionary and validates required fields.
-	var manifest := StackManifest.new()
+	var manifest := new()
 	manifest._load_from_dict(data)
 	return manifest
 
