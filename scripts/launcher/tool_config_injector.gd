@@ -107,6 +107,7 @@ static func _clear_godot_overrides(project_dir: String) -> void:
 	var config = ConfigFile.new()
 	var load_err = config.load(override_path)
 	if load_err == OK:
+		var cleanup_succeeded = false
 		config.erase_section_key("asset_library", "use_threads")
 		config.erase_section_key("network/debug", "bandwidth_limiter")
 		config.erase_section_key("network/http_proxy", "enabled")
@@ -115,9 +116,13 @@ static func _clear_godot_overrides(project_dir: String) -> void:
 		_erase_empty_sections(config, ["asset_library", "network/debug", "network/http_proxy"])
 		if config.get_sections().is_empty():
 			_remove_file_if_exists(override_path)
-		elif config.save(override_path) != OK:
+			cleanup_succeeded = true
+		elif config.save(override_path) == OK:
+			cleanup_succeeded = true
+		else:
 			OgsLogger.warn("tool_config_cleanup_failed", {"component": "launcher", "tool": "godot"})
-		_remove_file_if_exists(profile_path)
+		if cleanup_succeeded:
+			_remove_file_if_exists(profile_path)
 	elif load_err == ERR_FILE_NOT_FOUND:
 		_remove_file_if_exists(profile_path)
 	else:
@@ -133,7 +138,9 @@ static func _remove_file_if_exists(file_path: String) -> void:
 	## Deletes a file when present so stale offline artifacts do not affect later launches.
 	if FileAccess.file_exists(file_path):
 		var absolute_path = file_path
-		if not absolute_path.is_absolute_path():
+		if absolute_path.begins_with("user://"):
+			absolute_path = ProjectSettings.globalize_path(absolute_path)
+		elif not absolute_path.is_absolute_path():
 			absolute_path = ProjectSettings.globalize_path(absolute_path)
 		DirAccess.remove_absolute(absolute_path)
 
