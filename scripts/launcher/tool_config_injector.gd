@@ -85,6 +85,11 @@ static func _apply_godot_overrides(project_dir: String) -> Dictionary:
 
 static func clear(tool_id: String, project_dir: String) -> void:
 	## Removes tool-specific offline configuration before a normal launch.
+## Parameters:
+## tool_id (String): Tool identifier being launched
+## project_dir (String): Resolved project directory used by the child tool
+## Returns:
+## void
 	match tool_id:
 		"godot":
 			_clear_godot_overrides(project_dir)
@@ -120,7 +125,9 @@ static func _erase_empty_sections(config: ConfigFile, sections: Array[String]) -
 static func _remove_file_if_exists(file_path: String) -> void:
 	## Deletes a file when present so stale offline artifacts do not affect later launches.
 	if FileAccess.file_exists(file_path):
-		var absolute_path = ProjectSettings.globalize_path(file_path) if file_path.begins_with("user://") else file_path
+		var absolute_path = file_path
+		if not absolute_path.is_absolute_path():
+			absolute_path = ProjectSettings.globalize_path(absolute_path)
 		DirAccess.remove_absolute(absolute_path)
 
 static func _blender_offline_args() -> PackedStringArray:
