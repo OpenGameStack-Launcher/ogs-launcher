@@ -149,12 +149,15 @@ func _test_existing_log_waits_for_pending_create_lock(results: Dictionary) -> vo
 		return
 	owner_file.store_string("active-owner")
 	owner_file.close()
+	var release_delay_msec = OgsLogger.CREATE_LOCK_TIMEOUT_MSEC + 100
 	var releaser := Thread.new()
-	var start_err = releaser.start(_release_pending_create_lock.bind(lock_path))
+	var start_err = releaser.start(_release_pending_create_lock.bind(lock_path, release_delay_msec))
 	if start_err != OK:
 		_expect(false, "pending-lock releaser thread should start", results)
 		return
+	var started_at = Time.get_ticks_msec()
 	OgsLogger.info("after pending create lock", {"component": "test"})
+	var elapsed_msec = Time.get_ticks_msec() - started_at
 	releaser.wait_to_finish()
 	var file = FileAccess.open(log_path, FileAccess.READ)
 	if file == null:
@@ -164,6 +167,7 @@ func _test_existing_log_waits_for_pending_create_lock(results: Dictionary) -> vo
 	file.close()
 	_expect(contents.find("existing entry") != -1, "existing log contents should remain after pending-lock recovery", results)
 	_expect(contents.find("after pending create lock") != -1, "new entry should be appended after pending-lock recovery", results)
+	_expect(elapsed_msec >= OgsLogger.CREATE_LOCK_TIMEOUT_MSEC, "pending-lock append should wait through the contention path", results)
 
 func _test_hard_lock_acquire_failure_is_not_treated_as_contention(results: Dictionary) -> void:
 	## Verifies lock-acquire errors do not masquerade as lock contention.
@@ -175,9 +179,9 @@ func _test_hard_lock_acquire_failure_is_not_treated_as_contention(results: Dicti
 	_expect(owner.is_empty(), "hard lock-acquire failure should not return an owner", results)
 	_expect(not should_wait, "hard lock-acquire failure should not trigger lock-contention waiting", results)
 
-func _release_pending_create_lock(lock_path: String) -> void:
-	## Releases a synthetic pending create-lock after a short delay.
-	OS.delay_msec(50)
+func _release_pending_create_lock(lock_path: String, delay_msec: int) -> void:
+	## Releases a synthetic pending create-lock after a caller-controlled delay.
+	OS.delay_msec(delay_msec)
 	DirAccess.remove_absolute(lock_path + "/lock_time")
 	DirAccess.remove_absolute(lock_path + "/lock_owner")
 	DirAccess.remove_absolute(lock_path)

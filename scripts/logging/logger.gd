@@ -13,6 +13,7 @@ const CREATE_LOCK_SUFFIX := ".create_lock"
 const CREATE_LOCK_TIMEOUT_MSEC := 250
 const CREATE_LOCK_RETRY_MSEC := 5
 const CREATE_LOCK_STALE_MSEC := 5000
+const CREATE_LOCK_HEARTBEAT_MSEC := 1000
 const CREATE_LOCK_TIMESTAMP_FILE := "lock_time"
 const CREATE_LOCK_OWNER_FILE := "lock_owner"
 
@@ -126,15 +127,48 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 		_write_mutex.unlock()
 		return
 
+	var lock_heartbeat: Thread = null
+	var heartbeat_state: Array = []
+	var heartbeat_mutex: Mutex = null
+	if not creation_lock_path.is_empty():
+		lock_heartbeat = Thread.new()
+		heartbeat_state = [false]
+		heartbeat_mutex = Mutex.new()
+		var heartbeat_start_err = lock_heartbeat.start(func():
+			while true:
+				var waited_msec := 0
+				while waited_msec < CREATE_LOCK_HEARTBEAT_MSEC:
+					heartbeat_mutex.lock()
+					var should_stop: bool = heartbeat_state[0]
+					heartbeat_mutex.unlock()
+					if should_stop:
+						return
+					var sleep_msec = min(50, CREATE_LOCK_HEARTBEAT_MSEC - waited_msec)
+					OS.delay_msec(sleep_msec)
+					waited_msec += sleep_msec
+				if not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
+					return
+		)
+		if heartbeat_start_err != OK:
+			file.close()
+			_release_log_create_lock(creation_lock_path, creation_lock_owner)
+			_write_mutex.unlock()
+			return
+
 	file.seek_end()
 	file.store_string(JSON.stringify(entry) + "\n")
 	var current_length = file.get_length()
 	file.close()
+
+	if current_length > MAX_BYTES and (creation_lock_path.is_empty() or _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner)):
+		_rotate_if_needed()
+	if lock_heartbeat != null:
+		heartbeat_mutex.lock()
+		heartbeat_state[0] = true
+		heartbeat_mutex.unlock()
+		lock_heartbeat.wait_to_finish()
 	if not creation_lock_path.is_empty():
 		_release_log_create_lock(creation_lock_path, creation_lock_owner)
-
-	if current_length > MAX_BYTES:
-		_rotate_if_needed()
 	_write_mutex.unlock()
 
 static func clear_logs_for_tests() -> void:
