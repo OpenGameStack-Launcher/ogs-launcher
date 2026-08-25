@@ -7,6 +7,7 @@ extends RefCounted
 class_name ToolConfigInjector
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
+const GODOT_OFFLINE_CACHE_ROOT = "user://ogs_offline_godot"
 
 static func apply(tool_id: String, project_dir: String, launch_project_dir: String = "") -> Dictionary:
 	## Applies offline configuration for a given tool.
@@ -52,35 +53,64 @@ static func apply(tool_id: String, project_dir: String, launch_project_dir: Stri
 
 static func _apply_godot_overrides(project_dir: String) -> Dictionary:
 	## Writes project-local overrides to disable network features.
-	var editor_settings_dir = project_dir.path_join(".ogs_offline_editor_settings")
-	var absolute_editor_settings_dir = editor_settings_dir
-	if absolute_editor_settings_dir.begins_with("user://") or not absolute_editor_settings_dir.is_absolute_path():
-		absolute_editor_settings_dir = ProjectSettings.globalize_path(absolute_editor_settings_dir)
-	var mkdir_err = DirAccess.make_dir_recursive_absolute(absolute_editor_settings_dir)
-	if mkdir_err != OK and not DirAccess.dir_exists_absolute(absolute_editor_settings_dir):
+	var cache_paths = _godot_offline_cache_paths(project_dir)
+	var cache_dir = String(cache_paths["cache_dir"])
+	var settings_path = String(cache_paths["settings_path"])
+	var override_path = String(cache_paths["override_path"])
+	var profile_path = String(cache_paths["profile_path"])
+	var mkdir_err = DirAccess.make_dir_recursive_absolute(cache_dir)
+	if mkdir_err != OK and not DirAccess.dir_exists_absolute(cache_dir):
 		return {
 			"success": false,
-			"error_message": "Failed to create editor settings directory: %s" % absolute_editor_settings_dir,
+			"error_message": "Failed to create editor settings directory: %s" % cache_dir,
 			"args": PackedStringArray()
 		}
 
-	var config = ConfigFile.new()
-	var settings_path = absolute_editor_settings_dir.path_join("editor_settings-4.tres")
-	var load_err = config.load(settings_path)
-	if load_err != OK and load_err != ERR_FILE_NOT_FOUND:
+	var override_config = ConfigFile.new()
+	override_config.set_value("asset_library", "use_threads", false)
+	override_config.set_value("network/debug", "bandwidth_limiter", 0)
+	override_config.set_value("network/http_proxy", "enabled", false)
+	override_config.set_value("network/http_proxy", "host", "")
+	override_config.set_value("network/http_proxy", "port", 0)
+	var override_save_err = override_config.save(override_path)
+	if override_save_err != OK:
 		return {
 			"success": false,
-			"error_message": "Failed to load editor settings: %s" % settings_path,
+			"error_message": "Failed to save offline override: %s" % override_path,
 			"args": PackedStringArray()
 		}
-	
-	config.set_value("asset_library", "use_threads", false)
-	config.set_value("network/debug", "bandwidth_limiter", 0)
-	config.set_value("network/http_proxy", "enabled", false)
-	config.set_value("network/http_proxy", "host", "")
-	config.set_value("network/http_proxy", "port", 0)
-	var save_err = config.save(settings_path)
-	if save_err != OK:
+
+	var profile = FileAccess.open(profile_path, FileAccess.WRITE)
+	if profile == null:
+		return {
+			"success": false,
+			"error_message": "Failed to save offline profile: %s" % profile_path,
+			"args": PackedStringArray()
+		}
+	profile.store_string(JSON.stringify({
+		"type": "feature_profile",
+		"disabled_features": ["asset_lib"]
+	}, "\t"))
+	var profile_write_err = profile.get_error()
+	profile.close()
+	if profile_write_err != OK:
+		return {
+			"success": false,
+			"error_message": "Failed to write offline profile: %s" % profile_path,
+			"args": PackedStringArray()
+		}
+
+	var editor_settings = FileAccess.open(settings_path, FileAccess.WRITE)
+	if editor_settings == null:
+		return {
+			"success": false,
+			"error_message": "Failed to save editor settings: %s" % settings_path,
+			"args": PackedStringArray()
+		}
+	editor_settings.store_string(_build_editor_settings_resource(profile_path))
+	var settings_write_err = editor_settings.get_error()
+	editor_settings.close()
+	if settings_write_err != OK:
 		OgsLogger.warn("tool_config_failed", {"component": "launcher", "tool": "godot"})
 		return {
 			"success": false,
@@ -116,8 +146,36 @@ static func _clear_godot_overrides(project_dir: String) -> void:
 ## project_dir (String): Resolved project directory used by the child tool
 ## Returns:
 ## void
-	var editor_settings_path = project_dir.path_join(".ogs_offline_editor_settings").path_join("editor_settings-4.tres")
+	var cache_paths = _godot_offline_cache_paths(project_dir)
+	var editor_settings_path = String(cache_paths["settings_path"])
+	var override_path = String(cache_paths["override_path"])
+	var profile_path = String(cache_paths["profile_path"])
 	_remove_file_if_exists(editor_settings_path)
+	_remove_file_if_exists(override_path)
+	_remove_file_if_exists(profile_path)
+
+static func _godot_offline_cache_paths(project_dir: String) -> Dictionary:
+	## Resolves per-project writable cache paths used for Godot offline launch artifacts.
+	var absolute_project_dir = _resolve_absolute_path(project_dir)
+	var project_hash = _hash_project_id(absolute_project_dir)
+	var cache_root = _resolve_absolute_path(GODOT_OFFLINE_CACHE_ROOT)
+	var cache_dir = cache_root.path_join(project_hash)
+	return {
+		"cache_dir": cache_dir,
+		"settings_path": cache_dir.path_join("editor_settings-4.tres"),
+		"override_path": cache_dir.path_join("override.cfg"),
+		"profile_path": cache_dir.path_join(".ogs_offline.profile")
+	}
+
+static func _build_editor_settings_resource(profile_path: String) -> String:
+	## Builds a Godot editor settings resource payload for offline launch constraints.
+	return "[gd_resource type=\"EditorSettings\" format=3]\n\n[resource]\nasset_library/use_threads = false\nnetwork/debug/bandwidth_limiter = 0\nnetwork/http_proxy/enabled = false\nnetwork/http_proxy/host = \"\"\nnetwork/http_proxy/port = 0\n_default_feature_profile = \"%s\"\n" % profile_path.c_escape()
+
+static func _resolve_absolute_path(path: String) -> String:
+	## Normalizes user:// and relative paths to native absolute filesystem paths.
+	if path.begins_with("user://") or not path.is_absolute_path():
+		return ProjectSettings.globalize_path(path)
+	return path
 
 static func _remove_file_if_exists(file_path: String) -> void:
 	## Deletes a file when present so stale offline artifacts do not affect later launches.
