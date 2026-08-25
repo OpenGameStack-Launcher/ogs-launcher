@@ -272,6 +272,8 @@ static func _acquire_log_create_lock(lock_path: String) -> Dictionary:
 		if not DirAccess.dir_exists_absolute(lock_path):
 			if FileAccess.file_exists(lock_path):
 				return {"owner": "", "should_wait": false}
+			if Time.get_ticks_msec() >= deadline:
+				return {"owner": "", "should_wait": false}
 			OS.delay_msec(CREATE_LOCK_RETRY_MSEC)
 			continue
 		if Time.get_ticks_msec() >= deadline:
