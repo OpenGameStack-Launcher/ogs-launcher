@@ -98,7 +98,12 @@ static func clear(tool_id: String, project_dir: String) -> void:
 
 static func _clear_godot_overrides(project_dir: String) -> void:
 	## Removes OGS-managed Godot offline overrides from the launched project.
+## Parameters:
+## project_dir (String): Resolved project directory used by the child tool
+## Returns:
+## void
 	var override_path = project_dir.path_join("override.cfg")
+	var profile_path = project_dir.path_join(".ogs_offline.profile")
 	var config = ConfigFile.new()
 	var load_err = config.load(override_path)
 	if load_err == OK:
@@ -112,9 +117,11 @@ static func _clear_godot_overrides(project_dir: String) -> void:
 			_remove_file_if_exists(override_path)
 		elif config.save(override_path) != OK:
 			OgsLogger.warn("tool_config_cleanup_failed", {"component": "launcher", "tool": "godot"})
+		_remove_file_if_exists(profile_path)
+	elif load_err == ERR_FILE_NOT_FOUND:
+		_remove_file_if_exists(profile_path)
 	elif load_err != ERR_FILE_NOT_FOUND:
 		OgsLogger.warn("tool_config_cleanup_failed", {"component": "launcher", "tool": "godot"})
-	_remove_file_if_exists(project_dir.path_join(".ogs_offline.profile"))
 
 static func _erase_empty_sections(config: ConfigFile, sections: Array[String]) -> void:
 	## Removes empty override sections so cleanup can delete fully managed files.
