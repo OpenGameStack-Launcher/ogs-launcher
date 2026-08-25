@@ -44,6 +44,24 @@ var removal_tool_id: String = ""
 var removal_tool_version: String = ""
 var removal_result: Dictionary = {}
 
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		if removal_thread != null and removal_thread.is_started():
+			OgsLogger.warn("tool_removal_thread_join_on_free", {
+				"component": "tools_page"
+			})
+			removal_thread.wait_to_finish()
+			removal_thread = null
+
+## Joins running removal thread and releases resources.
+func cleanup() -> void:
+	if removal_thread != null and removal_thread.is_started():
+		OgsLogger.warn("tool_removal_thread_join_on_free", {
+			"component": "tools_page"
+		})
+		removal_thread.wait_to_finish()
+		removal_thread = null
+
 func setup(deps: UIDeps, tools_controller: ToolsController, progress_controller: ProgressController, projects_controller: ProjectsController, download_dialog_controller: DownloadDialogController) -> void:
 	_ui = deps
 	_tools_controller = tools_controller
