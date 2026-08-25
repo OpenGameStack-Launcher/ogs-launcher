@@ -18,8 +18,11 @@ func run() -> Dictionary:
 	_test_hard_lock_acquire_failure_is_not_treated_as_contention(results)
 	_test_stale_lock_cleanup_removes_temp_files(results)
 	_test_claimed_lock_cleanup_does_not_touch_replacement_owner(results)
+	_test_ownerless_stale_cleanup_removes_stale_lock(results)
 	_test_ownerless_stale_cleanup_does_not_delete_live_lock(results)
 	_test_write_aborts_when_lock_refresh_fails(results)
+	_test_rotation_runs_after_pending_create_lock(results)
+	_test_rotation_is_skipped_when_lock_refresh_fails(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -271,6 +274,23 @@ func _test_ownerless_stale_cleanup_does_not_delete_live_lock(results: Dictionary
 	OgsLogger._remove_lock_directory_contents(lock_path)
 	DirAccess.remove_absolute(lock_path)
 
+func _test_ownerless_stale_cleanup_removes_stale_lock(results: Dictionary) -> void:
+	## Verifies ownerless stale cleanup removes a validated stale lock directory.
+	OgsLogger.clear_logs_for_tests()
+	var log_path = "user://logs/ogs_launcher.log"
+	var lock_path = ProjectSettings.globalize_path(log_path) + ".create_lock"
+	var log_dir = ProjectSettings.globalize_path("user://logs")
+	DirAccess.make_dir_recursive_absolute(log_dir)
+	DirAccess.make_dir_absolute(lock_path)
+	var ts_file = FileAccess.open(lock_path + "/lock_time", FileAccess.WRITE)
+	if ts_file == null:
+		_expect(false, "stale ownerless lock timestamp should be writable", results)
+		return
+	ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0) - 10000))
+	ts_file.close()
+	OgsLogger._force_remove_stale_lock(lock_path)
+	_expect(not DirAccess.dir_exists_absolute(lock_path), "stale ownerless lock should be removed after validation", results)
+
 func _test_write_aborts_when_lock_refresh_fails(results: Dictionary) -> void:
 	## Verifies lock ownership loss aborts append before writing.
 	OgsLogger.clear_logs_for_tests()
@@ -282,9 +302,9 @@ func _test_write_aborts_when_lock_refresh_fails(results: Dictionary) -> void:
 		return
 	existing.store_string("existing entry\n")
 	existing.close()
-	OgsLogger.set_open_error_override_for_tests(FileAccess.WRITE, ERR_CANT_OPEN, 1)
+	OgsLogger.set_lock_refresh_failure_call_for_tests(2)
 	OgsLogger.info("should not be written after refresh failure", {"component": "test"})
-	OgsLogger.clear_open_error_overrides_for_tests()
+	OgsLogger.clear_lock_refresh_failure_override_for_tests()
 	var file = FileAccess.open(log_path, FileAccess.READ)
 	if file == null:
 		_expect(false, "existing log should remain readable after refresh failure", results)
@@ -293,6 +313,86 @@ func _test_write_aborts_when_lock_refresh_fails(results: Dictionary) -> void:
 	file.close()
 	_expect(contents == "existing entry\n", "refresh failure should abort append without modifying existing log", results)
 	_expect(contents.find("should not be written after refresh failure") == -1, "refresh failure should not write the aborted entry", results)
+
+func _test_rotation_runs_after_pending_create_lock(results: Dictionary) -> void:
+	## Verifies an oversized log still rotates after waiting on a pending create lock.
+	OgsLogger.clear_logs_for_tests()
+	OgsLogger.set_level(OgsLogger.Level.INFO)
+	var log_path = "user://logs/ogs_launcher.log"
+	var log_dir = ProjectSettings.globalize_path("user://logs")
+	DirAccess.make_dir_recursive_absolute(log_dir)
+	var existing = FileAccess.open(log_path, FileAccess.WRITE)
+	if existing == null:
+		_expect(false, "oversized log should be creatable for rotation contention test", results)
+		return
+	var original_contents = "oversized entry\n" + "x".repeat(OgsLogger.MAX_BYTES + 16)
+	existing.store_string(original_contents)
+	existing.close()
+	var lock_path = ProjectSettings.globalize_path(log_path) + ".create_lock"
+	DirAccess.make_dir_absolute(lock_path)
+	var ts_file = FileAccess.open(lock_path + "/lock_time", FileAccess.WRITE)
+	if ts_file == null:
+		_expect(false, "rotation contention timestamp should be writable", results)
+		return
+	ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0)))
+	ts_file.close()
+	var owner_file = FileAccess.open(lock_path + "/lock_owner", FileAccess.WRITE)
+	if owner_file == null:
+		_expect(false, "rotation contention owner should be writable", results)
+		return
+	owner_file.store_string("active-owner")
+	owner_file.close()
+	var release_delay_msec = OgsLogger.CREATE_LOCK_TIMEOUT_MSEC + 100
+	var releaser := Thread.new()
+	var start_err = releaser.start(_release_pending_create_lock.bind(lock_path, release_delay_msec))
+	if start_err != OK:
+		_expect(false, "rotation contention releaser thread should start", results)
+		return
+	OgsLogger.info("entry after rotation contention", {"component": "test"})
+	releaser.wait_to_finish()
+	var rotated_path = log_path + ".1"
+	_expect(FileAccess.file_exists(rotated_path), "oversized log should rotate after the pending lock clears", results)
+	var rotated = FileAccess.open(rotated_path, FileAccess.READ)
+	if rotated == null:
+		_expect(false, "rotated backup should be readable after contention", results)
+		return
+	var rotated_contents = rotated.get_as_text()
+	rotated.close()
+	_expect(rotated_contents == original_contents, "rotation backup should preserve the pre-append oversized contents", results)
+	var active = FileAccess.open(log_path, FileAccess.READ)
+	if active == null:
+		_expect(false, "active log should remain readable after rotation contention", results)
+		return
+	var active_contents = active.get_as_text()
+	active.close()
+	_expect(active_contents.find("entry after rotation contention") != -1, "active log should contain the new post-rotation entry", results)
+	_expect(active_contents.find("oversized entry") == -1, "active log should only contain the new entry after rotation", results)
+
+func _test_rotation_is_skipped_when_lock_refresh_fails(results: Dictionary) -> void:
+	## Verifies rotation is skipped when the post-write lock refresh fails.
+	OgsLogger.clear_logs_for_tests()
+	OgsLogger.set_level(OgsLogger.Level.INFO)
+	var log_path = "user://logs/ogs_launcher.log"
+	var log_dir = ProjectSettings.globalize_path("user://logs")
+	DirAccess.make_dir_recursive_absolute(log_dir)
+	var existing = FileAccess.open(log_path, FileAccess.WRITE)
+	if existing == null:
+		_expect(false, "oversized log should be creatable for rotation refresh-failure test", results)
+		return
+	existing.store_string("oversized entry\n" + "y".repeat(OgsLogger.MAX_BYTES + 16))
+	existing.close()
+	OgsLogger.set_lock_refresh_failure_call_for_tests(3)
+	OgsLogger.info("entry before skipped rotation", {"component": "test"})
+	OgsLogger.clear_lock_refresh_failure_override_for_tests()
+	_expect(not FileAccess.file_exists(log_path + ".1"), "rotation should be skipped when the post-write refresh fails", results)
+	var active = FileAccess.open(log_path, FileAccess.READ)
+	if active == null:
+		_expect(false, "active log should remain readable when rotation is skipped", results)
+		return
+	var contents = active.get_as_text()
+	active.close()
+	_expect(contents.find("oversized entry") != -1, "skipped rotation should keep the oversized contents in the active log", results)
+	_expect(contents.find("entry before skipped rotation") != -1, "skipped rotation should still preserve the appended entry", results)
 
 func _release_pending_create_lock(lock_path: String, delay_msec: int) -> void:
 	## Releases a synthetic pending create-lock after a caller-controlled delay.

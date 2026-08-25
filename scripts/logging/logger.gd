@@ -32,6 +32,8 @@ static var _dir_ensured := false
 static var _write_mutex: Mutex = Mutex.new()
 static var _test_open_error_overrides: Dictionary = {}
 static var _test_open_error_override_uses: Dictionary = {}
+static var _test_lock_refresh_fail_on_call := -1
+static var _test_lock_refresh_call_count := 0
 static var _last_open_error: int = OK
 
 static func set_level(level: int) -> void:
@@ -163,6 +165,13 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 			_release_log_create_lock(creation_lock_path, creation_lock_owner)
 			_write_mutex.unlock()
 			return
+	if not creation_lock_path.is_empty() and not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
+		file.close()
+		if lock_heartbeat != null:
+			_stop_lock_heartbeat(lock_heartbeat, heartbeat_state, heartbeat_mutex)
+		_release_log_create_lock(creation_lock_path, creation_lock_owner)
+		_write_mutex.unlock()
+		return
 
 	file.seek_end()
 	file.store_string(JSON.stringify(entry) + "\n")
@@ -186,6 +195,7 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 static func clear_logs_for_tests() -> void:
 	## Removes log files for test isolation.
 	clear_open_error_overrides_for_tests()
+	clear_lock_refresh_failure_override_for_tests()
 	var base = _get_log_path()
 	_delete_file(base)
 	for index in range(1, MAX_BACKUPS + 1):
@@ -208,6 +218,16 @@ static func clear_open_error_overrides_for_tests() -> void:
 	_test_open_error_overrides.clear()
 	_test_open_error_override_uses.clear()
 	_last_open_error = OK
+
+static func set_lock_refresh_failure_call_for_tests(call_index: int) -> void:
+	## Forces the Nth lock-refresh attempt to fail during tests.
+	_test_lock_refresh_fail_on_call = call_index
+	_test_lock_refresh_call_count = 0
+
+static func clear_lock_refresh_failure_override_for_tests() -> void:
+	## Clears lock-refresh failure overrides after tests.
+	_test_lock_refresh_fail_on_call = -1
+	_test_lock_refresh_call_count = 0
 
 static func _get_log_path() -> String:
 	## Returns the user:// log file path.
@@ -317,6 +337,9 @@ static func _refresh_log_create_lock_timestamp(lock_path: String, owner_token: S
 	## Renews lock timestamp only when the expected owner still holds the lock.
 	if owner_token.is_empty():
 		return false
+	_test_lock_refresh_call_count += 1
+	if _test_lock_refresh_fail_on_call == _test_lock_refresh_call_count:
+		return false
 	if _read_log_create_lock_owner(lock_path) != owner_token:
 		return false
 	var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
@@ -368,14 +391,24 @@ static func _is_log_create_lock_older_than_stale_window(lock_path: String) -> bo
 
 static func _force_remove_stale_lock(lock_path: String, expected_owner: String = "") -> void:
 	## Removes a stale cross-process creation lock directory and its timestamp file.
+	if not DirAccess.dir_exists_absolute(lock_path):
+		return
 	var cleanup_path = lock_path
 	var owner = expected_owner
 	if owner.is_empty():
+		if not _is_log_create_lock_stale(lock_path):
+			return
 		owner = _read_log_create_lock_owner(lock_path)
 		if owner.is_empty():
+			cleanup_path = lock_path + ".cleanup." + str(OS.get_process_id()) + "." + str(Time.get_ticks_usec())
+			if DirAccess.rename_absolute(lock_path, cleanup_path) != OK:
+				return
+			if not _read_log_create_lock_owner(cleanup_path).is_empty() or not _is_log_create_lock_stale(cleanup_path):
+				_restore_claimed_lock_directory(cleanup_path, lock_path)
+				return
+			_remove_lock_directory_contents(cleanup_path)
+			DirAccess.remove_absolute(cleanup_path)
 			return
-	if not DirAccess.dir_exists_absolute(lock_path):
-		return
 	cleanup_path = _claim_lock_for_cleanup(lock_path, owner)
 	if cleanup_path.is_empty():
 		return
