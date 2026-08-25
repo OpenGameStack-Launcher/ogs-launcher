@@ -29,6 +29,8 @@ func run() -> Dictionary:
 	_test_get_executable_extension(results)
 	_test_is_platform_supported(results)
 	_test_is_executable_filename(results)
+	_test_is_console_binary_name(results)
+	_test_find_executable_deprioritizes_console(results)
 	
 	return results
 
@@ -299,3 +301,40 @@ func _test_is_executable_filename(results: Dictionary) -> void:
 			"libgodot.so should not be executable on Linux/BSD", results)
 		_expect(not ToolLauncher._is_executable_filename("config.json"),
 			"config.json should not be executable on Linux/BSD", results)
+
+func _test_is_console_binary_name(results: Dictionary) -> void:
+	## Validates _is_console_binary_name properly matches console suffixes and tokens.
+	_expect(ToolLauncher._is_console_binary_name("godot_console.exe"), "godot_console.exe should be identified as console", results)
+	_expect(ToolLauncher._is_console_binary_name("Godot_v4.7.2-stable_win64_console.exe"), "Godot console binary should be identified as console", results)
+	_expect(ToolLauncher._is_console_binary_name("godot.windows.editor.x86_64.console.exe"), "godot console wrapper should be identified", results)
+	_expect(ToolLauncher._is_console_binary_name("godot_console"), "godot_console (no ext) should be identified as console", results)
+	_expect(not ToolLauncher._is_console_binary_name("godot.exe"), "godot.exe should not be identified as console", results)
+	_expect(not ToolLauncher._is_console_binary_name("blender.exe"), "blender.exe should not be identified as console", results)
+	_expect(not ToolLauncher._is_console_binary_name("krita.exe"), "krita.exe should not be identified as console", results)
+
+func _test_find_executable_deprioritizes_console(results: Dictionary) -> void:
+	## Validates that _find_executable_in_directory prefers GUI executables over console wrappers.
+	var test_dir = "user://test_console_filter_" + str(Time.get_ticks_msec())
+	DirAccess.make_dir_recursive_absolute(test_dir)
+	var ext = ToolLauncher._get_executable_extension()
+	
+	# Create both a console wrapper and a GUI binary
+	var console_bin = test_dir.path_join("godot_console" + ext)
+	var gui_bin = test_dir.path_join("godot" + ext)
+	
+	var f1 = FileAccess.open(console_bin, FileAccess.WRITE)
+	if f1 != null:
+		f1.store_string("mock")
+		f1.close()
+	var f2 = FileAccess.open(gui_bin, FileAccess.WRITE)
+	if f2 != null:
+		f2.store_string("mock")
+		f2.close()
+		
+	var resolved = ToolLauncher._find_executable_in_directory(test_dir, "godot")
+	_expect(resolved.get_file() == ("godot" + ext), "Should prioritize non-console GUI executable over console wrapper", results)
+	
+	# Clean up
+	DirAccess.remove_absolute(console_bin)
+	DirAccess.remove_absolute(gui_bin)
+	DirAccess.remove_absolute(test_dir)

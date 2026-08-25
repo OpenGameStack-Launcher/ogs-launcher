@@ -429,16 +429,31 @@ static func _find_executable_in_directory(directory: String, tool_id: String) ->
 	# Tool-specific executable naming conventions
 	match tool_id:
 		"godot":
-			# Look for Godot_*<ext> or godot<ext>
+			# Look for Godot_*<ext> or godot<ext>, prioritizing non-console binaries
 			dir.list_dir_begin()
 			var godot_file = dir.get_next()
+			var godot_console_fallback := ""
 			while godot_file != "":
 				if godot_file.to_lower().begins_with("godot") and _is_executable_filename(godot_file):
 					var exe_path = directory.path_join(godot_file)
 					if _tool_path_exists(exe_path):
-						return exe_path
+						var lower = godot_file.to_lower()
+						if not _is_console_binary_name(lower):
+							dir.list_dir_end()
+							return exe_path
+						elif godot_console_fallback.is_empty():
+							godot_console_fallback = exe_path
 				godot_file = dir.get_next()
 			dir.list_dir_end()
+			if not godot_console_fallback.is_empty():
+				OgsLogger.warn("tool_launcher_fallback_executable_used", {
+					"component": "launcher",
+					"directory": directory,
+					"executable": godot_console_fallback.get_file(),
+					"reason": "console_wrapper_fallback",
+					"tool_id": tool_id
+				})
+				return godot_console_fallback
 		"blender":
 			var blender_exe = directory.path_join("blender" + ext)
 			if _tool_path_exists(blender_exe):
@@ -469,24 +484,89 @@ static func _find_executable_in_directory(directory: String, tool_id: String) ->
 	if exe_files.is_empty():
 		return ""
 
-	# 1. Exact match with tool_id
+	# 1. Exact match with tool_id (prefer non-console)
+	var exact_candidates = []
 	for exe in exe_files:
 		if exe.get_basename().to_lower() == tool_id.to_lower():
-			return directory.path_join(exe)
+			if not _is_console_binary_name(exe):
+				return directory.path_join(exe)
+			exact_candidates.append(exe)
+	if not exact_candidates.is_empty():
+		OgsLogger.warn("tool_launcher_fallback_executable_used", {
+			"component": "launcher",
+			"directory": directory,
+			"executable": exact_candidates[0],
+			"reason": "exact_match_console",
+			"tool_id": tool_id
+		})
+		return directory.path_join(exact_candidates[0])
 
-	# 2. Contains tool_id
+	# 2. Contains tool_id (prefer non-console)
+	var contains_candidates = []
 	for exe in exe_files:
 		if exe.to_lower().contains(tool_id.to_lower()):
-			return directory.path_join(exe)
+			if not _is_console_binary_name(exe):
+				OgsLogger.warn("tool_launcher_fallback_executable_used", {
+					"component": "launcher",
+					"directory": directory,
+					"executable": exe,
+					"reason": "heuristic_contains_tool_id",
+					"tool_id": tool_id
+				})
+				return directory.path_join(exe)
+			contains_candidates.append(exe)
 
-	# 3. Filter out common uninstaller/setup names and pick the first
+	if not contains_candidates.is_empty():
+		OgsLogger.warn("tool_launcher_fallback_executable_used", {
+			"component": "launcher",
+			"directory": directory,
+			"executable": contains_candidates[0],
+			"reason": "heuristic_contains_tool_id_console",
+			"tool_id": tool_id
+		})
+		return directory.path_join(contains_candidates[0])
+
+	# 3. Filter out common uninstaller/setup names and console binaries, and pick the first
+	var filtered_candidates = []
 	for exe in exe_files:
 		var lower_name = exe.to_lower()
 		if not lower_name.begins_with("unins") and not lower_name.begins_with("setup"):
-			return directory.path_join(exe)
+			if not _is_console_binary_name(lower_name):
+				OgsLogger.warn("tool_launcher_fallback_executable_used", {
+					"component": "launcher",
+					"directory": directory,
+					"executable": exe,
+					"reason": "heuristic_first_non_installer",
+					"tool_id": tool_id
+				})
+				return directory.path_join(exe)
+			filtered_candidates.append(exe)
+
+	if not filtered_candidates.is_empty():
+		OgsLogger.warn("tool_launcher_fallback_executable_used", {
+			"component": "launcher",
+			"directory": directory,
+			"executable": filtered_candidates[0],
+			"reason": "heuristic_first_console",
+			"tool_id": tool_id
+		})
+		return directory.path_join(filtered_candidates[0])
 
 	# 4. Absolute fallback
-	return directory.path_join(exe_files[0])
+	var chosen = exe_files[0]
+	OgsLogger.warn("tool_launcher_fallback_executable_used", {
+		"component": "launcher",
+		"directory": directory,
+		"executable": chosen,
+		"reason": "arbitrary_first_executable",
+		"tool_id": tool_id
+	})
+	return directory.path_join(chosen)
+
+## Checks if an executable filename corresponds to a console wrapper.
+static func _is_console_binary_name(name: String) -> bool:
+	var lower = name.to_lower()
+	return lower.ends_with("_console.exe") or lower.ends_with("_console") or lower.contains("console")
 
 
 ## Validates sha256 when present in the tool entry.
