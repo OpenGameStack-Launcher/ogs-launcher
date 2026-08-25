@@ -22,6 +22,11 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 const SCHEMA_VERSION := 1
 const StackManifestScript = preload("res://scripts/manifest/stack_manifest.gd")
 
+const DEFAULT_VERSION_GODOT = "4.7.2"
+const DEFAULT_VERSION_BLENDER = "4.2"
+const DEFAULT_VERSION_KRITA = "5.2"
+const DEFAULT_VERSION_AUDACITY = "3.7"
+
 ## Creates the standard OGS profile manifest.
 ## Returns:
 ## StackManifest: Pre-populated with Godot, Blender, Krita, Audacity (current versions)
@@ -33,19 +38,19 @@ static func create_default() -> StackManifest:
 	manifest.tools.clear()
 	manifest.tools.append({
 		"id": "godot",
-		"version": "4.7.2"
+		"version": DEFAULT_VERSION_GODOT
 	})
 	manifest.tools.append({
 		"id": "blender",
-		"version": "4.2"
+		"version": DEFAULT_VERSION_BLENDER
 	})
 	manifest.tools.append({
 		"id": "krita",
-		"version": "5.2"
+		"version": DEFAULT_VERSION_KRITA
 	})
 	manifest.tools.append({
 		"id": "audacity",
-		"version": "3.7"
+		"version": DEFAULT_VERSION_AUDACITY
 	})
 	OgsLogger.info("manifest_generated", {"component": "manifest", "stack_name": manifest.stack_name})
 	return manifest
