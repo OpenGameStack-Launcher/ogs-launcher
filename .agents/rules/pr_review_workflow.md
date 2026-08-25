@@ -50,7 +50,7 @@ If everything passes inspection (or after you have fixed it):
 1. Navigate back to the main repository root.
 2. Merge the PR using the GitHub CLI:
    ```powershell
-   gh pr merge <PR_ID> --squash --delete-branch
+   gh pr merge <PR_ID> --merge --delete-branch
    ```
 3. Remove the temporary worktree to keep the workspace clean:
    ```powershell
