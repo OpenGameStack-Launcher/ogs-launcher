@@ -23,6 +23,7 @@ func run() -> Dictionary:
 	_test_write_aborts_when_lock_refresh_fails(results)
 	_test_rotation_runs_after_pending_create_lock(results)
 	_test_rotation_runs_after_append_crosses_threshold(results)
+	_test_rotate_if_needed_with_explicit_length(results)
 	_test_rotation_path_aborts_when_lock_refresh_fails(results)
 	_test_partial_metadata_init_failure_removes_lock_directory(results)
 	_test_creation_temp_open_failure_releases_lock(results)
@@ -395,6 +396,30 @@ func _test_rotation_runs_after_append_crosses_threshold(results: Dictionary) -> 
 	var rotated_contents = rotated.get_as_text()
 	rotated.close()
 	_expect(rotated_contents.find("entry crossing threshold") != -1, "post-append rotation backup should include the appended entry", results)
+
+func _test_rotate_if_needed_with_explicit_length(results: Dictionary) -> void:
+	## Verifies _rotate_if_needed honors an explicit in-memory length without opening the file.
+	OgsLogger.clear_logs_for_tests()
+	OgsLogger.set_level(OgsLogger.Level.INFO)
+	var log_path = "user://logs/ogs_launcher.log"
+	var log_dir = ProjectSettings.globalize_path("user://logs")
+	DirAccess.make_dir_recursive_absolute(log_dir)
+	var existing = FileAccess.open(log_path, FileAccess.WRITE)
+	if existing == null:
+		_expect(false, "log should be creatable", results)
+		return
+	existing.store_string("test entry\n")
+	existing.close()
+	
+	# Below threshold with explicit length -> should not rotate
+	var rotated_no = OgsLogger._rotate_if_needed(50)
+	_expect(rotated_no, "_rotate_if_needed with small length should return true", results)
+	_expect(not FileAccess.file_exists(log_path + ".1"), "should not rotate when explicit length <= MAX_BYTES", results)
+	
+	# Above threshold with explicit length -> should rotate
+	var rotated_yes = OgsLogger._rotate_if_needed(OgsLogger.MAX_BYTES + 100)
+	_expect(rotated_yes, "_rotate_if_needed with oversized length should return true", results)
+	_expect(FileAccess.file_exists(log_path + ".1"), "should rotate when explicit length > MAX_BYTES", results)
 
 func _test_rotation_path_aborts_when_lock_refresh_fails(results: Dictionary) -> void:
 	## Verifies the pre-rotation ownership refresh aborts without appending.
