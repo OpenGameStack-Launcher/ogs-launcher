@@ -79,7 +79,7 @@ var _add_tool_candidates: Array = []
 class UIDeps extends RefCounted:
 	var btn_add_project: Button
 	var btn_new_project: Button
-	var projects_list: ItemList
+	var projects_list: Control
 	var lbl_project_status: Label
 	var lbl_offline_status: Label
 	var lbl_tools_for_project: Label

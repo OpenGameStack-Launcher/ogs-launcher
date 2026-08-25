@@ -75,9 +75,9 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 			})
 			return result
 
-		var file_bytes = source_file.get_buffer(source_file.get_length())
 		var start_error = zipper.start_file(relative_path)
 		if start_error != OK:
+			source_file.close()
 			zipper.close()
 			result.errors.append("Failed to add file to zip: %s" % relative_path)
 			OgsLogger.error("sealed_zip_start_file_failed", {
@@ -87,18 +87,37 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 			})
 			return result
 
-		var write_error = zipper.write_file(file_bytes)
-		if write_error != OK:
-			zipper.close_file()
-			zipper.close()
-			result.errors.append("Failed to write file to zip: %s" % relative_path)
-			OgsLogger.error("sealed_zip_write_failed", {
-				"component": "sealer",
-				"file": relative_path,
-				"error": error_string(write_error)
-			})
-			return result
+		var chunk_size_limit = 1_048_576  # 1 MB
+		var remaining = source_file.get_length()
+		while remaining > 0:
+			var chunk_size = mini(remaining, chunk_size_limit)
+			var file_bytes = source_file.get_buffer(chunk_size)
+			var bytes_read = file_bytes.size()
+			if bytes_read == 0:
+				source_file.close()
+				zipper.close_file()
+				zipper.close()
+				result.errors.append("Failed to read bytes from file: %s" % relative_path)
+				OgsLogger.error("sealed_zip_read_zero_bytes", {
+					"component": "sealer",
+					"file": relative_path
+				})
+				return result
+			var write_error = zipper.write_file(file_bytes)
+			if write_error != OK:
+				source_file.close()
+				zipper.close_file()
+				zipper.close()
+				result.errors.append("Failed to write file to zip: %s" % relative_path)
+				OgsLogger.error("sealed_zip_write_failed", {
+					"component": "sealer",
+					"file": relative_path,
+					"error": error_string(write_error)
+				})
+				return result
+			remaining -= bytes_read
 
+		source_file.close()
 		zipper.close_file()
 
 	zipper.close()
