@@ -138,7 +138,7 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 			_write_mutex.unlock()
 			return
 		file.close()
-		if _rotate_if_needed():
+		if _rotate_if_needed(pre_length):
 			if not creation_lock_path.is_empty() and not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
 				_release_log_create_lock(creation_lock_path, creation_lock_owner)
 				_write_mutex.unlock()
@@ -151,21 +151,24 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 				_release_log_create_lock(creation_lock_path, creation_lock_owner)
 			_write_mutex.unlock()
 			return
+		pre_length = 0
 
 	if not creation_lock_path.is_empty() and not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
 		file.close()
 		_release_log_create_lock(creation_lock_path, creation_lock_owner)
 		_write_mutex.unlock()
 		return
+	var log_line = JSON.stringify(entry) + "\n"
 	file.seek_end()
-	file.store_string(JSON.stringify(entry) + "\n")
+	file.store_string(log_line)
 	file.close()
-	if _get_file_length(log_path) > MAX_BYTES:
+	var post_length = pre_length + log_line.to_utf8_buffer().size()
+	if post_length > MAX_BYTES:
 		if not creation_lock_path.is_empty() and not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
 			_release_log_create_lock(creation_lock_path, creation_lock_owner)
 			_write_mutex.unlock()
 			return
-		_rotate_if_needed()
+		_rotate_if_needed(post_length)
 	if not creation_lock_path.is_empty():
 		_release_log_create_lock(creation_lock_path, creation_lock_owner)
 	_write_mutex.unlock()
@@ -529,12 +532,13 @@ static func _consume_open_error_override(mode: int) -> void:
 		return
 	_test_open_error_override_uses[mode] = remaining_uses
 
-static func _rotate_if_needed() -> bool:
+static func _rotate_if_needed(current_file_length: int = -1) -> bool:
 	## Rotates logs when the active log exceeds the size threshold.
 	var log_path = _get_log_path()
 	if not FileAccess.file_exists(log_path):
 		return true
-	if _get_file_length(log_path) <= MAX_BYTES:
+	var length = current_file_length if current_file_length >= 0 else _get_file_length(log_path)
+	if length <= MAX_BYTES:
 		return true
 	var absolute = ProjectSettings.globalize_path(log_path)
 	for index in range(MAX_BACKUPS, 0, -1):
