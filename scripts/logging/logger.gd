@@ -279,6 +279,9 @@ static func _acquire_log_create_lock(lock_path: String) -> Dictionary:
 			if not ts_write_ok or not owner_write_ok:
 				_force_remove_stale_lock(lock_path)
 				return {"owner": "", "should_wait": false}
+			if _read_log_create_lock_owner(lock_path) != owner_token:
+				_force_remove_stale_lock(lock_path, owner_token)
+				return {"owner": "", "should_wait": false}
 			return {"owner": owner_token, "should_wait": false}
 		if err != ERR_ALREADY_EXISTS:
 			return {"owner": "", "should_wait": false}
@@ -295,13 +298,11 @@ static func _release_log_create_lock(lock_path: String, owner_token: String) -> 
 	## Releases the cross-process lock used while creating the log file.
 	if owner_token.is_empty():
 		return
-	if _read_log_create_lock_owner(lock_path) != owner_token:
+	var claimed_lock_path = _claim_lock_for_cleanup(lock_path, owner_token)
+	if claimed_lock_path.is_empty():
 		return
-	var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
-	var owner_path = lock_path + "/" + CREATE_LOCK_OWNER_FILE
-	DirAccess.remove_absolute(ts_path)
-	DirAccess.remove_absolute(owner_path)
-	DirAccess.remove_absolute(lock_path)
+	_remove_lock_directory_contents(claimed_lock_path)
+	DirAccess.remove_absolute(claimed_lock_path)
 
 static func _refresh_log_create_lock_timestamp(lock_path: String, owner_token: String) -> bool:
 	## Renews lock timestamp only when the expected owner still holds the lock.
@@ -358,13 +359,15 @@ static func _is_log_create_lock_older_than_stale_window(lock_path: String) -> bo
 
 static func _force_remove_stale_lock(lock_path: String, expected_owner: String = "") -> void:
 	## Removes a stale cross-process creation lock directory and its timestamp file.
-	if not expected_owner.is_empty() and _read_log_create_lock_owner(lock_path) != expected_owner:
+	var cleanup_path = lock_path
+	if not expected_owner.is_empty():
+		cleanup_path = _claim_lock_for_cleanup(lock_path, expected_owner)
+		if cleanup_path.is_empty():
+			return
+	elif not DirAccess.dir_exists_absolute(lock_path):
 		return
-	var ts_path = lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE
-	var owner_path = lock_path + "/" + CREATE_LOCK_OWNER_FILE
-	DirAccess.remove_absolute(ts_path)
-	DirAccess.remove_absolute(owner_path)
-	DirAccess.remove_absolute(lock_path)
+	_remove_lock_directory_contents(cleanup_path)
+	DirAccess.remove_absolute(cleanup_path)
 
 static func _wait_for_log_create_lock_release(lock_path: String) -> bool:
 	## Waits for a contended lock to clear or be recovered before retrying ownership.
@@ -408,6 +411,41 @@ static func _read_log_create_lock_owner(lock_path: String) -> String:
 	var owner = owner_file.get_as_text().strip_edges()
 	owner_file.close()
 	return owner
+
+static func _claim_lock_for_cleanup(lock_path: String, expected_owner: String) -> String:
+	## Atomically moves a lock directory to a private cleanup path when owner matches.
+	if expected_owner.is_empty():
+		return ""
+	if _read_log_create_lock_owner(lock_path) != expected_owner:
+		return ""
+	var cleanup_path = lock_path + ".cleanup." + str(OS.get_process_id()) + "." + str(Time.get_ticks_usec())
+	if DirAccess.rename_absolute(lock_path, cleanup_path) != OK:
+		return ""
+	if _read_log_create_lock_owner(cleanup_path) != expected_owner:
+		if not DirAccess.dir_exists_absolute(lock_path):
+			DirAccess.rename_absolute(cleanup_path, lock_path)
+		return ""
+	return cleanup_path
+
+static func _remove_lock_directory_contents(lock_path: String) -> void:
+	## Removes all files/directories inside a lock directory before deleting it.
+	var lock_dir = DirAccess.open(lock_path)
+	if lock_dir == null:
+		return
+	lock_dir.list_dir_begin()
+	while true:
+		var entry = lock_dir.get_next()
+		if entry.is_empty():
+			break
+		if entry == "." or entry == "..":
+			continue
+		var absolute_entry_path = lock_path + "/" + entry
+		if lock_dir.current_is_dir():
+			_remove_lock_directory_contents(absolute_entry_path)
+			DirAccess.remove_absolute(absolute_entry_path)
+		else:
+			DirAccess.remove_absolute(absolute_entry_path)
+	lock_dir.list_dir_end()
 
 static func _consume_open_error_override(mode: int) -> void:
 	## Decrements and clears one-shot open error overrides during tests.

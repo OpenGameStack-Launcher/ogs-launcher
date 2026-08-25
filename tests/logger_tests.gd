@@ -16,6 +16,8 @@ func run() -> Dictionary:
 	_test_stale_lock_is_recovered_and_log_created(results)
 	_test_existing_log_waits_for_pending_create_lock(results)
 	_test_hard_lock_acquire_failure_is_not_treated_as_contention(results)
+	_test_stale_lock_cleanup_removes_temp_files(results)
+	_test_claimed_lock_cleanup_does_not_touch_replacement_owner(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -178,6 +180,75 @@ func _test_hard_lock_acquire_failure_is_not_treated_as_contention(results: Dicti
 	var should_wait: bool = lock_result["should_wait"]
 	_expect(owner.is_empty(), "hard lock-acquire failure should not return an owner", results)
 	_expect(not should_wait, "hard lock-acquire failure should not trigger lock-contention waiting", results)
+
+func _test_stale_lock_cleanup_removes_temp_files(results: Dictionary) -> void:
+	## Verifies stale-lock cleanup removes temp files so orphaned lock dirs are deleted.
+	OgsLogger.clear_logs_for_tests()
+	var log_path = "user://logs/ogs_launcher.log"
+	var lock_path = ProjectSettings.globalize_path(log_path) + ".create_lock"
+	var log_dir = ProjectSettings.globalize_path("user://logs")
+	DirAccess.make_dir_recursive_absolute(log_dir)
+	DirAccess.make_dir_absolute(lock_path)
+	var owner = "stale-owner"
+	var ts_file = FileAccess.open(lock_path + "/lock_time", FileAccess.WRITE)
+	if ts_file == null:
+		_expect(false, "stale-lock cleanup test timestamp should be writable", results)
+		return
+	ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0) - 10000))
+	ts_file.close()
+	var owner_file = FileAccess.open(lock_path + "/lock_owner", FileAccess.WRITE)
+	if owner_file == null:
+		_expect(false, "stale-lock cleanup test owner should be writable", results)
+		return
+	owner_file.store_string(owner)
+	owner_file.close()
+	var temp_file = FileAccess.open(lock_path + "/lock_time.tmp.orphan", FileAccess.WRITE)
+	if temp_file == null:
+		_expect(false, "stale-lock cleanup test temp file should be writable", results)
+		return
+	temp_file.store_string("orphan")
+	temp_file.close()
+	OgsLogger._force_remove_stale_lock(lock_path, owner)
+	_expect(not DirAccess.dir_exists_absolute(lock_path), "stale-lock cleanup should remove lock directory even with temp files", results)
+
+func _test_claimed_lock_cleanup_does_not_touch_replacement_owner(results: Dictionary) -> void:
+	## Verifies claimed-lock cleanup does not delete a replacement owner directory.
+	OgsLogger.clear_logs_for_tests()
+	var log_path = "user://logs/ogs_launcher.log"
+	var lock_path = ProjectSettings.globalize_path(log_path) + ".create_lock"
+	var log_dir = ProjectSettings.globalize_path("user://logs")
+	DirAccess.make_dir_recursive_absolute(log_dir)
+	DirAccess.make_dir_absolute(lock_path)
+	var owner = "owner-a"
+	var owner_file = FileAccess.open(lock_path + "/lock_owner", FileAccess.WRITE)
+	if owner_file == null:
+		_expect(false, "claimed-lock cleanup owner should be writable", results)
+		return
+	owner_file.store_string(owner)
+	owner_file.close()
+	var ts_file = FileAccess.open(lock_path + "/lock_time", FileAccess.WRITE)
+	if ts_file == null:
+		_expect(false, "claimed-lock cleanup timestamp should be writable", results)
+		return
+	ts_file.store_string(str(int(Time.get_unix_time_from_system() * 1000.0)))
+	ts_file.close()
+	var claimed_path = OgsLogger._claim_lock_for_cleanup(lock_path, owner)
+	if claimed_path.is_empty():
+		_expect(false, "claimed-lock cleanup should move owned lock directory", results)
+		return
+	DirAccess.make_dir_absolute(lock_path)
+	var replacement_owner = FileAccess.open(lock_path + "/lock_owner", FileAccess.WRITE)
+	if replacement_owner == null:
+		_expect(false, "replacement owner file should be writable", results)
+		return
+	replacement_owner.store_string("owner-b")
+	replacement_owner.close()
+	OgsLogger._remove_lock_directory_contents(claimed_path)
+	DirAccess.remove_absolute(claimed_path)
+	_expect(DirAccess.dir_exists_absolute(lock_path), "replacement owner directory should remain after claimed-lock cleanup", results)
+	var replacement_owner_read = OgsLogger._read_log_create_lock_owner(lock_path)
+	_expect(replacement_owner_read == "owner-b", "replacement owner token should remain intact", results)
+	OgsLogger._force_remove_stale_lock(lock_path)
 
 func _release_pending_create_lock(lock_path: String, delay_msec: int) -> void:
 	## Releases a synthetic pending create-lock after a caller-controlled delay.
