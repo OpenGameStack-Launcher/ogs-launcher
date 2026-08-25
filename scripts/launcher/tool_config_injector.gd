@@ -120,7 +120,7 @@ static func _clear_godot_overrides(project_dir: String) -> void:
 		_remove_file_if_exists(profile_path)
 	elif load_err == ERR_FILE_NOT_FOUND:
 		_remove_file_if_exists(profile_path)
-	elif load_err != ERR_FILE_NOT_FOUND:
+	else:
 		OgsLogger.warn("tool_config_cleanup_failed", {"component": "launcher", "tool": "godot"})
 
 static func _erase_empty_sections(config: ConfigFile, sections: Array[String]) -> void:
