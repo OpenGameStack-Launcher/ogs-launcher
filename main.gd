@@ -92,15 +92,15 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 
 var network_ui_nodes: Array = []
 
-var projects_controller
-var layout_controller
-var seal_controller
-var tools_controller
-var progress_controller
-var onboarding_wizard
-var tools_page_controller
-var settings_controller
-var download_dialog_controller
+var projects_controller: ProjectsController
+var layout_controller: LayoutController
+var seal_controller: SealController
+var tools_controller: ToolsController
+var progress_controller: ProgressController
+var onboarding_wizard: OnboardingWizard
+var tools_page_controller: ToolsPageController
+var settings_controller: SettingsController
+var download_dialog_controller: DownloadDialogController
 
 func _resolve_ogs_root_path() -> String:
 	var local_app_data = OS.get_environment("LOCALAPPDATA")

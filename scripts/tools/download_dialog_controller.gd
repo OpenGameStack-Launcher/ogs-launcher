@@ -7,9 +7,9 @@ var progress_bar: ProgressBar
 var label: Label
 var _active_tool_id: String = ""
 var _active_version: String = ""
-var _tools_controller
+var _tools_controller: ToolsController
 
-func setup(app_node: Node, tools_controller) -> void:
+func setup(app_node: Node, tools_controller: ToolsController) -> void:
 	_tools_controller = tools_controller
 	dialog = ConfirmationDialog.new()
 	dialog.exclusive = true
@@ -34,7 +34,7 @@ func setup(app_node: Node, tools_controller) -> void:
 	dialog.add_child(vbox)
 	app_node.add_child(dialog)
 
-func show_dialog(tool_id: String, version: String, progress_controller) -> void:
+func show_dialog(tool_id: String, version: String, progress_controller: ProgressController) -> void:
 	_active_tool_id = tool_id
 	_active_version = version
 	dialog.title = "Downloading %s %s" % [tool_id.capitalize(), version]

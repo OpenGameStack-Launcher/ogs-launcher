@@ -7,9 +7,9 @@ const DEFAULT_PROJECTS_INDEX_PATH := "user://ogs_projects_index.json"
 var tracked_projects: Array = []
 var _projects_index_path := DEFAULT_PROJECTS_INDEX_PATH
 var _projects_root_override := ""
-var _pc
+var _pc: ProjectsController
 
-func setup(projects_controller) -> void:
+func setup(projects_controller: ProjectsController) -> void:
 	_pc = projects_controller
 
 func _save_json_file(file_path: String, payload: Dictionary) -> bool:

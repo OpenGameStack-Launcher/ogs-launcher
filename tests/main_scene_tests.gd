@@ -15,6 +15,7 @@ func run() -> Dictionary:
 		"failures": []
 	}
 	_test_main_scene_loads(results)
+	_test_controller_type_instances(results)
 	_test_network_ui_disabled_offline(results)
 	_test_mirror_root_browse_dialog_frees_on_close(results)
 	return results
@@ -56,14 +57,30 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 	var projects_list = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsList")
 	_expect(projects_list != null, "Projects list should exist", results)
 
-	var add_tool_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/AddToolButton")
-	_expect(add_tool_button != null, "Add Tool button should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/AddToolButton") != null, "Add Tool button should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/RemoveToolButton") != null, "Remove Tool button should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/LaunchButton") != null, "Launch button should exist", results)
 
-	var remove_tool_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/RemoveToolButton")
-	_expect(remove_tool_button != null, "Remove Tool button should exist", results)
+	instance.free()
 
-	var remove_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/RemoveButton")
-	_expect(remove_button != null, "Remove Project button should exist", results)
+func _test_controller_type_instances(results: Dictionary) -> void:
+	## Verifies that all controller member variables in main.gd are properly typed and instantiated.
+	var scene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for controller type test", results)
+	if scene == null:
+		return
+	var instance = scene.instantiate()
+	(Engine.get_main_loop() as SceneTree).root.add_child(instance)
+
+	_expect(instance.projects_controller is ProjectsController, "projects_controller should be ProjectsController", results)
+	_expect(instance.layout_controller is LayoutController, "layout_controller should be LayoutController", results)
+	_expect(instance.seal_controller is SealController, "seal_controller should be SealController", results)
+	_expect(instance.tools_controller is ToolsController, "tools_controller should be ToolsController", results)
+	_expect(instance.progress_controller is ProgressController, "progress_controller should be ProgressController", results)
+	_expect(instance.onboarding_wizard is OnboardingWizard, "onboarding_wizard should be OnboardingWizard", results)
+	_expect(instance.tools_page_controller is ToolsPageController, "tools_page_controller should be ToolsPageController", results)
+	_expect(instance.settings_controller is SettingsController, "settings_controller should be SettingsController", results)
+	_expect(instance.download_dialog_controller is DownloadDialogController, "download_dialog_controller should be DownloadDialogController", results)
 
 	instance.free()
 
