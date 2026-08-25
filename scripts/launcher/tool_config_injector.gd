@@ -9,6 +9,10 @@ class_name ToolConfigInjector
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 const GODOT_OFFLINE_CACHE_ROOT = "user://ogs_offline_godot"
 const GODOT_EDITOR_SETTINGS_SEED_ENV = "OGS_GODOT_EDITOR_SETTINGS_SEED"
+const GODOT_EDITOR_SETTINGS_FALLBACK_PATHS := PackedStringArray([
+	"user://editor_settings-4.tres",
+	"user://editor_settings.tres"
+])
 
 static func apply(tool_id: String, project_dir: String, launch_project_dir: String = "") -> Dictionary:
 	## Applies offline configuration for a given tool.
@@ -152,7 +156,7 @@ static func _write_offline_feature_profile(profile_path: String) -> int:
 		"type": "feature_profile",
 		"disabled_classes": [],
 		"disabled_editors": [],
-		"disabled_properties": [],
+		"disabled_properties": {},
 		"disabled_features": ["asset_lib"]
 	}, "\t"))
 	var write_err = profile.get_error()
@@ -160,19 +164,18 @@ static func _write_offline_feature_profile(profile_path: String) -> int:
 	return write_err
 
 static func _load_editor_settings_seed_text() -> String:
-	## Loads an optional editor settings seed so offline launches preserve user preferences.
+	## Loads editor settings seed text from an explicit override or the existing global settings file.
 	var seed_path = OS.get_environment(GODOT_EDITOR_SETTINGS_SEED_ENV)
-	if seed_path.is_empty():
-		return ""
-	seed_path = _resolve_absolute_path(seed_path)
-	if not FileAccess.file_exists(seed_path):
-		return ""
-	var seed_file = FileAccess.open(seed_path, FileAccess.READ)
-	if seed_file == null:
-		return ""
-	var seed_text = seed_file.get_as_text()
-	seed_file.close()
-	return seed_text
+	if not seed_path.is_empty():
+		seed_path = _resolve_absolute_path(seed_path)
+		var override_text = _read_text_file_if_exists(seed_path)
+		if not override_text.is_empty():
+			return override_text
+	for fallback_path in GODOT_EDITOR_SETTINGS_FALLBACK_PATHS:
+		var fallback_text = _read_text_file_if_exists(fallback_path)
+		if not fallback_text.is_empty():
+			return fallback_text
+	return ""
 
 static func _merge_editor_settings_resource(seed_text: String, profile_path: String) -> String:
 	## Overlays offline-only keys onto existing editor settings resource text.
@@ -228,6 +231,18 @@ static func _minimal_editor_settings_resource(offline_values: Dictionary) -> Str
 	for key in offline_values.keys():
 		lines.append("%s = %s" % [key, offline_values[key]])
 	return "\n".join(lines) + "\n"
+
+static func _read_text_file_if_exists(file_path: String) -> String:
+	## Reads a text file when present so offline launches can preserve existing editor preferences.
+	var absolute_path = _resolve_absolute_path(file_path)
+	if not FileAccess.file_exists(absolute_path):
+		return ""
+	var file = FileAccess.open(absolute_path, FileAccess.READ)
+	if file == null:
+		return ""
+	var text = file.get_as_text()
+	file.close()
+	return text
 
 static func _resolve_absolute_path(path: String) -> String:
 	## Normalizes user:// and relative paths to native absolute filesystem paths.
