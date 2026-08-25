@@ -16,13 +16,13 @@ class UIDeps extends RefCounted:
 	var app_node: Node # used to add file dialog to tree
 
 var _ui: UIDeps
-var _projects_controller
+var _projects_controller: ProjectsController
 var _default_remote_repo_url: String
 var _settings_file_path: String
 var mirror_root_override: String = ""
 var mirror_repository_url: String = ""
 
-func setup(deps: UIDeps, projects_controller, default_remote_repo_url: String, settings_file_path: String) -> void:
+func setup(deps: UIDeps, projects_controller: ProjectsController, default_remote_repo_url: String, settings_file_path: String) -> void:
 	_ui = deps
 	_projects_controller = projects_controller
 	_default_remote_repo_url = default_remote_repo_url

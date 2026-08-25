@@ -32,10 +32,10 @@ class UIDeps extends RefCounted:
 	var remove_tool_progress_bar: ProgressBar
 
 var _ui: UIDeps
-var _tools_controller
-var _progress_controller
-var _projects_controller
-var _download_dialog_controller
+var _tools_controller: ToolsController
+var _progress_controller: ProgressController
+var _projects_controller: ProjectsController
+var _download_dialog_controller: DownloadDialogController
 
 var tool_cards: Dictionary = {}
 var requested_tool_key: String = ""
@@ -44,7 +44,7 @@ var removal_tool_id: String = ""
 var removal_tool_version: String = ""
 var removal_result: Dictionary = {}
 
-func setup(deps: UIDeps, tools_controller, progress_controller, projects_controller, download_dialog_controller) -> void:
+func setup(deps: UIDeps, tools_controller: ToolsController, progress_controller: ProgressController, projects_controller: ProjectsController, download_dialog_controller: DownloadDialogController) -> void:
 	_ui = deps
 	_tools_controller = tools_controller
 	_progress_controller = progress_controller

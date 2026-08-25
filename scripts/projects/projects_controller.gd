@@ -38,9 +38,9 @@ const ProjectRegistryManagerScript = preload("res://scripts/projects/project_reg
 const ProjectToolManagerScript = preload("res://scripts/projects/project_tool_manager.gd")
 const ProjectCreationDialogControllerScript = preload("res://scripts/projects/project_creation_dialog.gd")
 
-var registry_manager
-var tool_manager
-var creation_dialog
+var registry_manager: ProjectRegistryManager
+var tool_manager: ProjectToolManager
+var creation_dialog: ProjectCreationDialogController
 
 func _init() -> void:
 	registry_manager = ProjectRegistryManagerScript.new()
@@ -74,7 +74,7 @@ var current_project_dir := ""
 var current_manifest: StackManifest = null
 var current_project_config: OgsConfig = null
 var environment_validator: ProjectEnvironmentValidator
-var tools_controller
+var tools_controller: ToolsController
 var projects_tabs: TabContainer
 var project_tools_list: ItemList
 var btn_change_version: Button

@@ -3,10 +3,10 @@ class_name ProjectCreationDialogController
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
-var _pc
-var _ui
+var _pc: ProjectsController
+var _ui: ProjectsController.UIDeps
 
-func setup(projects_controller, ui_deps) -> void:
+func setup(projects_controller: ProjectsController, ui_deps: ProjectsController.UIDeps) -> void:
 	_pc = projects_controller
 	_ui = ui_deps
 
