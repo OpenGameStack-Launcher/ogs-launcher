@@ -180,6 +180,10 @@ func _apply_global_theme() -> void:
 	self.theme = global_theme
 
 func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		if removal_thread != null and removal_thread.is_alive():
+			removal_thread.wait_to_finish()
+			removal_thread = null
 	if what == NOTIFICATION_APPLICATION_FOCUS_IN:
 		if projects_controller != null and projects_controller.has_meta("project_explorer_instance"):
 			projects_controller.get_meta("project_explorer_instance").refresh()
