@@ -105,6 +105,7 @@ func _run_tests_async() -> void:
 		"res://tests/onboarding_wizard_tests.gd",
 		"res://tests/startup_tests.gd",
 		"res://tests/seal_controller_tests.gd",
+		"res://tests/tools_page_controller_tests.gd",
 	]
 	
 	for test_file in test_files:
