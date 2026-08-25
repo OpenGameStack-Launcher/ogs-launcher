@@ -110,13 +110,22 @@ func _run_seal_async(project_path: String) -> void:
 	}
 	_seal_thread = null
 	_seal_in_progress = false
+	var can_present_result_ui = (
+		is_instance_valid(_seal_dialog)
+		and _seal_dialog.is_inside_tree()
+		and is_instance_valid(_status_label)
+		and is_instance_valid(_output_label)
+		and is_instance_valid(_open_folder_button)
+	)
 
 	if result.success:
-		_show_success(result)
 		_last_sealed_zip = result.sealed_zip
+		if can_present_result_ui:
+			_show_success(result)
 		seal_completed.emit(true, result.sealed_zip)
 	else:
-		_show_error("Seal operation failed.", result.errors)
+		if can_present_result_ui:
+			_show_error("Seal operation failed.", result.errors)
 		seal_completed.emit(false, "")
 
 ## Starts the background seal worker thread for the requested project.
