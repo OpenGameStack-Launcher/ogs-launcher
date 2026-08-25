@@ -22,10 +22,10 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 const SCHEMA_VERSION := 1
 const StackManifestScript = preload("res://scripts/manifest/stack_manifest.gd")
 
-const DEFAULT_VERSION_GODOT = "4.7.2"
-const DEFAULT_VERSION_BLENDER = "4.2"
-const DEFAULT_VERSION_KRITA = "5.2"
-const DEFAULT_VERSION_AUDACITY = "3.7"
+const DEFAULT_VERSION_GODOT := "4.7.2"
+const DEFAULT_VERSION_BLENDER := "4.2"
+const DEFAULT_VERSION_KRITA := "5.2"
+const DEFAULT_VERSION_AUDACITY := "3.7"
 
 ## Creates the standard OGS profile manifest.
 ## Returns:
