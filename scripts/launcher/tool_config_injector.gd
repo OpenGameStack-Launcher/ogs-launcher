@@ -8,6 +8,7 @@ class_name ToolConfigInjector
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 const GODOT_OFFLINE_CACHE_ROOT = "user://ogs_offline_godot"
+const GODOT_EDITOR_SETTINGS_SEED_ENV = "OGS_GODOT_EDITOR_SETTINGS_SEED"
 
 static func apply(tool_id: String, project_dir: String, launch_project_dir: String = "") -> Dictionary:
 	## Applies offline configuration for a given tool.
@@ -52,11 +53,10 @@ static func apply(tool_id: String, project_dir: String, launch_project_dir: Stri
 	}
 
 static func _apply_godot_overrides(project_dir: String) -> Dictionary:
-	## Writes project-local overrides to disable network features.
+	## Writes cache-backed Godot offline launch artifacts without touching the project tree.
 	var cache_paths = _godot_offline_cache_paths(project_dir)
 	var cache_dir = String(cache_paths["cache_dir"])
 	var settings_path = String(cache_paths["settings_path"])
-	var override_path = String(cache_paths["override_path"])
 	var profile_path = String(cache_paths["profile_path"])
 	var mkdir_err = DirAccess.make_dir_recursive_absolute(cache_dir)
 	if mkdir_err != OK and not DirAccess.dir_exists_absolute(cache_dir):
@@ -66,37 +66,11 @@ static func _apply_godot_overrides(project_dir: String) -> Dictionary:
 			"args": PackedStringArray()
 		}
 
-	var override_config = ConfigFile.new()
-	override_config.set_value("asset_library", "use_threads", false)
-	override_config.set_value("network/debug", "bandwidth_limiter", 0)
-	override_config.set_value("network/http_proxy", "enabled", false)
-	override_config.set_value("network/http_proxy", "host", "")
-	override_config.set_value("network/http_proxy", "port", 0)
-	var override_save_err = override_config.save(override_path)
-	if override_save_err != OK:
-		return {
-			"success": false,
-			"error_message": "Failed to save offline override: %s" % override_path,
-			"args": PackedStringArray()
-		}
-
-	var profile = FileAccess.open(profile_path, FileAccess.WRITE)
-	if profile == null:
+	var profile_save_err = _write_offline_feature_profile(profile_path)
+	if profile_save_err != OK:
 		return {
 			"success": false,
 			"error_message": "Failed to save offline profile: %s" % profile_path,
-			"args": PackedStringArray()
-		}
-	profile.store_string(JSON.stringify({
-		"type": "feature_profile",
-		"disabled_features": ["asset_lib"]
-	}, "\t"))
-	var profile_write_err = profile.get_error()
-	profile.close()
-	if profile_write_err != OK:
-		return {
-			"success": false,
-			"error_message": "Failed to write offline profile: %s" % profile_path,
 			"args": PackedStringArray()
 		}
 
@@ -141,17 +115,15 @@ static func clear(tool_id: String, project_dir: String) -> void:
 			return
 
 static func _clear_godot_overrides(project_dir: String) -> void:
-	## Removes OGS-managed Godot offline overrides from the launched project.
+	## Removes OGS-managed cache artifacts from a prior offline Godot launch.
 ## Parameters:
 ## project_dir (String): Resolved project directory used by the child tool
 ## Returns:
 ## void
 	var cache_paths = _godot_offline_cache_paths(project_dir)
 	var editor_settings_path = String(cache_paths["settings_path"])
-	var override_path = String(cache_paths["override_path"])
 	var profile_path = String(cache_paths["profile_path"])
 	_remove_file_if_exists(editor_settings_path)
-	_remove_file_if_exists(override_path)
 	_remove_file_if_exists(profile_path)
 
 static func _godot_offline_cache_paths(project_dir: String) -> Dictionary:
@@ -163,13 +135,99 @@ static func _godot_offline_cache_paths(project_dir: String) -> Dictionary:
 	return {
 		"cache_dir": cache_dir,
 		"settings_path": cache_dir.path_join("editor_settings-4.tres"),
-		"override_path": cache_dir.path_join("override.cfg"),
 		"profile_path": cache_dir.path_join(".ogs_offline.profile")
 	}
 
 static func _build_editor_settings_resource(profile_path: String) -> String:
 	## Builds a Godot editor settings resource payload for offline launch constraints.
-	return "[gd_resource type=\"EditorSettings\" format=3]\n\n[resource]\nasset_library/use_threads = false\nnetwork/debug/bandwidth_limiter = 0\nnetwork/http_proxy/enabled = false\nnetwork/http_proxy/host = \"\"\nnetwork/http_proxy/port = 0\n_default_feature_profile = \"%s\"\n" % profile_path.c_escape()
+	var seed_text = _load_editor_settings_seed_text()
+	return _merge_editor_settings_resource(seed_text, profile_path)
+
+static func _write_offline_feature_profile(profile_path: String) -> int:
+	## Writes a Godot-compatible feature profile that disables online asset browsing.
+	var profile = FileAccess.open(profile_path, FileAccess.WRITE)
+	if profile == null:
+		return FileAccess.get_open_error()
+	profile.store_string(JSON.stringify({
+		"type": "feature_profile",
+		"disabled_classes": [],
+		"disabled_editors": [],
+		"disabled_properties": [],
+		"disabled_features": ["asset_lib"]
+	}, "\t"))
+	var write_err = profile.get_error()
+	profile.close()
+	return write_err
+
+static func _load_editor_settings_seed_text() -> String:
+	## Loads an optional editor settings seed so offline launches preserve user preferences.
+	var seed_path = OS.get_environment(GODOT_EDITOR_SETTINGS_SEED_ENV)
+	if seed_path.is_empty():
+		return ""
+	seed_path = _resolve_absolute_path(seed_path)
+	if not FileAccess.file_exists(seed_path):
+		return ""
+	var seed_file = FileAccess.open(seed_path, FileAccess.READ)
+	if seed_file == null:
+		return ""
+	var seed_text = seed_file.get_as_text()
+	seed_file.close()
+	return seed_text
+
+static func _merge_editor_settings_resource(seed_text: String, profile_path: String) -> String:
+	## Overlays offline-only keys onto existing editor settings resource text.
+	var offline_values = {
+		"asset_library/use_threads": "false",
+		"network/debug/bandwidth_limiter": "0",
+		"network/http_proxy/enabled": "false",
+		"network/http_proxy/host": "\"\"",
+		"network/http_proxy/port": "0",
+		"_default_feature_profile": "\"%s\"" % profile_path.c_escape()
+	}
+	if seed_text.is_empty() or not seed_text.contains("[resource]"):
+		return _minimal_editor_settings_resource(offline_values)
+	var pending_keys: Array = []
+	for key in offline_values.keys():
+		pending_keys.append(String(key))
+	var merged_lines: Array = []
+	var in_resource = false
+	for line in seed_text.split("\n"):
+		if line == "[resource]":
+			in_resource = true
+			merged_lines.append(line)
+			continue
+		if in_resource and line.begins_with("[") and line != "[resource]":
+			for key in pending_keys:
+				merged_lines.append("%s = %s" % [key, offline_values[key]])
+			pending_keys.clear()
+			in_resource = false
+		if in_resource:
+			var replaced = false
+			for key in offline_values.keys():
+				if line.begins_with("%s =" % key):
+					merged_lines.append("%s = %s" % [key, offline_values[key]])
+					pending_keys.erase(key)
+					replaced = true
+					break
+			if replaced:
+				continue
+		merged_lines.append(line)
+	}
+	if in_resource:
+		for key in pending_keys:
+			merged_lines.append("%s = %s" % [key, offline_values[key]])
+	return "\n".join(merged_lines).trim_suffix("\n") + "\n"
+
+static func _minimal_editor_settings_resource(offline_values: Dictionary) -> String:
+	## Builds a minimal editor settings resource when no existing settings file can be seeded.
+	var lines: Array = [
+		"[gd_resource type=\"EditorSettings\" format=3]",
+		"",
+		"[resource]"
+	]
+	for key in offline_values.keys():
+		lines.append("%s = %s" % [key, offline_values[key]])
+	return "\n".join(lines) + "\n"
 
 static func _resolve_absolute_path(path: String) -> String:
 	## Normalizes user:// and relative paths to native absolute filesystem paths.

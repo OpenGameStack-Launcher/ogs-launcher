@@ -35,7 +35,7 @@ func _test_blender_args(results: Dictionary) -> void:
 	_expect(args[0] == "--python-expr", "first arg should be --python-expr", results)
 
 func _test_godot_settings_written(results: Dictionary) -> void:
-	## Verifies Godot offline editor settings and profile artifacts are written to writable cache and cleaned up.
+	## Verifies Godot offline editor settings and feature profile artifacts are written to writable cache and cleaned up.
 	var test_dir = "user://test_injector_godot_%s" % str(Time.get_ticks_msec())
 	var launch_project_dir = test_dir.path_join("project_source")
 	var absolute_launch_project_dir = ProjectSettings.globalize_path(launch_project_dir)
@@ -44,15 +44,19 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 	if project_file != null:
 		project_file.store_string("[application]\nconfig/name=\"ToolConfigInjectorTests\"\n")
 		project_file.close()
-	var existing_override = FileAccess.open(launch_project_dir.path_join("override.cfg"), FileAccess.WRITE)
-	if existing_override != null:
-		existing_override.store_string("[application]\nconfig/name=\"PreserveOverride\"\n")
-		existing_override.close()
 	var existing_profile = FileAccess.open(launch_project_dir.path_join(".ogs_offline.profile"), FileAccess.WRITE)
 	if existing_profile != null:
 		existing_profile.store_string("preexisting profile")
 		existing_profile.close()
+	var seed_path = test_dir.path_join("seed_editor_settings-4.tres")
+	var seed_file = FileAccess.open(seed_path, FileAccess.WRITE)
+	_expect(seed_file != null, "seed editor settings should be writable", results)
+	if seed_file != null:
+		seed_file.store_string("[gd_resource type=\"EditorSettings\" format=3]\n\n[resource]\ninterface/editor/editor_language = \"fr\"\n")
+		seed_file.close()
+	OS.set_environment(ToolConfigInjector.GODOT_EDITOR_SETTINGS_SEED_ENV, ProjectSettings.globalize_path(seed_path))
 	var result = ToolConfigInjector.apply("godot", test_dir, launch_project_dir)
+	OS.set_environment(ToolConfigInjector.GODOT_EDITOR_SETTINGS_SEED_ENV, "")
 	_expect(result["success"], "godot injection should succeed", results)
 	var args: PackedStringArray = result["args"]
 	_expect(args.size() == 2, "godot injection should provide editor settings args", results)
@@ -60,7 +64,6 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 	var project_hash = ToolConfigInjector._hash_project_id(absolute_launch_project_dir)
 	var cache_dir = ProjectSettings.globalize_path("user://ogs_offline_godot").path_join(project_hash)
 	var settings_path = cache_dir.path_join("editor_settings-4.tres")
-	var override_path = cache_dir.path_join("override.cfg")
 	var profile_path = cache_dir.path_join(".ogs_offline.profile")
 	_expect(args[1] == settings_path, "second godot offline arg should be absolute editor settings file path", results)
 	var settings_file = FileAccess.open(settings_path, FileAccess.READ)
@@ -69,28 +72,13 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 		settings_file.close()
 		_expect(settings_text.contains("[gd_resource type=\"EditorSettings\""), "editor settings should use Godot resource format", results)
 		_expect(settings_text.contains("_default_feature_profile"), "editor settings should activate offline feature profile", results)
-		_expect(settings_text.contains(profile_path), "editor settings should reference generated offline profile path", results)
+		_expect(settings_text.contains(profile_path.c_escape()), "editor settings should reference generated offline profile path", results)
+		_expect(settings_text.contains("interface/editor/editor_language = \"fr\""), "seeded editor settings should preserve existing preferences", results)
 	else:
 		_expect(false, "editor settings should exist and be readable", results)
-	var override = ConfigFile.new()
-	_expect(override.load(override_path) == OK, "offline override.cfg should exist and load", results)
-	_expect(override.get_value("asset_library", "use_threads", true) == false, "offline override should disable asset_library threads", results)
-	var profile_file = FileAccess.open(profile_path, FileAccess.READ)
-	if profile_file != null:
-		var profile_payload = JSON.parse_string(profile_file.get_as_text())
-		profile_file.close()
-		_expect(typeof(profile_payload) == TYPE_DICTIONARY, "offline profile should parse as dictionary", results)
-		if typeof(profile_payload) == TYPE_DICTIONARY:
-			_expect(profile_payload.get("type", "") == "feature_profile", "offline profile should declare feature_profile type", results)
-			_expect(profile_payload.get("disabled_features", []).has("asset_lib"), "offline profile should disable asset_lib", results)
-	else:
-		_expect(false, "offline profile should exist and be readable", results)
-	var preserved_override = FileAccess.open(launch_project_dir.path_join("override.cfg"), FileAccess.READ)
-	if preserved_override != null:
-		_expect(preserved_override.get_as_text().contains("PreserveOverride"), "existing override.cfg should be preserved", results)
-		preserved_override.close()
-	else:
-		_expect(false, "existing override.cfg should remain readable", results)
+	var profile = EditorFeatureProfile.new()
+	_expect(profile.load_from_file(profile_path) == OK, "offline profile should load through Godot's feature profile loader", results)
+	_expect(profile.is_feature_disabled(EditorFeatureProfile.FEATURE_ASSET_LIB), "offline profile should disable asset_lib", results)
 	var preserved_profile = FileAccess.open(launch_project_dir.path_join(".ogs_offline.profile"), FileAccess.READ)
 	if preserved_profile != null:
 		_expect(preserved_profile.get_as_text() == "preexisting profile", "existing offline profile should be preserved", results)
@@ -99,9 +87,7 @@ func _test_godot_settings_written(results: Dictionary) -> void:
 		_expect(false, "existing offline profile should remain readable", results)
 	ToolConfigInjector.clear("godot", launch_project_dir)
 	_expect(not FileAccess.file_exists(settings_path), "editor settings should be removed when offline cleanup runs", results)
-	_expect(not FileAccess.file_exists(override_path), "offline override should be removed when offline cleanup runs", results)
 	_expect(not FileAccess.file_exists(profile_path), "offline profile should be removed when offline cleanup runs", results)
-	_expect(FileAccess.file_exists(launch_project_dir.path_join("override.cfg")), "cleanup should not remove existing override.cfg", results)
 	_expect(FileAccess.file_exists(launch_project_dir.path_join(".ogs_offline.profile")), "cleanup should not remove existing offline profile", results)
 	_cleanup_dir(test_dir)
 
