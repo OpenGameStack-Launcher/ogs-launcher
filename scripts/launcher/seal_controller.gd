@@ -99,10 +99,12 @@ func _run_seal_async(project_path: String) -> void:
 		return
 
 	while _seal_thread != null and _seal_thread.is_alive():
-		if not is_instance_valid(_seal_dialog) or not _seal_dialog.is_inside_tree():
+		var tree = Engine.get_main_loop() as SceneTree
+		if tree == null:
 			break
-		_update_progress_status()
-		await _seal_dialog.get_tree().create_timer(0.25).timeout
+		if is_instance_valid(_seal_dialog) and _seal_dialog.is_inside_tree():
+			_update_progress_status()
+		await tree.create_timer(0.25).timeout
 
 	var result = _seal_thread.wait_to_finish() if _seal_thread != null else {
 		"success": false,

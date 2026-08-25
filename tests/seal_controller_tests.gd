@@ -205,17 +205,19 @@ func _test_dialog_freed_while_thread_alive(results: Dictionary) -> void:
 	controller.seal_for_delivery("res://tests")
 
 	var tree = Engine.get_main_loop() as SceneTree
-	var timeout_msec = Time.get_ticks_msec() + 3000
-	while controller.get("_seal_thread") == null and Time.get_ticks_msec() < timeout_msec:
+	var thread_start_deadline_msec = Time.get_ticks_msec() + 3000
+	while controller.get("_seal_thread") == null and Time.get_ticks_msec() < thread_start_deadline_msec:
 		await tree.process_frame
 
 	var thread = controller.get("_seal_thread") as Thread
 	_expect(thread != null, "_seal_thread should be created when sealing starts", results)
 	if thread == null:
 		dialog.free()
+		controller = null
 		return
 
-	while not thread.is_alive() and Time.get_ticks_msec() < timeout_msec:
+	var thread_alive_deadline_msec = Time.get_ticks_msec() + 3000
+	while not thread.is_alive() and Time.get_ticks_msec() < thread_alive_deadline_msec:
 		await tree.process_frame
 	_expect(thread.is_alive(), "Thread should be alive before dialog is freed", results)
 	if not thread.is_alive():
@@ -223,11 +225,8 @@ func _test_dialog_freed_while_thread_alive(results: Dictionary) -> void:
 			sem.post()
 			thread.wait_to_finish()
 		dialog.free()
+		controller = null
 		return
-
-	# Free the dialog while the thread is still alive — this simulates the UI
-	# being torn down (e.g. scene change) before the seal completes.
-	dialog.free()
 
 	var emitted := {
 		"called": false,
@@ -240,11 +239,16 @@ func _test_dialog_freed_while_thread_alive(results: Dictionary) -> void:
 		emitted["zip_path"] = zip_path
 	)
 
+	# Free the dialog while the thread is still alive — this simulates the UI
+	# being torn down (e.g. scene change) before the seal completes.
+	dialog.free()
+
 	# Release the semaphore so the worker can finish and the coroutine can
 	# continue through the result-handling path.
 	sem.post()
 
-	while not emitted["called"] and Time.get_ticks_msec() < timeout_msec:
+	var completion_deadline_msec = Time.get_ticks_msec() + 3000
+	while not emitted["called"] and Time.get_ticks_msec() < completion_deadline_msec:
 		await tree.process_frame
 
 	# After loop exit the coroutine should have nulled the thread field and
