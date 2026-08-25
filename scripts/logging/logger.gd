@@ -179,8 +179,7 @@ static func clear_logs_for_tests() -> void:
 	for index in range(1, MAX_BACKUPS + 1):
 		_delete_file(base + "." + str(index))
 	var lock_path = _get_log_create_lock_path()
-	DirAccess.remove_absolute(lock_path + "/" + CREATE_LOCK_TIMESTAMP_FILE)
-	DirAccess.remove_absolute(lock_path + "/" + CREATE_LOCK_OWNER_FILE)
+	_remove_lock_directory_contents(lock_path)
 	DirAccess.remove_absolute(lock_path)
 
 static func set_open_error_override_for_tests(mode: int, error_code: int, remaining_uses: int = -1) -> void:
