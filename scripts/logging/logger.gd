@@ -141,6 +141,10 @@ static func write(level: int, message: String, context: Dictionary = {}) -> void
 				_release_log_create_lock(creation_lock_path, creation_lock_owner)
 			_write_mutex.unlock()
 			return
+		if not creation_lock_path.is_empty() and not _refresh_log_create_lock_timestamp(creation_lock_path, creation_lock_owner):
+			_release_log_create_lock(creation_lock_path, creation_lock_owner)
+			_write_mutex.unlock()
+			return
 		file = _open_log_file(log_path, FileAccess.WRITE)
 		if file == null:
 			if not creation_lock_path.is_empty():
