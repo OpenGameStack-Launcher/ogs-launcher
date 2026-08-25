@@ -25,6 +25,7 @@ func write_offline_config(project_path: String) -> Dictionary:
 		return result
 
 	file.store_string(config_json_text)
+	file.close()
 	result.success = true
 
 	OgsLogger.debug("offline_config_written", {
