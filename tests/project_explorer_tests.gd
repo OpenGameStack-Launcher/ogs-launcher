@@ -23,6 +23,10 @@ func run() -> Dictionary:
 	_test_tool_folder_with_non_launchable_files_displayed_but_files_hidden(results)
 	_test_selection_signals_and_selected_path(results)
 	_test_context_menu_initialized(results)
+	_test_launchable_files_receive_tool_icons(results)
+	_test_direct_tool_folders_receive_tool_icons(results)
+	_test_container_folders_have_null_icons(results)
+	_test_icon_cache_reuses_textures(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -370,5 +374,186 @@ func _test_context_menu_initialized(results: Dictionary) -> void:
 	if explorer.context_menu != null:
 		_expect(explorer.context_menu.get_item_count() > 0, "context menu should have items", results)
 		_expect(explorer.context_menu.get_item_text(0) == "Open in File Explorer", "context menu should contain Open in File Explorer", results)
+	
+	tree.free()
+
+func _test_launchable_files_receive_tool_icons(results: Dictionary) -> void:
+	## Launchable files (project.godot, .xcf, .blend, .kra, .aup3) must receive the correct tool icon and max width 20.
+	var proj: String = _create_test_dir("file_icons")
+	_create_file(proj.path_join("project.godot"), "; godot project")
+	_create_file(proj.path_join("art/hero.xcf"), "xcf data")
+	_create_file(proj.path_join("models/character.blend"), "blend data")
+	_create_file(proj.path_join("paintings/canvas.kra"), "kra data")
+	_create_file(proj.path_join("audio/theme.aup3"), "aup3 data")
+	
+	var tree: Tree = Tree.new()
+	var explorer = ProjectExplorerScript.new(tree)
+	explorer.load_project(proj)
+	
+	var root: TreeItem = tree.get_root()
+	_expect(root != null, "root item should exist", results)
+	if root != null:
+		var godot_item: TreeItem = _find_child_item(root, "project.godot")
+		_expect(godot_item != null, "project.godot item should exist", results)
+		if godot_item != null:
+			var icon: Texture2D = godot_item.get_icon(0)
+			_expect(icon != null, "project.godot should have a tool icon", results)
+			if icon != null:
+				_expect(icon.resource_path == ProjectExplorerScript.TOOL_ICON_PATHS["godot"], "project.godot icon should match godot tool icon path", results)
+			_expect(godot_item.get_icon_max_width(0) == 20, "project.godot icon max width should be 20", results)
+			
+		var gimp_item: TreeItem = _find_child_item(root, "hero.xcf")
+		_expect(gimp_item != null, "hero.xcf item should exist", results)
+		if gimp_item != null:
+			var icon: Texture2D = gimp_item.get_icon(0)
+			_expect(icon != null, "hero.xcf should have a tool icon", results)
+			if icon != null:
+				_expect(icon.resource_path == ProjectExplorerScript.TOOL_ICON_PATHS["gimp"], "hero.xcf icon should match gimp tool icon path", results)
+			_expect(gimp_item.get_icon_max_width(0) == 20, "hero.xcf icon max width should be 20", results)
+			
+		var blender_item: TreeItem = _find_child_item(root, "character.blend")
+		_expect(blender_item != null, "character.blend item should exist", results)
+		if blender_item != null:
+			var icon: Texture2D = blender_item.get_icon(0)
+			_expect(icon != null, "character.blend should have a tool icon", results)
+			if icon != null:
+				_expect(icon.resource_path == ProjectExplorerScript.TOOL_ICON_PATHS["blender"], "character.blend icon should match blender tool icon path", results)
+			_expect(blender_item.get_icon_max_width(0) == 20, "character.blend icon max width should be 20", results)
+			
+		var krita_item: TreeItem = _find_child_item(root, "canvas.kra")
+		_expect(krita_item != null, "canvas.kra item should exist", results)
+		if krita_item != null:
+			var icon: Texture2D = krita_item.get_icon(0)
+			_expect(icon != null, "canvas.kra should have a tool icon", results)
+			if icon != null:
+				_expect(icon.resource_path == ProjectExplorerScript.TOOL_ICON_PATHS["krita"], "canvas.kra icon should match krita tool icon path", results)
+			_expect(krita_item.get_icon_max_width(0) == 20, "canvas.kra icon max width should be 20", results)
+			
+		var audacity_item: TreeItem = _find_child_item(root, "theme.aup3")
+		_expect(audacity_item != null, "theme.aup3 item should exist", results)
+		if audacity_item != null:
+			var icon: Texture2D = audacity_item.get_icon(0)
+			_expect(icon != null, "theme.aup3 should have a tool icon", results)
+			if icon != null:
+				_expect(icon.resource_path == ProjectExplorerScript.TOOL_ICON_PATHS["audacity"], "theme.aup3 icon should match audacity tool icon path", results)
+			_expect(audacity_item.get_icon_max_width(0) == 20, "theme.aup3 icon max width should be 20", results)
+	
+	tree.free()
+	_cleanup_dir_recursive(proj)
+
+func _test_direct_tool_folders_receive_tool_icons(results: Dictionary) -> void:
+	## Direct tool folders (gimp, blender, krita, audacity, godot, game) must receive the correct tool icon and max width 20.
+	var proj: String = _create_test_dir("folder_icons")
+	DirAccess.make_dir_recursive_absolute(proj.path_join("assets/2D/gimp"))
+	DirAccess.make_dir_recursive_absolute(proj.path_join("assets/3D/blender"))
+	DirAccess.make_dir_recursive_absolute(proj.path_join("assets/2D/krita"))
+	DirAccess.make_dir_recursive_absolute(proj.path_join("assets/Audio/audacity"))
+	DirAccess.make_dir_recursive_absolute(proj.path_join("assets/godot"))
+	DirAccess.make_dir_recursive_absolute(proj.path_join("game"))
+	
+	var tree: Tree = Tree.new()
+	var explorer = ProjectExplorerScript.new(tree)
+	explorer.load_project(proj)
+	
+	var root: TreeItem = tree.get_root()
+	_expect(root != null, "root item should exist", results)
+	if root != null:
+		var check_folders: Dictionary = {
+			"gimp": "gimp",
+			"blender": "blender",
+			"krita": "krita",
+			"audacity": "audacity",
+			"godot": "godot",
+			"game": "godot"
+		}
+		for folder_name: String in check_folders:
+			var item: TreeItem = _find_child_item(root, folder_name)
+			_expect(item != null, "%s folder item should exist" % folder_name, results)
+			if item != null:
+				var expected_tool: String = check_folders[folder_name]
+				var icon: Texture2D = item.get_icon(0)
+				_expect(icon != null, "%s folder should have an icon" % folder_name, results)
+				if icon != null:
+					_expect(icon.resource_path == ProjectExplorerScript.TOOL_ICON_PATHS[expected_tool], "%s folder icon should match %s tool icon" % [folder_name, expected_tool], results)
+				_expect(item.get_icon_max_width(0) == 20, "%s folder icon max width should be 20" % folder_name, results)
+	
+	tree.free()
+	_cleanup_dir_recursive(proj)
+
+func _test_container_folders_have_null_icons(results: Dictionary) -> void:
+	## Container folders (project root, assets, 2D, 3D, Audio, and nested subfolders inside tool folders) must have null icons.
+	var proj: String = _create_test_dir("container_null_icons")
+	_create_file(proj.path_join("assets/2D/gimp/characters/hero.xcf"), "xcf data")
+	_create_file(proj.path_join("assets/3D/blender/props/sword.blend"), "blend data")
+	_create_file(proj.path_join("assets/Audio/audacity/voiceover/take1.aup3"), "aup3 data")
+	
+	var tree: Tree = Tree.new()
+	var explorer = ProjectExplorerScript.new(tree)
+	explorer.load_project(proj)
+	
+	var root: TreeItem = tree.get_root()
+	_expect(root != null, "root item should exist", results)
+	if root != null:
+		_expect(root.get_icon(0) == null, "project root folder must have null icon", results)
+		
+		var assets_item: TreeItem = _find_child_item(root, "assets")
+		_expect(assets_item != null, "assets item should exist", results)
+		if assets_item != null:
+			_expect(assets_item.get_icon(0) == null, "assets container folder must have null icon", results)
+			
+		var item_2d: TreeItem = _find_child_item(root, "2D")
+		_expect(item_2d != null, "2D item should exist", results)
+		if item_2d != null:
+			_expect(item_2d.get_icon(0) == null, "2D container folder must have null icon", results)
+			
+		var item_3d: TreeItem = _find_child_item(root, "3D")
+		_expect(item_3d != null, "3D item should exist", results)
+		if item_3d != null:
+			_expect(item_3d.get_icon(0) == null, "3D container folder must have null icon", results)
+			
+		var audio_item: TreeItem = _find_child_item(root, "Audio")
+		_expect(audio_item != null, "Audio item should exist", results)
+		if audio_item != null:
+			_expect(audio_item.get_icon(0) == null, "Audio container folder must have null icon", results)
+			
+		var characters_item: TreeItem = _find_child_item(root, "characters")
+		_expect(characters_item != null, "characters nested subfolder should exist", results)
+		if characters_item != null:
+			_expect(characters_item.get_icon(0) == null, "nested characters subfolder inside tool folder must have null icon", results)
+			
+		var props_item: TreeItem = _find_child_item(root, "props")
+		_expect(props_item != null, "props nested subfolder should exist", results)
+		if props_item != null:
+			_expect(props_item.get_icon(0) == null, "nested props subfolder inside tool folder must have null icon", results)
+			
+		var voiceover_item: TreeItem = _find_child_item(root, "voiceover")
+		_expect(voiceover_item != null, "voiceover nested subfolder should exist", results)
+		if voiceover_item != null:
+			_expect(voiceover_item.get_icon(0) == null, "nested voiceover subfolder inside tool folder must have null icon", results)
+			
+		# Also verify the direct tool folders and files themselves DO have icons
+		var gimp_item: TreeItem = _find_child_item(root, "gimp")
+		_expect(gimp_item != null and gimp_item.get_icon(0) != null, "gimp direct tool folder should have icon", results)
+		var hero_item: TreeItem = _find_child_item(root, "hero.xcf")
+		_expect(hero_item != null and hero_item.get_icon(0) != null, "hero.xcf should have icon", results)
+	
+	tree.free()
+	_cleanup_dir_recursive(proj)
+
+func _test_icon_cache_reuses_textures(results: Dictionary) -> void:
+	## ProjectExplorer should cache loaded Texture2D icon resources.
+	var tree: Tree = Tree.new()
+	var explorer = ProjectExplorerScript.new(tree)
+	
+	var godot_icon1: Texture2D = explorer._get_tool_icon("godot")
+	_expect(godot_icon1 != null, "_get_tool_icon('godot') should return Texture2D", results)
+	_expect(explorer._icon_cache.has("godot"), "_icon_cache should have 'godot' key", results)
+	
+	var godot_icon2: Texture2D = explorer._get_tool_icon("godot")
+	_expect(godot_icon1 == godot_icon2, "cached icon must return exact same object reference", results)
+	
+	var nonexistent: Texture2D = explorer._get_tool_icon("nonexistent_tool")
+	_expect(nonexistent == null, "unknown tool ID should return null", results)
+	_expect(explorer._icon_cache.has("nonexistent_tool"), "_icon_cache should record null for missing tool", results)
 	
 	tree.free()

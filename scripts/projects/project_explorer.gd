@@ -7,6 +7,15 @@ const FileTypeMapper = preload("res://scripts/tools/file_type_mapper.gd")
 const ToolCategoryMapper = preload("res://scripts/tools/tool_category_mapper.gd")
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
+const TOOL_ICON_PATHS := {
+	"audacity": "res://Images/tools/Audacity.png",
+	"blender": "res://Images/tools/Blender.png",
+	"gimp": "res://Images/tools/GIMP.png",
+	"godot": "res://Images/tools/Godot.png",
+	"krita": "res://Images/tools/Krita.png"
+}
+const ICON_MAX_WIDTH: int = 20
+
 signal file_selected(file_path: String, tool_id: String)
 signal folder_selected(folder_path: String, tool_id: String)
 
@@ -14,6 +23,7 @@ var tree: Tree
 var current_project_dir: String = ""
 var context_menu: PopupMenu
 var context_target_path: String = ""
+var _icon_cache: Dictionary = {}
 
 func _init(tree_node: Tree) -> void:
 	tree = tree_node
@@ -102,6 +112,12 @@ func _populate_dir(dir_path: String, parent_item: TreeItem) -> void:
 		item.set_text(0, d)
 		var full_path: String = dir_path.path_join(d)
 		item.set_metadata(0, {"path": full_path, "is_dir": true})
+		var tool_id: String = _infer_tool_from_folder(full_path)
+		if not tool_id.is_empty():
+			var icon: Texture2D = _get_tool_icon(tool_id)
+			if icon != null:
+				item.set_icon(0, icon)
+				item.set_icon_max_width(0, ICON_MAX_WIDTH)
 		_populate_dir(full_path, item)
 		
 	for f: String in launchable_files:
@@ -109,6 +125,12 @@ func _populate_dir(dir_path: String, parent_item: TreeItem) -> void:
 		item.set_text(0, f)
 		var full_path: String = dir_path.path_join(f)
 		item.set_metadata(0, {"path": full_path, "is_dir": false})
+		var tool_id: String = FileTypeMapper.get_tool_for_file(full_path)
+		if not tool_id.is_empty():
+			var icon: Texture2D = _get_tool_icon(tool_id)
+			if icon != null:
+				item.set_icon(0, icon)
+				item.set_icon_max_width(0, ICON_MAX_WIDTH)
 
 ## Checks whether a directory or any of its non-dot-prefixed descendants
 ## contains at least one launchable file or at least one direct tool folder.
@@ -183,6 +205,24 @@ func _infer_tool_from_folder(folder_path: String) -> String:
 	if folder_name == "game":
 		return "godot"
 	return ""
+
+## Returns the cached Texture2D icon for a tool ID, or null if not found.
+func _get_tool_icon(tool_id: String) -> Texture2D:
+	if tool_id.is_empty():
+		return null
+	var lower_id: String = tool_id.to_lower()
+	if _icon_cache.has(lower_id):
+		return _icon_cache[lower_id] as Texture2D
+	if TOOL_ICON_PATHS.has(lower_id):
+		var icon_path: String = TOOL_ICON_PATHS[lower_id]
+		if ResourceLoader.exists(icon_path):
+			var res: Resource = load(icon_path)
+			if res is Texture2D:
+				var tex: Texture2D = res as Texture2D
+				_icon_cache[lower_id] = tex
+				return tex
+	_icon_cache[lower_id] = null
+	return null
 
 ## Gets the currently selected path, or project root if nothing is selected.
 func get_selected_path() -> String:

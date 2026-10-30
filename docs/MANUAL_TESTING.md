@@ -256,6 +256,37 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 3.3: Projects Page - Project Explorer Tool Icons Display
+
+**Objective:** Verify that Project Explorer displays 20px tool icons beside launchable files and direct tool folders, while keeping container folders icon-free.
+
+**Steps:**
+1. Select a project in the Project Library (e.g. `samples/sample_project`).
+2. Inspect the Project Explorer tree view on the right side of the Projects page.
+3. Observe direct tool folders (such as `blender`, `gimp`, `krita`, `audacity`, `godot`, or `game`).
+4. Observe launchable files (such as `project.godot`, `.blend`, `.xcf`, `.kra`, or `.aup3`).
+5. Observe container folders (the root folder, `assets`, `2D`, `3D`, `Audio`, or subfolders inside a tool folder).
+6. Verify that launchable files display the corresponding tool icon (`res://Images/tools/`) scaled to a max width of 20 pixels.
+7. Verify that direct tool folders display the corresponding tool icon scaled to a max width of 20 pixels.
+8. Verify that container folders and subfolders display no application icon (null icon).
+
+**Expected Results:**
+- [x] Launchable files display appropriate tool icons (Godot, Blender, Krita, Audacity, GIMP) at 20px width.
+- [x] Direct tool folders display appropriate tool icons at 20px width.
+- [x] Root project folder, intermediate folders (assets, 2D, 3D, Audio), and nested subfolders display no tool icon.
+- [x] Icons are crisp and properly proportioned without disrupting row heights.
+
+**Pass Criteria:**
+- Tool icons render beside recognized launchable files and direct tool folders.
+- Container folders have no icon.
+- Tree layout remains neat and fully usable.
+
+**If test fails:**
+- Verify `scripts/projects/project_explorer.gd` icon mapping (`TOOL_ICON_PATHS`), sizing (`ICON_MAX_WIDTH`), and `_get_tool_icon()`.
+- Ensure tool icon PNG files in `res://Images/tools/` are present and valid textures.
+
+---
+
 ### Editor Test 4: Settings Page — Mirror Configuration
 
 **Objective:** Verify mirror root can be configured and status indicator updates correctly.

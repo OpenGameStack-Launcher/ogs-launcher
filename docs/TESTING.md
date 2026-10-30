@@ -271,13 +271,17 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Online/offline status label updates
   - Download button disablement during active download
 
-- **[tests/project_explorer_tests.gd](tests/project_explorer_tests.gd)** - Validates ProjectExplorer directory filtering, pruning, and selection.
+- **[tests/project_explorer_tests.gd](tests/project_explorer_tests.gd)** - Validates ProjectExplorer directory filtering, pruning, selection, and tool icon rendering (584 total passed tests across runner suites).
   - Non-relevant and empty folders excluded from tree
   - Direct tool folders (gimp, blender, krita, audacity, godot, game) and ancestor folders retained even when empty
   - Launchable files displayed while non-launchable files (.gd, .md, .png, etc.) omitted
   - Dot-prefixed directories (.git, .godot, .worktrees, .github) skipped during traversal
   - Projects with zero launchable files and zero tool folders display root item only
   - TreeItem selection signals, folder/file tool inference, and context menu initialization
+  - Launchable files (project.godot, .xcf, .blend, .kra, .aup3) receive corresponding tool icons with max width 20px
+  - Direct tool folders (gimp, blender, krita, audacity, godot, game) receive corresponding tool icons with max width 20px
+  - Container folders (project root, intermediate folders like assets, 2D, 3D, Audio, and nested subfolders) maintain null icons
+  - Icon caching in ProjectExplorer verifies texture instance reuse and missing tool handling
 
 ### Startup Tests (Initialization Verification)
 
