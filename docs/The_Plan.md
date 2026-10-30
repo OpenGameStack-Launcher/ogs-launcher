@@ -190,6 +190,11 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Display only launchable files recognized by FileTypeMapper (project.godot, .xcf, .blend, .kra, .aup3)
     *   [x] Prune non-relevant folders containing neither launchable files nor direct tool folders
     *   [x] Root-only display when project contains zero launchable files and zero direct tool folders
+*   [x] Project Explorer Tool Icons Display - 100% Complete ✅
+    *   [x] Display 20px application icons next to launchable files (project.godot, .xcf, .blend, .kra, .aup3)
+    *   [x] Display 20px application icons next to direct tool folders (gimp, blender, krita, audacity, godot, game)
+    *   [x] Maintain null icons for root, intermediate container folders (assets, 2D, 3D, Audio), and nested subfolders
+    *   [x] Texture caching for tool icons in ProjectExplorer
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:
