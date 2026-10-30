@@ -194,6 +194,9 @@ func get_categorized_tools() -> Dictionary:
 		var version = tool["version"]
 		var is_installed = _is_tool_installed(tool_id, version)
 		
+		if not categorized.has(category):
+			categorized[category] = []
+		
 		categorized[category].append({
 			"id": tool_id,
 			"version": version,

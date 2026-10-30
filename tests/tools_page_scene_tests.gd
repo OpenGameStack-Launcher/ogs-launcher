@@ -49,6 +49,8 @@ func _test_tools_nodes_exist(results: Dictionary) -> void:
 	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/2DSection/2DTools") != null, "Download 2D tools container should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/3DSection/3DTools") != null, "Download 3D tools container should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/AudioSection/AudioTools") != null, "Download Audio tools container should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/CodeSection/CodeTools") != null, "Download Code tools container should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/CodeSection/CodeTools") != null, "Installed Code tools container should exist", results)
 
 	instance.free()
 

@@ -11,8 +11,10 @@ const TOOL_ICON_PATHS := {
 	"audacity": "res://Images/tools/Audacity.png",
 	"blender": "res://Images/tools/Blender.png",
 	"gimp": "res://Images/tools/GIMP.png",
+	"git": "res://Images/tools/Git.png",
 	"godot": "res://Images/tools/Godot.png",
-	"krita": "res://Images/tools/Krita.png"
+	"krita": "res://Images/tools/Krita.png",
+	"vscodium": "res://Images/tools/VSCodium.png"
 }
 const ICON_MAX_WIDTH: int = 20
 

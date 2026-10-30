@@ -2,6 +2,9 @@
 ##
 ## Used by the Project Explorer to determine which tool should launch
 ## when a specific file is selected.
+## Note: Code category tools (Git, VSCodium) operate directly on the project
+## workspace and command-line level rather than single proprietary file extensions,
+## though VSCodium accepts arbitrary project file paths as launch arguments.
 
 extends RefCounted
 class_name FileTypeMapper

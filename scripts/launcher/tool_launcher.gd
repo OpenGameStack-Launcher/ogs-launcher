@@ -102,6 +102,8 @@ static func launch(tool_entry: Dictionary, project_dir: String, target_file: Str
 			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "godot_project_init", "tool": tool_id})
 			return _error_result(godot_project_result["error_code"], godot_project_result["error_message"])
 		launch_project_dir = String(godot_project_result["launch_project_dir"])
+	elif tool_id == "vscodium":
+		_configure_vscodium_git(project_dir)
 	
 	# Build tool-specific arguments
 	var args = _build_launch_arguments(tool_id, launch_project_dir, target_file)
@@ -171,6 +173,8 @@ static func _resolve_godot_project_dir(project_dir: String) -> Dictionary:
 ##
 ## Different tools require different arguments to operate in the project context:
 ## - Godot: --editor --path <project_dir> (opens the project in editor mode)
+## - Git: --cd=<project_dir> (opens Git Bash at project root)
+## - VSCodium: <project_dir> [target_file] (opens project workspace and optional file)
 ## - Blender, GIMP, Krita: (pass the target file directly if provided)
 static func _build_launch_arguments(tool_id: String, project_dir: String, target_file: String = "") -> PackedStringArray:
 	var args = PackedStringArray()
@@ -181,6 +185,12 @@ static func _build_launch_arguments(tool_id: String, project_dir: String, target
 			args.append("--editor")
 			args.append("--path")
 			args.append(project_dir)
+		"git":
+			args.append("--cd=%s" % project_dir)
+		"vscodium":
+			args.append(project_dir)
+			if not target_file.is_empty():
+				args.append(target_file)
 		_:
 			if not target_file.is_empty():
 				args.append(target_file)
@@ -469,6 +479,41 @@ static func _find_executable_in_directory(directory: String, tool_id: String) ->
 			var audacity_exe = directory.path_join("audacity" + ext)
 			if _tool_path_exists(audacity_exe):
 				return audacity_exe
+		"git":
+			var git_bash = directory.path_join("git-bash" + ext)
+			if _tool_path_exists(git_bash):
+				return git_bash
+			var git_bash_plain = directory.path_join("git-bash")
+			if _tool_path_exists(git_bash_plain):
+				return git_bash_plain
+			var git_cmd = directory.path_join("cmd").path_join("git" + ext)
+			if _tool_path_exists(git_cmd):
+				return git_cmd
+			var git_bin = directory.path_join("bin").path_join("git" + ext)
+			if _tool_path_exists(git_bin):
+				return git_bin
+			var git_plain = directory.path_join("bin").path_join("git")
+			if _tool_path_exists(git_plain):
+				return git_plain
+		"vscodium":
+			var vscodium_exe = directory.path_join("VSCodium" + ext)
+			if _tool_path_exists(vscodium_exe):
+				return vscodium_exe
+			var vscodium_plain = directory.path_join("VSCodium")
+			if _tool_path_exists(vscodium_plain):
+				return vscodium_plain
+			var codium_plain = directory.path_join("codium")
+			if _tool_path_exists(codium_plain):
+				return codium_plain
+			var codium_ext = directory.path_join("codium" + ext)
+			if _tool_path_exists(codium_ext):
+				return codium_ext
+			var bin_codium_plain = directory.path_join("bin").path_join("codium")
+			if _tool_path_exists(bin_codium_plain):
+				return bin_codium_plain
+			var bin_codium_ext = directory.path_join("bin").path_join("codium" + ext)
+			if _tool_path_exists(bin_codium_ext):
+				return bin_codium_ext
 
 	# Fallback: scan for executable files or .app bundles in directory
 	dir.list_dir_begin()
@@ -607,3 +652,112 @@ static func _is_hex_sha256(value: String) -> bool:
 		if not (is_digit or is_lower or is_upper):
 			return false
 	return true
+
+## Configures portable Git in project's .vscode/settings.json when VSCodium is launched.
+## Checks if project's stack.json contains Git, resolves Git's Central Library directory,
+## and sets git.path and git.enabled in .vscode/settings.json.
+##
+## @param project_dir: Absolute path to the project root
+## @return: bool: True if settings.json was written, false otherwise
+static func _configure_vscodium_git(project_dir: String) -> bool:
+	if project_dir.is_empty():
+		return false
+	
+	var stack_path = project_dir.path_join("stack.json")
+	if not FileAccess.file_exists(stack_path):
+		return false
+	
+	var file = FileAccess.open(stack_path, FileAccess.READ)
+	if file == null:
+		return false
+	var text = file.get_as_text()
+	file.close()
+	
+	var parsed = JSON.parse_string(text)
+	if not (parsed is Dictionary):
+		return false
+	
+	var tools = parsed.get("tools", [])
+	if not (tools is Array):
+		return false
+	
+	var git_found = false
+	var git_version := ""
+	for entry in tools:
+		if entry is Dictionary and String(entry.get("id", "")).to_lower() == "git":
+			git_found = true
+			git_version = String(entry.get("version", "")).strip_edges()
+			break
+	
+	if not git_found:
+		return false
+	
+	var library = LibraryManager.new()
+	var git_tool_dir := ""
+	if not git_version.is_empty():
+		git_tool_dir = library.get_tool_path("git", git_version)
+	
+	if git_tool_dir.is_empty():
+		var git_parent_dir = library.path_resolver.get_library_root().path_join("git")
+		var dir = DirAccess.open(git_parent_dir)
+		if dir != null:
+			dir.list_dir_begin()
+			var fname = dir.get_next()
+			while fname != "":
+				if dir.current_is_dir() and not fname.begins_with("."):
+					var candidate_dir = git_parent_dir.path_join(fname)
+					if FileAccess.file_exists(candidate_dir.path_join("cmd").path_join("git.exe")):
+						git_tool_dir = candidate_dir
+						break
+				fname = dir.get_next()
+			dir.list_dir_end()
+	
+	if git_tool_dir.is_empty():
+		return false
+	
+	var git_exe = git_tool_dir.path_join("cmd").path_join("git.exe")
+	if not FileAccess.file_exists(git_exe):
+		return false
+	
+	var vscode_dir = project_dir.path_join(".vscode")
+	if not DirAccess.dir_exists_absolute(vscode_dir):
+		var err = DirAccess.make_dir_recursive_absolute(vscode_dir)
+		if err != OK and not DirAccess.dir_exists_absolute(vscode_dir):
+			OgsLogger.warn("vscodium_git_config_dir_failed", {
+				"component": "launcher",
+				"path": vscode_dir
+			})
+			return false
+	
+	var settings_path = vscode_dir.path_join("settings.json")
+	var settings: Dictionary = {}
+	if FileAccess.file_exists(settings_path):
+		var sf = FileAccess.open(settings_path, FileAccess.READ)
+		if sf != null:
+			var stext = sf.get_as_text()
+			sf.close()
+			var sp = JSON.parse_string(stext)
+			if sp is Dictionary:
+				settings = sp
+	
+	settings["git.path"] = git_exe
+	settings["git.enabled"] = true
+	
+	var out_file = FileAccess.open(settings_path, FileAccess.WRITE)
+	if out_file == null:
+		OgsLogger.warn("vscodium_git_config_write_failed", {
+			"component": "launcher",
+			"path": settings_path
+		})
+		return false
+	
+	out_file.store_string(JSON.stringify(settings, "\t") + "\n")
+	out_file.close()
+	
+	OgsLogger.info("vscodium_git_config_applied", {
+		"component": "launcher",
+		"git_path": git_exe,
+		"project": project_dir.get_file()
+	})
+	return true
+

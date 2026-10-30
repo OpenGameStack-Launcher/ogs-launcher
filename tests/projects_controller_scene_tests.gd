@@ -27,7 +27,7 @@ func run() -> Dictionary:
 	_test_launch_button_disabled_initially(results)
 	_test_launch_button_enabled_after_select(results)
 	_test_offline_enforcer_updates(results)
-	_test_offline_enforcer_updates(results)
+	_test_add_code_tool_skips_asset_folder_creation(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -315,4 +315,41 @@ func _test_offline_enforcer_updates(results: Dictionary) -> void:
 	_expect(not OfflineEnforcer.is_offline(), "sample project should keep offline disabled", results)
 	_expect(OfflineEnforcer.get_reason() == "disabled", "sample project should set disabled reason", results)
 	_cleanup_nodes(ctx["nodes"])
+	_cleanup_registry(storage_path)
+
+func _test_add_code_tool_skips_asset_folder_creation(results: Dictionary) -> void:
+	## Verifies that adding Code category tools (git, vscodium) skips creating assets/Code/* directories.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_code_%s.json" % str(Time.get_ticks_msec())
+	var projects_root = "user://projects_controller_scene_code_root_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(projects_root)
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	controller.set_projects_root_path_for_tests(projects_root)
+	var created = controller._create_new_project_from_name("Code Tool Test Project")
+	_expect(created, "new project should be created", results)
+
+	var project_dir = controller.current_project_dir
+	_expect(not project_dir.is_empty(), "current_project_dir should be populated", results)
+
+	# Add Git tool
+	var added_git = controller.tool_manager.add_tool_to_current_project("git", "2.56.0.4")
+	_expect(added_git, "git should be added to project", results)
+	_expect(not DirAccess.dir_exists_absolute(project_dir.path_join("assets/Code/git")), "assets/Code/git should not be created", results)
+	_expect(not DirAccess.dir_exists_absolute(project_dir.path_join("assets/Code")), "assets/Code should not be created for git", results)
+
+	# Add VSCodium tool
+	var added_codium = controller.tool_manager.add_tool_to_current_project("vscodium", "1.143.17232")
+	_expect(added_codium, "vscodium should be added to project", results)
+	_expect(not DirAccess.dir_exists_absolute(project_dir.path_join("assets/Code/vscodium")), "assets/Code/vscodium should not be created", results)
+
+	# Add Blender tool (which is 3D category) to verify asset folders ARE created for asset tools
+	var added_blender = controller.tool_manager.add_tool_to_current_project("blender", "4.2")
+	_expect(added_blender, "blender should be added to project", results)
+	_expect(DirAccess.dir_exists_absolute(project_dir.path_join("assets/3D/blender")), "assets/3D/blender should be created for blender", results)
+
+	_cleanup_nodes(ctx["nodes"])
+	_cleanup_dir_recursive(projects_root)
 	_cleanup_registry(storage_path)

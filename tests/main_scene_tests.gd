@@ -81,6 +81,8 @@ func _test_controller_type_instances(results: Dictionary) -> void:
 	_expect(instance.tools_page_controller is ToolsPageController, "tools_page_controller should be ToolsPageController", results)
 	_expect(instance.settings_controller is SettingsController, "settings_controller should be SettingsController", results)
 	_expect(instance.download_dialog_controller is DownloadDialogController, "download_dialog_controller should be DownloadDialogController", results)
+	_expect(instance.installed_code_tools != null, "installed_code_tools should be wired", results)
+	_expect(instance.download_code_tools != null, "download_code_tools should be wired", results)
 
 	instance.free()
 

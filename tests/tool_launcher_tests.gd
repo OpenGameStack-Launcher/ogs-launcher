@@ -31,6 +31,10 @@ func run() -> Dictionary:
 	_test_is_executable_filename(results)
 	_test_is_console_binary_name(results)
 	_test_find_executable_deprioritizes_console(results)
+	_test_git_arguments(results)
+	_test_vscodium_arguments(results)
+	_test_git_vscodium_executable_discovery(results)
+	_test_vscodium_git_settings_injection(results)
 	
 	return results
 
@@ -338,3 +342,132 @@ func _test_find_executable_deprioritizes_console(results: Dictionary) -> void:
 	DirAccess.remove_absolute(console_bin)
 	DirAccess.remove_absolute(gui_bin)
 	DirAccess.remove_absolute(test_dir)
+
+func _test_git_arguments(results: Dictionary) -> void:
+	## Validates that Git tool receives --cd=<project_dir>.
+	var args = ToolLauncher._build_launch_arguments("git", "C:/Projects/MyGame")
+	_expect(args.size() == 1, "git should get 1 arg", results)
+	_expect(args[0] == "--cd=C:/Projects/MyGame", "git arg should be --cd=<project_dir>", results)
+
+func _test_vscodium_arguments(results: Dictionary) -> void:
+	## Validates that VSCodium receives project dir and optional target file.
+	var args_no_file = ToolLauncher._build_launch_arguments("vscodium", "C:/Projects/MyGame")
+	_expect(args_no_file.size() == 1, "vscodium without target should get 1 arg", results)
+	_expect(args_no_file[0] == "C:/Projects/MyGame", "vscodium arg should be project_dir", results)
+	
+	var args_with_file = ToolLauncher._build_launch_arguments("vscodium", "C:/Projects/MyGame", "src/main.gd")
+	_expect(args_with_file.size() == 2, "vscodium with target should get 2 args", results)
+	_expect(args_with_file[0] == "C:/Projects/MyGame", "vscodium first arg should be project_dir", results)
+	_expect(args_with_file[1] == "src/main.gd", "vscodium second arg should be target_file", results)
+
+func _test_git_vscodium_executable_discovery(results: Dictionary) -> void:
+	## Validates executable fallback discovery for git and vscodium.
+	var test_dir = "user://test_exe_discovery_%s" % str(Time.get_ticks_msec())
+	var abs_test_dir = ProjectSettings.globalize_path(test_dir)
+	var ext = ToolLauncher._get_executable_extension()
+	
+	# Test git-bash fallback
+	var git_dir = abs_test_dir.path_join("git_tool")
+	DirAccess.make_dir_recursive_absolute(git_dir)
+	var git_bash = git_dir.path_join("git-bash" + ext)
+	var f = FileAccess.open(git_bash, FileAccess.WRITE)
+	if f: f.store_string("dummy"); f.close()
+	var found_git = ToolLauncher._find_executable_in_directory(git_dir, "git")
+	_expect(found_git == git_bash, "should discover git-bash in git tool dir", results)
+	
+	# Test cmd/git fallback
+	var git_cmd_dir = abs_test_dir.path_join("git_cmd_tool")
+	DirAccess.make_dir_recursive_absolute(git_cmd_dir.path_join("cmd"))
+	var git_cmd = git_cmd_dir.path_join("cmd").path_join("git" + ext)
+	f = FileAccess.open(git_cmd, FileAccess.WRITE)
+	if f: f.store_string("dummy"); f.close()
+	var found_git_cmd = ToolLauncher._find_executable_in_directory(git_cmd_dir, "git")
+	_expect(found_git_cmd == git_cmd, "should discover cmd/git in git tool dir", results)
+
+	# Test VSCodium fallback
+	var vscodium_dir = abs_test_dir.path_join("vscodium_tool")
+	DirAccess.make_dir_recursive_absolute(vscodium_dir)
+	var codium_exe = vscodium_dir.path_join("VSCodium" + ext)
+	f = FileAccess.open(codium_exe, FileAccess.WRITE)
+	if f: f.store_string("dummy"); f.close()
+	var found_codium = ToolLauncher._find_executable_in_directory(vscodium_dir, "vscodium")
+	_expect(found_codium == codium_exe, "should discover VSCodium in tool dir", results)
+	
+	# Clean up test directories
+	DirAccess.remove_absolute(git_bash)
+	DirAccess.remove_absolute(git_cmd)
+	DirAccess.remove_absolute(codium_exe)
+	DirAccess.remove_absolute(git_cmd_dir.path_join("cmd"))
+	DirAccess.remove_absolute(git_cmd_dir)
+	DirAccess.remove_absolute(git_dir)
+	DirAccess.remove_absolute(vscodium_dir)
+	DirAccess.remove_absolute(abs_test_dir)
+
+func _test_vscodium_git_settings_injection(results: Dictionary) -> void:
+	## Validates that launching VSCodium automatically configures portable Git in .vscode/settings.json.
+	var test_proj = "user://test_vscodium_proj_%s" % str(Time.get_ticks_msec())
+	var abs_test_proj = ProjectSettings.globalize_path(test_proj)
+	DirAccess.make_dir_recursive_absolute(abs_test_proj)
+	
+	# Create a mock library root using OGS_LIBRARY_ROOT
+	var test_lib = "user://test_vscodium_lib_%s" % str(Time.get_ticks_msec())
+	var abs_test_lib = ProjectSettings.globalize_path(test_lib)
+	var git_install_dir = abs_test_lib.path_join("git").path_join("2.56.0.4")
+	DirAccess.make_dir_recursive_absolute(git_install_dir.path_join("cmd"))
+	var mock_git_exe = git_install_dir.path_join("cmd").path_join("git.exe")
+	var f = FileAccess.open(mock_git_exe, FileAccess.WRITE)
+	if f: f.store_string("mock git"); f.close()
+	
+	# Create stack.json with git and vscodium
+	var stack_path = abs_test_proj.path_join("stack.json")
+	var stack_content = {
+		"schema_version": 1,
+		"stack_name": "Test Code Stack",
+		"tools": [
+			{"id": "git", "version": "2.56.0.4"},
+			{"id": "vscodium", "version": "1.143.17232"}
+		]
+	}
+	f = FileAccess.open(stack_path, FileAccess.WRITE)
+	if f: f.store_string(JSON.stringify(stack_content)); f.close()
+	
+	# Pre-seed existing .vscode/settings.json with custom preference
+	var vscode_dir = abs_test_proj.path_join(".vscode")
+	DirAccess.make_dir_recursive_absolute(vscode_dir)
+	var settings_path = vscode_dir.path_join("settings.json")
+	var initial_settings = {"editor.fontSize": 14}
+	f = FileAccess.open(settings_path, FileAccess.WRITE)
+	if f: f.store_string(JSON.stringify(initial_settings)); f.close()
+	
+	# Set OGS_LIBRARY_ROOT
+	var prev_lib = OS.get_environment("OGS_LIBRARY_ROOT")
+	OS.set_environment("OGS_LIBRARY_ROOT", abs_test_lib)
+	
+	var configured = ToolLauncher._configure_vscodium_git(abs_test_proj)
+	OS.set_environment("OGS_LIBRARY_ROOT", prev_lib)
+	
+	_expect(configured, "vscodium git configuration should succeed", results)
+	_expect(FileAccess.file_exists(settings_path), ".vscode/settings.json should exist", results)
+	
+	f = FileAccess.open(settings_path, FileAccess.READ)
+	if f:
+		var parsed = JSON.parse_string(f.get_as_text())
+		f.close()
+		_expect(parsed is Dictionary, "settings.json should be valid JSON dictionary", results)
+		if parsed is Dictionary:
+			_expect(int(parsed.get("editor.fontSize", 0)) == 14, "pre-existing settings should be preserved", results)
+			_expect(parsed.get("git.path") == mock_git_exe, "git.path should point to portable git.exe", results)
+			_expect(parsed.get("git.enabled") == true, "git.enabled should be true", results)
+	else:
+		_expect(false, "settings.json should be readable", results)
+	
+	# Cleanup
+	DirAccess.remove_absolute(settings_path)
+	DirAccess.remove_absolute(vscode_dir)
+	DirAccess.remove_absolute(stack_path)
+	DirAccess.remove_absolute(abs_test_proj)
+	DirAccess.remove_absolute(mock_git_exe)
+	DirAccess.remove_absolute(git_install_dir.path_join("cmd"))
+	DirAccess.remove_absolute(git_install_dir)
+	DirAccess.remove_absolute(abs_test_lib.path_join("git"))
+	DirAccess.remove_absolute(abs_test_lib)

@@ -33,12 +33,14 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var installed_2d_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/"2DSection"/"2DTools"
 @onready var installed_3d_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/"3DSection"/"3DTools"
 @onready var installed_audio_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/AudioSection/AudioTools
+@onready var installed_code_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/CodeSection/CodeTools
 
 # Download tab containers
 @onready var download_engine_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/EngineSection/EngineTools
 @onready var download_2d_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/"2DSection"/"2DTools"
 @onready var download_3d_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/"3DSection"/"3DTools"
 @onready var download_audio_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/AudioSection/AudioTools
+@onready var download_code_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/CodeSection/CodeTools
 
 @onready var btn_add_project = $AppLayout/Content/PageProjects/ProjectsControls/AddButton
 @onready var btn_new_project = $AppLayout/Content/PageProjects/ProjectsControls/NewProjectButton
@@ -212,10 +214,12 @@ func _ready() -> void:
 	tools_page_deps.installed_2d_tools = installed_2d_tools
 	tools_page_deps.installed_3d_tools = installed_3d_tools
 	tools_page_deps.installed_audio_tools = installed_audio_tools
+	tools_page_deps.installed_code_tools = installed_code_tools
 	tools_page_deps.download_engine_tools = download_engine_tools
 	tools_page_deps.download_2d_tools = download_2d_tools
 	tools_page_deps.download_3d_tools = download_3d_tools
 	tools_page_deps.download_audio_tools = download_audio_tools
+	tools_page_deps.download_code_tools = download_code_tools
 	tools_page_deps.tools_status_label = tools_status_label
 	tools_page_deps.tools_offline_message = tools_offline_message
 	tools_page_deps.remove_tool_dialog = remove_tool_dialog

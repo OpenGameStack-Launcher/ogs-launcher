@@ -44,6 +44,14 @@ static func apply(tool_id: String, project_dir: String, launch_project_dir: Stri
 			return _apply_placeholder_override("krita", project_dir, args)
 		"audacity":
 			return _apply_placeholder_override("audacity", project_dir, args)
+		"vscodium":
+			args.append("--disable-telemetry")
+			OgsLogger.info("tool_config_applied", {"component": "launcher", "tool": "vscodium"})
+			return {
+				"success": true,
+				"error_message": "",
+				"args": args
+			}
 		_:
 			return {
 				"success": true,

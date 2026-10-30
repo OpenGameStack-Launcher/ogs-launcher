@@ -4,6 +4,7 @@ class_name ProjectToolManager
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 const StackManifest = preload("res://scripts/manifest/stack_manifest.gd")
 const LibraryManager = preload("res://scripts/library/library_manager.gd")
+const ToolCategoryMapper = preload("res://scripts/tools/tool_category_mapper.gd")
 
 var _pc: ProjectsController
 var _ui: ProjectsController.UIDeps
@@ -109,7 +110,7 @@ func _populate_add_tool_options() -> void:
 	)
 
 	for candidate in _pc._add_tool_candidates:
-		var label = "%s v%s" % [String(candidate.get("id", "")), String(candidate.get("version", ""))]
+		var label = "%s v%s" % [ToolCategoryMapper.get_display_name(String(candidate.get("id", ""))), String(candidate.get("version", ""))]
 		_ui.add_tool_option_list.add_item(label)
 
 	var add_button = _ui.add_tool_dialog.get_ok_button()
@@ -206,9 +207,9 @@ func _on_add_tool_item_selected(index: int) -> void:
 			var tool_id = String(candidate.get("id", ""))
 			var version = String(candidate.get("version", ""))
 			if _ui.add_tool_dialog.has_meta("change_version_target") and not String(_ui.add_tool_dialog.get_meta("change_version_target")).is_empty():
-				add_button.text = "Change to %s version %s" % [tool_id, version]
+				add_button.text = "Change to %s version %s" % [ToolCategoryMapper.get_display_name(tool_id), version]
 			else:
-				add_button.text = "Add %s version %s" % [tool_id, version]
+				add_button.text = "Add %s version %s" % [ToolCategoryMapper.get_display_name(tool_id), version]
 
 func _on_add_tool_item_activated(index: int) -> void:
 	## Adds tool immediately on double-click activation from Add Tool list.
@@ -291,6 +292,10 @@ func add_tool_to_current_project(tool_id: String, version: String) -> bool:
 			godot_project_dir = _pc.current_project_dir.path_join("game")
 			var project_name = ToolLauncher._resolve_ogs_project_name(_pc.current_project_dir)
 			ToolLauncher._create_godot_project_file(godot_project_dir, project_name)
+	elif tool_category == "Code" or tool_id in ["git", "vscodium"]:
+		# Code category tools operate directly on project root and game/ code,
+		# so skip creating empty assets/<category>/<tool_id> directories.
+		pass
 	else:
 		var asset_dir = _pc.current_project_dir.path_join("assets").path_join(tool_category).path_join(tool_id)
 		if not DirAccess.dir_exists_absolute(asset_dir):
@@ -301,7 +306,7 @@ func add_tool_to_current_project(tool_id: String, version: String) -> bool:
 
 	if _pc._selected_project_index >= 0:
 		_pc._select_project(_pc._selected_project_index)
-	_pc._update_status("Status: Added %s v%s to project stack." % [tool_id, version])
+	_pc._update_status("Status: Added %s v%s to project stack." % [ToolCategoryMapper.get_display_name(tool_id), version])
 	OgsLogger.info("project_tool_added", {
 		"component": "projects",
 		"tool_id": tool_id,
