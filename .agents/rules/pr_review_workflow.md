@@ -1,65 +1,74 @@
+---
+name: Pull Request Review and Merge Workflow
+description: The standard workflow for reviewing Pull Requests, synchronizing documentation, running headless tests, merging, and cleaning up worktrees.
+trigger: always_on
+---
+
 # Pull Request Review and Merge Workflow
 
-When the user asks you to review and merge Pull Requests, you MUST adhere to the following workflow to ensure quality, stability, and total isolation from the user's main workspace.
+When reviewing and merging Pull Requests, adhere to the canonical standards in [docs/REVIEWING_AND_MERGING_PRS.md](../../docs/REVIEWING_AND_MERGING_PRS.md) and `.agents/skills/code-review/SKILL.md`.
 
-## 1. Discovery and Assessment
-- Fetch the list of open PRs using `gh pr list`.
-- Read the PR details and diff using `gh pr view <ID>` and `gh pr diff <ID>`.
-- Perform an initial assessment. Changes must include:
-  - **Proper Logging**: Modifications and new code should use the `OgsLogger` system where appropriate.
-  - **Proper Comments/Documentation**: Code should be well-commented and explain *why* it does what it does.
-  - **Automated Tests**: There must be adequate automated test coverage for the changes.
-
-## 2. Safe Isolation (Worktrees)
-To avoid interfering with the main repository or other agents, you MUST perform all deep inspections and changes in an isolated Git worktree (as specified in `git_workflow.md`).
-
-1. Fetch the PR into a local branch:
-   ```powershell
-   git fetch origin pull/<PR_ID>/head:pr-<PR_ID>
-   ```
-2. Create the worktree:
-   ```powershell
-   git worktree add .worktrees/pr-<PR_ID> pr-<PR_ID>
-   ```
-3. Change into the worktree directory:
-   ```powershell
-   cd .worktrees/pr-<PR_ID>
-   ```
-
-## 3. Deep Inspection & Testing
-- Inside the worktree, review the files directly if needed.
-- Run the automated tests to verify the PR does not break the build:
+## 1. Discovery and Inspection
+- Fetch open PRs using `gh pr list --state open`.
+- **CRITICAL:** Never run a bare `gh pr view <ID>` command without `--json` (to avoid `read:project` token scope errors). Always inspect PR metadata and diffs using:
   ```powershell
-  & "C:\Program Files\Godot\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64_console.exe" --headless -s res://tests/test_runner.gd
+  gh pr view <PR_ID> --json number,title,body,state,baseRefName,headRefName,commits,files
+  gh pr diff <PR_ID>
+  ```
+- Audit the changes against:
+  - **Acceptance Criteria & Dependencies:** All issue checklist items met; any `Depends on #X` issues closed and merged.
+  - **Godot 4.7.2 & OGS Standards:** Static typing across `scripts/` and `tests/`, `##` docstrings, `const OgsLogger = preload("res://scripts/logging/logger.gd")` usage, air-gap safety (`OfflineEnforcer`, `SocketBlocker`), and path traversal protection.
+  - **Test Coverage & Registration:** Adequate tests in `tests/*_tests.gd`, `.free()` called on UI nodes in scene tests, threads joined on exit, and any new test suites or `class_name` scripts registered in `tests/test_runner.gd`.
+
+## 2. Worktree Reuse or Creation
+- First check if the resolver's worktree already exists locally (e.g., `.worktrees/issue-<issue_number>` or `.worktrees/<headRefName>`).
+  - **If it exists locally:** Perform your review, test execution, and documentation commits directly inside that existing worktree so you do not orphan it.
+  - **If it does not exist locally:** Fetch the branch and create `.worktrees/review-pr-<PR_ID>`:
+    ```powershell
+    git fetch origin
+    git worktree add .worktrees/review-pr-<PR_ID> <headRefName>
+    ```
+
+## 3. Independent Test Execution
+- Inside the worktree, run the headless import pass and test suite:
+  ```powershell
+  godot --headless --editor --quit
+  godot --headless -s res://tests/test_runner.gd
+  ```
+- Confirm 0 failures (`tests failed: 0`, exit code `0`).
+
+## 4. Documentation Coordination & Fixes (Prior to Merge)
+- As the **Documentation Steward**, review the PR's "Handoff for PR Reviewer & Documentation Agent" section and synchronize `docs/TESTING.md`, `docs/MANUAL_TESTING.md`, `docs/The_Plan.md`, `docs/*_SCHEMA.md`, and `README.md` as needed.
+- If the PR needs documentation updates or minor review fixes (missing docstrings, comments, or logging), apply them inside the worktree, re-run tests, verify `git status` is clean, commit, and push to the PR branch:
+  ```powershell
+  git add -A
+  git commit -m "docs: synchronize documentation and review updates for PR #<PR_ID>"
+  git push origin HEAD:<headRefName>
   ```
 
-## 4. Modification (If Needed)
-If the PR lacks proper logging, comments, tests, or fails the test suite:
-- Make the necessary code modifications **within the worktree**.
-- Run the tests again to ensure your fixes work.
-- Commit the changes (ensure a clean working tree per `git_workflow.md`).
-- Push the changes back to the remote PR branch:
-  ```powershell
-  # Check which remote branch the PR is tracking, or use gh CLI to push
-  # If pushing to a fork might be restricted, fallback to commenting via gh pr review
-  git push origin HEAD:<remote-branch-name> 
-  ```
-
-## 5. Merge and Cleanup
-If everything passes inspection (or after you have fixed it):
-1. Navigate back to the main repository root.
-2. Merge the PR using the GitHub CLI:
+## 5. Safe Merge and Complete Cleanup
+Once tests pass and documentation is pushed:
+1. Release any Windows file locks held by Godot processes and return to the repository root:
+   ```powershell
+   Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue
+   Set-Location "c:\Projects\ogs-launcher"
+   ```
+2. Remove any local worktrees for this issue/PR and prune worktree metadata:
+   ```powershell
+   git worktree remove .worktrees/issue-<issue_number> --force -ErrorAction SilentlyContinue
+   git worktree remove .worktrees/review-pr-<PR_ID> --force -ErrorAction SilentlyContinue
+   if (Test-Path ".worktrees/issue-<issue_number>") { Remove-Item -Path ".worktrees/issue-<issue_number>" -Recurse -Force -ErrorAction SilentlyContinue }
+   if (Test-Path ".worktrees/review-pr-<PR_ID>") { Remove-Item -Path ".worktrees/review-pr-<PR_ID>" -Recurse -Force -ErrorAction SilentlyContinue }
+   git worktree prune
+   ```
+3. Merge the PR using a standard merge commit (never squash or rebase):
    ```powershell
    gh pr merge <PR_ID> --merge --delete-branch
    ```
-3. Remove the temporary worktree to keep the workspace clean:
+4. Synchronize `main`, delete the local feature branch, register merged classes, and confirm the issue is closed:
    ```powershell
-   git worktree remove .worktrees/pr-<PR_ID> --force
+   git checkout main
+   git pull origin main
+   git branch -D <headRefName> -ErrorAction SilentlyContinue
+   godot --headless --editor --quit
    ```
-4. Delete the local PR tracking branch:
-   ```powershell
-   git branch -D pr-<PR_ID>
-   ```
-
-## 6. Reporting
-- Always provide a clear summary in the chat detailing what PRs you reviewed, any changes you had to make to them (e.g., adding tests, fixing Godot syntax), and confirm they were successfully merged and the worktrees cleaned up.

@@ -1,55 +1,57 @@
 ---
 name: Issue Resolution Workflow
-description: The standard workflow for picking up and resolving GitHub issues.
+description: The standard workflow for triaging, implementing, testing, and opening Pull Requests for GitHub issues in OGS Launcher.
 trigger: always_on
 ---
 
 # Issue Resolution Workflow
 
-When tasked with fixing issues, the agent **MUST** follow this process to ensure consistency and quality.
+When tasked with resolving GitHub issues, follow the canonical specifications in [docs/RESOLVING_ISSUES.md](../../docs/RESOLVING_ISSUES.md). When asked to orchestrate multi-issue creation, resolution, and PR review using subagents, activate the `issue-orchestration` skill (`.agents/skills/issue-orchestration/SKILL.md`).
 
-## 1. Select an Issue
+## 1. Triage & Select an Issue
+- Fetch open issues using:
+  ```powershell
+  gh issue list --state open --limit 50 --json number,title,labels,body
+  ```
+- **CRITICAL:** Never run a bare `gh issue view <id>` command without `--json` (it can fail with `read:project` token scope errors). Always use:
+  ```powershell
+  gh issue view <number> --json number,title,body,state,labels,assignees
+  ```
+- Check for `Depends on #<number>` in the issue body. Only select an issue whose dependencies are `CLOSED` and merged into `main`.
+- Work on issues **one at a time**, prioritizing critical/high severity and foundational modules (`scripts/config`, `scripts/manifest`, `scripts/library`, `scripts/network`) before localized UI changes, starting with the lowest issue number in the top priority tier unless specified otherwise.
 
-- Use `gh issue list --state open --limit 1 --json number,title,body --jq "sort_by(.number)"` to fetch open issues from the GitHub repository.
-- Work on issues **one at a time**, starting with the **oldest** (lowest number) unless the user specifies otherwise.
-- Read the full issue body to understand the problem before writing any code.
-
-## 2. Create a Worktree Branch
-
-- Follow the rules in `git_workflow.md` — always work in a worktree, never directly on `main`.
-- Branch naming convention: `fix-issue-<number>` (e.g., `fix-issue-42`).
+## 2. Create an Isolated Worktree Branch
+- Follow `git_workflow.md`: always work inside `.worktrees/`, never directly on `main`:
+  ```powershell
+  git fetch origin
+  git worktree add .worktrees/issue-<number> -b fix/issue-<number>-<short-description> origin/main
+  ```
+  *(Use `feature/issue-<number>-<short-description>` for enhancements).*
 
 ## 3. Implement the Fix
-
-- Write or update the necessary code.
-- Ensure the code follows Godot 4.7.2 syntax and best practices.
-- Add appropriate inline documentation and comments.
-- Include any necessary logging using the `OgsLogger` system.
+- Write clean, statically typed Godot 4.7.2 GDScript meeting every item in the issue's Acceptance Criteria.
+- Preserve OGS architectural rules: air-gap first (`OfflineEnforcer`, `SocketBlocker`), portable paths (`PathResolver`), and path traversal protection.
+- Add `##` docstrings to new functions and log operational events using `const OgsLogger = preload("res://scripts/logging/logger.gd")` (never alias as `Logger` and never log sensitive user paths).
 
 ## 4. Automated Testing
-
-- Add or update automated tests that specifically cover the code you changed or added.
-- Run the tests locally to ensure they pass:
+- Add or update unit or scene tests in `tests/*_tests.gd` (`extends RefCounted`, `class_name`, `func run() -> Dictionary`). Ensure scene tests `.free()` all created UI nodes.
+- **CRITICAL:** Register any new `class_name` script and any new `tests/*_tests.gd` suite inside `tests/test_runner.gd`.
+- Run the headless import pass and test suite inside the worktree:
+  ```powershell
+  godot --headless --editor --quit
+  godot --headless -s res://tests/test_runner.gd
   ```
-  & "C:\Program Files\Godot\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64_console.exe" --headless -s res://tests/test_runner.gd
-  ```
-- All tests **MUST** pass before proceeding.
+- All tests **MUST** pass (`tests failed: 0`, exit code `0`) before proceeding.
 
-## 5. Commit & Pull Request
-
-- Run `git status` and ensure the working tree is clean (no uncommitted or untracked files).
-- Commit with a clear message referencing the issue (e.g., `Fix #42: Refactor setup() to use UIDeps`).
-- Push the branch to origin.
-- Open a pull request using the GitHub CLI:
-  ```
-  gh pr create --title "Fix #42: <short description>" --body "Resolves #42. <explanation of the change>"
+## 5. Commit & Open Pull Request
+- Run `git status` inside the worktree and ensure all modified files and generated `.uid` files are staged and committed.
+- Push the branch to origin (`git push -u origin HEAD`).
+- Write the PR description to `pr_body.md` using `write_file` (following `.github/pull_request_template.md`, including `Resolves #<number>` and the **Handoff for PR Reviewer & Documentation Agent** section), create the PR, and remove `pr_body.md`:
+  ```powershell
+  gh pr create --title "<type>: <short description> (Resolves #<number>)" --body-file pr_body.md --base main
+  Remove-Item -Path pr_body.md -Force -ErrorAction SilentlyContinue
   ```
 
-## 6. Review
-
-- Wait for user feedback/approval on the PR before merging.
-- Do **not** move on to the next issue until the user confirms it is time.
-
-## 7. Cleanup
-
-- Once the PR is merged or the user says to move on, clean up the worktree per `git_workflow.md`.
+## 6. Handoff Boundaries
+- **Do not update project documentation** (`docs/The_Plan.md`, `docs/TESTING.md`, `docs/MANUAL_TESTING.md`, `README.md`) during the resolver step unless the issue itself is a documentation issue; provide handoff notes in the PR body for the PR Reviewer & Documentation Steward.
+- **Do not merge the PR** from the resolver role. Either hand off to the `pr_reviewer` subagent (when running the authorized `issue-orchestration` pipeline) or report the PR URL to the user.

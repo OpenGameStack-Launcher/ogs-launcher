@@ -8,6 +8,11 @@
 # Build artifacts
 artifacts/
 
+# Signing keys & certificates
+*.keystore
+*.jks
+*.pfx
+
 # VS Code workspace files
 *.code-workspace
 .vscode/
@@ -15,6 +20,24 @@ artifacts/
 # Notes folder
 notes/*
 
-# Temporary files
+# Temporary files & Agent Worktrees
 tmp/
 .worktrees/
+
+# Logs & Test Output
+*.log
+godot_run_output.txt
+
+# Screenshots & Agent Visual QA
+screenshot.png
+agent_screenshot.png
+agent_screenshot.png.import
+
+# Agent Scratch Files
+pr_body.md
+pr_body.txt
+release_notes.md
+*.tmp.md
+open_issues.json
+tmp_*
+test_*.tmp
