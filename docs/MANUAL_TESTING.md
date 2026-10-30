@@ -224,6 +224,38 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 3.2: Projects Page - Project Explorer Folder Pruning and Launchable File Tree
+
+**Objective:** Verify that Project Explorer prunes non-relevant directories and displays only direct tool folders and launchable files.
+
+**Steps:**
+1. Select a project in the Project Library (e.g. `samples/sample_project`).
+2. Inspect the Project Explorer tree view on the right side of the Projects page.
+3. Verify that dot-prefixed directories (e.g. `.git`, `.godot`, `.worktrees`, `.github`, `.vscode`) do not appear in the tree.
+4. Verify that non-relevant folders (such as `docs`, `scripts`, or empty custom folders) containing no launchable files are excluded from the tree.
+5. Verify that direct tool folders (`gimp`, `blender`, `krita`, `audacity`, `godot`, `game`) and their ancestor directories (e.g. `assets`, `2D`, `3D`, `Audio`) remain visible even when empty.
+6. Verify that files recognized by FileTypeMapper (`project.godot`, `.xcf`, `.blend`, `.kra`, `.aup3`) are visible and selectable in the tree.
+7. Right-click a folder or file to confirm the context menu ("Open in File Explorer") appears.
+8. Click "Open in File Explorer" and verify the target path opens in your desktop file manager.
+
+**Expected Results:**
+- [x] Dot-prefixed directories are skipped and never rendered in the tree.
+- [x] Non-relevant folders containing only source files (.gd), documentation (.md), or empty directories are pruned.
+- [x] Direct tool folders and their ancestors remain visible even when empty.
+- [x] Only launchable files recognized by FileTypeMapper appear in the explorer.
+- [x] Right-click context menu opens cleanly and launches the file manager at the selected path.
+
+**Pass Criteria:**
+- Project Explorer shows a clean, pruned tree without non-relevant folders or dot directories.
+- Direct tool folders and launchable files are accessible and selectable.
+- Context menu operates properly.
+
+**If test fails:**
+- Verify `scripts/projects/project_explorer.gd` filtering methods (`_has_relevant_content`, `_is_launchable_file`).
+- Check Godot Output panel for errors during directory traversal.
+
+---
+
 ### Editor Test 4: Settings Page — Mirror Configuration
 
 **Objective:** Verify mirror root can be configured and status indicator updates correctly.
@@ -463,6 +495,8 @@ After completing Editor Tests 1-8, fill in this table:
 | 1: Startup & Onboarding | ✅/⚠️/❌ | | |
 | 2: Load sample_project | ✅/⚠️/❌ | | |
 | 3: Load sample_project_sealed | ✅/⚠️/❌ | | |
+| 3.1: Add / Remove Tool Flow | ✅/⚠️/❌ | | |
+| 3.2: Project Explorer Pruning | ✅/⚠️/❌ | | |
 | 4: Mirror Config UI | ✅/⚠️/❌ | | |
 | 5: Remote Repo Config | ✅/⚠️/❌ | | |
 | 6: Seal Button States | ✅/⚠️/❌ | | |

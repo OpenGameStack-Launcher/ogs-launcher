@@ -184,6 +184,12 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Add Tool dialog refactored from dropdown to list selection
     *   [x] Add Tool candidate fallback sources (catalog + library + tracked projects)
     *   [x] Remove Tool writes `stack.json` and refreshes UI immediately
+*   [x] Project Explorer File Tree and Directory Pruning - 100% Complete ✅
+    *   [x] Skip all dot-prefixed directories during traversal (.git, .godot, .worktrees, .github, .vscode)
+    *   [x] Preserve recognized direct tool folders (gimp, blender, krita, audacity, godot, game) and their ancestor folders even when empty
+    *   [x] Display only launchable files recognized by FileTypeMapper (project.godot, .xcf, .blend, .kra, .aup3)
+    *   [x] Prune non-relevant folders containing neither launchable files nor direct tool folders
+    *   [x] Root-only display when project contains zero launchable files and zero direct tool folders
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:

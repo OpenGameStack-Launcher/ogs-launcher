@@ -12,6 +12,8 @@ signal folder_selected(folder_path: String, tool_id: String)
 
 var tree: Tree
 var current_project_dir: String = ""
+var context_menu: PopupMenu
+var context_target_path: String = ""
 
 func _init(tree_node: Tree) -> void:
 	tree = tree_node
@@ -22,9 +24,6 @@ func _init(tree_node: Tree) -> void:
 	
 	_setup_context_menu()
 
-var context_menu: PopupMenu
-var context_target_path: String = ""
-
 func _setup_context_menu() -> void:
 	context_menu = PopupMenu.new()
 	context_menu.add_item("Open in File Explorer", 0)
@@ -33,22 +32,22 @@ func _setup_context_menu() -> void:
 
 func _on_item_mouse_selected(position: Vector2, mouse_button_index: int) -> void:
 	if mouse_button_index == MOUSE_BUTTON_RIGHT:
-		var item = tree.get_item_at_position(position)
+		var item: TreeItem = tree.get_item_at_position(position)
 		if item:
 			item.select(0)
-			var meta = item.get_metadata(0)
-			if meta and meta.has("path"):
-				context_target_path = meta["path"]
-				var mouse_pos = tree.get_screen_position() + position
+			var meta: Variant = item.get_metadata(0)
+			if meta is Dictionary and meta.has("path"):
+				context_target_path = String(meta["path"])
+				var mouse_pos: Vector2 = tree.get_screen_position() + position
 				context_menu.popup(Rect2(mouse_pos, Vector2.ZERO))
 
 func _on_context_menu_id_pressed(id: int) -> void:
 	if id == 0 and not context_target_path.is_empty():
-		var path_to_open = ProjectSettings.globalize_path(context_target_path)
+		var path_to_open: String = ProjectSettings.globalize_path(context_target_path)
 		
 		# Validate path to prevent arbitrary URL execution and ensure it stays inside the loaded project.
-		var normalized_root = current_project_dir.simplify_path().to_lower()
-		var normalized_path = path_to_open.simplify_path().to_lower()
+		var normalized_root: String = current_project_dir.simplify_path().to_lower()
+		var normalized_path: String = path_to_open.simplify_path().to_lower()
 		if current_project_dir.is_empty() or not path_to_open.is_absolute_path() or path_to_open.contains("://") or (normalized_path != normalized_root and not normalized_path.begins_with(normalized_root + "/")):
 			OgsLogger.warn("invalid_shell_open_path", {"component": "project_explorer", "absolute_path": path_to_open})
 			return
@@ -66,80 +65,119 @@ func load_project(project_dir: String) -> void:
 	if current_project_dir.is_empty() or not DirAccess.dir_exists_absolute(current_project_dir):
 		return
 		
-	var root = tree.create_item()
+	var root: TreeItem = tree.create_item()
 	root.set_text(0, current_project_dir.get_file())
 	root.set_metadata(0, {"path": current_project_dir, "is_dir": true})
 	
 	_populate_dir(current_project_dir, root)
 
+## Traverses and populates child items in the Tree, pruning non-relevant folders.
 func _populate_dir(dir_path: String, parent_item: TreeItem) -> void:
-	var dir = DirAccess.open(dir_path)
+	var dir: DirAccess = DirAccess.open(dir_path)
 	if dir == null:
 		return
 		
 	dir.list_dir_begin()
-	var file_name = dir.get_next()
-	var dirs = []
-	var files = []
+	var file_name: String = dir.get_next()
+	var candidate_dirs: Array[String] = []
+	var launchable_files: Array[String] = []
 	
-	while file_name != "":
-		if file_name != "." and file_name != "..":
+	while not file_name.is_empty():
+		if not file_name.begins_with("."):
 			if dir.current_is_dir():
-				# Hide internal Godot folders
-				if file_name != ".godot":
-					dirs.append(file_name)
+				var full_sub_path: String = dir_path.path_join(file_name)
+				if _has_relevant_content(full_sub_path):
+					candidate_dirs.append(file_name)
 			else:
-				var ext = file_name.get_extension().to_lower()
-				# Only show files that have an associated tool, or are project.godot
-				if FileTypeMapper.EXTENSION_TO_TOOL.has(ext) or file_name.to_lower() == "project.godot":
-					files.append(file_name)
+				if _is_launchable_file(file_name):
+					launchable_files.append(file_name)
 		file_name = dir.get_next()
 	dir.list_dir_end()
 	
-	dirs.sort()
-	files.sort()
+	candidate_dirs.sort()
+	launchable_files.sort()
 	
-	for d in dirs:
-		var item = tree.create_item(parent_item)
+	for d: String in candidate_dirs:
+		var item: TreeItem = tree.create_item(parent_item)
 		item.set_text(0, d)
-		var full_path = dir_path.path_join(d)
+		var full_path: String = dir_path.path_join(d)
 		item.set_metadata(0, {"path": full_path, "is_dir": true})
 		_populate_dir(full_path, item)
 		
-	for f in files:
-		var item = tree.create_item(parent_item)
+	for f: String in launchable_files:
+		var item: TreeItem = tree.create_item(parent_item)
 		item.set_text(0, f)
-		var full_path = dir_path.path_join(f)
+		var full_path: String = dir_path.path_join(f)
 		item.set_metadata(0, {"path": full_path, "is_dir": false})
 
+## Checks whether a directory or any of its non-dot-prefixed descendants
+## contains at least one launchable file or at least one direct tool folder.
+func _has_relevant_content(dir_path: String) -> bool:
+	if _is_direct_tool_folder(dir_path):
+		return true
+		
+	var dir: DirAccess = DirAccess.open(dir_path)
+	if dir == null:
+		return false
+		
+	dir.list_dir_begin()
+	var file_name: String = dir.get_next()
+	var sub_dirs: Array[String] = []
+	
+	while not file_name.is_empty():
+		if not file_name.begins_with("."):
+			if dir.current_is_dir():
+				sub_dirs.append(dir_path.path_join(file_name))
+			else:
+				if _is_launchable_file(file_name):
+					dir.list_dir_end()
+					return true
+		file_name = dir.get_next()
+	dir.list_dir_end()
+	
+	for sub_dir: String in sub_dirs:
+		if _has_relevant_content(sub_dir):
+			return true
+			
+	return false
+
+## Determines if a file is recognized as launchable by FileTypeMapper or is project.godot.
+func _is_launchable_file(file_name: String) -> bool:
+	var ext: String = file_name.get_extension().to_lower()
+	return FileTypeMapper.EXTENSION_TO_TOOL.has(ext) or file_name.to_lower() == "project.godot"
+
+## Returns true if the folder directly represents a recognized tool.
+func _is_direct_tool_folder(folder_path: String) -> bool:
+	return not _infer_tool_from_folder(folder_path).is_empty()
+
 func _on_item_selected() -> void:
-	var item = tree.get_selected()
+	var item: TreeItem = tree.get_selected()
 	if item == null:
 		return
-	var meta = item.get_metadata(0)
-	if meta == null:
+	var meta: Variant = item.get_metadata(0)
+	if not (meta is Dictionary):
 		return
 		
-	var path = String(meta["path"])
-	var is_dir = bool(meta["is_dir"])
+	var path: String = String(meta["path"])
+	var is_dir: bool = bool(meta["is_dir"])
 	
 	if is_dir:
-		var tool_id = _infer_tool_from_folder(path)
+		var tool_id: String = _infer_tool_from_folder(path)
 		folder_selected.emit(path, tool_id)
 	else:
-		var tool_id = FileTypeMapper.get_tool_for_file(path)
+		var tool_id: String = FileTypeMapper.get_tool_for_file(path)
 		file_selected.emit(path, tool_id)
 
 func _on_item_activated() -> void:
 	# Double click to toggle collapse
-	var item = tree.get_selected()
-	if item != null and item.get_children() != null:
+	var item: TreeItem = tree.get_selected()
+	if item != null and not item.get_children().is_empty():
 		item.collapsed = not item.collapsed
 
 func _infer_tool_from_folder(folder_path: String) -> String:
 	# If they select assets/2D/gimp, the tool is gimp.
 	# We can just look at the last folder name and see if its a known tool.
-	var folder_name = folder_path.get_file().to_lower()
+	var folder_name: String = folder_path.get_file().to_lower()
 	if ToolCategoryMapper.FALLBACK_CATEGORIES.has(folder_name):
 		return folder_name
 	if folder_name == "game":
@@ -148,13 +186,12 @@ func _infer_tool_from_folder(folder_path: String) -> String:
 
 ## Gets the currently selected path, or project root if nothing is selected.
 func get_selected_path() -> String:
-	var item = tree.get_selected()
+	var item: TreeItem = tree.get_selected()
 	if item != null:
-		var meta = item.get_metadata(0)
-		if meta != null:
-			return meta["path"]
+		var meta: Variant = item.get_metadata(0)
+		if meta is Dictionary and meta.has("path"):
+			return String(meta["path"])
 	return current_project_dir
 
 func refresh() -> void:
 	load_project(current_project_dir)
-

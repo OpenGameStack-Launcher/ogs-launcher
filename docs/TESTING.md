@@ -271,6 +271,14 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Online/offline status label updates
   - Download button disablement during active download
 
+- **[tests/project_explorer_tests.gd](tests/project_explorer_tests.gd)** - Validates ProjectExplorer directory filtering, pruning, and selection.
+  - Non-relevant and empty folders excluded from tree
+  - Direct tool folders (gimp, blender, krita, audacity, godot, game) and ancestor folders retained even when empty
+  - Launchable files displayed while non-launchable files (.gd, .md, .png, etc.) omitted
+  - Dot-prefixed directories (.git, .godot, .worktrees, .github) skipped during traversal
+  - Projects with zero launchable files and zero tool folders display root item only
+  - TreeItem selection signals, folder/file tool inference, and context menu initialization
+
 ### Startup Tests (Initialization Verification)
 
 - **[tests/startup_tests.gd](tests/startup_tests.gd)** — Verifies launcher initialization without errors (3 tests).

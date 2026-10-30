@@ -79,6 +79,7 @@ Extract the ZIP, keep `OGS-Launcher.exe` and `OGS-Launcher.pck` together, and ru
 3.  **Run:** Press F5 to start the OGS Launcher.
 4.  **Create or Add a Project:** Use **New Project** to scaffold an OGS project under your user home directory (e.g., `~/OGS_Projects`), or **Add Project** to register an existing project that already has `stack.json` and `ogs_config.json`.
 5.  **Manage Project Tools:** Use **Add Tool** / **Remove Tool** on the Projects page to update the project `stack.json`, then use the Tools page to download missing tool versions.
+6.  **Project Explorer:** Browse launchable files (`.blend`, `.xcf`, `.kra`, `.aup3`, `project.godot`) and tool directories in the project tree, with automated pruning of non-relevant folders.
 
 ---
 

@@ -64,8 +64,10 @@ func _run_tests_async() -> void:
 	load("res://scripts/mirror/remote_mirror_hydrator.gd")
 	load("res://scripts/onboarding/onboarding_wizard.gd")
 	load("res://scripts/tools/tool_category_mapper.gd")
+	load("res://scripts/tools/file_type_mapper.gd")
 	load("res://scripts/tools/tools_controller.gd")
 	load("res://scripts/tools/progress_controller.gd")
+	load("res://scripts/projects/project_explorer.gd")
 	
 	var summary := {
 		"passed": 0,
@@ -106,6 +108,7 @@ func _run_tests_async() -> void:
 		"res://tests/startup_tests.gd",
 		"res://tests/seal_controller_tests.gd",
 		"res://tests/tools_page_controller_tests.gd",
+		"res://tests/project_explorer_tests.gd",
 	]
 	
 	for test_file in test_files:
