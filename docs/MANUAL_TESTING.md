@@ -758,9 +758,63 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 16: Add Remote Project Button and Modal Cloning Workflow
+
+**Objective:** Verify that the 3-button Projects toolbar renders with equal width and 16px separation, missing PortableGit triggers a guided navigation prompt to the Tools page, the modal dialog handles URL entry and destination overrides, folder collisions offer auto-incremented naming suggestions, active clones can be cancelled cleanly, and offline mode disables the button with a descriptive tooltip.
+
+**Steps:**
+1. Inspect the Projects page top toolbar:
+   - Verify three buttons are displayed in order: "Add Local Project", "Add Remote Project", and "New Project".
+   - Confirm all three buttons have equal horizontal expansion (`size_flags_horizontal = 3`) and are separated by 16px horizontal spacing.
+2. Missing-Git guided prompt verification:
+   - Temporarily rename or move any extracted Git folder in the Central Library (`%LOCALAPPDATA%\OGS\Library\git`).
+   - Click **"Add Remote Project"**.
+   - Confirm an exclusive modal dialog titled "Git Required" appears stating that PortableGit must be installed.
+   - Click **"Go to Tools"** and verify the launcher automatically switches to the Tools page with the Download tab focused.
+   - Restore the Git folder in the Central Library.
+3. Clone dialog and URL validation:
+   - Click **"Add Remote Project"**.
+   - Verify an exclusive modal dialog titled "Add Remote Project" opens with focus on the repository URL input field.
+   - Confirm the Destination Folder field is pre-filled with the active Primary Projects Folder.
+   - Confirm the "Clone" button is initially disabled.
+   - Type whitespace into the URL field: confirm "Clone" remains disabled.
+   - Enter a valid repository URL (e.g. `https://github.com/OpenGameStack/sample-project.git`): confirm "Clone" becomes enabled.
+   - Click **"Browse..."** next to Destination Folder: select an alternate directory in the folder picker and confirm the destination updates.
+4. Folder collision resolution:
+   - In your destination folder, create a test directory named `sample-project`.
+   - Enter `https://github.com/OpenGameStack/sample-project.git` in the URL field and click **"Clone"**.
+   - Confirm an exclusive modal dialog titled "Folder Name Collision" appears.
+   - Confirm the suggested folder name is auto-incremented to `sample-project-1`.
+   - Click **"Cancel"** on the collision dialog and remove the temporary test directory.
+5. In-progress cancellation:
+   - Enter a valid URL for a repository and click **"Clone"**.
+   - While the status label displays cloning activity, click **"Cancel"**.
+   - Confirm the Cancel button text immediately changes to "Cancelling..." and disables.
+   - Confirm the clone process is terminated and the dialog resets to its idle input state.
+6. Offline mode enforcement:
+   - Enable offline mode in Settings.
+   - Return to the Projects page: verify **"Add Remote Project"** is disabled.
+   - Hover over the button: verify the tooltip reads: `"Disabled because OGS Launcher is currently in offline mode."`
+   - Disable offline mode in Settings: verify the button re-enables and the tooltip clears.
+
+**Expected Results:**
+- [x] Three-button toolbar layout renders with equal button widths and 16px separation.
+- [x] Missing PortableGit opens guided dialog and "Go to Tools" navigates to Tools page.
+- [x] Modal dialog pre-fills primary folder and enables Clone button only when non-empty URL is provided.
+- [x] Folder collision dialog suggests auto-incremented folder names (slug-1, slug-2).
+- [x] Cancellation terminates child processes and resets the dialog cleanly.
+- [x] Offline mode disables Add Remote Project with descriptive tooltip.
+
+**Pass Criteria:**
+- User-facing remote project clone workflow functions reliably.
+- Modals are exclusive and unresizable.
+- Offline mode and missing-Git guidance protect air-gap and user experience.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-15, fill in this table:
+After completing Editor Tests 1-16, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -781,6 +835,7 @@ After completing Editor Tests 1-15, fill in this table:
 | 13: Debug MCP Visual QA Bridge | ✅/⚠️/❌ | | |
 | 14: Primary Projects Folder & Auto-Config | ✅/⚠️/❌ | | |
 | 15: Remote Git Cloner & URL Validation | ✅/⚠️/❌ | | |
+| 16: Remote Project Toolbar & Modal Clone | ✅/⚠️/❌ | | |
 
 ---
 

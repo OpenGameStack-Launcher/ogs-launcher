@@ -44,6 +44,7 @@ The heart of the stack is the **OGS Launcher**, a custom application (built in G
     * **Provisioning Mode:** For connected workstations. Downloads and sets up tools automatically.
     * **Sovereign Mode:** For secure labs. Locks the environment to "Read-Only" and blocks internet access.
 * **Project "Sealing":** An automated workflow to clean, sanitize, and lock a project for delivery or long-term archival.
+* **Remote Project Git Cloning:** Clone remote OGS projects directly from Git URLs with automatic pre-checkout manifest verification, PortableGit resolution, and subfolder collision handling.
 
 ---
 
@@ -77,7 +78,7 @@ Extract the ZIP, keep `OGS-Launcher.exe` and `OGS-Launcher.pck` together, and ru
     ```
 2.  **Open in Godot:** Import the `project.godot` file into the Godot Editor.
 3.  **Run:** Press F5 to start the OGS Launcher.
-4.  **Create or Add a Project:** Use **New Project** to scaffold an OGS project under your configured Primary Projects Folder (defaults to `~/OGS_Projects` or `%USERPROFILE%\OGS_Projects`, configurable in Settings), or **Add Local Project** to register an existing project that has `stack.json` (auto-generating `ogs_config.json` if missing).
+4.  **Create, Clone, or Add a Project:** Use **New Project** to scaffold an OGS project under your configured Primary Projects Folder (defaults to `~/OGS_Projects` or `%USERPROFILE%\OGS_Projects`, configurable in Settings), **Add Remote Project** to clone an OGS project directly from a remote Git repository with pre-checkout `stack.json` verification and folder collision resolution, or **Add Local Project** to register an existing project that has `stack.json` (auto-generating `ogs_config.json` if missing).
 5.  **Manage Project Tools:** Use **Add Tool** / **Remove Tool** on the Projects page to update the project `stack.json`, then use the Tools page to download missing tool versions.
 6.  **Project Explorer & Tool Launching:** Browse launchable files (`.blend`, `.xcf`, `.kra`, `.aup3`, `project.godot`), stack-aware VSCodium text and script files, and tool directories in the project tree, double-click files to launch tools directly, or select pinned tools from the Project Tools List to launch at the project root.
 

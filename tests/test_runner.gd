@@ -70,6 +70,7 @@ func _run_tests_async() -> void:
 	load("res://scripts/tools/progress_controller.gd")
 	load("res://scripts/projects/project_explorer.gd")
 	load("res://scripts/projects/remote_project_cloner.gd")
+	load("res://scripts/projects/remote_project_dialog.gd")
 	load("res://autoloads/mcp_interaction_server.gd")
 	
 	var summary := {
@@ -114,6 +115,7 @@ func _run_tests_async() -> void:
 		"res://tests/project_explorer_tests.gd",
 		"res://tests/file_type_mapper_tests.gd",
 		"res://tests/remote_project_cloner_tests.gd",
+		"res://tests/remote_project_dialog_tests.gd",
 		"res://tests/release_packaging_tests.gd",
 	]
 	

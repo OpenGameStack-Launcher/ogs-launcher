@@ -43,6 +43,7 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var download_code_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/CodeSection/CodeTools
 
 @onready var btn_add_project = $AppLayout/Content/PageProjects/ProjectsControls/AddButton
+@onready var btn_add_remote_project = $AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton
 @onready var btn_new_project = $AppLayout/Content/PageProjects/ProjectsControls/NewProjectButton
 @onready var projects_tabs = $AppLayout/Content/PageProjects/ProjectsTabs
 @onready var projects_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsList"
@@ -164,6 +165,8 @@ func _notification(what: int) -> void:
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
 		if tools_page_controller != null:
 			tools_page_controller.cleanup()
+		if projects_controller != null:
+			projects_controller.cleanup()
 
 func _ready() -> void:
 	_apply_global_theme()
@@ -269,7 +272,9 @@ func _ready() -> void:
 
 	var deps = ProjectsControllerScript.UIDeps.new()
 	deps.btn_add_project = btn_add_project
+	deps.btn_add_remote_project = btn_add_remote_project
 	deps.btn_new_project = btn_new_project
+	deps.app_node = self
 	deps.projects_list = projects_list
 	deps.lbl_project_status = lbl_project_status
 	deps.lbl_offline_status = lbl_offline_status
@@ -360,7 +365,25 @@ func _apply_offline_ui(active: bool) -> void:
 		if node is BaseButton:
 			var button := node as BaseButton
 			button.disabled = active
-			button.tooltip_text = "Disabled in offline mode." if active else ""
+			button.tooltip_text = "Disabled because OGS Launcher is currently in offline mode." if active else ""
+
+func _update_tools_connectivity_status(is_online: bool) -> void:
+	## Helper delegating connectivity status updates to tools_page_controller or direct fallback.
+	if tools_page_controller != null:
+		tools_page_controller.update_connectivity_status(is_online)
+	elif tools_status_label != null and tools_offline_message != null:
+		if OfflineEnforcer.is_offline():
+			tools_status_label.text = "Status: Offline (enforced: %s)" % OfflineEnforcer.get_reason()
+			tools_status_label.modulate = Color(1, 0.6, 0.2, 1)
+			tools_offline_message.visible = true
+		elif is_online:
+			tools_status_label.text = "Status: Online ✓"
+			tools_status_label.modulate = Color.GREEN
+			tools_offline_message.visible = false
+		else:
+			tools_status_label.text = "Status: Offline ⚠️"
+			tools_status_label.modulate = Color(1, 0.6, 0.2, 1)
+			tools_offline_message.visible = true
 
 func _on_mirror_root_browse_pressed() -> void:
 	## Helper forwarding mirror root browse action to SettingsController.
@@ -377,3 +400,5 @@ func _exit_tree() -> void:
 		layout_controller.cleanup()
 	if tools_page_controller != null:
 		tools_page_controller.cleanup()
+	if projects_controller != null:
+		projects_controller.cleanup()

@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (28 total, 34 suites across all categories):**
+**Current unit test suites (29 total, 35 suites across all categories):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -300,6 +300,18 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Working tree checkout failure handling and cancellation teardown killing child process
   - Target directory pre-existence rejection and defensive directory deletion bounded by destination root
 
+- **[tests/remote_project_dialog_tests.gd](tests/remote_project_dialog_tests.gd)** - Validates RemoteProjectDialogController UI flow and modal lifecycle (10 tests).
+  - Dialog hierarchy instantiation: modal ConfirmationDialog (exclusive, unresizable), LineEdits, Browse button, status label, progress bar, missing-Git prompt, and collision dialog
+  - URL input validation and Clone button state transitions (disabled for empty/whitespace, enabled for valid URL)
+  - Destination folder pre-filling with configured Primary Projects Folder and manual override via browse dialog
+  - Subfolder collision detection and incremental folder name suggestion (slug-1, slug-2)
+  - Validation failure keeps dialog open with intact URL input
+  - Manifest failure preserves entered URL and re-enables inputs
+  - Cancellation during active clone invokes cloner cancel and restores idle controls
+  - Successful clone closes modal dialog and emits clone_completed signal
+  - Missing-Git guided dialog emits tool_view_requested upon "Go to Tools" confirmation
+  - OfflineEnforcer active state blocks opening clone dialogs
+
 ### Scene Tests (Integration with UI)
 
 Scene tests instantiate UI nodes and verify controller behaviors. These are similar to Unity's "Play Mode tests" but run headlessly in Godot.
@@ -328,6 +340,9 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Bidirectional mutual deselection synchronizes selection states between `project_tools_list` and `explorer_tree`
   - Double-click file activation in project explorer triggers launch targeting the activated file
   - New file creation in projects with VSCodium creates empty files on disk and defaults extensionless files to .txt with VSCodium launch state
+  - Three-button toolbar layout (Add Local Project, Add Remote Project, New Project) with equal size flags and 16px separation
+  - Missing-Git detection opens guided dialog and "Go to Tools" emits navigation hook
+  - Offline mode disabling and descriptive tooltip enforcement on AddRemoteProjectButton
 
 - **[tests/projects_page_indicators_tests.gd](tests/projects_page_indicators_tests.gd)** - Tests tool availability indicators in Projects page.
   - Tool items populated with ID and version
@@ -339,11 +354,12 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
 - **[tests/main_scene_tests.gd](tests/main_scene_tests.gd)** - Smoke tests for the main launcher scene.
   - main.tscn loads without errors
   - All page nodes exist (Projects, Engine, Tools, Settings)
-  - Add Local Project / New Project buttons and Projects list exist
+  - Add Local Project / Add Remote Project / New Project buttons and Projects list exist
   - Settings page Projects folder controls (label, path line edit, browse button, reset button) exist and wire properly
   - Primary projects root browse dialog is queued for free when closed or canceled without selection
   - Tool action rows include Add Tool, Remove Tool, Launch Selected Tool, Remove Project, and Seal for Delivery
   - `installed_code_tools` and `download_code_tools` node bindings are wired
+  - AddRemoteProjectButton wired to UIDeps and toggles disabled state and descriptive tooltip on offline state change
 
 - **[tests/tools_page_scene_tests.gd](tests/tools_page_scene_tests.gd)** - Scene tests for Tools page UI.
   - Tools/Download tab nodes exist
@@ -372,7 +388,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
 
 - **[tests/startup_tests.gd](tests/startup_tests.gd)** - Verifies launcher initialization without errors (5 tests).
   - Main scene loads and instantiates successfully
-  - All required UI nodes exist and are accessible (22 critical nodes including Settings page Projects folder controls)
+  - All required UI nodes exist and are accessible (23 critical nodes including Projects toolbar AddRemoteProjectButton and Settings page Projects folder controls)
   - Controller classes (`ProjectsController`, `SealController`, `LayoutController`, `OnboardingWizard`) instantiate cleanly
   - Script validation: `main.gd` is properly formed and instantiable
   - `McpInteractionServer` autoload registration in `project.godot`, `autoloads/mcp_interaction_server.gd` instantiation, and `mcp_client.py` presence

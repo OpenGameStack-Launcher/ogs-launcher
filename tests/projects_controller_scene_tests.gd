@@ -38,6 +38,9 @@ func run() -> Dictionary:
 	_test_mutual_deselection_between_tools_list_and_explorer(results)
 	_test_explorer_double_click_triggers_activation_and_launch(results)
 	_test_new_file_creation_with_vscodium_in_stack(results)
+	_test_three_button_toolbar_layout(results)
+	_test_missing_git_opens_guided_dialog_and_emits_navigation(results)
+	_test_offline_mode_disables_remote_button_and_enforces_tooltip(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -64,6 +67,7 @@ func _build_controller(storage_path: String) -> Dictionary:
 	var controller = ProjectsControllerScript.new()
 	controller.set_projects_index_path_for_tests(storage_path)
 	var add_button = Button.new()
+	var add_remote_button = Button.new()
 	var new_button = Button.new()
 	var projects_list = ItemList.new()
 	var status_label = Label.new()
@@ -90,6 +94,7 @@ func _build_controller(storage_path: String) -> Dictionary:
 
 	var deps = ProjectsController.UIDeps.new()
 	deps.btn_add_project = add_button
+	deps.btn_add_remote_project = add_remote_button
 	deps.btn_new_project = new_button
 	deps.projects_list = projects_list
 	deps.lbl_project_status = status_label
@@ -131,13 +136,16 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"project_tools_list": project_tools_list,
 		"tabs": projects_tabs,
 		"change_version_btn": change_version_button,
-		"nodes": [add_button, new_button, projects_list, status_label, offline_label, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, remove_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button]
+		"add_remote_btn": add_remote_button,
+		"nodes": [add_button, add_remote_button, new_button, projects_list, status_label, offline_label, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, remove_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button]
 	}
 
-func _cleanup_nodes(nodes: Array) -> void:
+func _cleanup_nodes(nodes: Array, controller: ProjectsController = null) -> void:
 	## Frees UI nodes created during tests to avoid leaks.
+	if controller != null:
+		controller.cleanup()
 	for node in nodes:
-		if node:
+		if node and is_instance_valid(node) and not node.is_queued_for_deletion():
 			node.free()
 
 func _cleanup_registry(storage_path: String) -> void:
@@ -724,6 +732,101 @@ func _test_new_file_creation_with_vscodium_in_stack(results: Dictionary) -> void
 	_expect(controller._selected_launch_tool_id == "vscodium", "launch tool should be vscodium for json file", results)
 	_expect(controller._selected_launch_target_path == expected_json_path, "target path should match settings.json", results)
 
-	_cleanup_nodes(ctx["nodes"])
+	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_dir_recursive(projects_root)
 	_cleanup_registry(storage_path)
+
+func _test_three_button_toolbar_layout(results: Dictionary) -> void:
+	## Verifies the three-button toolbar layout, button ordering, and separation constants in main.tscn.
+	var scene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for toolbar layout test", results)
+	if scene == null:
+		return
+	var instance = scene.instantiate()
+	var controls = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls") as HBoxContainer
+	_expect(controls != null, "ProjectsControls HBoxContainer should exist", results)
+	if controls != null:
+		var separation = controls.get_theme_constant("separation")
+		_expect(separation == 16, "ProjectsControls separation should be 16, got %d" % separation, results)
+		_expect(controls.get_child_count() >= 3, "ProjectsControls should have at least 3 children", results)
+		
+		var add_local = controls.get_child(0) as Button
+		var add_remote = controls.get_child(1) as Button
+		var new_proj = controls.get_child(2) as Button
+		
+		_expect(add_local != null and add_local.name == "AddButton", "Child 0 should be AddButton", results)
+		if add_local != null:
+			_expect(add_local.text == "Add Local Project", "Child 0 text should be 'Add Local Project'", results)
+			_expect(add_local.size_flags_horizontal == 3, "Child 0 size_flags_horizontal should be 3", results)
+			
+		_expect(add_remote != null and add_remote.name == "AddRemoteProjectButton", "Child 1 should be AddRemoteProjectButton", results)
+		if add_remote != null:
+			_expect(add_remote.text == "Add Remote Project", "Child 1 text should be 'Add Remote Project'", results)
+			_expect(add_remote.size_flags_horizontal == 3, "Child 1 size_flags_horizontal should be 3", results)
+			_expect(add_remote.has_meta("network_ui") and add_remote.get_meta("network_ui") == true, "AddRemoteProjectButton should have metadata/network_ui = true", results)
+			
+		_expect(new_proj != null and new_proj.name == "NewProjectButton", "Child 2 should be NewProjectButton", results)
+		if new_proj != null:
+			_expect(new_proj.text == "New Project", "Child 2 text should be 'New Project'", results)
+			_expect(new_proj.size_flags_horizontal == 3, "Child 2 size_flags_horizontal should be 3", results)
+	instance.free()
+
+func _test_missing_git_opens_guided_dialog_and_emits_navigation(results: Dictionary) -> void:
+	## Verifies missing-Git detection opens guided dialog and 'Go to Tools' emits navigation hook.
+	var storage_path = "user://test_projects_missing_git.json"
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	
+	# Ensure cloner sees git as not installed by pointing to an empty test library manager
+	var empty_lib = LibraryManager.new()
+	controller.remote_dialog.set_library_manager(empty_lib)
+	
+	var nav_state := {"called": false, "tool_id": "", "version": ""}
+	controller.tool_view_requested.connect(func(tid: String, ver: String):
+		nav_state["called"] = true
+		nav_state["tool_id"] = tid
+		nav_state["version"] = ver
+	)
+	
+	# Simulate pressing Add Remote Project button
+	controller._on_add_remote_project_pressed()
+	
+	_expect(controller.remote_dialog.missing_git_dialog != null, "Missing-Git dialog should exist", results)
+	if controller.remote_dialog.missing_git_dialog != null:
+		_expect(controller.remote_dialog.missing_git_dialog.visible == true, "Missing-Git dialog should be visible", results)
+		_expect(controller.remote_dialog.missing_git_dialog.ok_button_text == "Go to Tools", "Confirm button text should be 'Go to Tools'", results)
+		
+		# Confirm dialog ("Go to Tools")
+		controller.remote_dialog.missing_git_dialog.confirmed.emit()
+		_expect(nav_state["called"] == true, "tool_view_requested should be emitted on Go to Tools", results)
+		_expect(nav_state["tool_id"] == "git", "tool_view_requested should request 'git' tool", results)
+		_expect(controller.remote_dialog.missing_git_dialog.visible == false, "Missing-Git dialog should close after Go to Tools", results)
+	
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_registry(storage_path)
+
+func _test_offline_mode_disables_remote_button_and_enforces_tooltip(results: Dictionary) -> void:
+	## Verifies AddRemoteProjectButton is disabled with offline tooltip when offline mode is toggled.
+	var scene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for offline button test", results)
+	if scene == null:
+		return
+	var instance = scene.instantiate()
+	(Engine.get_main_loop() as SceneTree).root.add_child(instance)
+	
+	var add_remote = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton") as Button
+	_expect(add_remote != null, "AddRemoteProjectButton should exist in main scene", results)
+	if add_remote != null:
+		instance._collect_network_ui_nodes()
+		
+		# Toggle offline mode on
+		instance._on_offline_state_changed(true, "offline_mode")
+		_expect(add_remote.disabled == true, "AddRemoteProjectButton should be disabled when offline", results)
+		_expect(add_remote.tooltip_text == "Disabled because OGS Launcher is currently in offline mode.", "AddRemoteProjectButton should have descriptive offline tooltip", results)
+		
+		# Toggle offline mode off
+		instance._on_offline_state_changed(false, "online_mode")
+		_expect(add_remote.disabled == false, "AddRemoteProjectButton should be enabled when online", results)
+		_expect(add_remote.tooltip_text == "", "AddRemoteProjectButton tooltip should be empty when online", results)
+	
+	instance.free()
