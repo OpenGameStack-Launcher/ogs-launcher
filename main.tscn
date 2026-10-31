@@ -51,6 +51,10 @@ text = "Settings"
 [node name="Content" type="MarginContainer" parent="AppLayout" unique_id=782060099]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_constants/margin_left = 20
+theme_override_constants/margin_top = 16
+theme_override_constants/margin_right = 20
+theme_override_constants/margin_bottom = 16
 
 [node name="PageProjects" type="VBoxContainer" parent="AppLayout/Content" unique_id=323450688]
 visible = false
@@ -59,6 +63,7 @@ theme_override_constants/separation = 8
 
 [node name="ProjectsTitle" type="Label" parent="AppLayout/Content/PageProjects" unique_id=1928982413]
 layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "Projects"
 
 [node name="ProjectsControls" type="HBoxContainer" parent="AppLayout/Content/PageProjects" unique_id=938020695]
@@ -86,10 +91,14 @@ text = "New Project"
 
 [node name="ProjectsStatusLabel" type="Label" parent="AppLayout/Content/PageProjects" unique_id=1563600937]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 13
 text = "Status: Waiting for project selection."
 
 [node name="OfflineStatusLabel" type="Label" parent="AppLayout/Content/PageProjects" unique_id=943174233]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 13
 text = "Offline: Unknown"
 
 [node name="ProjectsTabs" type="TabContainer" parent="AppLayout/Content/PageProjects"]
@@ -173,6 +182,8 @@ layout_mode = 2
 [node name="ExplorerLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar"]
 layout_mode = 2
 size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 18
 text = "Project Explorer"
 
 [node name="NewFolderBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar"]
@@ -204,6 +215,7 @@ layout_mode = 2
 
 [node name="ToolsTitle" type="Label" parent="AppLayout/Content/PageTools/ToolsToolbar" unique_id=1754347414]
 layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "Tools"
 vertical_alignment = 1
 
@@ -216,8 +228,9 @@ layout_mode = 2
 text = "Refresh"
 
 [node name="ToolsStatusLabel" type="Label" parent="AppLayout/Content/PageTools" unique_id=681354899]
-modulate = Color(1, 0.8, 0.2, 1)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 13
 text = "Status: Loading..."
 
 [node name="OfflineMessage" type="Label" parent="AppLayout/Content/PageTools" unique_id=2105491231]
@@ -434,10 +447,13 @@ theme_override_constants/separation = 8
 
 [node name="Label" type="Label" parent="AppLayout/Content/PageSettings" unique_id=91038207]
 layout_mode = 2
+theme_override_font_sizes/font_size = 24
 text = "Settings"
 
 [node name="ProjectsSettingsLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=2081194210]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 18
 text = "Projects"
 
 [node name="ProjectsRootContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings" unique_id=1482093121]
@@ -464,14 +480,20 @@ text = "Reset to Default"
 
 [node name="NetworkLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=486317142]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 18
 text = "Network"
 
 [node name="ProjectOfflineSettingsLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=1879047723]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 18
 text = "Selected Project Offline Policy"
 
 [node name="ProjectOfflineStatusLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=669732033]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 13
 text = "No project selected"
 
 [node name="ProjectOfflineModeCheckButton" type="CheckButton" parent="AppLayout/Content/PageSettings" unique_id=153682165]
@@ -491,6 +513,8 @@ metadata/network_ui = true
 
 [node name="MirrorSettingsLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=646124025]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 18
 text = "Mirror Settings"
 
 [node name="MirrorRootContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings" unique_id=854921524]
@@ -536,8 +560,9 @@ text = "Reset to Default"
 metadata/network_ui = true
 
 [node name="MirrorStatusLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=328179951]
-modulate = Color(1, 0.8, 0.2, 1)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 13
 text = "Mirror status: Not configured"
 
 [node name="SealDialog" type="AcceptDialog" parent="." unique_id=939076631]
