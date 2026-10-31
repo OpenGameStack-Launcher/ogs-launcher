@@ -888,9 +888,50 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 17: Shell Content Margins and Standard Typographic Scale
+
+**Objective:** Verify that `AppLayout/Content` enforces standard 20px horizontal and 16px vertical margins, preventing content from sitting flush against the window borders, and verify that the typographic hierarchy across page titles (24px), section headers (18px cyan accent), form labels/body (16px), and secondary/metadata labels (13px muted) renders legibly without clipping.
+
+**Steps:**
+1. Launch OGS Launcher in editor mode or standalone.
+2. Projects page inspection:
+   - Verify 20px left margin between the sidebar panel and page content.
+   - Verify 20px right margin between project cards/scrollbars and the right window edge.
+   - Verify 16px top margin above the "Projects" title.
+   - Verify 16px bottom margin below the action row buttons ("Open Project", "Remove Project", "Seal for Delivery") so buttons do not sit directly on the bottom window edge.
+   - Verify "Projects" page title renders with prominent 24px font size.
+   - Verify "Project Explorer" header renders with 18px font size and cyan accent color (`Color(0.45, 0.8, 1.0)`).
+   - Verify status labels ("Status: ...", "Offline Mode: ...") render with compact 13px font size and muted slate styling (`Color(0.65, 0.70, 0.78)`).
+3. Tools page inspection:
+   - Click **"Tools"** in the sidebar.
+   - Verify "Tools" page title renders at 24px.
+   - Verify "Refresh" button maintains 20px clearance from right window edge.
+   - Verify category headers ("Engine", "2D Tools", "3D Tools", "Audio", "Code") preserve their distinct category colors.
+   - Verify "Status: Online" or offline messages render at 13px font size.
+4. Settings page inspection:
+   - Click **"Settings"** in the sidebar.
+   - Verify "Settings" page title renders at 24px.
+   - Verify section headers ("Projects", "Network", "Selected Project Offline Policy", "Mirror Settings") render at 18px with cyan accent color.
+   - Verify form row labels ("Primary Projects Folder:", "Mirror Root:", "Remote Repo URL:") render at standard 16px body font size.
+   - Verify secondary metadata labels ("Selected: ...", "Mirror status: ...") render at 13px muted color.
+
+**Expected Results:**
+- [x] Uniform 20px horizontal and 16px vertical content margins across Projects, Tools, and Settings pages.
+- [x] Bottom action buttons and right scrollbars do not touch or clip against the outer window borders.
+- [x] Page titles render at 24px font size.
+- [x] Section headers render at 18px font size with high-contrast cyan accent styling.
+- [x] Secondary status and metadata labels render at 13px font size with muted slate styling.
+- [x] Custom tool category colors in Tools page remain distinct and intact.
+
+**Pass Criteria:**
+- Main layout content does not collide with window borders.
+- Typographic scale clearly separates page titles, section headers, form controls, and secondary status labels across all views.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-16, fill in this table:
+After completing Editor Tests 1-17, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -912,6 +953,7 @@ After completing Editor Tests 1-16, fill in this table:
 | 14: Primary Projects Folder & Auto-Config | ✅/⚠️/❌ | | |
 | 15: Remote Git Cloner & URL Validation | ✅/⚠️/❌ | | |
 | 16: Remote Project Toolbar & Modal Clone | ✅/⚠️/❌ | | |
+| 17: Shell Margins & Typography Scale | ✅/⚠️/❌ | | |
 
 ---
 
