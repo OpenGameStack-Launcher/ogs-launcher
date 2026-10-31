@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 631
+tests passed: 654
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (23 total, 205 tests):**
+**Current unit test suites (24 total):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -228,10 +228,19 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Tool installation signals (started, completed)
   - Hydration lifecycle status updates
 
-- **[tests/remote_mirror_hydrator_tests.gd](tests/remote_mirror_hydrator_tests.gd)** — Validates remote mirror hydration behavior.
+- **[tests/remote_mirror_hydrator_tests.gd](tests/remote_mirror_hydrator_tests.gd)** - Validates remote mirror hydration behavior.
   - Missing repository URL is rejected
   - Invalid repository JSON fails validation
   - Missing archive file reports failures
+  - Loopback HTTP integration test validates remote download to file, SHA-256 verification, library extraction, and progress reporting
+
+- **[tests/progress_controller_tests.gd](tests/progress_controller_tests.gd)** - Validates download and installation progress tracking and UI updates.
+  - Inline progress registration and tracking state
+  - Basic progress updates and percentage calculations
+  - Indeterminate progress and formatting for unknown or zero total bytes
+  - Automatic transition to installation phase upon download completion
+  - Manual phase transitions and signal emission (completed, cancelled)
+  - Concurrent multi-tool tracking isolation
 
 - **[tests/tool_category_mapper_tests.gd](tests/tool_category_mapper_tests.gd)** - Validates tool category classification and display names.
   - Supports "Code" category across category validation and `get_all_categories()`

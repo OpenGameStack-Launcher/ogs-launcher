@@ -399,7 +399,9 @@ dir "$env:LOCALAPPDATA\OGS\"
 3. Observe connectivity status indicator (should show "Online ✓" if network available)
 4. Locate "godot v4.7.2" in the tools list (under "Engine" category)
 5. Click the **"Download"** button next to godot v4.7.2
-6. Watch progress bar as tool downloads/installs to `%LOCALAPPDATA%\OGS\Library\`
+6. Watch progress bar as tool downloads/installs to `%LOCALAPPDATA%\OGS\Library\`. Observe progress behavior:
+   - For standard downloads with known size, progress bar shows percentage and label formats as `X.X / Y.Y MB`.
+   - For remote downloads without Content-Length (such as HTTP redirects or chunked streams), progress bar remains in indeterminate mode displaying `X.X MB downloaded` without prematurely jumping to "Installing...".
 7. Wait for completion (may take 30+ seconds depending on archive size)
 8. Observe final status when complete
 9. Switch to **"Installed"** tab and verify godot v4.7.2 now appears there
@@ -411,7 +413,8 @@ dir "$env:LOCALAPPDATA\OGS\"
 - ✅ Download tab shows available tools with "Download" buttons
 - ✅ Connectivity status shows "Online ✓" (if network available)
 - ✅ Clicking "Download" button starts the download
-- ✅ Progress bar appears showing download percentage
+- ✅ Progress bar appears showing download percentage (or indeterminate mode with `X.X MB downloaded` when Content-Length is unavailable)
+- ✅ Auto-transition to "Installing..." occurs only after the download payload is completely received
 - ✅ All other download buttons become disabled during active download
 - ✅ "Cancel" button appears (optional: click it and verify download stops)
 - ✅ Download progresses without crashes (status updates during process)

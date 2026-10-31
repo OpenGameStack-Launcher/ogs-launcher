@@ -19,6 +19,7 @@ func run() -> Dictionary:
 	_test_track_inline_progress(results)
 	_test_update_progress_basic(results)
 	_test_update_progress_auto_install_transition(results)
+	_test_update_progress_unknown_total(results)
 	_test_set_install_phase(results)
 	_test_complete_progress(results)
 	_test_cancel_progress(results)
@@ -102,6 +103,38 @@ func _test_update_progress_auto_install_transition(results: Dictionary) -> void:
 	
 	_expect(controller.get_phase("godot", "4.3") == ProgressControllerScript.Phase.INSTALL, "should auto-transition to INSTALL", results)
 	_expect(ui["progress_bar"].indeterminate == true, "should switch to indeterminate", results)
+	_expect(ui["label"].text == "Installing...", "label should show 'Installing...'", results)
+	
+	_free_mock_ui(ui)
+
+## Test: update_progress handles unknown or zero total_bytes correctly.
+func _test_update_progress_unknown_total(results: Dictionary) -> void:
+	## Verifies update_progress keeps indeterminate state and does not auto-transition to install when total <= 0.
+	var controller = ProgressControllerScript.new()
+	var ui = _create_mock_ui()
+	
+	controller.track_inline_progress("vscodium", "1.90.0", ui["progress_bar"], ui["label"], ui["container"])
+	
+	# Update with total_bytes = 0 (unknown size during redirect or initial chunk)
+	controller.update_progress("vscodium", "1.90.0", 5242880, 0) # 5 MB downloaded, total 0
+	
+	_expect(ui["container"].visible == true, "container should be visible when total is 0", results)
+	_expect(ui["progress_bar"].visible == true, "progress_bar should be visible when total is 0", results)
+	_expect(ui["progress_bar"].indeterminate == true, "progress_bar should be indeterminate when total is 0", results)
+	_expect(ui["label"].visible == true, "label should be visible when total is 0", results)
+	_expect(ui["label"].text == "5.0 MB downloaded", "label should show downloaded MB without / 0.0 MB, got: '%s'" % ui["label"].text, results)
+	_expect(controller.get_phase("vscodium", "1.90.0") == ProgressControllerScript.Phase.DOWNLOAD, "phase must remain DOWNLOAD and not transition to INSTALL", results)
+	
+	# Update with negative total_bytes = -1 (e.g. HTTP chunked without Content-Length)
+	controller.update_progress("vscodium", "1.90.0", 10485760, -1) # 10 MB downloaded, total -1
+	
+	_expect(ui["progress_bar"].indeterminate == true, "progress_bar should be indeterminate when total is negative", results)
+	_expect(ui["label"].text == "10.0 MB downloaded", "label should show downloaded MB without / 0.0 MB on negative total", results)
+	_expect(controller.get_phase("vscodium", "1.90.0") == ProgressControllerScript.Phase.DOWNLOAD, "phase must still remain DOWNLOAD on negative total", results)
+	
+	# Once total_bytes becomes known and download completes, verify auto-transition works
+	controller.update_progress("vscodium", "1.90.0", 15728640, 15728640) # 15 MB / 15 MB
+	_expect(controller.get_phase("vscodium", "1.90.0") == ProgressControllerScript.Phase.INSTALL, "phase should transition to INSTALL when total_bytes > 0 and complete", results)
 	_expect(ui["label"].text == "Installing...", "label should show 'Installing...'", results)
 	
 	_free_mock_ui(ui)

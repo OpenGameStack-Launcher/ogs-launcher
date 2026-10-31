@@ -115,9 +115,9 @@ func update_progress(
 		return
 	
 	# Show progress elements
-	var container = data.get("container")
-	var progress_bar = data.get("progress_bar")
-	var label = data.get("label")
+	var container: Control = data.get("container") as Control
+	var progress_bar: ProgressBar = data.get("progress_bar") as ProgressBar
+	var label: Label = data.get("label") as Label
 	
 	if container != null:
 		container.visible = true
@@ -125,19 +125,26 @@ func update_progress(
 		progress_bar.visible = true
 	
 	# Update progress bar
-	if progress_bar != null and total_bytes > 0:
-		progress_bar.indeterminate = false
-		progress_bar.value = (bytes_downloaded * 100.0) / total_bytes
+	if progress_bar != null:
+		if total_bytes > 0:
+			progress_bar.indeterminate = false
+			progress_bar.value = (bytes_downloaded * 100.0) / total_bytes
+		else:
+			progress_bar.indeterminate = true
+			progress_bar.value = 0
 	
 	# Update label with download progress
 	if label != null:
-		var downloaded_mb = bytes_downloaded / (1024.0 * 1024.0)
-		var total_mb = total_bytes / (1024.0 * 1024.0)
-		label.text = "%.1f / %.1f MB" % [downloaded_mb, total_mb]
+		var downloaded_mb: float = bytes_downloaded / (1024.0 * 1024.0)
+		if total_bytes > 0:
+			var total_mb: float = total_bytes / (1024.0 * 1024.0)
+			label.text = "%.1f / %.1f MB" % [downloaded_mb, total_mb]
+		else:
+			label.text = "%.1f MB downloaded" % downloaded_mb
 		label.visible = true
 	
 	# Auto-transition to install phase when download completes
-	if bytes_downloaded >= total_bytes and total_bytes > 0:
+	if total_bytes > 0 and bytes_downloaded >= total_bytes:
 		set_install_phase(tool_id, version)
 
 ## Switches to installation phase (indeterminate progress).
