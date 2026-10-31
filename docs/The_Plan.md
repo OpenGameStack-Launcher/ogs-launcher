@@ -249,6 +249,12 @@ Granular, actionable items for the Tools/Projects page redesign:
         *   File explorer selection: `"Open <filename> in <Tool Name>"` (enabled) when a recognized file or folder is selected in `ProjectExplorerTree`
     *   [x] Added empty-area deselection handlers (`empty_clicked` / `nothing_selected`) restoring disabled prompt state
     *   [x] Added comprehensive scene tests in `tests/projects_controller_scene_tests.gd`, `tests/main_scene_tests.gd`, and `tests/projects_page_indicators_tests.gd` (38 test suites passing, 1892 total tests with zero failures)
+*   [x] Relocate Project Offline Policy Toggles to Project Details (Issue #134) - 100% Complete ✅
+    *   [x] Relocated per-project offline policy toggles (Offline mode and Force offline) from global Settings (PageSettings) directly to Project Details in PageProjects
+    *   [x] Equipped both toggles with explicit in-context helper descriptions differentiating network blocking from strict local tools/ air-gap isolation
+    *   [x] Refactored SettingsController to focus purely on global settings and transferred project offline policy handling directly to ProjectsController
+    *   [x] Dynamic status updates syncing normalized project path and persisting changes to ogs_config.json on disk
+    *   [x] Added comprehensive scene tests in `tests/projects_controller_scene_tests.gd`, `tests/main_scene_tests.gd`, and `tests/startup_tests.gd` (1930 tests passing)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:

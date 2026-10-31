@@ -112,9 +112,13 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var mirror_repo_path = $AppLayout/Content/PageSettings/MirrorRepoContainer/MirrorRepoPath
 @onready var mirror_repo_clear_button = $AppLayout/Content/PageSettings/MirrorRepoContainer/MirrorRepoClearButton
 @onready var mirror_status_label = $AppLayout/Content/PageSettings/MirrorStatusLabel
-@onready var project_offline_status_label = $AppLayout/Content/PageSettings/ProjectOfflineStatusLabel
-@onready var project_offline_mode_check_button = $AppLayout/Content/PageSettings/ProjectOfflineModeCheckButton
-@onready var project_force_offline_check_button = $AppLayout/Content/PageSettings/ProjectForceOfflineCheckButton
+@onready var project_offline_section = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection"
+@onready var project_offline_settings_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel"
+@onready var project_offline_status_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel"
+@onready var project_offline_mode_check_button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeCheckButton"
+@onready var project_offline_mode_helper_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeHelperLabel"
+@onready var project_force_offline_check_button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineCheckButton"
+@onready var project_force_offline_helper_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineHelperLabel"
 
 var network_ui_nodes: Array = []
 
@@ -340,7 +344,7 @@ func _apply_global_theme() -> void:
 		get_node_or_null("AppLayout/Content/PageSettings/ProjectsSettingsLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageSettings/NetworkLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageSettings/MirrorSettingsLabel") as Label,
-		get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineSettingsLabel") as Label,
+		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel") != null else find_child("ProjectOfflineSettingsLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel") != null else find_child("ToolchainHeaderLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel") != null else find_child("ExplorerLabel", true, false) as Label),
 		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyTitleLabel") as Label
@@ -360,7 +364,9 @@ func _apply_global_theme() -> void:
 		project_status_node,
 		offline_status_node,
 		get_node_or_null("AppLayout/Content/PageTools/ToolsStatusLabel") as Label,
-		get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineStatusLabel") as Label,
+		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel") != null else find_child("ProjectOfflineStatusLabel", true, false) as Label),
+		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeHelperLabel") != null else find_child("ProjectOfflineModeHelperLabel", true, false) as Label),
+		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineHelperLabel") != null else find_child("ProjectForceOfflineHelperLabel", true, false) as Label),
 		get_node_or_null("AppLayout/Content/PageSettings/MirrorStatusLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyMessageLabel") as Label
 	]
@@ -447,9 +453,6 @@ func _ready() -> void:
 	settings_deps.mirror_root_path = mirror_root_path
 	settings_deps.mirror_repo_path = mirror_repo_path
 	settings_deps.mirror_status_label = mirror_status_label
-	settings_deps.project_offline_status_label = project_offline_status_label
-	settings_deps.project_offline_mode_check_button = project_offline_mode_check_button
-	settings_deps.project_force_offline_check_button = project_force_offline_check_button
 	settings_deps.app_node = self
 	
 	settings_controller.setup(settings_deps, projects_controller, DEFAULT_REMOTE_REPO_URL, settings_file_path)
@@ -558,6 +561,11 @@ func _ready() -> void:
 	deps.toolchain_header_label = toolchain_header_label
 	deps.project_tools_list = project_tools_list
 	deps.btn_change_version = btn_change_version
+	deps.project_offline_mode_check_button = project_offline_mode_check_button
+	deps.project_force_offline_check_button = project_force_offline_check_button
+	deps.project_offline_status_label = project_offline_status_label
+	deps.project_offline_mode_helper_label = project_offline_mode_helper_label
+	deps.project_force_offline_helper_label = project_force_offline_helper_label
 	
 	projects_controller.setup(deps, tools_controller)
 	projects_controller.set_settings_controller(settings_controller)
@@ -565,7 +573,6 @@ func _ready() -> void:
 		projects_controller.registry_manager.set_configured_projects_root(new_root)
 	)
 	projects_controller.offline_state_changed.connect(_on_offline_state_changed)
-	projects_controller.project_selection_changed.connect(settings_controller.on_project_selection_changed)
 	projects_controller.tool_view_requested.connect(func(t, v): tools_page_controller.navigate_to_tool(t, v); layout_controller.navigate_to("tools"))
 	projects_controller.environment_incomplete.connect(func(_tools): btn_seal_for_delivery.disabled = true; btn_seal_for_delivery.tooltip_text = "Install missing tools from the Tools page before sealing.")
 	projects_controller.environment_ready.connect(func(): btn_seal_for_delivery.disabled = false; btn_seal_for_delivery.tooltip_text = "")
@@ -582,9 +589,6 @@ func _ready() -> void:
 	mirror_root_reset_button.pressed.connect(settings_controller.on_mirror_root_reset_pressed)
 	mirror_repo_path.text_changed.connect(settings_controller.on_mirror_repo_text_changed)
 	mirror_repo_clear_button.pressed.connect(settings_controller.on_mirror_repo_clear_pressed)
-	project_offline_mode_check_button.toggled.connect(settings_controller.on_project_offline_setting_toggled)
-	project_force_offline_check_button.toggled.connect(settings_controller.on_project_offline_setting_toggled)
-	settings_controller.sync_project_offline_settings(projects_controller.current_project_dir, projects_controller.current_project_config)
 	
 	layout_controller.page_changed.connect(func(page):
 		if page == "tools" and tools_controller:

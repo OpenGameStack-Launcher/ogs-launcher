@@ -64,6 +64,7 @@ func run() -> Dictionary:
 	_test_toolchain_section_header_and_list_icons(results)
 	_test_project_details_split_container_and_explorer_label(results)
 	_test_contextual_launch_button_states_and_transitions(results)
+	_test_offline_policy_toggles_and_persistence(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -197,6 +198,18 @@ func _build_controller(storage_path: String) -> Dictionary:
 	deps.projects_tabs = projects_tabs
 	deps.project_tools_list = project_tools_list
 	deps.btn_change_version = change_version_button
+
+	var offline_mode_cb = CheckButton.new()
+	var force_offline_cb = CheckButton.new()
+	var offline_status_lbl = Label.new()
+	var offline_mode_helper_lbl = Label.new()
+	var force_offline_helper_lbl = Label.new()
+
+	deps.project_offline_mode_check_button = offline_mode_cb
+	deps.project_force_offline_check_button = force_offline_cb
+	deps.project_offline_status_label = offline_status_lbl
+	deps.project_offline_mode_helper_label = offline_mode_helper_lbl
+	deps.project_force_offline_helper_label = force_offline_helper_lbl
 	
 	controller.setup(deps, null)
 
@@ -230,7 +243,12 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"add_remote_btn": add_remote_button,
 		"remove_tool_btn": remove_tool_button,
 		"add_tool_btn": add_tool_button,
-		"nodes": [add_button, add_remote_button, new_button, open_button, remove_button, seal_button, projects_list, search_edit, empty_state, status_label, offline_label, explorer_title_lbl, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_vbox, instructions_label, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button]
+		"project_offline_mode_check_button": offline_mode_cb,
+		"project_force_offline_check_button": force_offline_cb,
+		"project_offline_status_label": offline_status_lbl,
+		"project_offline_mode_helper_label": offline_mode_helper_lbl,
+		"project_force_offline_helper_label": force_offline_helper_lbl,
+		"nodes": [add_button, add_remote_button, new_button, open_button, remove_button, seal_button, projects_list, search_edit, empty_state, status_label, offline_label, explorer_title_lbl, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_vbox, instructions_label, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button, offline_mode_cb, force_offline_cb, offline_status_lbl, offline_mode_helper_lbl, force_offline_helper_lbl]
 	}
 
 func _cleanup_nodes(nodes: Array, controller: ProjectsController = null) -> void:
@@ -1856,6 +1874,116 @@ func _test_contextual_launch_button_states_and_transitions(results: Dictionary) 
 	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_dir_recursive(projects_root)
 	_cleanup_registry(storage_path)
+
+func _test_offline_policy_toggles_and_persistence(results: Dictionary) -> void:
+	## Verifies that ProjectsController properly initializes offline toggle states
+	## when selecting projects, updates toggles and status label, and persists
+	## offline configuration changes to ogs_config.json on disk.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_offline_toggles_%s.json" % str(Time.get_ticks_msec())
+	var test_dir = "user://offline_toggle_test_proj_%s" % str(Time.get_ticks_msec())
+	var abs_dir = ProjectSettings.globalize_path(test_dir)
+	DirAccess.make_dir_recursive_absolute(abs_dir)
+
+	var stack_path = abs_dir.path_join("stack.json")
+	var config_path = abs_dir.path_join("ogs_config.json")
+	var stack_payload = {
+		"schema_version": StackManifest.CURRENT_SCHEMA_VERSION,
+		"stack_name": "Offline Policy Test Project",
+		"tools": []
+	}
+	var f = FileAccess.open(stack_path, FileAccess.WRITE)
+	f.store_string(JSON.stringify(stack_payload))
+	f.close()
+
+	var config_payload = {
+		"schema_version": OgsConfig.CURRENT_SCHEMA_VERSION,
+		"offline_mode": false,
+		"force_offline": false
+	}
+	var cf = FileAccess.open(config_path, FileAccess.WRITE)
+	cf.store_string(JSON.stringify(config_payload))
+	cf.close()
+
+	_cleanup_registry(storage_path)
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var offline_mode_cb: CheckButton = ctx["project_offline_mode_check_button"]
+	var force_offline_cb: CheckButton = ctx["project_force_offline_check_button"]
+	var offline_status_lbl: Label = ctx["project_offline_status_label"]
+
+	# 1. Before project selection: toggles must be disabled and status indicates no project
+	_expect(offline_mode_cb.disabled, "offline_mode CheckButton should be disabled when no project selected", results)
+	_expect(force_offline_cb.disabled, "force_offline CheckButton should be disabled when no project selected", results)
+	_expect(offline_mode_cb.button_pressed == false, "offline_mode CheckButton should be unpressed initially", results)
+	_expect(force_offline_cb.button_pressed == false, "force_offline CheckButton should be unpressed initially", results)
+	_expect(offline_status_lbl.text == "No project selected", "status label should say 'No project selected'", results)
+
+	# Track signal emissions
+	var selection_changed_signals: Array = []
+	var offline_state_signals: Array = []
+	controller.project_selection_changed.connect(func(dir, off, force):
+		selection_changed_signals.append({"dir": dir, "offline_mode": off, "force_offline": force})
+	)
+	controller.offline_state_changed.connect(func(is_off, reason):
+		offline_state_signals.append({"is_offline": is_off, "reason": reason})
+	)
+
+	# 2. Add and select the project
+	var added = controller.add_project_from_path(abs_dir)
+	_expect(added, "adding test project should succeed", results)
+	_expect(not offline_mode_cb.disabled, "offline_mode CheckButton should be enabled after project selection", results)
+	_expect(not force_offline_cb.disabled, "force_offline CheckButton should be enabled after project selection", results)
+	_expect(offline_mode_cb.button_pressed == false, "offline_mode CheckButton should reflect false config", results)
+	_expect(force_offline_cb.button_pressed == false, "force_offline CheckButton should reflect false config", results)
+	_expect(offline_status_lbl.text.contains(PathUtils.format_for_display(abs_dir)), "status label should display project path", results)
+
+	# 3. Toggle offline_mode
+	selection_changed_signals.clear()
+	offline_state_signals.clear()
+	offline_mode_cb.button_pressed = true
+	_expect(controller.current_project_config != null and controller.current_project_config.offline_mode == true, "controller config offline_mode should be true", results)
+	_expect(OfflineEnforcer.is_offline() == true, "OfflineEnforcer should be active", results)
+	_expect(OfflineEnforcer.get_reason() == "offline_mode", "OfflineEnforcer reason should be offline_mode", results)
+	_expect(selection_changed_signals.size() > 0, "project_selection_changed should be emitted on offline toggle", results)
+	_expect(offline_state_signals.size() > 0, "offline_state_changed should be emitted on offline toggle", results)
+
+	# Verify persistence on disk
+	var disk_config = OgsConfig.load_from_file(config_path)
+	_expect(disk_config != null and disk_config.offline_mode == true, "disk ogs_config.json should have offline_mode = true", results)
+
+	# 4. Toggle force_offline
+	selection_changed_signals.clear()
+	offline_state_signals.clear()
+	force_offline_cb.button_pressed = true
+	_expect(controller.current_project_config != null and controller.current_project_config.force_offline == true, "controller config force_offline should be true", results)
+	_expect(OfflineEnforcer.is_offline() == true, "OfflineEnforcer should be active for force_offline", results)
+	_expect(OfflineEnforcer.get_reason() == "force_offline", "OfflineEnforcer reason should be force_offline", results)
+
+	var disk_config2 = OgsConfig.load_from_file(config_path)
+	_expect(disk_config2 != null and disk_config2.force_offline == true, "disk ogs_config.json should have force_offline = true", results)
+
+	# 5. Remove project and verify UI resets
+	controller._on_remove_project_pressed()
+	controller._on_remove_project_confirmed()
+	_expect(offline_mode_cb.disabled, "offline_mode CheckButton should be disabled after project removal", results)
+	_expect(force_offline_cb.disabled, "force_offline CheckButton should be disabled after project removal", results)
+	_expect(offline_mode_cb.button_pressed == false, "offline_mode CheckButton should reset to unpressed", results)
+	_expect(force_offline_cb.button_pressed == false, "force_offline CheckButton should reset to unpressed", results)
+	_expect(offline_status_lbl.text == "No project selected", "status label should reset to 'No project selected'", results)
+
+	# 6. Re-add the project with true flags to verify toggle states initialize to true
+	var readded = controller.add_project_from_path(abs_dir)
+	_expect(readded, "re-adding test project should succeed", results)
+	_expect(not offline_mode_cb.disabled, "offline_mode CheckButton should be enabled after re-selection", results)
+	_expect(not force_offline_cb.disabled, "force_offline CheckButton should be enabled after re-selection", results)
+	_expect(offline_mode_cb.button_pressed == true, "offline_mode CheckButton should initialize to true from disk", results)
+	_expect(force_offline_cb.button_pressed == true, "force_offline CheckButton should initialize to true from disk", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(test_dir)
+	_cleanup_registry(storage_path)
+	OfflineEnforcer.reset()
 
 
 

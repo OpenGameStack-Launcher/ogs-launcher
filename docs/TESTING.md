@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 1892
+tests passed: 1930
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -386,6 +386,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Toolchain section header and list icons: verifies ToolchainHeaderLabel presence in main.tscn, 20x20 uniform icon sizing on project_tools_list, tool icon assignment, and explicit status labels/tooltips
   - Resizable split container and explorer label truncation: verifies VSplitContainer presence dividing ToolchainSection (minimum height 120px) and ExplorerSection (minimum height 140px), split offset, and ExplorerLabel ellipsis clipping properties (`clip_text` and `text_overrun_behavior = 3`)
   - Contextual launch button states and transitions: verifies dynamic prompt text ("Select a Tool to Launch"), toolchain selection formatting ("Launch <Tool> <Version>"), explorer selection formatting ("Open <filename> in <Tool>"), double-click activation, empty-click deselection, and launch state resets
+  - Offline policy toggles and persistence: verifies that offline policy toggles in Project Details initialize disabled, activate and reflect project config on selection, synchronize status label with normalized path, emit `project_selection_changed` and `offline_state_changed`, persist `offline_mode` and `force_offline` updates to `ogs_config.json` on disk, reset on project removal, and restore toggle states on project reload
 
 - **[tests/custom_item_list_tests.gd](tests/custom_item_list_tests.gd)** - Validates `CustomItemList` structured project cards, visual hierarchy, badge formatting, selection styling, and backward compatibility (6 tests).
   - Dedicated card surface with distinct background (`Color(0.14, 0.16, 0.20)`) and 1px border (`Color(0.22, 0.26, 0.32)`)
@@ -428,7 +429,8 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Semantic Button theme variations (`PrimaryButton`, `SecondaryButton`, `DangerButton`) defined on `global_theme` with matching background colors, borders, and focus rings
   - CheckButton stylebox overrides defined on `global_theme` using `StyleBoxEmpty` and hover styling, replacing solid Button stylebox inheritance
   - Target buttons across Projects, Tools, and Settings pages in `main.tscn` configured with appropriate `PrimaryButton`, `SecondaryButton`, and `DangerButton` theme variations
-  - Normalized path separators verified in Settings page Primary Projects Folder placeholder text and Selected Project Offline Policy status label
+  - Normalized path separators verified in Settings page Primary Projects Folder placeholder text and Project Details Project Offline Policy status label
+  - Project offline policy controls verified under Project Details (`ProjectOfflineSection`, `ProjectOfflineModeCheckButton`, `ProjectForceOfflineCheckButton`, helper labels, and normalized path status label) and verified absent from PageSettings
 
 - **[tests/tools_page_scene_tests.gd](tests/tools_page_scene_tests.gd)** - Scene tests for Tools page UI.
   - Tools/Download tab nodes exist
@@ -596,7 +598,7 @@ All pull requests and pushes to `main` must pass continuous integration on GitHu
 The CI workflow executes on `windows-latest` and performs the following verification gates:
 1. **Tooling Cache & Installation:** Installs and caches Godot 4.7.2 Stable (`Godot_v4.7.2-stable_win64_console.exe`), Windows export templates, and `rcedit-x64.exe` (v2.0.0).
 2. **Headless Editor Import:** Executes `godot --headless --editor --quit` to register class names, resources, and UID metadata.
-3. **Headless Test Suite:** Runs the full 35-suite headless test runner:
+3. **Headless Test Suite:** Runs the full 38-suite headless test runner:
    ```powershell
    godot --headless -s res://tests/test_runner.gd
    ```

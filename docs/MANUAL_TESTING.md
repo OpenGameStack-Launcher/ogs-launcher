@@ -380,7 +380,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 7. Add or select a sealed project (e.g. `samples/sample_project_sealed` with `force_offline=true`):
    - Verify status message displays in warning amber (`Color(0.95, 0.75, 0.25)`): "Status: Manifest loaded (2 tool(s) missing - offline mode prevents downloads)."
    - Verify offline status badge updates to a high-contrast danger red pill badge: "Offline Mode: Forced (force_offline=true)" with dark crimson background, bright red border, and high-contrast text.
-8. Navigate to Settings, enable "Offline mode" (with `force_offline=false`), and return to Projects:
+8. Switch to the Project Details tab, enable "Offline mode" (with `force_offline=false`) in the Project Offline Policy section, and observe the status bar:
    - Verify offline status badge updates to an amber pill badge: "Offline Mode: Enabled (offline_mode=true)" with dark amber background, amber border, and amber text.
 9. Select a ready project where all tools are installed in the library (or launch a tool):
    - Verify status message displays with green accent (`Color(0.35, 0.85, 0.55)`): "Status: Environment ready - all tools in library."
@@ -1045,10 +1045,11 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Confirm the Cancel button text immediately changes to "Cancelling..." and disables.
    - Confirm the clone process is terminated and the dialog resets to its idle input state.
 6. Offline mode enforcement:
-   - Enable offline mode in Settings.
-   - Return to the Projects page: verify **"Add Remote Project"** is disabled.
+   - Select a project in Project Library and switch to the Project Details tab.
+   - Under Project Offline Policy, toggle "Offline mode" to enabled.
+   - Return to the Project Library tab (or observe top toolbar): verify **"Add Remote Project"** is disabled.
    - Hover over the button: verify the tooltip reads: `"Disabled because OGS Launcher is currently in offline mode."`
-   - Disable offline mode in Settings: verify the button re-enables and the tooltip clears.
+   - Return to Project Details and disable offline mode: verify the button re-enables and the tooltip clears.
 
 **Expected Results:**
 - [x] Three-button toolbar layout renders with equal button widths and 16px separation.
@@ -1080,6 +1081,7 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Verify 16px bottom margin below the action row buttons ("Open Project", "Remove Project", "Seal for Delivery") so buttons do not sit directly on the bottom window edge.
    - Verify "Projects" page title renders with prominent 24px font size.
    - Verify "Project Explorer" header renders with 18px font size and cyan accent color (`Color(0.45, 0.8, 1.0)`).
+   - In Project Details, verify "Project Offline Policy" section header renders with 18px font size and cyan accent color (`Color(0.45, 0.8, 1.0)`).
    - Verify status labels ("Status: ...", "Offline Mode: ...") render with compact 13px font size and muted slate styling (`Color(0.65, 0.70, 0.78)`).
 3. Tools page inspection:
    - Click **"Tools"** in the sidebar.
@@ -1090,9 +1092,9 @@ dir "$env:LOCALAPPDATA\OGS\"
 4. Settings page inspection:
    - Click **"Settings"** in the sidebar.
    - Verify "Settings" page title renders at 24px.
-   - Verify section headers ("Projects", "Network", "Selected Project Offline Policy", "Mirror Settings") render at 18px with cyan accent color.
+   - Verify section headers ("Projects", "Network", "Mirror Settings") render at 18px with cyan accent color, and verify that no project-specific offline controls appear in Settings.
    - Verify form row labels ("Primary Projects Folder:", "Mirror Root:", "Remote Repo URL:") render at standard 16px body font size.
-   - Verify secondary metadata labels ("Selected: ...", "Mirror status: ...") render at 13px muted color.
+   - Verify secondary metadata labels ("Mirror status: ...") render at 13px muted color.
 
 **Expected Results:**
 - [x] Uniform 20px horizontal and 16px vertical content margins across Projects, Tools, and Settings pages.
@@ -1133,7 +1135,7 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Verify the connectivity status label displays "● Offline" (in amber) or "● Online" (in green) depending on repository connectivity.
    - Verify the version label displays the launcher version (e.g. "v0.1.0").
 6. Connectivity State Synchronization:
-   - Navigate to Settings and toggle "Force offline" (or "Offline mode") to ON.
+   - In the Project Details tab under Project Offline Policy, toggle "Force offline" (or "Offline mode") to ON.
    - Verify the sidebar footer status label immediately updates to "● Offline" in amber with descriptive tooltip ("Offline Mode (enforced: force_offline)").
    - Toggle offline mode OFF (when connected to the internet) and click "Check for Updates" or refresh on Tools page.
    - Verify the sidebar footer status label updates to "● Online" in green with tooltip ("Online: Connected to repository").
@@ -1178,12 +1180,12 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Switch to the "Installed" tab.
    - Verify installed tool "Remove" buttons display danger styling with crimson border and hover (`DangerButton`).
    - Verify the top-right "Refresh" button displays secondary styling (`SecondaryButton`).
-4. Settings Page - CheckButton Toggles and Utility Buttons:
-   - Click "Settings" in the sidebar.
-   - Inspect "Offline mode" and "Force offline" toggle controls.
-   - Verify they render as clean, lightweight toggle switch rows using empty background styleboxes (`StyleBoxEmpty`) without solid rectangular action button backgrounds.
+4. Project Details and Settings Pages - CheckButton Toggles and Utility Buttons:
+   - Switch to the Project Details tab in Projects.
+   - Inspect "Offline mode" and "Force offline" toggle controls under Project Offline Policy.
+   - Verify they render as clean, lightweight toggle switch rows with adjacent explanatory helper descriptions using empty background styleboxes (`StyleBoxEmpty`) without solid rectangular action button backgrounds.
    - Hover over the switches and verify a subtle translucent hover highlight (`Color(1.0, 1.0, 1.0, 0.04)`) with 4px rounded corners.
-   - Verify directory "Browse", "Reset to Default", and "Check for Updates" buttons render as secondary buttons with slate background and subtle borders (`SecondaryButton`).
+   - Navigate to Settings: verify directory "Browse", "Reset to Default", and "Check for Updates" buttons render as secondary buttons with slate background and subtle borders (`SecondaryButton`).
 
 **Expected Results:**
 - [x] Primary calls to action ("New Project", "Launch Selected Tool", "Seal for Delivery", "Download") prominently stand out in vibrant brand blue.
@@ -1218,18 +1220,17 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Inspect the instructions label inside the New Project modal dialog.
    - Verify the target creation folder path preview displays forward slashes without mixed backslashes.
    - Close or cancel the New Project dialog.
-5. Settings Page - Primary Projects Folder and Offline Status:
+5. Primary Projects Folder and Project Offline Policy Path Normalization:
    - Navigate to the Settings page (click "Settings" in the sidebar).
-   - Inspect the "Primary Projects Folder" LineEdit placeholder text.
-   - Verify that the default placeholder path displays forward slashes (e.g., `C:/Users/.../OGS_Projects`).
-   - Inspect the "Selected Project Offline Policy" section label ("Selected: ...").
+   - Inspect the "Primary Projects Folder" LineEdit placeholder text: verify the default placeholder path displays forward slashes (e.g., `C:/Users/.../OGS_Projects`).
+   - Return to Projects and switch to Project Details: inspect the "Project Offline Policy" status label ("Selected: ...").
    - Verify that the selected project path displays uniform forward slashes without backslashes.
 
 **Expected Results:**
 - [x] Project list item paths and item tooltips render with uniform forward slashes.
 - [x] Project Explorer title label displays clean forward-slash path formatting.
 - [x] New Project dialog instruction label path preview displays forward slashes.
-- [x] Settings page Primary Projects Folder placeholder text and Selected Project path label display forward slashes.
+- [x] Settings page Primary Projects Folder placeholder text and Project Details Selected Project path label display forward slashes.
 
 **Pass Criteria:**
 - No mixed Windows backslashes and Unix forward slashes appear in any user-facing path labels, tooltips, or placeholders.
@@ -1286,9 +1287,54 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 22: Project Details - Project Offline Policy Toggles and Persistence
+
+**Objective:** Verify that per-project offline policy toggles ("Offline mode" and "Force offline") are located under the Project Details tab with clear helper descriptions, synchronize dynamically with the selected project, persist changes directly to `ogs_config.json` on disk, and verify that the global Settings page contains no project-specific controls.
+
+**Steps:**
+1. Launch OGS Launcher and navigate to the Projects page.
+2. In the Project Library tab, select a project (e.g., `samples/sample_project`).
+3. Switch to the Project Details tab (double-click project card or click "Open Project").
+4. Inspect the **"Project Offline Policy"** section:
+   - Verify the section header renders in 18px cyan accent typography.
+   - Verify the status label displays the normalized path of the active project: `"Selected: <normalized_path>"`.
+   - Verify the "Offline mode" CheckButton renders with helper label: `"Blocks outbound network activity while this project is active; allows launching tools from the Central Library or local project stack."`.
+   - Verify the "Force offline" CheckButton renders with helper label: `"Enforces strict air-gap isolation; requires and launches tools exclusively from the project's sealed local tools/ directory."`.
+5. Toggle "Offline mode" to ON:
+   - Verify the compact status bar offline badge updates to amber: `"Offline Mode: Enabled (offline_mode=true)"`.
+   - Verify the sidebar footer status indicator updates to amber `"● Offline"`.
+   - Inspect `<project_dir>/ogs_config.json` on disk and confirm `"offline_mode": true` is persisted.
+6. Toggle "Force offline" to ON:
+   - Verify the compact status bar offline badge updates to red: `"Offline Mode: Forced (force_offline=true)"`.
+   - Inspect `<project_dir>/ogs_config.json` on disk and confirm `"force_offline": true` is persisted.
+7. Return to the Project Library tab, remove or deselect the project:
+   - Switch back to Project Details: verify both CheckButtons are disabled and unpressed, and status label displays `"No project selected"`.
+8. Navigate to the **Settings** page:
+   - Verify that no project-specific offline controls, labels, or toggles appear in Settings.
+   - Confirm only global settings ("Projects", "Network", "Mirror Settings") are present.
+
+**Expected Results:**
+- [x] Per-project offline policy controls reside directly under Project Details in PageProjects.
+- [x] Clear, word-wrapped helper labels explain the distinction between network blocking and strict local air-gap isolation.
+- [x] Toggling controls updates status bar badges, sidebar footer, and persists to `ogs_config.json` immediately.
+- [x] UI controls disable and reset when no project is selected.
+- [x] Settings page is strictly reserved for global, machine-wide configuration.
+
+**Pass Criteria:**
+- Project offline controls are accessible in Project Details with descriptive helper guidance.
+- Policies persist to `ogs_config.json` on disk.
+- Settings page contains no project-specific controls.
+
+**If test fails:**
+- Verify `ProjectOfflineSection` and its children in `main.tscn`.
+- Check `ProjectsController._sync_project_offline_toggles()` and `_on_project_offline_setting_toggled()`.
+- Confirm `OgsConfig.save_to_file()` writes successfully to `ogs_config.json`.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-21, fill in this table:
+After completing Editor Tests 1-22, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -1315,6 +1361,7 @@ After completing Editor Tests 1-21, fill in this table:
 | 19: Semantic Buttons & CheckButton | ✅/⚠️/❌ | | |
 | 20: Normalized Path Display | ✅/⚠️/❌ | | |
 | 21: Contextual Launch & Split Layout | ✅/⚠️/❌ | | |
+| 22: Project Details Offline Policy | ✅/⚠️/❌ | | |
 
 ---
 
