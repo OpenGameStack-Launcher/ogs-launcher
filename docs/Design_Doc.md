@@ -149,6 +149,16 @@ In the Project Library (Tab 0 of the Projects page), users can quickly search an
     *   *Zero Projects Tracked:* When the library contains no registered projects, displays `"No Projects Tracked"` along with onboarding action buttons (`New Project`, `Add Local Project`, `Add Remote Project` respecting offline mode enforcement).
     *   *Zero Filter Matches:* When projects are tracked but the active search query yields no matches, displays `"No Projects Match Filter"` and provides a `"Clear Filter"` button that clears the search bar and restores all projects.
 
+### 2.13 Resizable Split Layout and Contextual Launch Button (Project Details)
+In the Project Details tab (Tab 1 of the Projects page), the interface adapts dynamically to user focus and provides proportional layout adjustments:
+*   **Draggable Vertical Splitter (`VSplitContainer`):** Wraps the Toolchain Section (`ToolchainHeaderLabel`, `ProjectToolsList`, `ToolActionRow`) and the Explorer Section (`ExplorerToolbar`, `ProjectExplorerTree`) within a draggable `VSplitContainer` with `split_offset = 120`. Both sections enforce minimum dimensions (`ToolchainSection` custom minimum height 120px; `ExplorerSection` custom minimum height 140px) to prevent controls from collapsing.
+*   **Ellipsis Path Truncation (`ExplorerLabel`):** The Project Explorer header label configures `clip_text = true` and `text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS`, preventing long filesystem paths from pushing the toolbar action buttons ("New Folder", "New File") off-screen. Full paths remain accessible via hover tooltip (`lbl_tools_for_project.tooltip_text`).
+*   **Contextual Launch Action Button (`LaunchButton`):** Rather than remaining enabled with static text, the launch button provides explicit state-aware messaging and enablement:
+    *   *Idle / Prompt State:* When no tool or launchable file is selected, the button is disabled and displays `"Select a Tool to Launch"`.
+    *   *Toolchain Selection:* When a tool row is selected in `ProjectToolsList`, the button enables and displays `"Launch <Tool Name> <Version>"` (e.g., `"Launch Godot v4.7.2"` or `"Launch VSCodium v1.85.1"`).
+    *   *Explorer Selection:* When a recognized file or direct tool folder is selected in `ProjectExplorerTree`, the button enables and displays `"Open <filename> in <Tool Name>"` (e.g., `"Open main.gd in VSCodium"`).
+*   **Clean Deselection Handlers:** Clicking empty space in either `ProjectToolsList` (`empty_clicked`) or `ProjectExplorerTree` (`nothing_selected`) deselects active items and cleanly reverts the launch button to its disabled prompt state.
+
 ---
 
 ## 3. Operational Modes & User Stories

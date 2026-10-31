@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 1734
+tests passed: 1892
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -352,9 +352,9 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Add Tool dialog uses list-based selection and preserves action button state
   - Add Tool candidates include fallback local sources when remote catalog data is unavailable
   - Code category tools (`git`, `vscodium`) bypass creating empty `assets/Code/*` directories
-  - Launch button disabled initially
-  - Launch button enabled after valid project selection
-  - Launch with no selection -> error message
+  - Launch button disabled initially with prompt text "Select a Tool to Launch"
+  - Launch button remains disabled upon valid project selection until a tool or launchable file is selected
+  - Launch with no selection -> error message, preserving disabled prompt state
   - Tool selection in `project_tools_list` sets active launch tool ID, clears explorer target path, and deselects the project explorer tree
   - Direct launch from `project_tools_list` runs installed tools at the project root without requiring explorer file selection
   - Double-click item activation launches the selected tool immediately at the project root
@@ -384,6 +384,8 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Empty state on zero search results and clear action: verifies empty state presentation with "No Projects Match Filter" when a query matches zero projects, and list restoration via the Clear Filter button
   - Empty state transitions on project addition: verifies that adding a project transitions from the empty state view to a populated projects list
   - Toolchain section header and list icons: verifies ToolchainHeaderLabel presence in main.tscn, 20x20 uniform icon sizing on project_tools_list, tool icon assignment, and explicit status labels/tooltips
+  - Resizable split container and explorer label truncation: verifies VSplitContainer presence dividing ToolchainSection (minimum height 120px) and ExplorerSection (minimum height 140px), split offset, and ExplorerLabel ellipsis clipping properties (`clip_text` and `text_overrun_behavior = 3`)
+  - Contextual launch button states and transitions: verifies dynamic prompt text ("Select a Tool to Launch"), toolchain selection formatting ("Launch <Tool> <Version>"), explorer selection formatting ("Open <filename> in <Tool>"), double-click activation, empty-click deselection, and launch state resets
 
 - **[tests/custom_item_list_tests.gd](tests/custom_item_list_tests.gd)** - Validates `CustomItemList` structured project cards, visual hierarchy, badge formatting, selection styling, and backward compatibility (6 tests).
   - Dedicated card surface with distinct background (`Color(0.14, 0.16, 0.20)`) and 1px border (`Color(0.22, 0.26, 0.32)`)

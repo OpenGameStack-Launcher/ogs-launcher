@@ -815,8 +815,8 @@ dir "$env:LOCALAPPDATA\OGS\"
 3. In the **Project Tools** list on the right, click on a tool (e.g. VSCodium or Git):
    - Verify the tool is highlighted in the tools list.
    - Verify that the selection in the Project Explorer tree is immediately cleared.
-   - Verify the "Launch Selected Tool" button is enabled.
-4. Click **"Launch Selected Tool"**:
+   - Verify the launch button updates to display contextual text (e.g. `Launch VSCodium v1.143.17232` or `Launch Godot v4.7.2`) and becomes enabled.
+4. Click the launch button (e.g. **"Launch <Tool>"**):
    - Verify the selected tool launches at the project root directory.
    - Verify that no "No tool selected or no known tool associated with this file/folder" warning is shown.
 5. In the **Project Tools** list, double-click an installed tool:
@@ -1237,9 +1237,58 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 21: Contextual Launch Button States and Resizable Split Layout
+
+**Objective:** Verify that the Project Details pane features a draggable vertical split container, that `ExplorerLabel` cleanly truncates long paths without stretching the toolbar, and that `LaunchButton` provides contextual enablement and dynamic action labels.
+
+**Steps:**
+1. Launch the launcher and navigate to the Projects page.
+2. Select a project in the Project Library (e.g., `samples/sample_project`) and switch to Tab 1 ("Project Details").
+3. Inspect `LaunchButton` at the bottom of the Project Details view:
+   - Verify that the button is disabled.
+   - Verify that the button text displays `"Select a Tool to Launch"`.
+4. In the Stack Toolchain list (`ProjectToolsList`), click to select an installed tool (e.g., Godot or VSCodium):
+   - Verify that `LaunchButton` becomes enabled.
+   - Verify that the button text updates to `"Launch <Tool Name> <Version>"` (e.g., `"Launch Godot v4.7.2"` or `"Launch VSCodium v1.85.1"`).
+5. In the Project Explorer tree (`ProjectExplorerTree`), click on a recognized file or folder (e.g., `main.gd` or `project.godot`):
+   - Verify that the tool selection in `ProjectToolsList` is deselected.
+   - Verify that `LaunchButton` remains enabled.
+   - Verify that the button text updates to `"Open <filename> in <Tool Name>"` (e.g., `"Open main.gd in VSCodium"` or `"Open project.godot in Godot"`).
+6. Click empty space in the Project Explorer tree or in `ProjectToolsList`:
+   - Verify that active selections in both panes are cleared.
+   - Verify that `LaunchButton` reverts to `"Select a Tool to Launch"` in the disabled state.
+7. Test the draggable splitter (`VSplitContainer`):
+   - Click and drag the splitter separator handle between the Toolchain section and the Project Explorer section up and down.
+   - Verify both panes resize smoothly.
+   - Verify that the Toolchain section maintains its minimum height (120px) and the Explorer section maintains its minimum height (140px) without collapsing or hiding essential buttons.
+8. Test long directory path presentation on `ExplorerLabel`:
+   - Inspect a project located in a deeply nested path.
+   - Verify that `ExplorerLabel` truncates with an ellipsis (`...`) instead of pushing the "New Folder" and "New File" toolbar buttons off the edge of the panel.
+   - Hover over `ExplorerLabel` and confirm the full normalized path appears in the tooltip.
+
+**Expected Results:**
+- [x] Initial project selection leaves `LaunchButton` disabled with `"Select a Tool to Launch"`.
+- [x] Selecting a tool in `ProjectToolsList` updates `LaunchButton` to `"Launch <Tool Name> <Version>"` and enables it.
+- [x] Selecting a recognized file in `ProjectExplorerTree` updates `LaunchButton` to `"Open <filename> in <Tool Name>"` and enables it.
+- [x] Clicking empty space in either pane restores `"Select a Tool to Launch"` in the disabled state.
+- [x] Dragging the `VSplitContainer` divider smoothly resizes the panes while respecting minimum dimension bounds.
+- [x] Deep project directory paths truncate cleanly with an ellipsis and display the full path on hover tooltip.
+
+**Pass Criteria:**
+- Dynamic launch button text accurately reflects active selection context.
+- Dragging the splitter resizes panes without layout deformation or control clipping.
+- Long paths do not cause toolbar overflow.
+
+**If test fails:**
+- Verify `VSplitContainer` node layout and minimum sizes in `main.tscn`.
+- Check `ProjectsController._update_launch_button_state()` and signal connections (`empty_clicked`, `nothing_selected`).
+- Confirm `ExplorerLabel` has `clip_text = true` and `text_overrun_behavior = 3`.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-20, fill in this table:
+After completing Editor Tests 1-21, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -1265,6 +1314,7 @@ After completing Editor Tests 1-20, fill in this table:
 | 18: Sidebar Redesign & Footer Sync | ✅/⚠️/❌ | | |
 | 19: Semantic Buttons & CheckButton | ✅/⚠️/❌ | | |
 | 20: Normalized Path Display | ✅/⚠️/❌ | | |
+| 21: Contextual Launch & Split Layout | ✅/⚠️/❌ | | |
 
 ---
 
