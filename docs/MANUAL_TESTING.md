@@ -977,9 +977,54 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 19: Semantic Button Variations and CheckButton Toggle Styling
+
+**Objective:** Verify that primary calls to action, secondary neutral/utility actions, and destructive actions have distinct visual styling via Button theme type variations, and verify that CheckButton toggles render as clean rows without solid rectangular button bars.
+
+**Steps:**
+1. Launch OGS Launcher in editor mode or standalone.
+2. Projects Page - Action Buttons and Visual Hierarchy:
+   - Verify "New Project" renders with vibrant brand-blue background (`Color(0.20, 0.48, 0.78)`), brighter hover state (`Color(0.26, 0.56, 0.88)`), and high-contrast cyan focus ring (`PrimaryButton`).
+   - Verify "Add Local Project" and "Add Remote Project" render with dark slate background (`Color(0.18, 0.21, 0.26)`) and 1px border (`SecondaryButton`).
+   - Select a project in the Project Library.
+   - Verify "Seal for Delivery" renders in vibrant brand blue (`PrimaryButton`).
+   - Verify "Remove Project" renders with dark surface and muted crimson border (`Color(0.65, 0.22, 0.25)`), transitioning to crimson hover fill (`DangerButton`).
+   - Verify "Open Project" renders with standard default button styling.
+   - Navigate to the Project Details tab.
+   - Verify "Launch Selected Tool" displays vibrant brand blue (`PrimaryButton`).
+   - Verify "Add Tool", "Change Version", "New Folder", and "New File" buttons display dark slate with subtle borders (`SecondaryButton`).
+   - Verify "Remove Tool" displays dark surface with muted crimson border and crimson hover (`DangerButton`).
+3. Tools Page - Dynamic Tool Card Buttons:
+   - Click "Tools" in the sidebar.
+   - Switch to the "Download" tab.
+   - Verify uninstalled tool "Download" buttons render with vibrant brand blue (`PrimaryButton`).
+   - If an active download is running, verify the "Cancel" button displays secondary styling (`SecondaryButton`).
+   - Switch to the "Installed" tab.
+   - Verify installed tool "Remove" buttons display danger styling with crimson border and hover (`DangerButton`).
+   - Verify the top-right "Refresh" button displays secondary styling (`SecondaryButton`).
+4. Settings Page - CheckButton Toggles and Utility Buttons:
+   - Click "Settings" in the sidebar.
+   - Inspect "Offline mode" and "Force offline" toggle controls.
+   - Verify they render as clean, lightweight toggle switch rows using empty background styleboxes (`StyleBoxEmpty`) without solid rectangular action button backgrounds.
+   - Hover over the switches and verify a subtle translucent hover highlight (`Color(1.0, 1.0, 1.0, 0.04)`) with 4px rounded corners.
+   - Verify directory "Browse", "Reset to Default", and "Check for Updates" buttons render as secondary buttons with slate background and subtle borders (`SecondaryButton`).
+
+**Expected Results:**
+- [x] Primary calls to action ("New Project", "Launch Selected Tool", "Seal for Delivery", "Download") prominently stand out in vibrant brand blue.
+- [x] Secondary utility actions ("Add Local Project", "Add Remote Project", "Add Tool", "Change Version", "Browse", "Reset to Default", "Refresh") display dark slate surfaces with subtle borders.
+- [x] Destructive actions ("Remove Project", "Remove Tool", installed tool "Remove") feature warning crimson borders and hover fills.
+- [x] CheckButton controls render as clean toggle rows without solid button bars.
+
+**Pass Criteria:**
+- Visual hierarchy clearly distinguishes primary, secondary, and danger button actions across all three views.
+- CheckButton toggles appear as lightweight rows rather than rectangular buttons.
+- Hover, focus, and disabled states function properly for all theme type variations.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-18, fill in this table:
+After completing Editor Tests 1-19, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -1003,6 +1048,7 @@ After completing Editor Tests 1-18, fill in this table:
 | 16: Remote Project Toolbar & Modal Clone | ✅/⚠️/❌ | | |
 | 17: Shell Margins & Typography Scale | ✅/⚠️/❌ | | |
 | 18: Sidebar Redesign & Footer Sync | ✅/⚠️/❌ | | |
+| 19: Semantic Buttons & CheckButton | ✅/⚠️/❌ | | |
 
 ---
 

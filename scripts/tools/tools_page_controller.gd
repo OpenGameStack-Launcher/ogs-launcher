@@ -182,16 +182,19 @@ func _create_tool_card(tool: Dictionary, is_installed: bool, show_remove_action:
 	if is_installed and show_remove_action:
 		button.text = "Remove"
 		button.tooltip_text = "Remove this installed tool from the OGS library."
+		button.theme_type_variation = &"DangerButton"
 		button.pressed.connect(_on_remove_tool_pressed.bind(tool["id"], tool["version"]))
 	elif is_installed:
 		button.text = "Installed ✓"
 		button.disabled = true
 	else:
-		if _tools_controller.is_downloading(tool["id"], tool["version"]):
+		if _tools_controller != null and _tools_controller.is_downloading(tool["id"], tool["version"]):
 			button.text = "Cancel"
+			button.theme_type_variation = &"SecondaryButton"
 			button.pressed.connect(_on_cancel_tool_download.bind(tool["id"], tool["version"]))
 		else:
 			button.text = "Download"
+			button.theme_type_variation = &"PrimaryButton"
 			button.pressed.connect(_on_download_tool_pressed.bind(tool["id"], tool["version"]))
 	
 	hbox.add_child(button)
@@ -250,10 +253,12 @@ func update_download_button_states() -> void:
 			button.disabled = false
 			button.tooltip_text = ""
 			button.text = "Cancel"
+			button.theme_type_variation = &"SecondaryButton"
 		else:
 			button.text = "Download"
 			button.disabled = any_active
 			button.tooltip_text = "Wait for the current download to finish." if any_active else ""
+			button.theme_type_variation = &"PrimaryButton"
 
 func show_tool_download_error(tool_id: String, version: String, error_message: String) -> void:
 	var key = "%s_%s" % [tool_id, version]

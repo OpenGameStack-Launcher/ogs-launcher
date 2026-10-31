@@ -135,12 +135,14 @@ layout_mode = 2
 theme_override_constants/separation = 16
 
 [node name="AddButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls" unique_id=755997457]
+theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Add Local Project"
 
 [node name="AddRemoteProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls"]
+theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -148,6 +150,7 @@ text = "Add Remote Project"
 metadata/network_ui = true
 
 [node name="NewProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls" unique_id=866719061]
+theme_type_variation = &"PrimaryButton"
 custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -190,6 +193,7 @@ disabled = true
 text = "Open Project"
 
 [node name="RemoveButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow" unique_id=538681926]
+theme_type_variation = &"DangerButton"
 custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -197,6 +201,7 @@ disabled = true
 text = "Remove Project"
 
 [node name="SealButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow" unique_id=996258368]
+theme_type_variation = &"PrimaryButton"
 custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -216,6 +221,7 @@ layout_mode = 2
 layout_mode = 2
 
 [node name="AddToolButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow" unique_id=2133794034]
+theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -223,6 +229,7 @@ disabled = true
 text = "Add Tool"
 
 [node name="RemoveToolButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow" unique_id=437998484]
+theme_type_variation = &"DangerButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -230,6 +237,7 @@ disabled = true
 text = "Remove Tool"
 
 [node name="ChangeVersionButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow"]
+theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
 size_flags_horizontal = 3
@@ -251,11 +259,13 @@ theme_override_font_sizes/font_size = 18
 text = "Project Explorer"
 
 [node name="NewFolderBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar"]
+theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
 text = "New Folder"
 
 [node name="NewFileBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar"]
+theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
 text = "New File"
@@ -266,6 +276,7 @@ size_flags_vertical = 3
 hide_root = true
 
 [node name="LaunchButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details" unique_id=778618894]
+theme_type_variation = &"PrimaryButton"
 custom_minimum_size = Vector2(160, 32)
 layout_mode = 2
 text = "Launch Selected Tool"
@@ -288,6 +299,7 @@ layout_mode = 2
 size_flags_horizontal = 3
 
 [node name="RefreshButton" type="Button" parent="AppLayout/Content/PageTools/ToolsToolbar" unique_id=2100808698]
+theme_type_variation = &"SecondaryButton"
 layout_mode = 2
 text = "Refresh"
 
@@ -535,10 +547,12 @@ size_flags_horizontal = 3
 placeholder_text = "Default (e.g. %USERPROFILE%/OGS_Projects)"
 
 [node name="ProjectsRootBrowseButton" type="Button" parent="AppLayout/Content/PageSettings/ProjectsRootContainer" unique_id=1392810481]
+theme_type_variation = &"SecondaryButton"
 layout_mode = 2
 text = "Browse"
 
 [node name="ProjectsRootResetButton" type="Button" parent="AppLayout/Content/PageSettings/ProjectsRootContainer" unique_id=1582910492]
+theme_type_variation = &"SecondaryButton"
 layout_mode = 2
 text = "Reset to Default"
 
@@ -571,6 +585,7 @@ tooltip_text = "Always blocks network access for the selected project."
 text = "Force offline"
 
 [node name="CheckUpdatesButton" type="Button" parent="AppLayout/Content/PageSettings" unique_id=1946003724]
+theme_type_variation = &"SecondaryButton"
 layout_mode = 2
 text = "Check for Updates"
 metadata/network_ui = true
@@ -596,10 +611,12 @@ size_flags_horizontal = 3
 placeholder_text = "C:\\tools or ~/.config/ogs-launcher/mirror"
 
 [node name="MirrorRootBrowseButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorRootContainer" unique_id=828726662]
+theme_type_variation = &"SecondaryButton"
 layout_mode = 2
 text = "Browse"
 
 [node name="MirrorRootResetButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorRootContainer" unique_id=610220166]
+theme_type_variation = &"SecondaryButton"
 layout_mode = 2
 text = "Reset to Default"
 
@@ -619,6 +636,7 @@ placeholder_text = "https://raw.githubusercontent.com/.../repository.json"
 metadata/network_ui = true
 
 [node name="MirrorRepoClearButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorRepoContainer" unique_id=1754813744]
+theme_type_variation = &"SecondaryButton"
 layout_mode = 2
 text = "Reset to Default"
 metadata/network_ui = true

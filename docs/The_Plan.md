@@ -215,6 +215,11 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Display 20px application icons next to direct tool folders (gimp, blender, krita, audacity, godot, game)
     *   [x] Maintain null icons for root, intermediate container folders (assets, 2D, 3D, Audio), and nested subfolders
     *   [x] Texture caching for tool icons in ProjectExplorer
+*   [x] Semantic Button Theme Variations and CheckButton Styling (Issue #127) - 100% Complete ✅
+    *   [x] Registered PrimaryButton, SecondaryButton, and DangerButton theme variations on global_theme in main.gd
+    *   [x] Replaced solid rectangular CheckButton styling with empty panel styleboxes and subtle hover highlight
+    *   [x] Assigned semantic button variations across Projects, Tools, and Settings pages in main.tscn and ToolsPageController
+    *   [x] Added comprehensive scene tests in tests/main_scene_tests.gd and tests/tools_page_scene_tests.gd (1555 tests passing)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:
@@ -297,7 +302,11 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   PortableGit CLI discovery in LibraryManager with semantic version comparison
     *   Air-gap gating, URL validation (HTTP/HTTPS/SSH/SCP), anti-injection flags, and safe path bounds
     *   34 test suites passing (1189 total tests) with zero failures
-*   **Test Suite:** 1473 tests passing across 36 test suites (~3-5 sec execution), comprehensive coverage across all components
+*   **Semantic Button Theming & CheckButton Styling (Phase 2.5):** Complete Oct 31, 2026
+    *   Semantic button theme variations (PrimaryButton, SecondaryButton, DangerButton) establishing clear visual hierarchy
+    *   CheckButton toggle rows styled with empty panel styleboxes replacing solid rectangular button bars
+    *   Scene test coverage in main_scene_tests.gd and tools_page_scene_tests.gd (1555 tests passing across 36 test suites)
+*   **Test Suite:** 1555 tests passing across 36 test suites (~3-5 sec execution), comprehensive coverage across all components
     *   ToolsController unit tests: download tracking, duplicate suppression, repository validation
     *   Tools page scene tests: node existence, status updates, button state management
     *   ProgressController unit tests: inline tracking, phase transitions, signal emission
