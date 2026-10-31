@@ -34,6 +34,8 @@ func run() -> Dictionary:
 	_test_launch_selected_tool_from_project_tools_list_runs_at_project_root(results)
 	_test_project_switching_and_reset_clears_launch_state(results)
 	_test_mutual_deselection_between_tools_list_and_explorer(results)
+	_test_explorer_double_click_triggers_activation_and_launch(results)
+	_test_new_file_creation_with_vscodium_in_stack(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -121,6 +123,7 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"remove_btn": remove_button,
 		"launch_btn": launch_button,
 		"new_name": new_project_name,
+		"new_file_name": new_file_name,
 		"remove_dialog": remove_dialog,
 		"list": project_tools_list,
 		"project_tools_list": project_tools_list,
@@ -555,4 +558,89 @@ func _test_mutual_deselection_between_tools_list_and_explorer(results: Dictionar
 	_expect(controller._selected_launch_tool_id == "blender", "selecting tool should update launch tool ID", results)
 
 	_cleanup_nodes(ctx["nodes"])
+	_cleanup_registry(storage_path)
+
+func _test_explorer_double_click_triggers_activation_and_launch(results: Dictionary) -> void:
+	## Verifies double-clicking a file in the project explorer emits file_activated and triggers launch.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_activation_%s.json" % str(Time.get_ticks_msec())
+	var projects_root = "user://projects_controller_scene_activation_root_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(projects_root)
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	controller.set_projects_root_path_for_tests(projects_root)
+	controller._create_new_project_from_name("Activation Launch Test")
+
+	controller.tool_manager.add_tool_to_current_project("vscodium", "1.143.17232")
+	var project_dir = controller.current_project_dir
+	var script_path = project_dir.path_join("player.gd")
+	var file = FileAccess.open(script_path, FileAccess.WRITE)
+	if file != null:
+		file.store_string("extends Node\n")
+		file.close()
+
+	var explorer = controller.get_meta("project_explorer_instance")
+	_expect(explorer != null, "project explorer instance should exist", results)
+
+	var status_label: Label = ctx["status"]
+	# Simulate explorer double click activation on the file
+	explorer.file_activated.emit(script_path, "vscodium")
+
+	_expect(controller._selected_launch_target_path == script_path, "activation should set launch target path", results)
+	_expect(controller._selected_launch_tool_id == "vscodium", "activation should set launch tool id to vscodium", results)
+	_expect(controller._selected_tool_index == -1, "activation should reset _selected_tool_index", results)
+	_expect(status_label.text.begins_with("Status: Launch failed") or status_label.text.begins_with("Status: Launched"), "launch should be triggered by activation", results)
+
+	_cleanup_nodes(ctx["nodes"])
+	_cleanup_dir_recursive(projects_root)
+	_cleanup_registry(storage_path)
+
+func _test_new_file_creation_with_vscodium_in_stack(results: Dictionary) -> void:
+	## Verifies creating new text files when VSCodium is in stack creates files and sets launch state.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_newfile_%s.json" % str(Time.get_ticks_msec())
+	var projects_root = "user://projects_controller_scene_newfile_root_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(projects_root)
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	controller.set_projects_root_path_for_tests(projects_root)
+	controller._create_new_project_from_name("New File VSCodium Test")
+
+	controller.tool_manager.add_tool_to_current_project("vscodium", "1.143.17232")
+	var project_dir = controller.current_project_dir
+
+	# 1. Create a script file (extension 'gd')
+	var name_edit: LineEdit = ctx["new_file_name"]
+	name_edit.text = "main.gd"
+	controller._on_new_file_confirmed()
+
+	var expected_script_path = project_dir.path_join("main.gd")
+	_expect(FileAccess.file_exists(expected_script_path), "main.gd should be created on disk", results)
+	_expect(controller._selected_launch_tool_id == "vscodium", "launch tool should be vscodium for gd file", results)
+	_expect(controller._selected_launch_target_path == expected_script_path, "target path should match main.gd", results)
+
+	# 2. Create an extensionless file -> should default to .txt with vscodium
+	name_edit.text = "todo_notes"
+	controller._on_new_file_confirmed()
+
+	var expected_txt_path = project_dir.path_join("todo_notes.txt")
+	_expect(FileAccess.file_exists(expected_txt_path), "todo_notes.txt should be created on disk with default .txt", results)
+	_expect(controller._selected_launch_tool_id == "vscodium", "launch tool should be vscodium for default txt", results)
+	_expect(controller._selected_launch_target_path == expected_txt_path, "target path should match todo_notes.txt", results)
+
+	# 3. Create a structured data file (extension 'json')
+	name_edit.text = "settings.json"
+	controller._on_new_file_confirmed()
+
+	var expected_json_path = project_dir.path_join("settings.json")
+	_expect(FileAccess.file_exists(expected_json_path), "settings.json should be created on disk", results)
+	_expect(controller._selected_launch_tool_id == "vscodium", "launch tool should be vscodium for json file", results)
+	_expect(controller._selected_launch_target_path == expected_json_path, "target path should match settings.json", results)
+
+	_cleanup_nodes(ctx["nodes"])
+	_cleanup_dir_recursive(projects_root)
 	_cleanup_registry(storage_path)
