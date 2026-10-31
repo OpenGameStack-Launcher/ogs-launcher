@@ -185,7 +185,7 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	if project_dir_dialog.has_signal("visibility_changed"):
 		project_dir_dialog.connect("visibility_changed", Callable(self, "_on_project_picker_visibility_changed"))
 
-	project_picker_add_button = project_dir_dialog.add_button("Add Project", false, PICKER_ACTION_ADD_PROJECT)
+	project_picker_add_button = project_dir_dialog.add_button("Add Local Project", false, PICKER_ACTION_ADD_PROJECT)
 	project_picker_add_button.disabled = true
 	var dialog_open_button = project_dir_dialog.get_ok_button()
 	if dialog_open_button != null:
@@ -247,7 +247,7 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 			projects_tabs.current_tab = 0 # Default to Project Library tab
 		_disable_remove_button()
 		if registry_manager.tracked_projects.is_empty():
-			_update_status("Status: No projects added yet. Click Add to register an OGS project.")
+			_update_status("Status: No projects added yet. Click Add Local Project to register an OGS project.")
 		else:
 			_update_status("Status: Select a project from the library.")
 
@@ -340,6 +340,12 @@ func set_projects_index_path_for_tests(p: String):
 	registry_manager.set_projects_index_path_for_tests(p)
 func set_projects_root_path_for_tests(p: String):
 	registry_manager.set_projects_root_path_for_tests(p)
+func get_primary_projects_folder() -> String:
+	## Returns active primary projects folder.
+	return registry_manager.get_primary_projects_folder()
+func set_settings_controller(settings_ctrl: SettingsController) -> void:
+	## Links SettingsController with project registry manager.
+	registry_manager.set_settings_controller(settings_ctrl)
 func _create_new_project_from_name(project_name: String) -> bool:
 	if creation_dialog != null:
 		return creation_dialog._create_new_project_from_name(project_name)
@@ -397,7 +403,7 @@ func _on_project_dialog_custom_action(action: String) -> void:
 
 	var selected_dir = _get_picker_selected_dir()
 	if not _is_addable_project_dir(selected_dir):
-		_update_status("Status: Add Project requires stack.json and ogs_config.json in the selected folder.")
+		_update_status("Status: Add Local Project requires stack.json in the selected folder.")
 		OgsLogger.warn("project_add_rejected", {
 			"component": "projects",
 			"reason": "missing_required_files"
@@ -424,7 +430,7 @@ func add_project_from_path(project_dir: String) -> bool:
 		return false
 
 	if not _is_addable_project_dir(normalized_dir):
-		_update_status("Status: Missing required files (stack.json and ogs_config.json).")
+		_update_status("Status: Missing required file (stack.json).")
 		OgsLogger.warn("project_add_failed", {
 			"component": "projects",
 			"reason": "missing_required_files"
@@ -444,6 +450,20 @@ func add_project_from_path(project_dir: String) -> bool:
 	var manifest = _load_manifest_from_project(normalized_dir)
 	if manifest == null:
 		return false
+
+	var config_path = normalized_dir.path_join("ogs_config.json")
+	if not FileAccess.file_exists(config_path):
+		var default_config_dict = OgsConfig.new().to_dict()
+		if not registry_manager._save_json_file(config_path, default_config_dict):
+			_update_status("Status: Failed to create default ogs_config.json.")
+			OgsLogger.warn("project_add_failed", {
+				"component": "projects",
+				"reason": "config_create_failed"
+			})
+			return false
+		OgsLogger.info("project_config_auto_generated", {
+			"component": "projects"
+		})
 
 	var project_entry = {
 		"path": normalized_dir,
@@ -470,13 +490,12 @@ func _is_addable_project_dir(project_dir: String) -> bool:
 ## project_dir (String): Directory to validate
 ## 
 ## Returns:
-## bool: True when both stack.json and ogs_config.json exist
+## bool: True when stack.json exists
 ## 
 	if project_dir.is_empty():
 		return false
 	var stack_path = project_dir.path_join("stack.json")
-	var config_path = project_dir.path_join("ogs_config.json")
-	return FileAccess.file_exists(stack_path) and FileAccess.file_exists(config_path)
+	return FileAccess.file_exists(stack_path)
 
 func _get_picker_selected_dir() -> String:
 	## Returns current directory context from FileDialog picker safely.
@@ -627,7 +646,7 @@ func _select_project(index: int) -> void:
 	if not _is_addable_project_dir(project_dir):
 		current_project_config = null
 		project_selection_changed.emit("", false, false)
-		_update_status("Status: Selected project is missing stack.json or ogs_config.json.")
+		_update_status("Status: Selected project is missing stack.json.")
 		_apply_offline_config(null)
 		_update_offline_status(null)
 		_disable_launch_for_selected_project()
@@ -659,6 +678,12 @@ func _select_project(index: int) -> void:
 	_populate_tools_list(manifest.tools)
 
 	var config_path = project_dir.path_join("ogs_config.json")
+	if not FileAccess.file_exists(config_path):
+		var default_config_dict = OgsConfig.new().to_dict()
+		if registry_manager._save_json_file(config_path, default_config_dict):
+			OgsLogger.info("project_config_auto_generated", {
+				"component": "projects"
+			})
 	var config = _load_config_if_present(config_path)
 	current_project_config = config
 	_apply_offline_config(config)

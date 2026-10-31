@@ -82,6 +82,9 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var seal_open_folder_button = $SealDialog/VBoxContainer/OpenFolderButton
 
 # Settings nodes
+@onready var projects_root_path = $AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootPath
+@onready var projects_root_browse_button = $AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootBrowseButton
+@onready var projects_root_reset_button = $AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootResetButton
 @onready var mirror_root_path = $AppLayout/Content/PageSettings/MirrorRootContainer/MirrorRootPath
 @onready var mirror_root_browse_button = $AppLayout/Content/PageSettings/MirrorRootContainer/MirrorRootBrowseButton
 @onready var mirror_root_reset_button = $AppLayout/Content/PageSettings/MirrorRootContainer/MirrorRootResetButton
@@ -191,6 +194,9 @@ func _ready() -> void:
 	
 	var settings_file_path = OS.get_user_data_dir().path_join("ogs_launcher_settings.json")
 	var settings_deps = SettingsControllerScript.UIDeps.new()
+	settings_deps.projects_root_path = projects_root_path
+	settings_deps.projects_root_browse_button = projects_root_browse_button
+	settings_deps.projects_root_reset_button = projects_root_reset_button
 	settings_deps.mirror_root_path = mirror_root_path
 	settings_deps.mirror_repo_path = mirror_repo_path
 	settings_deps.mirror_status_label = mirror_status_label
@@ -288,6 +294,10 @@ func _ready() -> void:
 	deps.btn_change_version = btn_change_version
 	
 	projects_controller.setup(deps, tools_controller)
+	projects_controller.set_settings_controller(settings_controller)
+	settings_controller.projects_root_changed.connect(func(new_root: String):
+		projects_controller.registry_manager.set_configured_projects_root(new_root)
+	)
 	projects_controller.offline_state_changed.connect(_on_offline_state_changed)
 	projects_controller.project_selection_changed.connect(settings_controller.on_project_selection_changed)
 	projects_controller.tool_view_requested.connect(func(t, v): tools_page_controller.navigate_to_tool(t, v); layout_controller.navigate_to("tools"))
@@ -298,6 +308,9 @@ func _ready() -> void:
 	seal_controller.setup(seal_dialog, seal_status_label, seal_output_label, seal_open_folder_button)
 	btn_seal_for_delivery.pressed.connect(func(): seal_controller.seal_for_delivery(projects_controller.current_project_dir))
 
+	projects_root_path.text_changed.connect(settings_controller.on_projects_root_text_changed)
+	projects_root_browse_button.pressed.connect(settings_controller.on_projects_root_browse_pressed)
+	projects_root_reset_button.pressed.connect(settings_controller.on_projects_root_reset_pressed)
 	mirror_root_path.text_changed.connect(settings_controller.on_mirror_root_text_changed)
 	mirror_root_browse_button.pressed.connect(settings_controller.on_mirror_root_browse_pressed)
 	mirror_root_reset_button.pressed.connect(settings_controller.on_mirror_root_reset_pressed)
@@ -348,6 +361,16 @@ func _apply_offline_ui(active: bool) -> void:
 			var button := node as BaseButton
 			button.disabled = active
 			button.tooltip_text = "Disabled in offline mode." if active else ""
+
+func _on_mirror_root_browse_pressed() -> void:
+	## Helper forwarding mirror root browse action to SettingsController.
+	if settings_controller != null:
+		settings_controller.on_mirror_root_browse_pressed()
+
+func _on_projects_root_browse_pressed() -> void:
+	## Helper forwarding projects root browse action to SettingsController.
+	if settings_controller != null:
+		settings_controller.on_projects_root_browse_pressed()
 
 func _exit_tree() -> void:
 	if layout_controller != null:

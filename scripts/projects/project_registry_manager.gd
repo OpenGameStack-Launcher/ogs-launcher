@@ -7,10 +7,24 @@ const DEFAULT_PROJECTS_INDEX_PATH := "user://ogs_projects_index.json"
 var tracked_projects: Array = []
 var _projects_index_path := DEFAULT_PROJECTS_INDEX_PATH
 var _projects_root_override := ""
+var _configured_projects_root := ""
+var _settings_controller: SettingsController = null
 var _pc: ProjectsController
 
 func setup(projects_controller: ProjectsController) -> void:
 	_pc = projects_controller
+
+func set_settings_controller(settings_ctrl: SettingsController) -> void:
+	## Links SettingsController to resolve configured primary projects folder.
+	_settings_controller = settings_ctrl
+
+func set_configured_projects_root(path: String) -> void:
+	## Sets the configured primary projects folder path.
+	_configured_projects_root = path.strip_edges()
+
+func get_primary_projects_folder() -> String:
+	## Exposes active primary projects directory for project creation and UI display.
+	return _resolve_ogs_projects_root_path()
 
 func _save_json_file(file_path: String, payload: Dictionary) -> bool:
 	## Writes JSON dictionary to disk with pretty formatting.
@@ -31,27 +45,30 @@ func _save_json_file(file_path: String, payload: Dictionary) -> bool:
 
 func _resolve_ogs_projects_root_path() -> String:
 	## Determines where the root OGS Projects folder should be.
-## 
-## Returns:
-## String: Absolute path to the projects root folder
-## 
+	## Priority:
+	## 1. Test override (_projects_root_override)
+	## 2. SettingsController primary projects root
+	## 3. Configured projects root (_configured_projects_root)
+	## 4. Default projects folder (_get_default_projects_dir())
 	if not _projects_root_override.is_empty():
 		return _projects_root_override
+	if _settings_controller != null:
+		var settings_root = _settings_controller.get_projects_root()
+		if not settings_root.is_empty():
+			return settings_root.simplify_path()
+	if not _configured_projects_root.is_empty():
+		return _configured_projects_root.simplify_path()
 	return _get_default_projects_dir()
 
 func _get_default_projects_dir() -> String:
 	## Resolves the default root directory where new projects are created.
-## 
-## Returns:
-## String: Absolute path to OGS_Projects folder
-## 
 	var home_dir = OS.get_environment("USERPROFILE")
 	if home_dir.is_empty():
 		home_dir = OS.get_environment("HOME")
 
 	if not home_dir.is_empty():
-		return home_dir.path_join("OGS_Projects")
-	return OS.get_user_data_dir().path_join("OGS_Projects")
+		return home_dir.path_join("OGS_Projects").simplify_path()
+	return OS.get_user_data_dir().path_join("OGS_Projects").simplify_path()
 
 func set_projects_index_path_for_tests(path: String) -> void:
 	## Overrides project index storage path for isolated tests.

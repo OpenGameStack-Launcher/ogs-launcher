@@ -6,7 +6,13 @@ const MirrorPathResolverScript = preload("res://scripts/mirror/mirror_path_resol
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 const OgsConfig = preload("res://scripts/config/ogs_config.gd")
 
+## Emitted when the configured primary projects root path changes.
+signal projects_root_changed(new_root: String)
+
 class UIDeps extends RefCounted:
+	var projects_root_path: LineEdit
+	var projects_root_browse_button: Button
+	var projects_root_reset_button: Button
 	var mirror_root_path: LineEdit
 	var mirror_repo_path: LineEdit
 	var mirror_status_label: Label
@@ -19,10 +25,12 @@ var _ui: UIDeps
 var _projects_controller: ProjectsController
 var _default_remote_repo_url: String
 var _settings_file_path: String
+var projects_root_override: String = ""
 var mirror_root_override: String = ""
 var mirror_repository_url: String = ""
 
 func setup(deps: UIDeps, projects_controller: ProjectsController, default_remote_repo_url: String, settings_file_path: String) -> void:
+	## Initializes settings controller dependencies and loads persisted settings.
 	_ui = deps
 	_projects_controller = projects_controller
 	_default_remote_repo_url = default_remote_repo_url
@@ -31,10 +39,33 @@ func setup(deps: UIDeps, projects_controller: ProjectsController, default_remote
 	_load_mirror_settings()
 	update_mirror_status()
 
+func get_projects_root() -> String:
+	## Returns the custom primary projects root folder override, or empty string if using default.
+	return projects_root_override
+
+func get_primary_projects_folder() -> String:
+	## Returns the active primary projects directory, resolving to default if unconfigured.
+	if not projects_root_override.is_empty():
+		return projects_root_override
+	if _projects_controller != null and _projects_controller.registry_manager != null:
+		return _projects_controller.registry_manager._get_default_projects_dir()
+	var home_dir = OS.get_environment("USERPROFILE")
+	if home_dir.is_empty():
+		home_dir = OS.get_environment("HOME")
+	if not home_dir.is_empty():
+		return home_dir.path_join("OGS_Projects")
+	return OS.get_user_data_dir().path_join("OGS_Projects")
+
 func get_mirror_repository_url() -> String:
+	## Returns configured mirror repo URL or default fallback.
 	return mirror_repository_url if not mirror_repository_url.is_empty() else _default_remote_repo_url
 
 func _load_mirror_settings() -> void:
+	## Loads persisted launcher settings from disk and populates UI fields.
+	var loaded_projects_root = ""
+	var loaded_mirror_root = ""
+	var loaded_mirror_repo = _default_remote_repo_url
+	
 	if FileAccess.file_exists(_settings_file_path):
 		var file = FileAccess.open(_settings_file_path, FileAccess.READ)
 		if file != null:
@@ -42,33 +73,97 @@ func _load_mirror_settings() -> void:
 			if not json_text.strip_edges().is_empty():
 				var parser = JSON.new()
 				if parser.parse(json_text) == OK and typeof(parser.data) == TYPE_DICTIONARY:
-					mirror_root_override = String(parser.data.get("mirror_root", ""))
-					mirror_repository_url = String(parser.data.get("remote_repository_url", _default_remote_repo_url))
-					_ui.mirror_root_path.text = mirror_root_override
-					_ui.mirror_repo_path.text = mirror_repository_url
-					return
-	mirror_root_override = ""
-	mirror_repository_url = _default_remote_repo_url
-	_ui.mirror_root_path.text = ""
-	_ui.mirror_repo_path.text = mirror_repository_url
+					loaded_projects_root = String(parser.data.get("projects_root", ""))
+					loaded_mirror_root = String(parser.data.get("mirror_root", ""))
+					loaded_mirror_repo = String(parser.data.get("remote_repository_url", _default_remote_repo_url))
+
+	projects_root_override = loaded_projects_root
+	mirror_root_override = loaded_mirror_root
+	mirror_repository_url = loaded_mirror_repo
+	
+	if _ui != null:
+		if _ui.projects_root_path != null:
+			_ui.projects_root_path.text = projects_root_override
+			_ui.projects_root_path.placeholder_text = get_primary_projects_folder()
+		if _ui.mirror_root_path != null:
+			_ui.mirror_root_path.text = mirror_root_override
+		if _ui.mirror_repo_path != null:
+			_ui.mirror_repo_path.text = mirror_repository_url
 
 func save_mirror_settings() -> void:
-	var data = {
-		"mirror_root": mirror_root_override,
-		"remote_repository_url": mirror_repository_url,
-		"timestamp": Time.get_ticks_msec()
-	}
+	## Persists launcher settings to disk while preserving any existing keys.
+	var data = {}
+	if FileAccess.file_exists(_settings_file_path):
+		var file_read = FileAccess.open(_settings_file_path, FileAccess.READ)
+		if file_read != null:
+			var json_text = file_read.get_as_text()
+			var parser = JSON.new()
+			if parser.parse(json_text) == OK and typeof(parser.data) == TYPE_DICTIONARY:
+				data = parser.data
+
+	data["projects_root"] = projects_root_override
+	data["mirror_root"] = mirror_root_override
+	data["remote_repository_url"] = mirror_repository_url
+	data["timestamp"] = Time.get_ticks_msec()
+
 	var file = FileAccess.open(_settings_file_path, FileAccess.WRITE)
 	if file != null:
 		file.store_string(JSON.stringify(data))
 		OgsLogger.info("mirror_settings_saved", {"component": "settings"})
 
+func on_projects_root_text_changed(new_text: String) -> void:
+	## Handles user typing into the primary projects root input field.
+	projects_root_override = new_text.strip_edges()
+	save_mirror_settings()
+	projects_root_changed.emit(projects_root_override)
+	OgsLogger.info("projects_root_changed", {
+		"component": "settings",
+		"is_custom": not projects_root_override.is_empty()
+	})
+
+func on_projects_root_browse_pressed() -> void:
+	## Opens folder picker dialog to select a primary projects folder.
+	var dialog = FileDialog.new()
+	dialog.title = "Select Primary Projects Directory"
+	dialog.file_mode = FileDialog.FILE_MODE_OPEN_DIR
+	dialog.access = FileDialog.ACCESS_FILESYSTEM
+	dialog.dir_selected.connect(func(path: String):
+		projects_root_override = path
+		if _ui.projects_root_path != null:
+			_ui.projects_root_path.text = path
+		save_mirror_settings()
+		projects_root_changed.emit(projects_root_override)
+		OgsLogger.info("projects_root_changed", {
+			"component": "settings",
+			"is_custom": true
+		})
+	)
+	dialog.canceled.connect(func(): dialog.queue_free())
+	dialog.close_requested.connect(func(): dialog.queue_free())
+	dialog.dir_selected.connect(func(_path: String): dialog.queue_free())
+	_ui.app_node.add_child(dialog)
+	dialog.popup_centered_ratio(0.7)
+
+func on_projects_root_reset_pressed() -> void:
+	## Resets primary projects folder back to the default system directory.
+	projects_root_override = ""
+	if _ui.projects_root_path != null:
+		_ui.projects_root_path.text = ""
+	save_mirror_settings()
+	projects_root_changed.emit(projects_root_override)
+	OgsLogger.info("projects_root_changed", {
+		"component": "settings",
+		"is_custom": false
+	})
+
 func on_mirror_root_text_changed(new_text: String) -> void:
+	## Handles user typing into the mirror root path input field.
 	mirror_root_override = new_text
 	save_mirror_settings()
 	update_mirror_status()
 
 func on_mirror_root_browse_pressed() -> void:
+	## Opens folder picker dialog to select a mirror root directory.
 	var dialog = FileDialog.new()
 	dialog.title = "Select Mirror Root Directory"
 	dialog.file_mode = FileDialog.FILE_MODE_OPEN_DIR
@@ -86,23 +181,27 @@ func on_mirror_root_browse_pressed() -> void:
 	dialog.popup_centered_ratio(0.7)
 
 func on_mirror_root_reset_pressed() -> void:
+	## Resets mirror root back to default system directory.
 	mirror_root_override = ""
 	_ui.mirror_root_path.text = ""
 	save_mirror_settings()
 	update_mirror_status()
 
 func on_mirror_repo_text_changed(new_text: String) -> void:
+	## Handles user edits to the remote repository URL input field.
 	mirror_repository_url = new_text.strip_edges()
 	save_mirror_settings()
 	update_mirror_status()
 
 func on_mirror_repo_clear_pressed() -> void:
+	## Resets remote repository URL back to default.
 	mirror_repository_url = _default_remote_repo_url
 	_ui.mirror_repo_path.text = mirror_repository_url
 	save_mirror_settings()
 	update_mirror_status()
 
 func update_mirror_status() -> void:
+	## Evaluates and renders mirror configuration and repository readiness.
 	var resolver = MirrorPathResolverScript.new()
 	var effective_root = mirror_root_override if not mirror_root_override.is_empty() else resolver.get_mirror_root()
 	var has_local_repo = false
@@ -125,6 +224,7 @@ func update_mirror_status() -> void:
 		_ui.mirror_status_label.modulate = Color.RED
 
 func on_project_selection_changed(project_dir: String, offline_mode: bool, force_offline: bool) -> void:
+	## Synchronizes offline policy controls when selected project changes.
 	_ui.project_offline_status_label.text = "Selected: %s" % project_dir if not project_dir.is_empty() else "No project selected"
 	_ui.project_offline_mode_check_button.set_pressed_no_signal(offline_mode)
 	_ui.project_force_offline_check_button.set_pressed_no_signal(force_offline)
@@ -132,9 +232,11 @@ func on_project_selection_changed(project_dir: String, offline_mode: bool, force
 	_ui.project_force_offline_check_button.disabled = project_dir.is_empty()
 
 func sync_project_offline_settings(project_dir: String, config: OgsConfig) -> void:
+	## Updates offline controls from currently active project config.
 	on_project_selection_changed(project_dir, config.offline_mode if config != null else false, config.force_offline if config != null else false)
 
 func on_project_offline_setting_toggled(_enabled: bool) -> void:
+	## Persists modified offline policy to the active project's ogs_config.json.
 	if _projects_controller == null or _projects_controller.current_project_dir.is_empty(): return
 	_projects_controller.update_current_project_offline_settings(
 		_ui.project_offline_mode_check_button.button_pressed,

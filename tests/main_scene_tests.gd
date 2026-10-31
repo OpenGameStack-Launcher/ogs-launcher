@@ -7,8 +7,8 @@ class_name MainSceneTests
 
 func run() -> Dictionary:
 	## Runs main scene smoke tests.
-## Returns:
-## Dictionary: {"passed": int, "failed": int, "failures": Array[String]}
+	## Returns:
+	## Dictionary: {"passed": int, "failed": int, "failures": Array[String]}
 	var results := {
 		"passed": 0,
 		"failed": 0,
@@ -18,14 +18,15 @@ func run() -> Dictionary:
 	_test_controller_type_instances(results)
 	_test_network_ui_disabled_offline(results)
 	_test_mirror_root_browse_dialog_frees_on_close(results)
+	_test_projects_root_browse_dialog_frees_on_close(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
 	## Records test assertion.
-## Parameters:
-## condition (bool): If true, increments passed; if false, increments failed
-## message (String): Failure description
-## results (Dictionary): Test accumulator (modified in-place)
+	## Parameters:
+	## condition (bool): If true, increments passed; if false, increments failed
+	## message (String): Failure description
+	## results (Dictionary): Test accumulator (modified in-place)
 	if condition:
 		results["passed"] += 1
 	else:
@@ -48,8 +49,17 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 	_expect(page_tools != null, "Tools page should exist", results)
 	_expect(page_settings != null, "Settings page should exist", results)
 
-	var add_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/AddButton")
+	var add_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/AddButton") as Button
 	_expect(add_button != null, "Add button should exist", results)
+	if add_button != null:
+		_expect(add_button.text == "Add Local Project", "Add button text should be 'Add Local Project'", results)
+
+	var projects_root_path = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootPath") as LineEdit
+	var projects_root_browse = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootBrowseButton") as Button
+	var projects_root_reset = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootResetButton") as Button
+	_expect(projects_root_path != null, "Projects root path line edit should exist", results)
+	_expect(projects_root_browse != null, "Projects root browse button should exist", results)
+	_expect(projects_root_reset != null, "Projects root reset button should exist", results)
 
 	var new_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/NewProjectButton")
 	_expect(new_button != null, "New Project button should exist", results)
@@ -124,8 +134,31 @@ func _test_mirror_root_browse_dialog_frees_on_close(results: Dictionary) -> void
 		_expect(closed_dialog.is_queued_for_deletion(), "mirror root browse dialog should be queued for free on close_requested", results)
 	instance.free()
 
+func _test_projects_root_browse_dialog_frees_on_close(results: Dictionary) -> void:
+	## Verifies primary projects root browse dialog is queued for free when closed without a selection.
+	var scene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for projects browse dialog close test", results)
+	if scene == null:
+		return
+	var instance = scene.instantiate()
+	(Engine.get_main_loop() as SceneTree).root.add_child(instance)
+	instance._on_projects_root_browse_pressed()
+	var canceled_dialog = _find_new_file_dialog(instance, null)
+	_expect(canceled_dialog != null, "projects root browse should create a file dialog", results)
+	if canceled_dialog != null:
+		canceled_dialog.canceled.emit()
+		_expect(canceled_dialog.is_queued_for_deletion(), "projects root browse dialog should be queued for free on canceled", results)
+
+	instance._on_projects_root_browse_pressed()
+	var closed_dialog = _find_new_file_dialog(instance, canceled_dialog)
+	_expect(closed_dialog != null, "projects root browse should create a second file dialog", results)
+	if closed_dialog != null:
+		closed_dialog.close_requested.emit()
+		_expect(closed_dialog.is_queued_for_deletion(), "projects root browse dialog should be queued for free on close_requested", results)
+	instance.free()
+
 func _find_new_file_dialog(parent: Node, exclude_dialog: FileDialog) -> FileDialog:
-	## Isolates the newest mirror-browse dialog so close-path regression checks target the correct node.
+	## Isolates the newest file dialog so close-path regression checks target the correct node.
 	for idx in range(parent.get_child_count() - 1, -1, -1):
 		var child = parent.get_child(idx) as FileDialog
 		if child != null and child != exclude_dialog:

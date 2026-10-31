@@ -17,7 +17,7 @@ func _on_new_project_pressed() -> void:
 	
 	var label = _ui.new_project_dialog.get_node_or_null("VBoxContainer/InstructionsLabel")
 	if label:
-		label.text = "Enter project name. A folder will be created under:\n%s" % _pc.registry_manager._get_default_projects_dir()
+		label.text = "Enter project name. A folder will be created under:\n%s" % _pc.registry_manager.get_primary_projects_folder()
 		
 	_ui.new_project_dialog.popup_centered_ratio(0.4)
 	_ui.new_project_name_line_edit.grab_focus()

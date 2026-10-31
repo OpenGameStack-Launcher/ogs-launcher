@@ -20,10 +20,12 @@ func run() -> Dictionary:
 		"failures": []
 	}
 	_test_add_requires_both_project_files(results)
+	_test_add_project_with_only_stack_json(results)
 	_test_add_valid_project_populates_lists(results)
 	_test_project_registry_persists_between_setups(results)
 	_test_project_removal(results)
 	_test_new_project_creates_scaffold_and_adds(results)
+	_test_new_project_honors_configured_primary_projects_folder(results)
 	_test_launch_button_disabled_initially(results)
 	_test_launch_button_enabled_after_select(results)
 	_test_launch_after_click_uses_selected_tool(results)
@@ -169,15 +171,60 @@ func _cleanup_dir_recursive(user_or_abs_path: String) -> void:
 	DirAccess.remove_absolute(path)
 
 func _test_add_requires_both_project_files(results: Dictionary) -> void:
-	## Verifies Add Project rejects folder missing required files.
+	## Verifies Add Local Project rejects folder missing stack.json.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_missing_%s.json" % str(Time.get_ticks_msec())
+	var empty_dir = "user://test_empty_folder_%s" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(empty_dir)
+	DirAccess.make_dir_recursive_absolute(ProjectSettings.globalize_path(empty_dir))
+
 	var ctx = _build_controller(storage_path)
 	var controller = ctx["controller"]
-	var added = controller.add_project_from_path("res://samples/does_not_exist")
-	_expect(not added, "missing project directory should fail to add", results)
+	var added = controller.add_project_from_path(empty_dir)
+	_expect(not added, "folder without stack.json should fail to add", results)
+	var status_label: Label = ctx["status"]
+	_expect(status_label.text.contains("stack.json"), "status should state stack.json is required", results)
 	_cleanup_nodes(ctx["nodes"])
+	_cleanup_dir_recursive(empty_dir)
+	_cleanup_registry(storage_path)
+
+func _test_add_project_with_only_stack_json(results: Dictionary) -> void:
+	## Verifies adding a folder with only stack.json succeeds and auto-generates ogs_config.json.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_only_stack_%s.json" % str(Time.get_ticks_msec())
+	var test_dir = "user://test_stack_only_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(test_dir)
+	var abs_dir = ProjectSettings.globalize_path(test_dir)
+	DirAccess.make_dir_recursive_absolute(abs_dir)
+
+	var stack_path = abs_dir.path_join("stack.json")
+	var config_path = abs_dir.path_join("ogs_config.json")
+	var stack_payload = {
+		"schema_version": StackManifest.CURRENT_SCHEMA_VERSION,
+		"stack_name": "Stack Only Project",
+		"tools": []
+	}
+	var f = FileAccess.open(stack_path, FileAccess.WRITE)
+	f.store_string(JSON.stringify(stack_payload))
+	f.close()
+
+	_expect(not FileAccess.file_exists(config_path), "ogs_config.json should not exist initially", results)
+
+	var ctx = _build_controller(storage_path)
+	var controller = ctx["controller"]
+	var added = controller.add_project_from_path(abs_dir)
+	_expect(added, "adding project with only stack.json should succeed", results)
+	_expect(FileAccess.file_exists(config_path), "ogs_config.json should be auto-generated on disk", results)
+
+	var loaded_config = OgsConfig.load_from_file(config_path)
+	_expect(loaded_config != null, "auto-generated ogs_config.json should be valid", results)
+	_expect(loaded_config.offline_mode == false, "default offline_mode should be false", results)
+	_expect(loaded_config.force_offline == false, "default force_offline should be false", results)
+
+	_cleanup_nodes(ctx["nodes"])
+	_cleanup_dir_recursive(test_dir)
 	_cleanup_registry(storage_path)
 
 func _test_add_valid_project_populates_lists(results: Dictionary) -> void:
@@ -261,6 +308,42 @@ func _test_new_project_creates_scaffold_and_adds(results: Dictionary) -> void:
 	_expect(DirAccess.dir_exists_absolute(created_dir), "new project folder should be created in OGS_Projects root", results)
 	_cleanup_nodes(ctx["nodes"])
 	_cleanup_dir_recursive(projects_root)
+	_cleanup_registry(storage_path)
+
+func _test_new_project_honors_configured_primary_projects_folder(results: Dictionary) -> void:
+	## Verifies creating a project honors configured Primary Projects Folder while test override takes precedence.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_primary_root_%s.json" % str(Time.get_ticks_msec())
+	var configured_root = "user://test_configured_projects_root_%s" % str(Time.get_ticks_msec())
+	var test_override_root = "user://test_override_projects_root_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(configured_root)
+	_cleanup_dir_recursive(test_override_root)
+
+	var ctx = _build_controller(storage_path)
+	var controller = ctx["controller"]
+	
+	# When configured root is set without test override
+	controller.registry_manager.set_configured_projects_root(configured_root)
+	_expect(controller.get_primary_projects_folder() == configured_root.simplify_path(), "primary projects folder should match configured root", results)
+	
+	var created = controller._create_new_project_from_name("Configured Project")
+	_expect(created, "new project should be created in configured root", results)
+	var configured_project_dir = ProjectSettings.globalize_path(configured_root.path_join("Configured_Project"))
+	_expect(DirAccess.dir_exists_absolute(configured_project_dir), "project folder should exist in configured root", results)
+	
+	# When test override is set, it must take precedence over configured root
+	controller.set_projects_root_path_for_tests(test_override_root)
+	_expect(controller.get_primary_projects_folder() == test_override_root, "test override should take precedence", results)
+	
+	var created_override = controller._create_new_project_from_name("Override Project")
+	_expect(created_override, "new project should be created in override root", results)
+	var override_project_dir = ProjectSettings.globalize_path(test_override_root.path_join("Override_Project"))
+	_expect(DirAccess.dir_exists_absolute(override_project_dir), "project folder should exist in test override root", results)
+
+	_cleanup_nodes(ctx["nodes"])
+	_cleanup_dir_recursive(configured_root)
+	_cleanup_dir_recursive(test_override_root)
 	_cleanup_registry(storage_path)
 
 func _test_launch_button_disabled_initially(results: Dictionary) -> void:
