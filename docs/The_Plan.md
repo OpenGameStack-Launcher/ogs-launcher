@@ -342,6 +342,18 @@ Granular, actionable items for the Tools/Projects page redesign:
 - **v0.1.0-alpha released**: https://github.com/OpenGameStack-Launcher/ogs-launcher/releases/tag/v0.1.0-alpha
 - Website (`OpenGameStack-Launcher.github.io`) updated with alpha download section and direct tag URL links
 
+**Frozen Stacks v3.0 Tool Catalog Expansion and Code Category Integration (Oct 30, 2026):**
+- Introduced "Code" category across ToolCategoryMapper, ToolsController, ToolsPageController, and ProjectExplorer
+- Added catalog support and transparent tool icons for PortableGit (2.56.0.4) and VSCodium (1.143.17232)
+- Added dynamic, defensive category initialization in ToolsController to guard against unlisted categories
+- Scaffolding adaptation in ProjectToolManager: skips creating empty assets/Code/* directories for Code tools
+- Project-rooted Git Bash launches with `--cd=<project_dir>`
+- Workspace-rooted VSCodium launches with `<project_dir>` and target file arguments
+- Automatic detection and injection of portable Git (`git.path` and `git.enabled`) into `<project_dir>/.vscode/settings.json` when both tools are present
+- Air-gap telemetry suppression: injected `--disable-telemetry` for VSCodium when offline enforcement is active
+- Clean display name formatting (`ToolCategoryMapper.get_display_name()`) across UI surfaces (VSCodium, Git, GIMP)
+- 31 test suites passing (631 total tests) with zero failures
+
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
 - Collapsible UI sections for scalability

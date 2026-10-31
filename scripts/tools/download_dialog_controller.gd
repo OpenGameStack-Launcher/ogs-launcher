@@ -2,6 +2,8 @@
 extends RefCounted
 class_name DownloadDialogController
 
+const ToolCategoryMapper = preload("res://scripts/tools/tool_category_mapper.gd")
+
 var dialog: ConfirmationDialog
 var progress_bar: ProgressBar
 var label: Label
@@ -37,7 +39,7 @@ func setup(app_node: Node, tools_controller: ToolsController) -> void:
 func show_dialog(tool_id: String, version: String, progress_controller: ProgressController) -> void:
 	_active_tool_id = tool_id
 	_active_version = version
-	dialog.title = "Downloading %s %s" % [tool_id.capitalize(), version]
+	dialog.title = "Downloading %s %s" % [ToolCategoryMapper.get_display_name(tool_id), version]
 	dialog.get_cancel_button().text = "Cancel"
 	dialog.get_cancel_button().disabled = false
 	if progress_controller != null:

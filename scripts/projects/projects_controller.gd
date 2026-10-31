@@ -14,6 +14,7 @@ extends RefCounted
 class_name ProjectsController
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
+const ToolCategoryMapper = preload("res://scripts/tools/tool_category_mapper.gd")
 
 ## Emitted when offline state changes after loading a project or config.
 signal offline_state_changed(active: bool, reason: String)
@@ -334,6 +335,10 @@ func set_projects_index_path_for_tests(p: String):
 	registry_manager.set_projects_index_path_for_tests(p)
 func set_projects_root_path_for_tests(p: String):
 	registry_manager.set_projects_root_path_for_tests(p)
+func _create_new_project_from_name(project_name: String) -> bool:
+	if creation_dialog != null:
+		return creation_dialog._create_new_project_from_name(project_name)
+	return false
 func _on_add_project_pressed() -> void:
 	## Opens folder picker and primes Add Project button state.
 	project_dir_dialog.popup_centered_ratio(0.65)
@@ -743,7 +748,7 @@ func _populate_tools_list(tools: Array) -> void:
 		var availability = {"available": false, "installed": is_installed}
 		
 		# Build label with indicator
-		var label = "%s v%s" % [tool_id, tool_version]
+		var label = "%s v%s" % [ToolCategoryMapper.get_display_name(tool_id), tool_version]
 		var indicator = ""
 		
 		if not is_installed:

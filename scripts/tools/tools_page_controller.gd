@@ -5,13 +5,16 @@ class_name ToolsPageController
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 const OfflineEnforcer = preload("res://scripts/network/offline_enforcer.gd")
 const LibraryManager = preload("res://scripts/library/library_manager.gd")
+const ToolCategoryMapper = preload("res://scripts/tools/tool_category_mapper.gd")
 
 const TOOL_ICON_PATHS := {
 	"audacity": "res://Images/tools/Audacity.png",
 	"blender": "res://Images/tools/Blender.png",
 	"gimp": "res://Images/tools/GIMP.png",
+	"git": "res://Images/tools/Git.png",
 	"godot": "res://Images/tools/Godot.png",
-	"krita": "res://Images/tools/Krita.png"
+	"krita": "res://Images/tools/Krita.png",
+	"vscodium": "res://Images/tools/VSCodium.png"
 }
 
 class UIDeps extends RefCounted:
@@ -20,10 +23,12 @@ class UIDeps extends RefCounted:
 	var installed_2d_tools: Container
 	var installed_3d_tools: Container
 	var installed_audio_tools: Container
+	var installed_code_tools: Container
 	var download_engine_tools: Container
 	var download_2d_tools: Container
 	var download_3d_tools: Container
 	var download_audio_tools: Container
+	var download_code_tools: Container
 	var tools_status_label: Label
 	var tools_offline_message: Label
 	var remove_tool_dialog: ConfirmationDialog
@@ -113,8 +118,8 @@ func populate_tools_ui() -> void:
 
 func _clear_tool_containers() -> void:
 	var containers = [
-		_ui.installed_engine_tools, _ui.installed_2d_tools, _ui.installed_3d_tools, _ui.installed_audio_tools,
-		_ui.download_engine_tools, _ui.download_2d_tools, _ui.download_3d_tools, _ui.download_audio_tools
+		_ui.installed_engine_tools, _ui.installed_2d_tools, _ui.installed_3d_tools, _ui.installed_audio_tools, _ui.installed_code_tools,
+		_ui.download_engine_tools, _ui.download_2d_tools, _ui.download_3d_tools, _ui.download_audio_tools, _ui.download_code_tools
 	]
 	for container in containers:
 		if container != null:
@@ -129,12 +134,14 @@ func _add_tool_card_to_category(category: String, tool: Dictionary, is_installed
 			"2D": container = _ui.installed_2d_tools
 			"3D": container = _ui.installed_3d_tools
 			"Audio": container = _ui.installed_audio_tools
+			"Code": container = _ui.installed_code_tools
 	else:
 		match category:
 			"Engine": container = _ui.download_engine_tools
 			"2D": container = _ui.download_2d_tools
 			"3D": container = _ui.download_3d_tools
 			"Audio": container = _ui.download_audio_tools
+			"Code": container = _ui.download_code_tools
 	
 	if container == null: return
 	var card = _create_tool_card(tool, is_installed, target_installed_section)
@@ -161,7 +168,7 @@ func _create_tool_card(tool: Dictionary, is_installed: bool, show_remove_action:
 	hbox.add_child(vbox)
 	
 	var name_label = Label.new()
-	name_label.text = "%s %s" % [tool["id"].capitalize(), tool["version"]]
+	name_label.text = "%s %s" % [ToolCategoryMapper.get_display_name(tool["id"]), tool["version"]]
 	name_label.add_theme_font_size_override("font_size", 16)
 	vbox.add_child(name_label)
 	
@@ -216,7 +223,7 @@ func _create_tool_icon(tool: Dictionary) -> TextureRect:
 	icon.texture = load(icon_path)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED
-	icon.tooltip_text = String(tool.get("id", "")).capitalize()
+	icon.tooltip_text = ToolCategoryMapper.get_display_name(String(tool.get("id", "")))
 	return icon
 
 func _create_tool_card_style(is_installed: bool) -> StyleBoxFlat:
@@ -273,7 +280,7 @@ func _on_remove_tool_pressed(tool_id: String, version: String) -> void:
 	if removal_thread != null and removal_thread.is_alive(): return
 	removal_tool_id = tool_id
 	removal_tool_version = version
-	_ui.remove_tool_confirmation_label.text = "Remove %s %s from the OGS library?\nThis deletes its installed files." % [tool_id.capitalize(), version]
+	_ui.remove_tool_confirmation_label.text = "Remove %s %s from the OGS library?\nThis deletes its installed files." % [ToolCategoryMapper.get_display_name(tool_id), version]
 	_ui.remove_tool_status_label.text = "Ready to remove."
 	_ui.remove_tool_progress_bar.visible = false
 	_ui.remove_tool_progress_bar.indeterminate = false
@@ -285,7 +292,7 @@ func _on_remove_tool_confirmed() -> void:
 	if removal_tool_id.is_empty() or removal_tool_version.is_empty(): return
 	_ui.remove_tool_dialog.get_ok_button().disabled = true
 	_ui.remove_tool_dialog.get_cancel_button().disabled = true
-	_ui.remove_tool_status_label.text = "Removing %s %s..." % [removal_tool_id.capitalize(), removal_tool_version]
+	_ui.remove_tool_status_label.text = "Removing %s %s..." % [ToolCategoryMapper.get_display_name(removal_tool_id), removal_tool_version]
 	_ui.remove_tool_progress_bar.visible = true
 	_ui.remove_tool_progress_bar.indeterminate = true
 	removal_thread = Thread.new()

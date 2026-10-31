@@ -517,9 +517,43 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 10: Code Category and Tooling Verification (Git and VSCodium)
+
+**Objective:** Verify that "Code Tools" section renders under both Installed and Download tabs with official icons, adding code tools skips asset folder creation, and launch behaviors operate with portable settings injection and offline telemetry suppression.
+
+**Steps:**
+1. Navigate to the **Tools** page and inspect both the **Installed** and **Download** tabs.
+2. Confirm that a dedicated "Code Tools" section appears beneath "Audio Tools" with headers and container layout matching other categories.
+3. Verify that Git and VSCodium display their official transparent icons (`Images/tools/Git.png` and `Images/tools/VSCodium.png`) and clean display names ("Git" and "VSCodium").
+4. Return to the **Projects** page and select a project (or create a new test project).
+5. Click **"Add Tool"** and select **"git"**; then repeat and add **"vscodium"**.
+6. Inspect the project directory structure on disk: confirm that no `assets/Code/` or `assets/Code/git` / `assets/Code/vscodium` folders were created.
+7. Select **"git"** in the project tools list and click **"Launch"**:
+   - Verify Git Bash opens with the project root directory as its working directory (`--cd=<project_dir>`).
+8. Select **"vscodium"** in the project tools list and click **"Launch"**:
+   - Verify VSCodium opens with the project root as the workspace folder.
+   - Inspect `<project_dir>/.vscode/settings.json` and confirm that `"git.path"` points to `<git_tool_dir>/cmd/git.exe` and `"git.enabled": true`, while preserving any existing settings.
+9. Load an offline project (with `force_offline=true` in `ogs_config.json`) and launch VSCodium:
+   - Check the console logs to confirm `--disable-telemetry` was passed in the launch arguments.
+
+**Expected Results:**
+- ✅ "Code Tools" section renders under both Installed and Download tabs with proper visual hierarchy.
+- ✅ Official Git and VSCodium icons render crisply with clean display names.
+- ✅ Adding Git or VSCodium skips creating empty `assets/Code/*` folders.
+- ✅ Git Bash launches directly into the project directory root.
+- ✅ VSCodium launches workspace at project root and auto-configures portable Git in `.vscode/settings.json`.
+- ✅ VSCodium receives `--disable-telemetry` when offline mode is active.
+
+**Pass Criteria:**
+- Code category tools integrate cleanly across Tools and Projects pages.
+- Git and VSCodium launch with proper arguments and automatic configuration.
+- Air-gap telemetry suppression is enforced.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-8, fill in this table:
+After completing Editor Tests 1-10, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -534,6 +568,7 @@ After completing Editor Tests 1-8, fill in this table:
 | 7: Per-Tool Download Workflow | ✅/⚠️/❌ | | |
 | 8: Seal Button & Real Seal | ✅/⚠️/❌ | | |
 | 9: Offline Tool Launch | ✅/⚠️/❌ | | |
+| 10: Code Tooling & Launch | ✅/⚠️/❌ | | |
 
 ---
 
@@ -910,4 +945,4 @@ After completing all editor tests, move to installed-build testing with same rep
 
 ---
 
-Last updated: **February 21, 2026** (Complete restructure: editor vs. installed testing, comprehensive scenarios)
+Last updated: **October 30, 2026** (Added Code category and Git/VSCodium verification scenarios)

@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 327
+tests passed: 631
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -108,32 +108,37 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - JSON compact mode (no whitespace)
   - save_to_file() writes and returns true
 
-- **[tests/tool_launcher_tests.gd](tests/tool_launcher_tests.gd)** — Validates tool process spawning logic.
+- **[tests/tool_launcher_tests.gd](tests/tool_launcher_tests.gd)** - Validates tool process spawning logic.
   - Missing/empty path fields rejected
   - Invalid project directory rejected
   - Nonexistent tool executable rejected
-  - Tool-specific arguments built correctly (Godot, Blender, unknown)
+  - Tool-specific arguments built correctly (Godot, Git, VSCodium, Blender, unknown)
+  - Git launch arguments include `--cd=<project_dir>`
+  - VSCodium launch arguments include workspace project path and optional target file
+  - Fallback executable discovery for Git (`git-bash.exe`, `cmd/git.exe`, `bin/git.exe`) and VSCodium (`VSCodium.exe`, `codium`, `bin/codium`)
+  - Automatic detection and injection of portable Git (`git.path` and `git.enabled`) into `.vscode/settings.json` when Git is pinned in `stack.json`
   - Absolute paths used as-is (no project directory joining)
   - Relative paths joined with project directory
 
-- **[tests/offline_enforcer_tests.gd](tests/offline_enforcer_tests.gd)** — Validates offline enforcement state and network guard behavior.
+- **[tests/offline_enforcer_tests.gd](tests/offline_enforcer_tests.gd)** - Validates offline enforcement state and network guard behavior.
   - Null config resets enforcement
   - offline_mode and force_offline enable enforcement
   - Disabled config keeps enforcement off
   - Guard allows when online and blocks when offline
   - Config-driven allowlist application and secure default fallback
 
-- **[tests/tool_downloader_tests.gd](tests/tool_downloader_tests.gd)** — Validates that download attempts are blocked in offline mode and library integration.
+- **[tests/tool_downloader_tests.gd](tests/tool_downloader_tests.gd)** - Validates that download attempts are blocked in offline mode and library integration.
   - Downloader initialization with mirror URL
   - Offline mode blocks download attempts
   - Mirror configuration validation
   - Result structure validation
   - Existing tool detection (early return without network access)
 
-- **[tests/tool_config_injector_tests.gd](tests/tool_config_injector_tests.gd)** — Validates tool-specific offline config injection.
+- **[tests/tool_config_injector_tests.gd](tests/tool_config_injector_tests.gd)** - Validates tool-specific offline config injection.
   - Blender launch args include python override
   - Godot cache-backed editor settings and offline feature profile are written under `user://ogs_offline_godot/` and cleaned up
   - Krita and Audacity placeholder overrides are written
+  - VSCodium launch args include `--disable-telemetry` when offline enforcement is active
 
 - **[tests/socket_blocker_tests.gd](tests/socket_blocker_tests.gd)** — Validates socket blocking behavior.
   - Offline blocks socket creation
@@ -228,11 +233,18 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Invalid repository JSON fails validation
   - Missing archive file reports failures
 
-- **[tests/tools_controller_tests.gd](tests/tools_controller_tests.gd)** — Validates Tools page controller tracking.
+- **[tests/tool_category_mapper_tests.gd](tests/tool_category_mapper_tests.gd)** - Validates tool category classification and display names.
+  - Supports "Code" category across category validation and `get_all_categories()`
+  - Fallback mappings for `git` -> `Code` and `vscodium` -> `Code`
+  - Canonical tool display name formatting via `get_display_name()` (e.g., "Git", "VSCodium", "GIMP")
+
+- **[tests/tools_controller_tests.gd](tests/tools_controller_tests.gd)** - Validates Tools page controller tracking and categorization.
   - Download tracking state (active/inactive)
   - Missing tool download rejection
   - Duplicate download suppression
   - Repository data availability flag
+  - Tool categorization for "Code" category tools
+  - Defensive dynamic bucket creation for unknown or future categories
 
 ### Scene Tests (Integration with UI)
 
@@ -240,7 +252,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
 
 **Current scene test suites:**
 
-- **[tests/projects_controller_scene_tests.gd](tests/projects_controller_scene_tests.gd)** — Validates Projects page controller logic.
+- **[tests/projects_controller_scene_tests.gd](tests/projects_controller_scene_tests.gd)** - Validates Projects page controller logic.
   - Add Project requires both `stack.json` and `ogs_config.json`
   - Valid sample project adds to persistent Projects list and auto-selects
   - New Project creates scaffold under OGS/Projects and auto-adds to library
@@ -249,25 +261,28 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Add Tool and Remove Tool update project `stack.json` and refresh the tools list
   - Add Tool dialog uses list-based selection and preserves action button state
   - Add Tool candidates include fallback local sources when remote catalog data is unavailable
+  - Code category tools (`git`, `vscodium`) bypass creating empty `assets/Code/*` directories
   - Launch button disabled initially
   - Launch button enabled after valid project selection
-  - Launch with no selection → error message
+  - Launch with no selection -> error message
 
-- **[tests/projects_page_indicators_tests.gd](tests/projects_page_indicators_tests.gd)** — Tests tool availability indicators in Projects page.
+- **[tests/projects_page_indicators_tests.gd](tests/projects_page_indicators_tests.gd)** - Tests tool availability indicators in Projects page.
   - Tool items populated with ID and version
   - Tool availability tracking (_tool_availability dictionary)
   - Visual indicators for missing vs available tools
   - Click-through signal emission for tool navigation
   - Signal integration with ToolsController for availability checking
 
-- **[tests/main_scene_tests.gd](tests/main_scene_tests.gd)** — Smoke tests for the main launcher scene.
+- **[tests/main_scene_tests.gd](tests/main_scene_tests.gd)** - Smoke tests for the main launcher scene.
   - main.tscn loads without errors
   - All page nodes exist (Projects, Engine, Tools, Settings)
   - Add Project / New Project buttons and Projects list exist
   - Tool action rows include Add Tool, Remove Tool, Launch Selected Tool, Remove Project, and Seal for Delivery
+  - `installed_code_tools` and `download_code_tools` node bindings are wired
 
-- **[tests/tools_page_scene_tests.gd](tests/tools_page_scene_tests.gd)** — Scene tests for Tools page UI.
+- **[tests/tools_page_scene_tests.gd](tests/tools_page_scene_tests.gd)** - Scene tests for Tools page UI.
   - Tools/Download tab nodes exist
+  - CodeSection and CodeTools containers exist in both Installed and Download tabs
   - Online/offline status label updates
   - Download button disablement during active download
 
@@ -435,4 +450,4 @@ Target coverage for all new features:
 
 ---
 
-Last updated: **February 20, 2026**
+Last updated: **October 30, 2026**

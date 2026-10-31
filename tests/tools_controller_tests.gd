@@ -25,6 +25,8 @@ func run() -> Dictionary:
 	_test_download_not_found(results)
 	_test_download_already_active(results)
 	_test_has_repository_data(results)
+	_test_get_categorized_tools_with_code_category(results)
+	_test_get_categorized_tools_defensive_unknown_category(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -107,3 +109,25 @@ func _test_has_repository_data(results: Dictionary) -> void:
 	_expect(not controller.has_repository_data(), "empty repository should report no data", results)
 	controller._available_tools = [{"id": "godot", "version": "4.3"}]
 	_expect(controller.has_repository_data(), "non-empty repository should report data", results)
+
+func _test_get_categorized_tools_with_code_category(results: Dictionary) -> void:
+	## Categorization should include Code tools in Code category bucket.
+	var controller = _make_controller()
+	controller._available_tools = [
+		{"id": "git", "version": "2.56.0.4", "category": "Code"},
+		{"id": "vscodium", "version": "1.143.17232"}
+	]
+	var categorized = controller.get_categorized_tools()
+	_expect(categorized.has("Code"), "categorized tools should contain Code bucket", results)
+	_expect(categorized["Code"].size() == 2, "Code bucket should contain 2 tools", results)
+
+func _test_get_categorized_tools_defensive_unknown_category(results: Dictionary) -> void:
+	## Unknown category in tool entry should be dynamically initialized without crashing.
+	var controller = _make_controller()
+	controller._available_tools = [
+		{"id": "custom_tool", "version": "1.0.0", "category": "FutureCategory"}
+	]
+	var categorized = controller.get_categorized_tools()
+	_expect(categorized.has("FutureCategory"), "categorized tools should dynamically create FutureCategory bucket", results)
+	_expect(categorized["FutureCategory"].size() == 1, "FutureCategory should contain 1 tool", results)
+

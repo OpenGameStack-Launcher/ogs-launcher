@@ -295,6 +295,24 @@ text = "Audio Tools"
 layout_mode = 2
 theme_override_constants/separation = 8
 
+[node name="CategoryDivider4" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=271342659]
+layout_mode = 2
+
+[node name="CodeSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=583224699]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CodeHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/CodeSection" unique_id=1080829130]
+modulate = Color(0.95, 0.8, 0.4, 1)
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Code Tools"
+
+[node name="CodeTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/CodeSection" unique_id=1576073846]
+layout_mode = 2
+theme_override_constants/separation = 8
+
 [node name="Download" type="ScrollContainer" parent="AppLayout/Content/PageTools/ToolsTabs" unique_id=1569399598]
 visible = false
 layout_mode = 2
@@ -372,6 +390,24 @@ theme_override_font_sizes/font_size = 18
 text = "Audio Tools"
 
 [node name="AudioTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/AudioSection" unique_id=1750307220]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CategoryDivider4" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1331531844]
+layout_mode = 2
+
+[node name="CodeSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1916090934]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CodeHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/CodeSection" unique_id=1177173032]
+modulate = Color(0.95, 0.8, 0.4, 1)
+custom_minimum_size = Vector2(0, 30)
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "Code Tools"
+
+[node name="CodeTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/CodeSection" unique_id=1750307221]
 layout_mode = 2
 theme_override_constants/separation = 8
 

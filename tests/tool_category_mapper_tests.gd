@@ -15,6 +15,7 @@ func run() -> Dictionary:
 	_test_fallback_when_category_empty(results)
 	_test_get_all_categories(results)
 	_test_is_valid_category(results)
+	_test_display_name(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -31,6 +32,9 @@ func _test_fallback_mapping(results: Dictionary) -> void:
 	_expect(ToolCategoryMapperScript.get_category("blender") == "3D", "blender should map to 3D", results)
 	_expect(ToolCategoryMapperScript.get_category("krita") == "2D", "krita should map to 2D", results)
 	_expect(ToolCategoryMapperScript.get_category("audacity") == "Audio", "audacity should map to Audio", results)
+	_expect(ToolCategoryMapperScript.get_category("gimp") == "2D", "gimp should map to 2D", results)
+	_expect(ToolCategoryMapperScript.get_category("git") == "Code", "git should map to Code", results)
+	_expect(ToolCategoryMapperScript.get_category("vscodium") == "Code", "vscodium should map to Code", results)
 
 func _test_unknown_tool(results: Dictionary) -> void:
 	## Unknown tools should return 'Unknown' category.
@@ -54,11 +58,12 @@ func _test_fallback_when_category_empty(results: Dictionary) -> void:
 func _test_get_all_categories(results: Dictionary) -> void:
 	## Should return all supported categories.
 	var categories = ToolCategoryMapperScript.get_all_categories()
-	_expect(categories.size() == 4, "should have 4 categories", results)
+	_expect(categories.size() == 5, "should have 5 categories", results)
 	_expect("Engine" in categories, "should include Engine", results)
 	_expect("2D" in categories, "should include 2D", results)
 	_expect("3D" in categories, "should include 3D", results)
 	_expect("Audio" in categories, "should include Audio", results)
+	_expect("Code" in categories, "should include Code", results)
 
 func _test_is_valid_category(results: Dictionary) -> void:
 	## Should validate category names correctly.
@@ -66,5 +71,14 @@ func _test_is_valid_category(results: Dictionary) -> void:
 	_expect(ToolCategoryMapperScript.is_valid_category("2D"), "2D should be valid", results)
 	_expect(ToolCategoryMapperScript.is_valid_category("3D"), "3D should be valid", results)
 	_expect(ToolCategoryMapperScript.is_valid_category("Audio"), "Audio should be valid", results)
+	_expect(ToolCategoryMapperScript.is_valid_category("Code"), "Code should be valid", results)
 	_expect(not ToolCategoryMapperScript.is_valid_category("Unknown"), "Unknown should be invalid", results)
 	_expect(not ToolCategoryMapperScript.is_valid_category("CustomCategory"), "CustomCategory should be invalid", results)
+
+func _test_display_name(results: Dictionary) -> void:
+	## Should return clean canonical display names for tools.
+	_expect(ToolCategoryMapperScript.get_display_name("git") == "Git", "git display name should be Git", results)
+	_expect(ToolCategoryMapperScript.get_display_name("vscodium") == "VSCodium", "vscodium display name should be VSCodium", results)
+	_expect(ToolCategoryMapperScript.get_display_name("gimp") == "GIMP", "gimp display name should be GIMP", results)
+	_expect(ToolCategoryMapperScript.get_display_name("blender") == "Blender", "blender display name should be Blender", results)
+	_expect(ToolCategoryMapperScript.get_display_name("other") == "Other", "unmapped display name should capitalize", results)

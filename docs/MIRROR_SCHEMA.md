@@ -37,9 +37,10 @@ mirror_root/
 
 | Field | Type | Required | Description |
 |------|------|----------|-------------|
-| `id` | String | Yes | Tool identifier (e.g., `"godot"`, `"blender"`). |
-| `version` | String | Yes | Tool version (e.g., `"4.7.2"`). |
-| `category` | String | No | Tool category for UI organization (e.g., `"Engine"`, `"2D"`, `"3D"`, `"Audio"`). Launcher provides fallback mapping if omitted. |
+| `id` | String | Yes | Tool identifier (e.g., `"godot"`, `"blender"`, `"git"`, `"vscodium"`). |
+| `version` | String | Yes | Tool version (e.g., `"4.7.2"`, `"2.56.0.4"`, `"1.143.17232"`). |
+| `category` | String | No | Tool category for UI organization (e.g., `"Engine"`, `"2D"`, `"3D"`, `"Audio"`, `"Code"`). Launcher provides fallback mapping if omitted. |
+| `executable_path` | String | Yes | Relative path to the executable file inside the extracted tool archive (e.g., `"Godot_v4.7.2-stable_win64.exe"`, `"blender.exe"`, `"cmd/git.exe"`, `"VSCodium.exe"`). |
 | `archive_path` | String | Conditional | Relative path to the tool archive inside a local mirror. Required if `archive_url` is not provided. |
 | `archive_url` | String | Conditional | Full URL to a remote archive. Required if `archive_path` is not provided. |
 | `info_url` | String | No | Optional website URL describing the tool or version, such as a release page. |
@@ -58,18 +59,21 @@ mirror_root/
       "id": "godot",
       "version": "4.7.2",
       "category": "Engine",
+      "executable_path": "Godot_v4.7.2-stable_win64.exe",
       "archive_path": "tools/godot/4.7.2/godot_4.7.2_win64.zip",
       "info_url": "https://godotengine.org/releases/4.7.2/",
       "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "size_bytes": 123456789
     },
     {
-      "id": "blender",
-      "version": "4.2",
-      "category": "3D",
-      "archive_path": "tools/blender/4.2/blender_4.2_win64.zip",
+      "id": "git",
+      "version": "2.56.0.4",
+      "category": "Code",
+      "executable_path": "git-bash.exe",
+      "archive_path": "tools/git/2.56.0.4/PortableGit-2.56.0.4-64-bit.7z.exe",
+      "info_url": "https://git-scm.com/",
       "sha256": "abcdef0123456789abcdef0123456789abcdef0123456789abcdef0123456789",
-      "size_bytes": 987654321
+      "size_bytes": 45678901
     }
   ]
 }
@@ -86,10 +90,21 @@ mirror_root/
       "id": "godot",
       "version": "4.7.2",
       "category": "Engine",
+      "executable_path": "Godot_v4.7.2-stable_win64.exe",
       "archive_url": "https://github.com/OpenGameStack-Launcher/ogs-frozen-stacks/releases/download/v1.0/godot-4.7.2-win64.zip",
       "info_url": "https://godotengine.org/releases/4.7.2/",
       "sha256": "0123456789abcdef0123456789abcdef0123456789abcdef0123456789abcdef",
       "size_bytes": 123456789
+    },
+    {
+      "id": "vscodium",
+      "version": "1.143.17232",
+      "category": "Code",
+      "executable_path": "VSCodium.exe",
+      "archive_url": "https://github.com/OpenGameStack-Launcher/ogs-frozen-stacks/releases/download/v3.0/VSCodium-win32-x64-1.143.17232.zip",
+      "info_url": "https://vscodium.com/",
+      "sha256": "879a8ddd85a9be2cfa96ba04f02c5e6659594412234ef0dc47e372848d4e66e9",
+      "size_bytes": 98765432
     }
   ]
 }
@@ -100,21 +115,23 @@ mirror_root/
 1. `schema_version` must be integer `1`.
 2. `mirror_name` must be a non-empty string.
 3. `tools` must be a non-empty array of objects.
-4. Each tool entry must include `id`, `version`, and one of `archive_path` or `archive_url`.
+4. Each tool entry must include `id`, `version`, `executable_path`, and one of `archive_path` or `archive_url`.
 5. `category` is optional. If provided, it must be a non-empty string.
-6. `info_url` is optional. If provided, it must be a non-empty string.
-7. `archive_path` must be a relative path inside the mirror root (no absolute paths or `..`).
-8. `sha256` is required and must be 64 lowercase hex characters.
-9. If `size` or `size_bytes` is provided, it must be an integer greater than `0`.
+6. `executable_path` is required and must be a non-empty string indicating the relative executable path.
+7. `info_url` is optional. If provided, it must be a non-empty string.
+8. `archive_path` must be a relative path inside the mirror root (no absolute paths or `..`).
+9. `sha256` is required and must be 64 lowercase hex characters.
+10. If `size` or `size_bytes` is provided, it must be an integer greater than `0`.
 
 ## Tool Categories
 
 The launcher organizes tools by category for UI presentation. Supported categories:
 
 - **Engine**: Game engines and runtime environments (e.g., Godot)
-- **2D**: 2D art, texture, and UI tools (e.g., Krita)
+- **2D**: 2D art, texture, and UI tools (e.g., Krita, GIMP)
 - **3D**: 3D modeling and animation tools (e.g., Blender)
 - **Audio**: Audio editing and processing tools (e.g., Audacity)
+- **Code**: Code editors, version control systems, and programming tools (e.g., Git, VSCodium)
 
 If the `category` field is omitted, the launcher provides fallback mappings:
 
@@ -123,7 +140,10 @@ If the `category` field is omitted, the launcher provides fallback mappings:
 | `godot` | Engine |
 | `blender` | 3D |
 | `krita` | 2D |
+| `gimp` | 2D |
 | `audacity` | Audio |
+| `git` | Code |
+| `vscodium` | Code |
 
 New tools without a category field will display as "Unknown" in the UI.
 
@@ -136,4 +156,4 @@ New tools without a category field will display as "Unknown" in the UI.
 
 ---
 
-Last updated: February 20, 2026
+Last updated: October 30, 2026

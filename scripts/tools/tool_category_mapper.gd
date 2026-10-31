@@ -1,7 +1,7 @@
 ## ToolCategoryMapper: Maps tool IDs to categories with fallback logic.
 ##
 ## Provides category classification for OGS tools. Categories represent the
-## primary use case: Engine, 2D, 3D, Audio. When repository.json includes a
+## primary use case: Engine, 2D, 3D, Audio, Code. When repository.json includes a
 ## category field, that takes precedence. Otherwise, this class provides
 ## hardcoded fallback mappings.
 ##
@@ -12,20 +12,45 @@
 extends RefCounted
 class_name ToolCategoryMapper
 
-## Hardcoded fallback mappings: tool_id → category
+## Hardcoded fallback mappings: tool_id -> category
 const FALLBACK_CATEGORIES := {
 	"godot": "Engine",
 	"blender": "3D",
 	"krita": "2D",
 	"audacity": "Audio",
-	"gimp": "2D"
+	"gimp": "2D",
+	"git": "Code",
+	"vscodium": "Code"
 }
+
+## Canonical tool display names
+const TOOL_DISPLAY_NAMES := {
+	"audacity": "Audacity",
+	"blender": "Blender",
+	"gimp": "GIMP",
+	"git": "Git",
+	"godot": "Godot",
+	"krita": "Krita",
+	"vscodium": "VSCodium"
+}
+
+## Returns the clean display name for a tool ID.
+## Parameters:
+## tool_id (String): Tool identifier (e.g., "vscodium", "git", "gimp")
+## Returns:
+## String: Clean display name (e.g., "VSCodium", "Git", "GIMP")
+static func get_display_name(tool_id: String) -> String:
+	## Returns clean display name for tool_id, or capitalized string if not in map.
+	var lower = tool_id.strip_edges().to_lower()
+	if TOOL_DISPLAY_NAMES.has(lower):
+		return TOOL_DISPLAY_NAMES[lower]
+	return tool_id.capitalize()
 
 ## Gets category for a tool ID using fallback mapping.
 ## Parameters:
 ## tool_id (String): Tool identifier (e.g., "godot", "blender")
 ## Returns:
-## String: Category ("Engine", "2D", "3D", "Audio") or "Unknown" if not mapped
+## String: Category ("Engine", "2D", "3D", "Audio", "Code") or "Unknown" if not mapped
 static func get_category(tool_id: String) -> String:
 	## Returns category for tool_id, or 'Unknown' if not in fallback map.
 	return FALLBACK_CATEGORIES.get(tool_id.to_lower(), "Unknown")
@@ -35,7 +60,7 @@ static func get_category(tool_id: String) -> String:
 ## Parameters:
 ## tool_entry (Dictionary): Tool entry from repository.json or stack.json
 ## Returns:
-## String: Category ("Engine", "2D", "3D", "Audio") or "Unknown"
+## String: Category ("Engine", "2D", "3D", "Audio", "Code") or "Unknown"
 static func get_category_for_tool(tool_entry: Dictionary) -> String:
 	## Returns category from tool entry, falling back to ID-based mapping.
 	# First priority: category field in tool entry
@@ -57,7 +82,7 @@ static func get_category_for_tool(tool_entry: Dictionary) -> String:
 ## Array[String]: List of category names
 static func get_all_categories() -> Array:
 	## Returns list of all supported categories.
-	return ["Engine", "2D", "3D", "Audio"]
+	return ["Engine", "2D", "3D", "Audio", "Code"]
 
 ## Checks if a category is valid/supported.
 ## Parameters:
@@ -67,3 +92,4 @@ static func get_all_categories() -> Array:
 static func is_valid_category(category: String) -> bool:
 	## Returns true if category is in the supported list.
 	return category in get_all_categories()
+

@@ -12,6 +12,7 @@ func run() -> Dictionary:
 	_test_godot_settings_written(results)
 	_test_krita_placeholder(results)
 	_test_audacity_placeholder(results)
+	_test_vscodium_offline_telemetry(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -154,6 +155,14 @@ func _test_audacity_placeholder(results: Dictionary) -> void:
 	ToolConfigInjector.clear("audacity", "res://")
 	_expect(OS.get_environment("OGS_OFFLINE_TOOL_AUDACITY") == "", "audacity env flag should clear on cleanup", results)
 	_expect(not FileAccess.file_exists(file_path), "audacity override file should be removed on cleanup", results)
+
+func _test_vscodium_offline_telemetry(results: Dictionary) -> void:
+	## Verifies VSCodium offline injection provides --disable-telemetry flag.
+	var result = ToolConfigInjector.apply("vscodium", "res://")
+	_expect(result["success"], "vscodium injection should succeed", results)
+	var args: PackedStringArray = result["args"]
+	_expect(args.size() == 1, "vscodium args should have 1 item", results)
+	_expect(args[0] == "--disable-telemetry", "vscodium arg should be --disable-telemetry", results)
 
 func _cleanup_dir(path: String) -> void:
 	## Recursively removes temporary test directories created for injector fixtures.
