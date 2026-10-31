@@ -533,6 +533,13 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Enhanced NewProjectDialog: disabled confirm button on empty input and added empty-input guard in confirmation handler.
 - Added automated scene test coverage in `tests/projects_controller_scene_tests.gd` and `tests/tools_page_scene_tests.gd` (38 test suites passing, 2076 total tests with zero failures).
 
+**Add Tool Dialog Tool Icons, Installation Status Tags, and Balanced Button Sizing (Oct 31, 2026):**
+- Enhanced `AddToolDialog` (`ToolOptionList`) in `ProjectToolManager` (`scripts/projects/project_tool_manager.gd`) and `main.tscn` with uniform 20x20 toolchain icons (`Audacity.png`, `Blender.png`, `GIMP.png`, `Git.png`, `Godot.png`, `Krita.png`, `VSCodium.png`) attached to candidate tool versions.
+- Added library installation status tags (`✓ Installed` vs `⬇ Available for Download`) checked against Central Library presence via `LibraryManager.tool_exists()`, accompanied by descriptive tooltips.
+- Implemented graceful fallback for missing icons or unrecognized tool IDs with null icon and clean text-only rendering.
+- Replaced oversized confirmation button minimum width (`Vector2(350, 40)`) with balanced button proportions: `Vector2(180, 36)` for OK/confirmation action button and `Vector2(100, 36)` for Cancel button across both Add Tool and Change Version flows.
+- Added comprehensive scene test coverage in `tests/projects_controller_scene_tests.gd` covering icon loading, badge formatting, tooltips, unknown tool fallback, selection/activation handler compatibility, and button sizing (38 test suites passing, 2079 total tests with zero failures).
+
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
 - Collapsible UI sections for scalability

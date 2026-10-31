@@ -6,12 +6,52 @@ const StackManifest = preload("res://scripts/manifest/stack_manifest.gd")
 const LibraryManager = preload("res://scripts/library/library_manager.gd")
 const ToolCategoryMapper = preload("res://scripts/tools/tool_category_mapper.gd")
 
+const TOOL_ICON_PATHS := {
+	"audacity": "res://Images/tools/Audacity.png",
+	"blender": "res://Images/tools/Blender.png",
+	"gimp": "res://Images/tools/GIMP.png",
+	"git": "res://Images/tools/Git.png",
+	"godot": "res://Images/tools/Godot.png",
+	"krita": "res://Images/tools/Krita.png",
+	"vscodium": "res://Images/tools/VSCodium.png"
+}
+const TOOL_ICON_SIZE := Vector2i(20, 20)
+
 var _pc: ProjectsController
 var _ui: ProjectsController.UIDeps
+var _icon_cache: Dictionary = {}
 
 func setup(projects_controller: ProjectsController, ui_deps: ProjectsController.UIDeps) -> void:
 	_pc = projects_controller
 	_ui = ui_deps
+	if _ui != null:
+		if _ui.add_tool_option_list != null:
+			_ui.add_tool_option_list.fixed_icon_size = TOOL_ICON_SIZE
+		if _ui.add_tool_dialog != null:
+			var add_button: Button = _ui.add_tool_dialog.get_ok_button()
+			if add_button != null:
+				add_button.custom_minimum_size = Vector2(180, 36)
+			var cancel_button: Button = _ui.add_tool_dialog.get_cancel_button()
+			if cancel_button != null:
+				cancel_button.custom_minimum_size = Vector2(100, 36)
+
+## Returns the cached Texture2D icon for a tool ID, or null if not found.
+func _get_tool_icon(tool_id: String) -> Texture2D:
+	if tool_id.is_empty():
+		return null
+	var lower_id: String = tool_id.to_lower()
+	if _icon_cache.has(lower_id):
+		return _icon_cache[lower_id] as Texture2D
+	if TOOL_ICON_PATHS.has(lower_id):
+		var icon_path: String = TOOL_ICON_PATHS[lower_id]
+		if ResourceLoader.exists(icon_path):
+			var res: Resource = load(icon_path)
+			if res is Texture2D:
+				var tex: Texture2D = res as Texture2D
+				_icon_cache[lower_id] = tex
+				return tex
+	_icon_cache[lower_id] = null
+	return null
 
 func _on_change_version_pressed() -> void:
 	if _pc.current_manifest == null or _pc._selected_tool_index < 0 or _pc._selected_tool_index >= _pc.current_manifest.tools.size():
@@ -38,6 +78,10 @@ func _on_add_tool_pressed(title_override: String = "Add Tool") -> void:
 	if add_button != null:
 		add_button.disabled = true
 		add_button.text = "Change to version..." if is_change_version else "Add Tool"
+		add_button.custom_minimum_size = Vector2(180, 36)
+	var cancel_button = _ui.add_tool_dialog.get_cancel_button()
+	if cancel_button != null:
+		cancel_button.custom_minimum_size = Vector2(100, 36)
 		
 	var instructions = _ui.add_tool_dialog.get_node_or_null("VBoxContainer/InstructionsLabel")
 	if instructions != null:
@@ -62,6 +106,8 @@ func _populate_add_tool_options() -> void:
 	## Builds add-tool list from catalog and offline-safe local sources.
 	_pc._add_tool_candidates.clear()
 	_ui.add_tool_option_list.clear()
+	if _ui.add_tool_option_list != null:
+		_ui.add_tool_option_list.fixed_icon_size = TOOL_ICON_SIZE
 
 	var existing_keys: Dictionary = {}
 	var existing_tool_ids: Dictionary = {}
@@ -110,13 +156,30 @@ func _populate_add_tool_options() -> void:
 	)
 
 	for candidate in _pc._add_tool_candidates:
-		var label = "%s v%s" % [ToolCategoryMapper.get_display_name(String(candidate.get("id", ""))), String(candidate.get("version", ""))]
-		_ui.add_tool_option_list.add_item(label)
+		var candidate_id: String = String(candidate.get("id", ""))
+		var candidate_version: String = String(candidate.get("version", ""))
+		var display_name: String = ToolCategoryMapper.get_display_name(candidate_id)
+		
+		var is_installed: bool = false
+		if _pc != null and _pc._library_manager != null:
+			is_installed = _pc._library_manager.tool_exists(candidate_id, candidate_version)
+		
+		var status_tag: String = " ✓ Installed" if is_installed else " ⬇ Available for Download"
+		var label: String = "%s v%s%s" % [display_name, candidate_version, status_tag]
+		var icon: Texture2D = _get_tool_icon(candidate_id)
+		
+		var item_idx: int = _ui.add_tool_option_list.add_item(label, icon)
+		var tooltip: String = "Tool is already installed in the Central Library." if is_installed else "Tool will be downloaded when required."
+		_ui.add_tool_option_list.set_item_tooltip(item_idx, tooltip)
 
 	var add_button = _ui.add_tool_dialog.get_ok_button()
 	if add_button != null:
-		add_button.custom_minimum_size = Vector2(350, 40)
+		add_button.custom_minimum_size = Vector2(180, 36)
 		add_button.disabled = _pc._add_tool_candidates.is_empty()
+
+	var cancel_button = _ui.add_tool_dialog.get_cancel_button()
+	if cancel_button != null:
+		cancel_button.custom_minimum_size = Vector2(100, 36)
 
 	if _ui.add_tool_option_list.item_count > 0:
 		_ui.add_tool_option_list.select(0)

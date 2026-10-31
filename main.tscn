@@ -1031,6 +1031,7 @@ autowrap_mode = 2
 [node name="ToolOptionList" type="ItemList" parent="AddToolDialog/VBoxContainer" unique_id=962797521]
 custom_minimum_size = Vector2(0, 180)
 layout_mode = 2
+fixed_icon_size = Vector2i(20, 20)
 
 [node name="NewFileDialog" type="ConfirmationDialog" parent="." unique_id=1418040700]
 title = "Create New File"
