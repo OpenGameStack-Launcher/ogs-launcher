@@ -232,6 +232,14 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Canonical tool naming via `ToolCategoryMapper.get_display_name()` (e.g. Godot 4.7.2, GIMP 3.2.4, VSCodium)
     *   [x] Preserved full API backward compatibility for `add_item(text)`, `item_count`, `select(index)`, tooltips, and click/double-click signals
     *   [x] Added dedicated test suite in tests/custom_item_list_tests.gd and scene tests in tests/projects_controller_scene_tests.gd (1734 tests passing)
+*   [x] Project Library Search Filter Bar and Empty-State View (Issue #131) - 100% Complete ✅
+    *   [x] Added `ProjectSearchLineEdit` (`LineEdit`) at the top of Project Library with placeholder text `"Filter projects by name, path, or tool..."` and clear button enabled
+    *   [x] Case-insensitive multi-attribute filtering across stack name, project directory path (both raw and display formatting), and tool IDs, display names, and versions
+    *   [x] Accurate index mapping (`_filtered_indices: Array[int]`) mapping card list indices to `registry_manager.tracked_projects` on selection and double-click activation
+    *   [x] Added `EmptyLibraryState` (`CenterContainer`) providing guided quick-actions (New Project, Add Local Project, Add Remote Project with offline enforcement) when zero projects are tracked
+    *   [x] Added clear-query trigger (`Clear Filter` button) and contextual messaging (`No Projects Match Filter`) when search filter yields zero matching projects
+    *   [x] Automatic search query reset upon project addition so new projects are immediately visible and selected
+    *   [x] Added comprehensive scene tests in `tests/projects_controller_scene_tests.gd` and smoke tests in `tests/main_scene_tests.gd` (1789 tests passing)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:

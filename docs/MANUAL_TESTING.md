@@ -444,6 +444,58 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 3.8: Projects Page - Search Filtering and Empty-State Views
+
+**Objective:** Verify that the Project Library search filter bar filters projects case-insensitively across stack name, path, and tool attributes, preserves accurate selection and activation mapping, and displays dedicated empty states with guided action triggers.
+
+**Steps:**
+1. Launch the launcher and navigate to the Projects page.
+2. Ensure at least two or three projects are registered in the Project Library (e.g., `samples/sample_project` and other test projects).
+3. Confirm Tab 0 ("Project Library") is active.
+4. Locate the `ProjectSearchLineEdit` search filter bar at the top of the Project Library container with placeholder text `"Filter projects by name, path, or tool..."`.
+5. Enter a search query matching a project display name (e.g. `Sample`):
+   - Verify only matching projects are displayed in the project list.
+   - Verify non-matching projects are hidden.
+6. Enter a query matching a tool ID or canonical tool name (e.g. `godot`, `gimp`, `4.7.2`):
+   - Verify projects configuring that tool are displayed with their tool badges.
+7. Enter a query matching a path fragment (e.g. folder name or drive letter):
+   - Verify projects with matching paths are displayed.
+8. With filtered search results displayed, click to select a matching project card:
+   - Verify the selected card is highlighted with a 2px cyan border.
+   - Verify the title of Tab 1 updates to the selected project's stack name.
+   - Verify action buttons ("Open Project", "Remove Project", "Seal for Delivery") are enabled.
+9. Double-click the filtered project card (or click "Open Project"):
+   - Verify navigation switches to Tab 1 ("Project Details") displaying the correct project.
+10. Return to Tab 0 ("Project Library") and enter a query that matches zero projects (e.g. `nonexistent_query_xyz`):
+    - Verify `ProjectsList` is hidden.
+    - Verify `EmptyLibraryState` is displayed with header `"No Projects Match Filter"` and descriptive text.
+    - Verify the `"Clear Filter"` button is visible.
+    - Verify the status bar displays `"Status: No projects match your filter."`.
+11. Click the `"Clear Filter"` button (or click the LineEdit clear icon `X`):
+    - Verify the search bar text is cleared.
+    - Verify `EmptyLibraryState` is hidden and all tracked projects are restored in `ProjectsList`.
+12. (Optional: Zero Tracked Projects Empty State) Remove all tracked projects from the library:
+    - Verify `EmptyLibraryState` displays with header `"No Projects Tracked"`.
+    - Verify guided onboarding buttons (`New Project`, `Add Local Project`, `Add Remote Project`) are visible.
+
+**Expected Results:**
+- [x] Search filter bar accepts text and filters project cards dynamically on each keystroke.
+- [x] Filtering works case-insensitively across stack name, file path, and tool IDs/versions.
+- [x] Selecting and activating filtered cards maps accurately to the corresponding project.
+- [x] Zero filter matches display the "No Projects Match Filter" message with a working "Clear Filter" button.
+- [x] Zero tracked projects display the "No Projects Tracked" view with guided action buttons.
+
+**Pass Criteria:**
+- Search filtering is responsive and accurate across all project attributes.
+- Empty states provide clear feedback and functional recovery triggers.
+
+**If test fails:**
+- Verify `ProjectsController._matches_search_filter()` query logic and attribute extraction.
+- Verify `ProjectsController._filtered_indices` mapping on selection and activation.
+- Verify `EmptyLibraryState` visibility toggling and button wiring in `_refresh_projects_list()`.
+
+---
+
 ### Editor Test 4: Settings Page — Mirror Configuration
 
 **Objective:** Verify mirror root can be configured and status indicator updates correctly.

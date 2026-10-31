@@ -378,6 +378,11 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Offline status pill badge styling: verifies `_update_offline_status` renders styled pill badges with state-specific backgrounds, borders, text colors, and 10px rounded corners across unknown, disabled, enabled, and forced states
   - Tool summarization with canonical names and overflow: verifies `_summarize_tools` maps tool IDs to canonical display names via `ToolCategoryMapper` and formats overflow counts (e.g. `+1 more`, `+2 more`)
   - Project cards rendered in CustomItemList: verifies `ProjectsController` populates `CustomItemList` with structured cards, canonical tool badges, normalized paths, and active selection styling
+  - Empty library state when zero projects: verifies that zero tracked projects hides `ProjectsList`, displays `EmptyLibraryState` with "No Projects Tracked", and shows onboarding action buttons (New Project, Add Local Project, Add Remote Project)
+  - Search filtering by stack name, path, and tool: verifies case-insensitive filtering matching stack names, directory paths, tool IDs, display names, and tool versions, as well as list restoration on clearing query
+  - Filtered selection and data loading: verifies index mapping between filtered UI card positions and `registry_manager.tracked_projects` so selecting or double-clicking a filtered project loads and activates the correct project
+  - Empty state on zero search results and clear action: verifies empty state presentation with "No Projects Match Filter" when a query matches zero projects, and list restoration via the Clear Filter button
+  - Empty state transitions on project addition: verifies that adding a project transitions from the empty state view to a populated projects list
 
 - **[tests/custom_item_list_tests.gd](tests/custom_item_list_tests.gd)** - Validates `CustomItemList` structured project cards, visual hierarchy, badge formatting, selection styling, and backward compatibility (6 tests).
   - Dedicated card surface with distinct background (`Color(0.14, 0.16, 0.20)`) and 1px border (`Color(0.22, 0.26, 0.32)`)

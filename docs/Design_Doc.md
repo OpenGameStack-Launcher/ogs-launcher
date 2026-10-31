@@ -137,6 +137,18 @@ In the Project Library (Tab 0 of the Projects page), registered projects are ren
     *   *Path:* 12px secondary path text (`Color(0.65, 0.70, 0.75)`) normalized via `PathUtils.format_for_display()`.
 *   **API Backward Compatibility:** `CustomItemList` preserves complete API parity with previous string-based implementations (`add_item()`, `clear()`, `select()`, `item_count`, `set_item_tooltip()`, `set_item_disabled()`, and signals `item_selected` on single-click / `item_activated` on double-click).
 
+### 2.12 Project Library Search Filtering and Empty-State Views
+In the Project Library (Tab 0 of the Projects page), users can quickly search and filter registered projects as well as receive actionable empty-state guidance:
+*   **Search Filter Bar (`ProjectSearchLineEdit`):** Located at the top of the Project Library container with placeholder text `"Filter projects by name, path, or tool..."` and clear button enabled.
+*   **Case-Insensitive Multi-Attribute Filtering:** Projects are filtered across three distinct attributes:
+    *   *Stack Name:* Matches project display name (case-insensitive substring).
+    *   *Project Path:* Matches file path in both raw format and normalized display format (`PathUtils.format_for_display()`).
+    *   *Configured Tools:* Matches tool IDs, canonical display names (e.g. `GIMP`, `Godot`), tool versions, and combined tool-version queries.
+*   **Filtered Index Mapping:** `ProjectsController` maintains `_filtered_indices: Array[int]` to map UI card positions back to original `registry_manager.tracked_projects` indices, ensuring selection, tab renaming, and double-click activation remain accurate when filtered.
+*   **Guided Empty-State View (`EmptyLibraryState`):** Centered view providing contextual feedback and action triggers:
+    *   *Zero Projects Tracked:* When the library contains no registered projects, displays `"No Projects Tracked"` along with onboarding action buttons (`New Project`, `Add Local Project`, `Add Remote Project` respecting offline mode enforcement).
+    *   *Zero Filter Matches:* When projects are tracked but the active search query yields no matches, displays `"No Projects Match Filter"` and provides a `"Clear Filter"` button that clears the search bar and restores all projects.
+
 ---
 
 ## 3. Operational Modes & User Stories
