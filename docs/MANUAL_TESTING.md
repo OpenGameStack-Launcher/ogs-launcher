@@ -554,9 +554,43 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 11: Project Tools List Selection and Launch Verification
+
+**Objective:** Verify that selecting or double-clicking any tool in the Project Tools List sets it as the active launch tool at the project root, clears any selection in the Project Explorer tree, and properly resets launch state across project switches.
+
+**Steps:**
+1. Select a project with installed tools (such as `sample_project` or any project containing Godot, VSCodium, or Git).
+2. Click on a file or folder in the Project Explorer tree to select it (verify it highlights).
+3. In the **Project Tools** list on the right, click on a tool (e.g. VSCodium or Git):
+   - Verify the tool is highlighted in the tools list.
+   - Verify that the selection in the Project Explorer tree is immediately cleared.
+   - Verify the "Launch Selected Tool" button is enabled.
+4. Click **"Launch Selected Tool"**:
+   - Verify the selected tool launches at the project root directory.
+   - Verify that no "No tool selected or no known tool associated with this file/folder" warning is shown.
+5. In the **Project Tools** list, double-click an installed tool:
+   - Verify that double-clicking directly triggers tool launch at the project root directory.
+6. Click on a file or folder in the Project Explorer tree again:
+   - Verify that the selected tool in the Project Tools list is immediately deselected.
+7. Switch to another project in the Projects list:
+   - Verify that previous launch tool selections and paths are reset completely.
+
+**Expected Results:**
+- Clicking a tool in the Project Tools list designates it as the active launch target and clears Project Explorer tree selections.
+- Clicking "Launch Selected Tool" or double-clicking launches the selected tool at the project root directory.
+- Selecting items in Project Explorer deselects the Project Tools list.
+- Switching projects clears previous launch state without leaking across projects.
+
+**Pass Criteria:**
+- Project Tools list and Project Explorer maintain mutual deselection.
+- Single-click launch and double-click activation both succeed at project root.
+- Launch state is cleared upon project switching or launch button disablement.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-10, fill in this table:
+After completing Editor Tests 1-11, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -572,6 +606,7 @@ After completing Editor Tests 1-10, fill in this table:
 | 8: Seal Button & Real Seal | ✅/⚠️/❌ | | |
 | 9: Offline Tool Launch | ✅/⚠️/❌ | | |
 | 10: Code Tooling & Launch | ✅/⚠️/❌ | | |
+| 11: Project Tools List Launch | ✅/⚠️/❌ | | |
 
 ---
 
