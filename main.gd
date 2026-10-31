@@ -55,7 +55,15 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var btn_add_remote_project = $AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton
 @onready var btn_new_project = $AppLayout/Content/PageProjects/ProjectsControls/NewProjectButton
 @onready var projects_tabs = $AppLayout/Content/PageProjects/ProjectsTabs
+@onready var project_search_line_edit: LineEdit = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectSearchLineEdit"
 @onready var projects_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsList"
+@onready var empty_library_state: Control = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState"
+@onready var empty_title_label: Label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyTitleLabel"
+@onready var empty_message_label: Label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyMessageLabel"
+@onready var empty_new_project_btn: Button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyActionsContainer/EmptyNewProjectButton"
+@onready var empty_add_local_btn: Button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyActionsContainer/EmptyAddLocalButton"
+@onready var empty_add_remote_btn: Button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyActionsContainer/EmptyAddRemoteButton"
+@onready var empty_clear_filter_btn: Button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyActionsContainer/EmptyClearFilterButton"
 @onready var projects_status_bar = $AppLayout/Content/PageProjects/ProjectsStatusBar
 @onready var lbl_project_status = $AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel
 @onready var lbl_offline_status = $AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel
@@ -332,7 +340,8 @@ func _apply_global_theme() -> void:
 		get_node_or_null("AppLayout/Content/PageSettings/NetworkLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageSettings/MirrorSettingsLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineSettingsLabel") as Label,
-		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/ExplorerLabel") as Label
+		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/ExplorerLabel") as Label,
+		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyTitleLabel") as Label
 	]
 	for header: Label in section_headers:
 		if header != null:
@@ -350,7 +359,8 @@ func _apply_global_theme() -> void:
 		offline_status_node,
 		get_node_or_null("AppLayout/Content/PageTools/ToolsStatusLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineStatusLabel") as Label,
-		get_node_or_null("AppLayout/Content/PageSettings/MirrorStatusLabel") as Label
+		get_node_or_null("AppLayout/Content/PageSettings/MirrorStatusLabel") as Label,
+		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyMessageLabel") as Label
 	]
 	for sec_label: Label in secondary_labels:
 		if sec_label != null:
@@ -514,6 +524,14 @@ func _ready() -> void:
 	deps.btn_new_project = btn_new_project
 	deps.app_node = self
 	deps.projects_list = projects_list
+	deps.project_search_line_edit = project_search_line_edit
+	deps.empty_library_state = empty_library_state
+	deps.empty_title_label = empty_title_label
+	deps.empty_message_label = empty_message_label
+	deps.empty_new_project_button = empty_new_project_btn
+	deps.empty_add_local_button = empty_add_local_btn
+	deps.empty_add_remote_button = empty_add_remote_btn
+	deps.empty_clear_filter_button = empty_clear_filter_btn
 	deps.lbl_project_status = lbl_project_status
 	deps.lbl_offline_status = lbl_offline_status
 	deps.lbl_tools_for_project = lbl_tools_list_title

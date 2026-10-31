@@ -80,6 +80,14 @@ var btn_add_project: Button
 var btn_add_remote_project: Button
 var btn_new_project: Button
 var projects_list: Control
+var project_search_line_edit: LineEdit = null
+var empty_library_state: Control = null
+var empty_title_label: Label = null
+var empty_message_label: Label = null
+var empty_new_project_button: Button = null
+var empty_add_local_button: Button = null
+var empty_add_remote_button: Button = null
+var empty_clear_filter_button: Button = null
 var lbl_project_status: Label
 var lbl_offline_status: Label
 var lbl_tools_for_project: Label
@@ -121,12 +129,22 @@ var _picker_state_monitoring := false
 var _add_tool_candidates: Array = []
 var _current_status_severity: String = "neutral"
 var _current_offline_state: String = "unknown"
+var _search_query: String = ""
+var _filtered_indices: Array[int] = []
 
 class UIDeps extends RefCounted:
 	var btn_add_project: Button
 	var btn_add_remote_project: Button = null
 	var btn_new_project: Button
 	var projects_list: Control
+	var project_search_line_edit: LineEdit = null
+	var empty_library_state: Control = null
+	var empty_title_label: Label = null
+	var empty_message_label: Label = null
+	var empty_new_project_button: Button = null
+	var empty_add_local_button: Button = null
+	var empty_add_remote_button: Button = null
+	var empty_clear_filter_button: Button = null
 	var lbl_project_status: Label
 	var lbl_offline_status: Label
 	var lbl_tools_for_project: Label
@@ -198,7 +216,27 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	project_tools_list = deps.project_tools_list
 	btn_change_version = deps.btn_change_version
 	
+	project_search_line_edit = deps.project_search_line_edit
+	empty_library_state = deps.empty_library_state
+	if empty_library_state != null:
+		empty_title_label = deps.empty_title_label if deps.empty_title_label != null else empty_library_state.find_child("EmptyTitleLabel", true, false) as Label
+		empty_message_label = deps.empty_message_label if deps.empty_message_label != null else empty_library_state.find_child("EmptyMessageLabel", true, false) as Label
+		empty_new_project_button = deps.empty_new_project_button if deps.empty_new_project_button != null else empty_library_state.find_child("EmptyNewProjectButton", true, false) as Button
+		empty_add_local_button = deps.empty_add_local_button if deps.empty_add_local_button != null else empty_library_state.find_child("EmptyAddLocalButton", true, false) as Button
+		empty_add_remote_button = deps.empty_add_remote_button if deps.empty_add_remote_button != null else empty_library_state.find_child("EmptyAddRemoteButton", true, false) as Button
+		empty_clear_filter_button = deps.empty_clear_filter_button if deps.empty_clear_filter_button != null else empty_library_state.find_child("EmptyClearFilterButton", true, false) as Button
+
 	tools_controller = tools_ctrl
+	if project_search_line_edit != null:
+		project_search_line_edit.text_changed.connect(_on_search_text_changed)
+	if empty_new_project_button != null:
+		empty_new_project_button.pressed.connect(_on_new_project_pressed)
+	if empty_add_local_button != null:
+		empty_add_local_button.pressed.connect(_on_add_project_pressed)
+	if empty_add_remote_button != null:
+		empty_add_remote_button.pressed.connect(_on_add_remote_project_pressed)
+	if empty_clear_filter_button != null:
+		empty_clear_filter_button.pressed.connect(_on_clear_filter_pressed)
 	btn_add_project.pressed.connect(_on_add_project_pressed)
 	if btn_add_remote_project != null:
 		btn_add_remote_project.pressed.connect(_on_add_remote_project_pressed)
@@ -416,8 +454,17 @@ func _remove_project_at_index(index: int) -> void:
 		})
 		return
 
-	var next_index = min(index, registry_manager.tracked_projects.size() - 1)
-	_select_project(next_index)
+	if not _filtered_indices.is_empty():
+		var next_orig_index: int = _filtered_indices[0]
+		for f_idx in _filtered_indices:
+			if f_idx >= index:
+				next_orig_index = f_idx
+				break
+		_select_project(next_orig_index)
+	else:
+		_selected_project_index = -1
+		_disable_remove_button()
+
 	_update_status("Status: Removed '%s' from Project Library." % removed_name)
 	OgsLogger.info("project_removed", {
 		"component": "projects",
@@ -562,6 +609,9 @@ func add_project_from_path(project_dir: String) -> bool:
 	}
 	registry_manager.tracked_projects.append(project_entry)
 	_save_project_registry()
+	if project_search_line_edit != null and not project_search_line_edit.text.is_empty():
+		project_search_line_edit.text = ""
+	_search_query = ""
 	_refresh_projects_list()
 	_select_project(registry_manager.tracked_projects.size() - 1)
 
@@ -649,22 +699,145 @@ func _is_manifest_acceptable_for_project_library(manifest: StackManifest) -> boo
 		return true
 	return manifest.errors.size() == 1 and manifest.errors[0] == "tools_empty"
 
+func get_filtered_indices() -> Array[int]:
+	## Returns the list of tracked project indices matching current search filter.
+	return _filtered_indices
+
+func get_search_query() -> String:
+	## Returns the active search filter query.
+	return _search_query
+
+func _on_search_text_changed(new_text: String) -> void:
+	## Handles search query changes to filter project library entries.
+	_search_query = new_text
+	_refresh_projects_list()
+
+func _on_clear_filter_pressed() -> void:
+	## Clears the search filter bar and restores all tracked projects.
+	if project_search_line_edit != null:
+		project_search_line_edit.text = ""
+	_on_search_text_changed("")
+
+func _matches_search_filter(entry: Dictionary, query: String) -> bool:
+	## Case-insensitively tests whether project matches query by stack_name, path, or tool.
+	if query.is_empty():
+		return true
+
+	# Match stack / project display name
+	var stack_name: String = String(entry.get("stack_name", "")).to_lower()
+	if stack_name.contains(query):
+		return true
+
+	# Match file path (both raw and display format)
+	var path_str: String = String(entry.get("path", "")).to_lower()
+	var disp_path: String = PathUtils.format_for_display(path_str).to_lower()
+	if path_str.contains(query) or disp_path.contains(query):
+		return true
+	if path_str.replace("\\", "/").contains(query) or path_str.replace("/", "\\").contains(query):
+		return true
+
+	# Match configured tools (tool ID or version)
+	var tools: Array = entry.get("tools", [])
+	for tool in tools:
+		if tool is Dictionary:
+			var t_dict: Dictionary = tool as Dictionary
+			var tool_id: String = String(t_dict.get("id", "")).to_lower()
+			var tool_ver: String = String(t_dict.get("version", "")).to_lower()
+			var disp_name: String = ToolCategoryMapper.get_display_name(tool_id).to_lower()
+			if tool_id.contains(query) or tool_ver.contains(query) or disp_name.contains(query):
+				return true
+			var combined := "%s %s" % [tool_id, tool_ver]
+			var combined_disp := "%s %s" % [disp_name, tool_ver]
+			if combined.contains(query) or combined_disp.contains(query):
+				return true
+			if ("v" + tool_ver).contains(query):
+				return true
+
+	return false
+
 func _refresh_projects_list() -> void:
-	## Rebuilds Projects list UI from persisted tracked project entries.
-	projects_list.clear()
-	for index in range(registry_manager.tracked_projects.size()):
-		var entry: Dictionary = registry_manager.tracked_projects[index]
-		var display_name = String(entry.get("stack_name", "Unnamed Stack"))
-		var tools: Array = entry.get("tools", [])
-		var summary = _summarize_tools(tools)
-		var project_path = String(entry.get("path", ""))
-		var display_path: String = PathUtils.format_for_display(project_path)
-		var label = "%s - %s\n%s" % [display_name, summary, display_path]
-		if projects_list.has_method("add_project_card"):
-			projects_list.add_project_card(display_name, summary, display_path, tools)
+	## Rebuilds Projects list UI from persisted tracked project entries matching active search filter.
+	_filtered_indices.clear()
+	var query := _search_query.strip_edges().to_lower()
+	for i in range(registry_manager.tracked_projects.size()):
+		var entry: Dictionary = registry_manager.tracked_projects[i]
+		if _matches_search_filter(entry, query):
+			_filtered_indices.append(i)
+
+	if registry_manager.tracked_projects.is_empty():
+		if projects_list != null:
+			projects_list.clear()
+			projects_list.visible = false
+		if empty_library_state != null:
+			empty_library_state.visible = true
+			if empty_title_label != null:
+				empty_title_label.text = "No Projects Tracked"
+			if empty_message_label != null:
+				empty_message_label.text = "Get started by creating a new project, adding an existing local stack, or cloning a remote repository."
+			if empty_new_project_button != null:
+				empty_new_project_button.visible = true
+			if empty_add_local_button != null:
+				empty_add_local_button.visible = true
+			if empty_add_remote_button != null:
+				empty_add_remote_button.visible = true
+			if empty_clear_filter_button != null:
+				empty_clear_filter_button.visible = false
+		_disable_project_action_buttons()
+		return
+
+	if _filtered_indices.is_empty():
+		if projects_list != null:
+			projects_list.clear()
+			projects_list.visible = false
+		if empty_library_state != null:
+			empty_library_state.visible = true
+			if empty_title_label != null:
+				empty_title_label.text = "No Projects Match Filter"
+			if empty_message_label != null:
+				empty_message_label.text = "No projects match your filter \"%s\". Clear your search query to see all projects." % _search_query
+			if empty_new_project_button != null:
+				empty_new_project_button.visible = false
+			if empty_add_local_button != null:
+				empty_add_local_button.visible = false
+			if empty_add_remote_button != null:
+				empty_add_remote_button.visible = false
+			if empty_clear_filter_button != null:
+				empty_clear_filter_button.visible = true
+		_disable_project_action_buttons()
+		_update_status("Status: No projects match your filter.")
+		return
+
+	if empty_library_state != null:
+		empty_library_state.visible = false
+	if projects_list != null:
+		projects_list.visible = true
+		projects_list.clear()
+		for list_idx in range(_filtered_indices.size()):
+			var original_idx: int = _filtered_indices[list_idx]
+			var entry: Dictionary = registry_manager.tracked_projects[original_idx]
+			var display_name = String(entry.get("stack_name", "Unnamed Stack"))
+			var tools: Array = entry.get("tools", [])
+			var summary = _summarize_tools(tools)
+			var project_path = String(entry.get("path", ""))
+			var display_path: String = PathUtils.format_for_display(project_path)
+			var label = "%s - %s\n%s" % [display_name, summary, display_path]
+			if projects_list.has_method("add_project_card"):
+				projects_list.add_project_card(display_name, summary, display_path, tools)
+			else:
+				projects_list.add_item(label)
+			projects_list.set_item_tooltip(list_idx, display_path)
+
+		if _selected_project_index >= 0:
+			var ui_idx: int = _filtered_indices.find(_selected_project_index)
+			if ui_idx != -1:
+				projects_list.select(ui_idx)
+				_enable_project_action_buttons()
+			else:
+				projects_list.deselect_all()
+				_disable_project_action_buttons()
 		else:
-			projects_list.add_item(label)
-		projects_list.set_item_tooltip(index, display_path)
+			projects_list.deselect_all()
+			_disable_project_action_buttons()
 
 func _summarize_tools(tools: Array) -> String:
 	## Builds compact tool summary text for project list entries.
@@ -698,9 +871,12 @@ func _on_project_selected(index: int) -> void:
 	## Activates selected project entry and loads runtime state.
 ## 
 ## Parameters:
-## index (int): Selected index in projects list
+## index (int): Selected index in projects list UI
 ## 
-	_select_project(index)
+	var original_index := index
+	if index >= 0 and index < _filtered_indices.size():
+		original_index = _filtered_indices[index]
+	_select_project(original_index)
 
 func _select_project(index: int) -> void:
 	## Selects a project from tracked entries and loads its manifest/config.
@@ -715,7 +891,11 @@ func _select_project(index: int) -> void:
 	_selected_tool_index = -1
 	_selected_launch_tool_id = ""
 	_selected_launch_target_path = ""
-	projects_list.select(index)
+	var ui_idx: int = _filtered_indices.find(index)
+	if ui_idx != -1 and projects_list != null:
+		projects_list.select(ui_idx)
+	elif projects_list != null:
+		projects_list.deselect_all()
 	_enable_remove_button()
 	_update_tool_action_buttons()
 
@@ -767,7 +947,11 @@ func _select_project(index: int) -> void:
 	registry_manager.tracked_projects[index] = entry
 	_save_project_registry()
 	_refresh_projects_list()
-	projects_list.select(index)
+	var ui_idx_after: int = _filtered_indices.find(index)
+	if ui_idx_after != -1 and projects_list != null:
+		projects_list.select(ui_idx_after)
+	elif projects_list != null:
+		projects_list.deselect_all()
 
 	current_project_dir = project_dir
 	current_manifest = manifest
@@ -1420,7 +1604,10 @@ func _on_open_project_pressed() -> void:
 
 func _on_project_activated(index: int) -> void:
 	## Activates a project entry on double-click, ensuring it is selected and switching to Tab 1 (Project Details).
-	_select_project(index)
+	var original_index := index
+	if index >= 0 and index < _filtered_indices.size():
+		original_index = _filtered_indices[index]
+	_select_project(original_index)
 	_open_selected_project_tab()
 
 func _open_selected_project_tab() -> void:

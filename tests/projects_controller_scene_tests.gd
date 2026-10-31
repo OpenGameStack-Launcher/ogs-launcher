@@ -56,6 +56,11 @@ func run() -> Dictionary:
 	_test_offline_status_pill_badge_styling(results)
 	_test_summarize_tools_canonical_names_and_overflow(results)
 	_test_project_cards_rendered_in_custom_item_list(results)
+	_test_empty_library_state_when_zero_projects(results)
+	_test_search_filtering_by_stack_name_path_and_tool(results)
+	_test_filtered_selection_and_data_loading(results)
+	_test_empty_state_on_zero_search_results_and_clear_action(results)
+	_test_empty_state_hides_when_project_added(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -124,6 +129,34 @@ func _build_controller(storage_path: String) -> Dictionary:
 	projects_tabs.current_tab = 0
 	var change_version_button = Button.new()
 
+	var search_edit = LineEdit.new()
+	var empty_state = CenterContainer.new()
+	var empty_vbox = VBoxContainer.new()
+	empty_vbox.name = "EmptyStateContent"
+	var empty_title = Label.new()
+	empty_title.name = "EmptyTitleLabel"
+	var empty_msg = Label.new()
+	empty_msg.name = "EmptyMessageLabel"
+	var empty_actions = HBoxContainer.new()
+	empty_actions.name = "EmptyActionsContainer"
+	var empty_new_btn = Button.new()
+	empty_new_btn.name = "EmptyNewProjectButton"
+	var empty_add_local_btn = Button.new()
+	empty_add_local_btn.name = "EmptyAddLocalButton"
+	var empty_add_remote_btn = Button.new()
+	empty_add_remote_btn.name = "EmptyAddRemoteButton"
+	var empty_clear_filter_btn = Button.new()
+	empty_clear_filter_btn.name = "EmptyClearFilterButton"
+
+	empty_actions.add_child(empty_new_btn)
+	empty_actions.add_child(empty_add_local_btn)
+	empty_actions.add_child(empty_add_remote_btn)
+	empty_actions.add_child(empty_clear_filter_btn)
+	empty_vbox.add_child(empty_title)
+	empty_vbox.add_child(empty_msg)
+	empty_vbox.add_child(empty_actions)
+	empty_state.add_child(empty_vbox)
+
 	var deps = ProjectsController.UIDeps.new()
 	deps.btn_add_project = add_button
 	deps.btn_add_remote_project = add_remote_button
@@ -132,6 +165,14 @@ func _build_controller(storage_path: String) -> Dictionary:
 	deps.btn_remove_project = remove_button
 	deps.btn_seal_project = seal_button
 	deps.projects_list = projects_list
+	deps.project_search_line_edit = search_edit
+	deps.empty_library_state = empty_state
+	deps.empty_title_label = empty_title
+	deps.empty_message_label = empty_msg
+	deps.empty_new_project_button = empty_new_btn
+	deps.empty_add_local_button = empty_add_local_btn
+	deps.empty_add_remote_button = empty_add_remote_btn
+	deps.empty_clear_filter_button = empty_clear_filter_btn
 	deps.lbl_project_status = status_label
 	deps.lbl_offline_status = offline_label
 	deps.lbl_tools_for_project = explorer_title_lbl
@@ -159,6 +200,14 @@ func _build_controller(storage_path: String) -> Dictionary:
 	return {
 		"controller": controller,
 		"projects": projects_list,
+		"search_edit": search_edit,
+		"empty_state": empty_state,
+		"empty_title": empty_title,
+		"empty_msg": empty_msg,
+		"empty_new_btn": empty_new_btn,
+		"empty_add_local_btn": empty_add_local_btn,
+		"empty_add_remote_btn": empty_add_remote_btn,
+		"empty_clear_filter_btn": empty_clear_filter_btn,
 		"status": status_label,
 		"offline": offline_label,
 		"tree": explorer_tree,
@@ -178,7 +227,7 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"add_remote_btn": add_remote_button,
 		"remove_tool_btn": remove_tool_button,
 		"add_tool_btn": add_tool_button,
-		"nodes": [add_button, add_remote_button, new_button, open_button, remove_button, seal_button, projects_list, status_label, offline_label, explorer_title_lbl, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_vbox, instructions_label, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button]
+		"nodes": [add_button, add_remote_button, new_button, open_button, remove_button, seal_button, projects_list, search_edit, empty_state, status_label, offline_label, explorer_title_lbl, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_vbox, instructions_label, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button]
 	}
 
 func _cleanup_nodes(nodes: Array, controller: ProjectsController = null) -> void:
@@ -1400,6 +1449,229 @@ func _test_project_cards_rendered_in_custom_item_list(results: Dictionary) -> vo
 			_expect(pressed_style.border_color.is_equal_approx(CustomItemListScript.COLOR_CARD_BORDER_SELECTED), "Selected card border should have accent color", results)
 
 	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_registry(storage_path)
+
+func _create_dummy_project(base_dir_name: String, stack_name: String, tools: Array) -> String:
+	## Helper to scaffold an isolated valid OGS project on disk for testing.
+	var path_str := "user://%s_%s_%d" % [base_dir_name, str(Time.get_ticks_msec()), randi() % 10000]
+	var abs_dir := ProjectSettings.globalize_path(path_str)
+	DirAccess.make_dir_recursive_absolute(abs_dir)
+	var stack_payload = {
+		"schema_version": StackManifest.CURRENT_SCHEMA_VERSION,
+		"stack_name": stack_name,
+		"tools": tools
+	}
+	var f = FileAccess.open(abs_dir.path_join("stack.json"), FileAccess.WRITE)
+	f.store_string(JSON.stringify(stack_payload))
+	f.close()
+	var config_f = FileAccess.open(abs_dir.path_join("ogs_config.json"), FileAccess.WRITE)
+	config_f.store_string(JSON.stringify(OgsConfig.new().to_dict()))
+	config_f.close()
+	return abs_dir
+
+func _test_empty_library_state_when_zero_projects(results: Dictionary) -> void:
+	## Verifies that zero tracked projects shows empty state container and hides projects list.
+	OfflineEnforcer.reset()
+	var storage_path = "user://test_empty_lib_%s.json" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+
+	var ctx = _build_controller(storage_path)
+	var projects_list: Control = ctx["projects"]
+	var empty_state: Control = ctx["empty_state"]
+	var empty_title: Label = ctx["empty_title"]
+	var empty_new_btn: Button = ctx["empty_new_btn"]
+	var empty_add_local_btn: Button = ctx["empty_add_local_btn"]
+	var empty_add_remote_btn: Button = ctx["empty_add_remote_btn"]
+	var empty_clear_filter_btn: Button = ctx["empty_clear_filter_btn"]
+	var open_btn: Button = ctx["open_btn"]
+	var remove_btn: Button = ctx["remove_btn"]
+	var seal_btn: Button = ctx["seal_btn"]
+
+	_expect(not projects_list.visible, "ProjectsList should be hidden when zero projects tracked", results)
+	_expect(empty_state.visible, "EmptyLibraryState should be visible when zero projects tracked", results)
+	_expect(empty_title.text == "No Projects Tracked", "Empty title should indicate no projects tracked", results)
+	_expect(empty_new_btn.visible, "New Project button should be visible in empty state", results)
+	_expect(empty_add_local_btn.visible, "Add Local Project button should be visible in empty state", results)
+	_expect(empty_add_remote_btn.visible, "Add Remote Project button should be visible in empty state", results)
+	_expect(not empty_clear_filter_btn.visible, "Clear Filter button should be hidden when zero projects tracked", results)
+	_expect(open_btn.disabled, "Open Project button should be disabled when empty", results)
+	_expect(remove_btn.disabled, "Remove Project button should be disabled when empty", results)
+	_expect(seal_btn.disabled, "Seal button should be disabled when empty", results)
+
+	_cleanup_nodes(ctx["nodes"])
+	_cleanup_registry(storage_path)
+
+func _test_search_filtering_by_stack_name_path_and_tool(results: Dictionary) -> void:
+	## Verifies case-insensitive search filtering across stack name, path, and tool IDs/versions.
+	OfflineEnforcer.reset()
+	var storage_path = "user://test_search_filter_%s.json" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+
+	var dir1 = _create_dummy_project("proj_alpha", "Alpha Platformer", [{"id": "godot", "version": "4.7.2"}])
+	var dir2 = _create_dummy_project("proj_beta", "Beta Brawler", [{"id": "blender", "version": "4.5.7"}])
+	var dir3 = _create_dummy_project("proj_gamma", "Gamma Galaxy", [{"id": "gimp", "version": "3.0.0"}, {"id": "vscodium", "version": "1.90.0"}])
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var projects_list: CustomItemList = ctx["projects"]
+	var empty_state: Control = ctx["empty_state"]
+
+	controller.add_project_from_path(dir1)
+	controller.add_project_from_path(dir2)
+	controller.add_project_from_path(dir3)
+
+	_expect(projects_list.item_count == 3, "All 3 projects should be loaded initially", results)
+	_expect(controller.get_filtered_indices().size() == 3, "Filtered indices size should be 3 initially", results)
+
+	# 1. Filter by stack name (case-insensitive substring)
+	controller._on_search_text_changed("alpha")
+	_expect(controller.get_filtered_indices().size() == 1, "Filter 'alpha' should match exactly 1 project", results)
+	_expect(projects_list.item_count == 1, "List item count should be 1 for 'alpha'", results)
+	_expect(projects_list.get_card_title(0) == "Alpha Platformer", "Matching card title should be 'Alpha Platformer'", results)
+	_expect(projects_list.visible, "Projects list should be visible when results match", results)
+	_expect(not empty_state.visible, "Empty state should be hidden when results match", results)
+
+	# 2. Filter by directory path
+	var path_fragment = dir2.get_file().to_lower()
+	controller._on_search_text_changed(path_fragment)
+	_expect(controller.get_filtered_indices().size() == 1, "Filter by dir fragment should match beta project", results)
+	_expect(projects_list.get_card_title(0) == "Beta Brawler", "Matching card title should be 'Beta Brawler'", results)
+
+	# 3. Filter by tool ID ("blender")
+	controller._on_search_text_changed("blender")
+	_expect(controller.get_filtered_indices().size() == 1, "Filter 'blender' should match beta project", results)
+	_expect(projects_list.get_card_title(0) == "Beta Brawler", "Matching card title should be 'Beta Brawler'", results)
+
+	# 4. Filter by tool display name ("GIMP")
+	controller._on_search_text_changed("GIMP")
+	_expect(controller.get_filtered_indices().size() == 1, "Filter 'GIMP' should match gamma project", results)
+	_expect(projects_list.get_card_title(0) == "Gamma Galaxy", "Matching card title should be 'Gamma Galaxy'", results)
+
+	# 5. Filter by tool version ("4.7.2")
+	controller._on_search_text_changed("4.7.2")
+	_expect(controller.get_filtered_indices().size() == 1, "Filter '4.7.2' should match alpha project", results)
+	_expect(projects_list.get_card_title(0) == "Alpha Platformer", "Matching card title should be 'Alpha Platformer'", results)
+
+	# 6. Clear filter query
+	controller._on_search_text_changed("")
+	_expect(controller.get_filtered_indices().size() == 3, "Clearing filter should restore all 3 projects", results)
+	_expect(projects_list.item_count == 3, "List should contain 3 items when filter cleared", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(dir1)
+	_cleanup_dir_recursive(dir2)
+	_cleanup_dir_recursive(dir3)
+	_cleanup_registry(storage_path)
+
+func _test_filtered_selection_and_data_loading(results: Dictionary) -> void:
+	## Verifies that clicking/activating an item in filtered search results maps to the correct tracked project.
+	OfflineEnforcer.reset()
+	var storage_path = "user://test_filtered_sel_%s.json" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+
+	var dir1 = _create_dummy_project("sel_alpha", "Alpha Platformer", [{"id": "godot", "version": "4.7.2"}])
+	var dir2 = _create_dummy_project("sel_beta", "Beta Brawler", [{"id": "blender", "version": "4.5.7"}])
+	var dir3 = _create_dummy_project("sel_gamma", "Gamma Galaxy", [{"id": "gimp", "version": "3.0.0"}])
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var projects_list: CustomItemList = ctx["projects"]
+	var tabs: TabContainer = ctx["tabs"]
+
+	controller.add_project_from_path(dir1)
+	controller.add_project_from_path(dir2)
+	controller.add_project_from_path(dir3)
+
+	# Filter for "Gamma" which is index 2 in tracked_projects, but index 0 in filtered list
+	controller._on_search_text_changed("Gamma")
+	_expect(controller.get_filtered_indices().size() == 1, "Filtered indices size should be 1", results)
+	_expect(controller.get_filtered_indices()[0] == 2, "Filtered index should point to original index 2", results)
+
+	# Simulate selecting item 0 in the filtered projects list
+	projects_list.item_selected.emit(0)
+	_expect(controller.current_project_dir == dir3, "current_project_dir should be dir3", results)
+	_expect(controller.current_manifest != null and controller.current_manifest.stack_name == "Gamma Galaxy", "current_manifest should be Gamma Galaxy", results)
+	_expect(controller._selected_project_index == 2, "Selected project index should be 2 in registry", results)
+
+	# Simulate activating item 0 in filtered list (double-click)
+	tabs.current_tab = 0
+	projects_list.item_activated.emit(0)
+	_expect(tabs.current_tab == 1, "Double-clicking filtered item should switch to Project Details tab (tab 1)", results)
+	_expect(tabs.get_tab_title(1) == "Gamma Galaxy", "Details tab title should be Gamma Galaxy", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(dir1)
+	_cleanup_dir_recursive(dir2)
+	_cleanup_dir_recursive(dir3)
+	_cleanup_registry(storage_path)
+
+func _test_empty_state_on_zero_search_results_and_clear_action(results: Dictionary) -> void:
+	## Verifies empty state displays when search filter yields 0 matches and clearing restores list.
+	OfflineEnforcer.reset()
+	var storage_path = "user://test_zero_matches_%s.json" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+
+	var dir1 = _create_dummy_project("zero_alpha", "Alpha Platformer", [{"id": "godot", "version": "4.7.2"}])
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var projects_list: CustomItemList = ctx["projects"]
+	var search_edit: LineEdit = ctx["search_edit"]
+	var empty_state: Control = ctx["empty_state"]
+	var empty_title: Label = ctx["empty_title"]
+	var empty_msg: Label = ctx["empty_msg"]
+	var empty_clear_filter_btn: Button = ctx["empty_clear_filter_btn"]
+	var empty_new_btn: Button = ctx["empty_new_btn"]
+
+	controller.add_project_from_path(dir1)
+	_expect(projects_list.item_count == 1, "Should have 1 project initially", results)
+
+	# Apply filter with zero matches
+	search_edit.text = "nonexistent_query_xyz"
+	controller._on_search_text_changed(search_edit.text)
+
+	_expect(controller.get_filtered_indices().is_empty(), "Filtered indices should be empty", results)
+	_expect(not projects_list.visible, "ProjectsList should be hidden on 0 matches", results)
+	_expect(empty_state.visible, "EmptyLibraryState should be visible on 0 matches", results)
+	_expect(empty_title.text == "No Projects Match Filter", "Title should indicate no projects match filter", results)
+	_expect(empty_msg.text.contains("No projects match your filter"), "Message should mention filter", results)
+	_expect(empty_clear_filter_btn.visible, "Clear Filter button should be visible on 0 matches", results)
+	_expect(not empty_new_btn.visible, "New Project button should be hidden on 0 filter matches", results)
+
+	# Trigger clear filter button
+	empty_clear_filter_btn.pressed.emit()
+
+	_expect(search_edit.text.is_empty(), "Search LineEdit text should be cleared", results)
+	_expect(controller.get_filtered_indices().size() == 1, "Filtered indices should restore to 1", results)
+	_expect(projects_list.visible, "ProjectsList should be visible after clearing filter", results)
+	_expect(not empty_state.visible, "EmptyLibraryState should be hidden after clearing filter", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(dir1)
+	_cleanup_registry(storage_path)
+
+func _test_empty_state_hides_when_project_added(results: Dictionary) -> void:
+	## Verifies that adding a project transitions from empty state to populated projects list.
+	OfflineEnforcer.reset()
+	var storage_path = "user://test_empty_trans_%s.json" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+
+	var dir1 = _create_dummy_project("trans_alpha", "Transition Project", [{"id": "godot", "version": "4.7.2"}])
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var projects_list: CustomItemList = ctx["projects"]
+	var empty_state: Control = ctx["empty_state"]
+
+	_expect(empty_state.visible, "Empty state should be visible initially when zero projects", results)
+	_expect(not projects_list.visible, "ProjectsList should be hidden initially when zero projects", results)
+
+	controller.add_project_from_path(dir1)
+
+	_expect(not empty_state.visible, "Empty state should be hidden after adding project", results)
+	_expect(projects_list.visible, "ProjectsList should be visible after adding project", results)
+	_expect(projects_list.item_count == 1, "ProjectsList should have 1 item", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(dir1)
 	_cleanup_registry(storage_path)
 
 
