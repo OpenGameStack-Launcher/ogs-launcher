@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 1405
+tests passed: 1555
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -388,12 +388,16 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Sidebar Brand Header containing 32x32 logo (res://Images/logo.png), "OGS Launcher" title, and HSeparator divider
   - Sidebar Footer containing expanding vertical spacer, footer container, status indicator, and launcher version label
   - Sidebar live interaction verifying startup active highlight on Projects, navigation switching to Tools, and footer connectivity sync
+  - Semantic Button theme variations (`PrimaryButton`, `SecondaryButton`, `DangerButton`) defined on `global_theme` with matching background colors, borders, and focus rings
+  - CheckButton stylebox overrides defined on `global_theme` using `StyleBoxEmpty` and hover styling, replacing solid Button stylebox inheritance
+  - Target buttons across Projects, Tools, and Settings pages in `main.tscn` configured with appropriate `PrimaryButton`, `SecondaryButton`, and `DangerButton` theme variations
 
 - **[tests/tools_page_scene_tests.gd](tests/tools_page_scene_tests.gd)** - Scene tests for Tools page UI.
   - Tools/Download tab nodes exist
   - CodeSection and CodeTools containers exist in both Installed and Download tabs
   - Online/offline status label updates
   - Download button disablement during active download
+  - Tool cards assign dynamic theme variations: `PrimaryButton` for download buttons, `DangerButton` for installed tool removal buttons, and `SecondaryButton` for active download cancel buttons
 
 - **[tests/project_explorer_tests.gd](tests/project_explorer_tests.gd)** - Validates ProjectExplorer directory filtering, pruning, selection, tool icon rendering, stack-aware VSCodium mappings, and double-click activation (916 total passed tests across runner suites).
   - Non-relevant and empty folders excluded from tree
