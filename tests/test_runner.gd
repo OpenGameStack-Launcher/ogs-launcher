@@ -111,6 +111,7 @@ func _run_tests_async() -> void:
 		"res://tests/tools_page_controller_tests.gd",
 		"res://tests/project_explorer_tests.gd",
 		"res://tests/file_type_mapper_tests.gd",
+		"res://tests/release_packaging_tests.gd",
 	]
 	
 	for test_file in test_files:

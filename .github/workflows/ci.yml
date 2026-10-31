@@ -1,0 +1,130 @@
+name: CI
+
+on:
+  pull_request:
+    branches: [ main ]
+  push:
+    branches: [ main ]
+
+jobs:
+  test-and-package-smoke:
+    name: Test & Package Smoke (Windows x64)
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+
+      - name: Cache Godot, Export Templates & rcedit
+        id: cache-godot-tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\Tools\Godot
+            C:\Tools\rcedit
+            C:\Tools\templates
+          key: godot-4.7.2-stable-win64-templates-rcedit-v2
+
+      - name: Install Godot 4.7.2, Templates, and rcedit
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $toolsDir = "C:\Tools"
+          $godotDir = "$toolsDir\Godot"
+          $rceditDir = "$toolsDir\rcedit"
+          $templatesCacheDir = "$toolsDir\templates\4.7.2.stable"
+          $templateTargetDir = "$env:APPDATA\Godot\export_templates\4.7.2.stable"
+
+          New-Item -ItemType Directory -Path $godotDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $rceditDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $templatesCacheDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $templateTargetDir -Force | Out-Null
+
+          # 1. Godot Editor (x64)
+          $godotConsoleExe = "$godotDir\Godot_v4.7.2-stable_win64_console.exe"
+          if (-not (Test-Path $godotConsoleExe)) {
+              Write-Host "Downloading Godot 4.7.2 Stable..." -ForegroundColor Cyan
+              $godotZip = "$env:RUNNER_TEMP\godot.zip"
+              Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_win64.exe.zip" -OutFile $godotZip
+              Expand-Archive -Path $godotZip -DestinationPath $godotDir -Force
+              Remove-Item -Path $godotZip -Force
+          }
+          Copy-Item -Path $godotConsoleExe -Destination "$godotDir\godot.exe" -Force
+
+          # 2. rcedit (x64)
+          $rceditExe = "$rceditDir\rcedit-x64.exe"
+          if (-not (Test-Path $rceditExe)) {
+              Write-Host "Downloading rcedit v2.0.0..." -ForegroundColor Cyan
+              Invoke-WebRequest -Uri "https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe" -OutFile $rceditExe
+          }
+          Copy-Item -Path $rceditExe -Destination "C:\Tools\rcedit-x64.exe" -Force
+
+          # 3. Export Templates (Windows only)
+          $templateFileCheck = "$templatesCacheDir\windows_release_x86_64.exe"
+          if (-not (Test-Path $templateFileCheck)) {
+              Write-Host "Downloading Godot 4.7.2 export templates..." -ForegroundColor Cyan
+              $tpzPath = "$env:RUNNER_TEMP\templates.tpz"
+              Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" -OutFile $tpzPath
+
+              Add-Type -AssemblyName System.IO.Compression.FileSystem
+              $zip = [System.IO.Compression.ZipFile]::OpenRead($tpzPath)
+              try {
+                  foreach ($entry in $zip.Entries) {
+                      if ($entry.FullName -like "templates/windows_*") {
+                          $destFile = Join-Path $templatesCacheDir $entry.Name
+                          if ($entry.Name -ne "") {
+                              [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $destFile, $true)
+                          }
+                      }
+                  }
+              }
+              finally {
+                  $zip.Dispose()
+                  Remove-Item -Path $tpzPath -Force
+              }
+          }
+
+          # Copy cached templates to Godot APPDATA export_templates directory
+          Get-ChildItem -Path $templatesCacheDir | Copy-Item -Destination $templateTargetDir -Force
+
+          # Add tools to PATH
+          "$godotDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "$toolsDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Host "Godot 4.7.2 and rcedit configured successfully." -ForegroundColor Green
+
+      - name: Headless Editor Import Pass
+        shell: powershell
+        run: |
+          godot --headless --editor --quit
+
+      - name: Run Automated Test Suite
+        shell: powershell
+        run: |
+          godot --headless -s res://tests/test_runner.gd
+
+      - name: Execute Packaging Smoke Check
+        shell: powershell
+        run: |
+          powershell -ExecutionPolicy Bypass -File .\scripts\release\build_release_package.ps1 -Version 0.0.0-ci -SkipTests -SkipZip
+
+      - name: Verify Exported Executable and Metadata
+        shell: powershell
+        run: |
+          $exe = "artifacts/release/OGS-Launcher-win64-0.0.0-ci/OGS-Launcher.exe"
+          if (-not (Test-Path $exe)) {
+              throw "Packaging smoke test failed: $exe was not created."
+          }
+          $v = (Get-Item $exe).VersionInfo
+          Write-Host "FileVersion:     $($v.FileVersion)"
+          Write-Host "ProductVersion:  $($v.ProductVersion)"
+          Write-Host "CompanyName:     $($v.CompanyName)"
+          Write-Host "ProductName:     $($v.ProductName)"
+          Write-Host "FileDescription: $($v.FileDescription)"
+          if ($v.FileVersion -ne "0.0.0-ci") {
+              throw "Expected FileVersion 0.0.0-ci but found $($v.FileVersion)"
+          }
+          if ($v.CompanyName -ne "Open Game Stack") {
+              throw "Expected CompanyName 'Open Game Stack' but found $($v.CompanyName)"
+          }
+          Write-Host "Smoke test validation passed." -ForegroundColor Green
