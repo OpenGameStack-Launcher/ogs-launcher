@@ -186,6 +186,7 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Offline mode enforcement disabling Add Remote Project with descriptive tooltip
     *   [x] Guided missing-Git prompt navigating to Tools page if PortableGit is not installed
     *   [x] Modal dialog with URL input validation, primary folder pre-fill, and Browse folder picker
+    *   [x] Bounded dialog sizing (540x280 and 480x160 targets), smart text autowrapping, and MarginContainer padding
     *   [x] Subfolder collision detection with automatic incremental slug suggestions (slug-1, slug-2)
     *   [x] Real-time progress updates, non-blocking cancellation, and URL preservation on manifest failure
     *   [x] Automatic project registration and Project Library selection upon successful clone

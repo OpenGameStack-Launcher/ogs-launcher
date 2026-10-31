@@ -20,6 +20,8 @@ func run() -> Dictionary:
 	}
 	
 	_test_dialog_instantiation_and_hierarchy(results)
+	_test_dialog_text_wrapping_and_minimum_size(results)
+	_test_dialog_bounded_dimensions_and_button_visibility(results)
 	_test_url_input_enables_clone_button(results)
 	_test_destination_prefilled_and_override(results)
 	_test_subfolder_collision_detection_and_suggestion(results)
@@ -51,6 +53,7 @@ func _test_dialog_instantiation_and_hierarchy(results: Dictionary) -> void:
 	_expect(controller.dialog.unresizable == true, "dialog should be unresizable", results)
 	_expect(controller.dialog.ok_button_text == "Clone", "dialog OK button text should be 'Clone'", results)
 	_expect(controller.dialog.cancel_button_text == "Cancel", "dialog cancel button text should be 'Cancel'", results)
+	_expect(controller.dialog_margin_container != null, "dialog_margin_container should exist", results)
 	_expect(controller.header_label != null, "header_label should exist", results)
 	_expect(controller.url_edit != null, "url_edit LineEdit should exist", results)
 	_expect(controller.dest_edit != null, "dest_edit LineEdit should exist", results)
@@ -59,7 +62,9 @@ func _test_dialog_instantiation_and_hierarchy(results: Dictionary) -> void:
 	_expect(controller.progress_bar != null, "progress_bar should exist", results)
 	_expect(controller.missing_git_dialog != null, "missing_git_dialog should exist", results)
 	_expect(controller.collision_dialog != null, "collision_dialog should exist", results)
+	_expect(controller.collision_margin_container != null, "collision_margin_container should exist", results)
 	_expect(controller.collision_folder_edit != null, "collision_folder_edit should exist", results)
+	_expect(controller.collision_error_label != null, "collision_error_label should exist", results)
 	
 	controller.free_nodes()
 	root.free()
@@ -284,5 +289,70 @@ func _test_offline_blocks_dialog_open(results: Dictionary) -> void:
 	_expect(controller.missing_git_dialog.visible == false, "Missing-Git dialog should not open when offline", results)
 	
 	OfflineEnforcer.reset()
+	controller.free_nodes()
+	root.free()
+
+func _test_dialog_text_wrapping_and_minimum_size(results: Dictionary) -> void:
+	## Verifies autowrap modes, custom minimum widths, and margin containers.
+	var root = Control.new()
+	var controller = RemoteProjectDialogControllerScript.new()
+	controller.setup(root)
+	
+	_expect(controller.header_label.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART, "header_label should have AUTOWRAP_WORD_SMART", results)
+	_expect(controller.header_label.custom_minimum_size.x == 480.0, "header_label custom_minimum_size.x should be 480", results)
+	
+	_expect(controller.lbl_status.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART, "lbl_status should have AUTOWRAP_WORD_SMART", results)
+	_expect(controller.lbl_status.custom_minimum_size.x == 480.0, "lbl_status custom_minimum_size.x should be 480", results)
+	
+	_expect(controller.collision_label.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART, "collision_label should have AUTOWRAP_WORD_SMART", results)
+	_expect(controller.collision_label.custom_minimum_size.x == 440.0, "collision_label custom_minimum_size.x should be 440", results)
+	
+	_expect(controller.collision_error_label.autowrap_mode == TextServer.AUTOWRAP_WORD_SMART, "collision_error_label should have AUTOWRAP_WORD_SMART", results)
+	_expect(controller.collision_error_label.custom_minimum_size.x == 440.0, "collision_error_label custom_minimum_size.x should be 440", results)
+	
+	_expect(controller.dialog_margin_container.get_theme_constant("margin_left") > 0, "dialog_margin_container should have left margin", results)
+	_expect(controller.dialog_margin_container.get_theme_constant("margin_top") > 0, "dialog_margin_container should have top margin", results)
+	_expect(controller.dialog_margin_container.get_theme_constant("margin_right") > 0, "dialog_margin_container should have right margin", results)
+	_expect(controller.dialog_margin_container.get_theme_constant("margin_bottom") > 0, "dialog_margin_container should have bottom margin", results)
+	
+	_expect(controller.collision_margin_container.get_theme_constant("margin_left") > 0, "collision_margin_container should have left margin", results)
+	_expect(controller.collision_margin_container.get_theme_constant("margin_top") > 0, "collision_margin_container should have top margin", results)
+	_expect(controller.collision_margin_container.get_theme_constant("margin_right") > 0, "collision_margin_container should have right margin", results)
+	_expect(controller.collision_margin_container.get_theme_constant("margin_bottom") > 0, "collision_margin_container should have bottom margin", results)
+	
+	controller.free_nodes()
+	root.free()
+
+func _test_dialog_bounded_dimensions_and_button_visibility(results: Dictionary) -> void:
+	## Verifies that dialog and collision_dialog open near target dimensions with accessible buttons.
+	var root = Control.new()
+	(Engine.get_main_loop() as SceneTree).root.add_child(root)
+	var controller = RemoteProjectDialogControllerScript.new()
+	controller.setup(root)
+	
+	controller.show_clone_dialog("user://test_projects")
+	_expect(controller.dialog.visible == true, "dialog should be visible when shown", results)
+	_expect(controller.dialog.size.x >= 540 and controller.dialog.size.x <= 560, "dialog width should be near 540, got: %d" % controller.dialog.size.x, results)
+	_expect(controller.dialog.size.y < 400, "dialog height should not be inflated (got: %d, expected < 400)" % controller.dialog.size.y, results)
+	
+	var ok_btn = controller.dialog.get_ok_button()
+	var cancel_btn = controller.dialog.get_cancel_button()
+	_expect(ok_btn != null and ok_btn.visible, "dialog OK button should be visible", results)
+	_expect(cancel_btn != null and cancel_btn.visible, "dialog Cancel button should be visible", results)
+	
+	controller.dialog.hide()
+	
+	var long_slug = "a-very-long-project-repository-name-that-would-previously-stretch-horizontally-beyond-screen-bounds"
+	controller._show_collision_dialog("user://test_projects", long_slug)
+	_expect(controller.collision_dialog.visible == true, "collision_dialog should be visible when shown", results)
+	_expect(controller.collision_dialog.size.x >= 480 and controller.collision_dialog.size.x <= 500, "collision_dialog width should be bounded near 480, got: %d" % controller.collision_dialog.size.x, results)
+	_expect(controller.collision_dialog.size.y >= 160 and controller.collision_dialog.size.y <= 320, "collision_dialog height should be bounded, got: %d" % controller.collision_dialog.size.y, results)
+	
+	var coll_ok = controller.collision_dialog.get_ok_button()
+	var coll_cancel = controller.collision_dialog.get_cancel_button()
+	_expect(coll_ok != null and coll_ok.visible, "collision_dialog Continue button should be visible", results)
+	_expect(coll_cancel != null and coll_cancel.visible, "collision_dialog Cancel button should be visible", results)
+	
+	controller.collision_dialog.hide()
 	controller.free_nodes()
 	root.free()

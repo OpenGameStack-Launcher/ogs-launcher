@@ -20,6 +20,7 @@ signal tool_view_requested(tool_id: String, tool_version: String)
 
 ## UI Nodes for Main Clone Dialog
 var dialog: ConfirmationDialog
+var dialog_margin_container: MarginContainer
 var header_label: Label
 var url_label: Label
 var url_edit: LineEdit
@@ -35,6 +36,7 @@ var missing_git_dialog: ConfirmationDialog
 
 ## UI Nodes for Folder Collision Prompt
 var collision_dialog: ConfirmationDialog
+var collision_margin_container: MarginContainer
 var collision_label: Label
 var collision_folder_edit: LineEdit
 var collision_error_label: Label
@@ -130,6 +132,7 @@ func show_clone_dialog(primary_projects_folder: String = "") -> void:
 	if ok_btn != null:
 		ok_btn.disabled = true
 	_ensure_dialog_in_tree(dialog)
+	dialog.reset_size()
 	dialog.size = Vector2i(540, 280)
 	dialog.popup_centered(Vector2i(540, 280))
 	if url_edit.is_inside_tree():
@@ -163,12 +166,19 @@ func _build_ui() -> void:
 	dialog.cancel_button_text = "Cancel"
 	dialog.dialog_hide_on_ok = false
 	
+	dialog_margin_container = MarginContainer.new()
+	dialog_margin_container.add_theme_constant_override("margin_left", 10)
+	dialog_margin_container.add_theme_constant_override("margin_top", 10)
+	dialog_margin_container.add_theme_constant_override("margin_right", 10)
+	dialog_margin_container.add_theme_constant_override("margin_bottom", 10)
+	
 	var vbox = VBoxContainer.new()
 	vbox.add_theme_constant_override("separation", 8)
 	
 	header_label = Label.new()
 	header_label.text = "Clone a remote Git repository. The repository must be an OGS project containing a valid stack.json at its root."
 	header_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	header_label.custom_minimum_size = Vector2(480, 0)
 	vbox.add_child(header_label)
 	
 	url_label = Label.new()
@@ -201,6 +211,7 @@ func _build_ui() -> void:
 	lbl_status = Label.new()
 	lbl_status.text = ""
 	lbl_status.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	lbl_status.custom_minimum_size = Vector2(480, 0)
 	vbox.add_child(lbl_status)
 	
 	progress_bar = ProgressBar.new()
@@ -209,7 +220,8 @@ func _build_ui() -> void:
 	progress_bar.visible = false
 	vbox.add_child(progress_bar)
 	
-	dialog.add_child(vbox)
+	dialog_margin_container.add_child(vbox)
+	dialog.add_child(dialog_margin_container)
 	
 	dialog.confirmed.connect(_on_clone_pressed)
 	dialog.canceled.connect(_on_dialog_canceled)
@@ -240,11 +252,19 @@ func _build_ui() -> void:
 	collision_dialog.cancel_button_text = "Cancel"
 	collision_dialog.dialog_hide_on_ok = false
 	
+	collision_margin_container = MarginContainer.new()
+	collision_margin_container.add_theme_constant_override("margin_left", 10)
+	collision_margin_container.add_theme_constant_override("margin_top", 10)
+	collision_margin_container.add_theme_constant_override("margin_right", 10)
+	collision_margin_container.add_theme_constant_override("margin_bottom", 10)
+	
 	var coll_vbox = VBoxContainer.new()
 	coll_vbox.add_theme_constant_override("separation", 8)
 	
 	collision_label = Label.new()
 	collision_label.text = "A folder with this name already exists in the destination folder. Choose a new name for the project folder:"
+	collision_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	collision_label.custom_minimum_size = Vector2(440, 0)
 	coll_vbox.add_child(collision_label)
 	
 	collision_folder_edit = LineEdit.new()
@@ -254,9 +274,12 @@ func _build_ui() -> void:
 	
 	collision_error_label = Label.new()
 	collision_error_label.text = ""
+	collision_error_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
+	collision_error_label.custom_minimum_size = Vector2(440, 0)
 	coll_vbox.add_child(collision_error_label)
 	
-	collision_dialog.add_child(coll_vbox)
+	collision_margin_container.add_child(coll_vbox)
+	collision_dialog.add_child(collision_margin_container)
 	collision_dialog.confirmed.connect(_on_collision_confirmed)
 	collision_dialog.canceled.connect(_on_collision_canceled)
 
@@ -337,6 +360,7 @@ func _show_collision_dialog(dest_root: String, slug: String) -> void:
 	if ok_btn != null:
 		ok_btn.disabled = false
 	_ensure_dialog_in_tree(collision_dialog)
+	collision_dialog.reset_size()
 	collision_dialog.size = Vector2i(480, 160)
 	collision_dialog.popup_centered(Vector2i(480, 160))
 	if collision_folder_edit.is_inside_tree():
@@ -500,6 +524,7 @@ func free_nodes() -> void:
 			dialog.get_parent().remove_child(dialog)
 		dialog.free()
 		dialog = null
+	dialog_margin_container = null
 	if missing_git_dialog != null and is_instance_valid(missing_git_dialog) and not missing_git_dialog.is_queued_for_deletion():
 		if missing_git_dialog.get_parent() != null:
 			missing_git_dialog.get_parent().remove_child(missing_git_dialog)
@@ -510,3 +535,4 @@ func free_nodes() -> void:
 			collision_dialog.get_parent().remove_child(collision_dialog)
 		collision_dialog.free()
 		collision_dialog = null
+	collision_margin_container = null
