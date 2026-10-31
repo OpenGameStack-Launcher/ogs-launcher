@@ -81,6 +81,11 @@ func setup(deps: UIDeps, tools_controller: ToolsController, progress_controller:
 	if _ui != null:
 		if _ui.remove_tool_dialog != null:
 			_ui.remove_tool_dialog.confirmed.connect(_on_remove_tool_confirmed)
+		if _ui.remove_tool_status_label != null:
+			_ui.remove_tool_status_label.visible = false
+			_ui.remove_tool_status_label.text = ""
+		if _ui.remove_tool_progress_bar != null:
+			_ui.remove_tool_progress_bar.visible = false
 		if _ui.browse_available_tools_button == null and _ui.installed_empty_state != null:
 			_ui.browse_available_tools_button = _ui.installed_empty_state.find_child("BrowseAvailableToolsButton", true, false) as Button
 		if _ui.browse_available_tools_button != null and not _ui.browse_available_tools_button.pressed.is_connected(_on_browse_available_tools_pressed):
@@ -444,17 +449,21 @@ func _on_remove_tool_pressed(tool_id: String, version: String) -> void:
 	removal_tool_id = tool_id
 	removal_tool_version = version
 	_ui.remove_tool_confirmation_label.text = "Remove %s %s from the OGS library?\nThis deletes its installed files." % [ToolCategoryMapper.get_display_name(tool_id), version]
-	_ui.remove_tool_status_label.text = "Ready to remove."
+	_ui.remove_tool_status_label.visible = false
+	_ui.remove_tool_status_label.text = ""
 	_ui.remove_tool_progress_bar.visible = false
 	_ui.remove_tool_progress_bar.indeterminate = false
 	_ui.remove_tool_dialog.get_ok_button().disabled = false
 	_ui.remove_tool_dialog.get_cancel_button().disabled = false
-	_ui.remove_tool_dialog.popup_centered_ratio(0.4)
+	if _ui.remove_tool_dialog.is_inside_tree():
+		_ui.remove_tool_dialog.size = Vector2i(420, 150)
+		_ui.remove_tool_dialog.popup_centered(Vector2i(420, 150))
 
 func _on_remove_tool_confirmed() -> void:
 	if removal_tool_id.is_empty() or removal_tool_version.is_empty(): return
 	_ui.remove_tool_dialog.get_ok_button().disabled = true
 	_ui.remove_tool_dialog.get_cancel_button().disabled = true
+	_ui.remove_tool_status_label.visible = true
 	_ui.remove_tool_status_label.text = "Removing %s %s..." % [ToolCategoryMapper.get_display_name(removal_tool_id), removal_tool_version]
 	_ui.remove_tool_progress_bar.visible = true
 	_ui.remove_tool_progress_bar.indeterminate = true
@@ -482,12 +491,14 @@ func _on_tool_removal_finished(result: Dictionary) -> void:
 	_ui.remove_tool_progress_bar.visible = false
 	_ui.remove_tool_dialog.get_cancel_button().disabled = false
 	if result.get("success", false):
+		_ui.remove_tool_status_label.visible = true
 		_ui.remove_tool_status_label.text = "Removal complete."
 		_ui.remove_tool_dialog.hide()
 		populate_tools_ui()
 		if _projects_controller != null:
 			_projects_controller.refresh_project_tools_state()
 	else:
+		_ui.remove_tool_status_label.visible = true
 		_ui.remove_tool_status_label.text = "Removal failed: %s" % result.get("error_message", "Unknown error")
 		_ui.remove_tool_dialog.get_ok_button().disabled = false
 

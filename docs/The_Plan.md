@@ -526,6 +526,13 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Enabled `clear_button_enabled = true` on `ProjectsRootPath`, `MirrorRootPath`, and `MirrorRepoPath` LineEdit controls.
 - Added comprehensive assertions in `tests/main_scene_tests.gd` and updated `tests/startup_tests.gd` (38 test suites passing, 2027 total tests with zero failures).
 
+**Compact Confirmation Dialog Sizing and New File Input Validation (Oct 31, 2026):**
+- Standardized modal confirmation and creation dialogs (NewProjectDialog, RemoveProjectDialog, RemoveToolDialog, and NewFileDialog) with compact, content-fitted dimensions (420x150px) and 16px horizontal / 12px vertical internal content margins.
+- Cleaned up RemoveToolDialog: status label and progress bar default to hidden upon dialog open and reveal only while tool removal is actively underway or upon removal failure.
+- Enhanced NewFileDialog: connected input validation disabling the confirm button on empty or whitespace input, and dynamically updated instruction label to preview target subdirectories and inferred file extensions based on active explorer selection or project toolchain.
+- Enhanced NewProjectDialog: disabled confirm button on empty input and added empty-input guard in confirmation handler.
+- Added automated scene test coverage in `tests/projects_controller_scene_tests.gd` and `tests/tools_page_scene_tests.gd` (38 test suites passing, 2076 total tests with zero failures).
+
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
 - Collapsible UI sections for scalability

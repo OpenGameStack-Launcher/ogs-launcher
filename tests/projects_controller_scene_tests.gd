@@ -65,6 +65,9 @@ func run() -> Dictionary:
 	_test_project_details_split_container_and_explorer_label(results)
 	_test_contextual_launch_button_states_and_transitions(results)
 	_test_offline_policy_toggles_and_persistence(results)
+	_test_project_dialogs_compact_dimensions_and_margins(results)
+	_test_dialog_input_validation_empty_guards(results)
+	_test_new_file_dialog_instruction_preview(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -101,7 +104,14 @@ func _build_controller(storage_path: String) -> Dictionary:
 	var new_folder_btn = Button.new()
 	var new_file_btn = Button.new()
 	var new_file_dialog = ConfirmationDialog.new()
+	var new_file_vbox = VBoxContainer.new()
+	new_file_vbox.name = "VBoxContainer"
+	var new_file_instructions = Label.new()
+	new_file_instructions.name = "InstructionsLabel"
+	new_file_vbox.add_child(new_file_instructions)
 	var new_file_name = LineEdit.new()
+	new_file_vbox.add_child(new_file_name)
+	new_file_dialog.add_child(new_file_vbox)
 	var add_tool_button = Button.new()
 	var remove_tool_button = Button.new()
 	var open_button = Button.new()
@@ -232,6 +242,11 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"seal_btn": seal_button,
 		"launch_btn": launch_button,
 		"new_name": new_project_name,
+		"new_project_dialog": new_project_dialog,
+		"new_project_name": new_project_name,
+		"new_file_dialog": new_file_dialog,
+		"new_file_vbox": new_file_vbox,
+		"new_file_instructions": new_file_instructions,
 		"new_file_name": new_file_name,
 		"remove_dialog": remove_dialog,
 		"instructions_label": instructions_label,
@@ -248,7 +263,7 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"project_offline_status_label": offline_status_lbl,
 		"project_offline_mode_helper_label": offline_mode_helper_lbl,
 		"project_force_offline_helper_label": force_offline_helper_lbl,
-		"nodes": [add_button, add_remote_button, new_button, open_button, remove_button, seal_button, projects_list, search_edit, empty_state, status_label, offline_label, explorer_title_lbl, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_vbox, instructions_label, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button, offline_mode_cb, force_offline_cb, offline_status_lbl, offline_mode_helper_lbl, force_offline_helper_lbl]
+		"nodes": [add_button, add_remote_button, new_button, open_button, remove_button, seal_button, projects_list, search_edit, empty_state, status_label, offline_label, explorer_title_lbl, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_vbox, new_file_instructions, new_file_name, add_tool_button, remove_tool_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_vbox, instructions_label, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button, offline_mode_cb, force_offline_cb, offline_status_lbl, offline_mode_helper_lbl, force_offline_helper_lbl]
 	}
 
 func _cleanup_nodes(nodes: Array, controller: ProjectsController = null) -> void:
@@ -1984,6 +1999,154 @@ func _test_offline_policy_toggles_and_persistence(results: Dictionary) -> void:
 	_cleanup_dir_recursive(test_dir)
 	_cleanup_registry(storage_path)
 	OfflineEnforcer.reset()
+
+func _test_project_dialogs_compact_dimensions_and_margins(results: Dictionary) -> void:
+	## Verifies compact dimensions and internal content margins for confirmation/new file/new project dialogs in main.tscn.
+	var scene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for dialog layout test", results)
+	if scene == null:
+		return
+	var instance: Node = scene.instantiate()
+	
+	# 1. RemoveProjectDialog
+	var remove_proj_dialog: ConfirmationDialog = instance.get_node_or_null("RemoveProjectDialog") as ConfirmationDialog
+	_expect(remove_proj_dialog != null, "RemoveProjectDialog should exist", results)
+	if remove_proj_dialog != null:
+		_expect(remove_proj_dialog.min_size == Vector2i(420, 150), "RemoveProjectDialog min_size should be 420x150, got %s" % str(remove_proj_dialog.min_size), results)
+		_expect(remove_proj_dialog.size == Vector2i(420, 150), "RemoveProjectDialog size should be 420x150, got %s" % str(remove_proj_dialog.size), results)
+
+	# 2. NewProjectDialog
+	var new_proj_dialog: ConfirmationDialog = instance.get_node_or_null("NewProjectDialog") as ConfirmationDialog
+	_expect(new_proj_dialog != null, "NewProjectDialog should exist", results)
+	if new_proj_dialog != null:
+		_expect(new_proj_dialog.min_size == Vector2i(420, 150), "NewProjectDialog min_size should be 420x150, got %s" % str(new_proj_dialog.min_size), results)
+		_expect(new_proj_dialog.size == Vector2i(420, 150), "NewProjectDialog size should be 420x150, got %s" % str(new_proj_dialog.size), results)
+		var vbox: VBoxContainer = new_proj_dialog.get_node_or_null("VBoxContainer") as VBoxContainer
+		_expect(vbox != null, "NewProjectDialog VBoxContainer should exist", results)
+		if vbox != null:
+			_expect(vbox.offset_left == 16.0, "NewProjectDialog VBoxContainer offset_left should be 16px, got %f" % vbox.offset_left, results)
+			_expect(vbox.offset_top == 12.0, "NewProjectDialog VBoxContainer offset_top should be 12px, got %f" % vbox.offset_top, results)
+			_expect(vbox.offset_right == -16.0, "NewProjectDialog VBoxContainer offset_right should be -16px, got %f" % vbox.offset_right, results)
+
+	# 3. NewFileDialog
+	var new_file_dialog: ConfirmationDialog = instance.get_node_or_null("NewFileDialog") as ConfirmationDialog
+	_expect(new_file_dialog != null, "NewFileDialog should exist", results)
+	if new_file_dialog != null:
+		_expect(new_file_dialog.min_size == Vector2i(420, 150), "NewFileDialog min_size should be 420x150, got %s" % str(new_file_dialog.min_size), results)
+		_expect(new_file_dialog.size == Vector2i(420, 150), "NewFileDialog size should be 420x150, got %s" % str(new_file_dialog.size), results)
+		var vbox: VBoxContainer = new_file_dialog.get_node_or_null("VBoxContainer") as VBoxContainer
+		_expect(vbox != null, "NewFileDialog VBoxContainer should exist", results)
+		if vbox != null:
+			_expect(vbox.offset_left == 16.0, "NewFileDialog VBoxContainer offset_left should be 16px, got %f" % vbox.offset_left, results)
+			_expect(vbox.offset_top == 12.0, "NewFileDialog VBoxContainer offset_top should be 12px, got %f" % vbox.offset_top, results)
+			_expect(vbox.offset_right == -16.0, "NewFileDialog VBoxContainer offset_right should be -16px, got %f" % vbox.offset_right, results)
+
+	instance.free()
+
+func _test_dialog_input_validation_empty_guards(results: Dictionary) -> void:
+	## Verifies that NewFileDialog and NewProjectDialog disable confirm buttons on empty input.
+	var storage_path := "user://test_dialog_input_guards.json"
+	_cleanup_registry(storage_path)
+	var ctx := _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	
+	# Test NewProjectDialog confirm button state
+	var new_project_dialog: ConfirmationDialog = ctx["new_project_dialog"]
+	var new_project_name: LineEdit = ctx["new_project_name"]
+	var create_btn: Button = new_project_dialog.get_ok_button()
+	_expect(create_btn != null, "NewProjectDialog should have an OK/Create button", results)
+	
+	controller._on_new_project_pressed()
+	_expect(create_btn.disabled == true, "NewProjectDialog Create button should start disabled", results)
+	
+	new_project_name.text = "   "
+	controller._on_new_project_name_changed(new_project_name.text)
+	_expect(create_btn.disabled == true, "NewProjectDialog Create button should remain disabled on whitespace input", results)
+	
+	new_project_name.text = "ValidProjectName"
+	controller._on_new_project_name_changed(new_project_name.text)
+	_expect(create_btn.disabled == false, "NewProjectDialog Create button should enable on valid text", results)
+	
+	new_project_name.text = ""
+	controller._on_new_project_name_changed(new_project_name.text)
+	_expect(create_btn.disabled == true, "NewProjectDialog Create button should disable again when cleared", results)
+	
+	# Test NewFileDialog confirm button state
+	var new_file_dialog: ConfirmationDialog = ctx["new_file_dialog"]
+	var new_file_name: LineEdit = ctx["new_file_name"]
+	var file_ok_btn: Button = new_file_dialog.get_ok_button()
+	_expect(file_ok_btn != null, "NewFileDialog should have an OK/Create button", results)
+	
+	controller._on_new_file_pressed()
+	_expect(file_ok_btn.disabled == true, "NewFileDialog Create button should start disabled", results)
+	
+	new_file_name.text = "   "
+	controller._on_new_file_name_changed(new_file_name.text)
+	_expect(file_ok_btn.disabled == true, "NewFileDialog Create button should remain disabled on whitespace input", results)
+	
+	new_file_name.text = "my_character"
+	controller._on_new_file_name_changed(new_file_name.text)
+	_expect(file_ok_btn.disabled == false, "NewFileDialog Create button should enable on valid text", results)
+	
+	new_file_name.text = ""
+	controller._on_new_file_name_changed(new_file_name.text)
+	_expect(file_ok_btn.disabled == true, "NewFileDialog Create button should disable again when cleared", results)
+	
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_registry(storage_path)
+
+func _test_new_file_dialog_instruction_preview(results: Dictionary) -> void:
+	## Verifies that NewFileDialog updates its instruction label with target folder and extension hints.
+	var storage_path := "user://test_new_file_instruction_preview.json"
+	var projects_root := "user://test_new_file_preview_root_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(projects_root)
+	
+	var ctx := _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	controller.set_projects_root_path_for_tests(projects_root)
+	controller._create_new_project_from_name("PreviewTestProject")
+	
+	# Add blender tool to project
+	controller.tool_manager.add_tool_to_current_project("blender", "4.2.0")
+	var project_dir: String = controller.current_project_dir
+	
+	# Create assets/models folder
+	var models_dir: String = project_dir.path_join("assets").path_join("models")
+	DirAccess.make_dir_recursive_absolute(models_dir)
+	
+	# Load into explorer tree
+	var explorer = controller.get_meta("project_explorer_instance")
+	explorer.load_project(project_dir, ["blender"])
+	
+	# Find and select the assets/models folder in tree
+	var root_item: TreeItem = explorer.tree.get_root()
+	var models_item: TreeItem = null
+	var stack: Array[TreeItem] = [root_item]
+	while not stack.is_empty():
+		var curr = stack.pop_back()
+		if curr == null: continue
+		var meta = curr.get_metadata(0)
+		if meta is Dictionary and String(meta.get("path", "")).replace("\\", "/").ends_with("assets/models"):
+			models_item = curr
+			break
+		for child in curr.get_children():
+			stack.push_back(child)
+			
+	if models_item != null:
+		models_item.select(0)
+		
+	controller._on_new_file_pressed()
+	var instructions_label: Label = ctx["new_file_instructions"] as Label
+	_expect(instructions_label != null, "NewFileDialog InstructionsLabel should exist", results)
+	if instructions_label != null:
+		_expect(instructions_label.text.find(".blend") != -1, "InstructionsLabel should hint .blend extension (got: %s)" % instructions_label.text, results)
+		_expect(instructions_label.text.find("assets/models/") != -1, "InstructionsLabel should hint target subdirectory assets/models/ (got: %s)" % instructions_label.text, results)
+		
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(projects_root)
+	_cleanup_registry(storage_path)
+
 
 
 

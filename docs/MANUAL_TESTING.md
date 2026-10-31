@@ -1463,9 +1463,69 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 26: Compact Confirmation Dialog Sizing, Status Visibility, and Input Validation
+
+**Objective:** Verify that confirmation and creation dialogs (NewProjectDialog, RemoveProjectDialog, RemoveToolDialog, and NewFileDialog) open with compact content-fitted dimensions (420x150px) and 16px horizontal / 12px vertical internal margins, that RemoveToolDialog hides status and progress until removal is underway, that NewFileDialog and NewProjectDialog confirm buttons start disabled and enforce non-empty input, and that NewFileDialog instruction text previews inferred extensions and target subdirectories.
+
+**Steps:**
+1. Launch OGS Launcher in editor mode or standalone.
+2. Projects Page - New Project Dialog:
+   - Click "New Project" in the Projects page toolbar.
+   - Verify the dialog opens with compact dimensions (420x150px) rather than an oversized viewport ratio.
+   - Verify internal padding (16px horizontal, 12px vertical) keeps text and input fields from sitting flush against the dialog borders.
+   - Verify the "Create" button starts disabled.
+   - Type whitespace (spaces) into the project name field: verify the "Create" button remains disabled.
+   - Type a valid project name: verify the "Create" button becomes enabled.
+   - Backspace to empty: verify the "Create" button disables again.
+   - Cancel and close the dialog.
+3. Projects Page - Remove Project Dialog:
+   - Select a project in the Project Library list (e.g. `samples/sample_project`).
+   - Click "Remove Project".
+   - Verify the confirmation dialog opens with compact 420x150px dimensions and centered content.
+   - Verify "Remove" and "Cancel" buttons are aligned properly without excessive vertical dead space.
+   - Cancel and close the dialog.
+4. Tools Page - Remove Tool Dialog:
+   - Navigate to the Tools page and select the "Installed" tab (with at least one installed tool).
+   - Click "Remove" on an installed tool card.
+   - Verify the dialog opens with compact 420x150px dimensions and 16px/12px internal content margins.
+   - Verify that neither the status label nor the progress bar is visible on initial open.
+   - Verify the "Remove" button is enabled and "Cancel" button is accessible.
+   - (Optional) Confirm removal: verify the status label appears ("Removing <Tool> <Version>...") and the progress bar animates while removal is underway.
+   - Cancel or allow removal to finish.
+5. Project Details - New File Dialog:
+   - Return to the Projects page, open a project (e.g., `samples/sample_project`), and switch to Tab 1 ("Project Details").
+   - In the Project Explorer tree, select a subfolder (e.g. `assets/models` or a tool folder).
+   - Click "New File" in the explorer toolbar.
+   - Verify the dialog opens with compact 420x150px dimensions.
+   - Verify the instructions label dynamically previews the target folder and inferred file extension (e.g. "Enter a file name (will be created as <name>.blend in assets/models/):").
+   - Verify the "Create" button starts disabled.
+   - Type whitespace into the file name field: verify the "Create" button remains disabled.
+   - Type a file name: verify the "Create" button becomes enabled.
+   - Cancel and close the dialog.
+
+**Expected Results:**
+- [x] NewProjectDialog, RemoveProjectDialog, RemoveToolDialog, and NewFileDialog open at compact 420x150px dimensions.
+- [x] Internal margins (16px horizontal, 12px vertical) prevent content from sitting flush against dialog borders.
+- [x] RemoveToolDialog status label and progress bar remain hidden until removal begins.
+- [x] NewProjectDialog and NewFileDialog confirm buttons start disabled and remain disabled on empty/whitespace input.
+- [x] NewFileDialog instructions label displays dynamic hints for target folder and inferred extension.
+
+**Pass Criteria:**
+- Dialog windows present a compact, balanced layout without excessive empty vertical space.
+- Action buttons validate user input before enabling confirmation.
+- Removal status text appears only when actively performing work or reporting errors.
+
+**If test fails:**
+- Verify `main.tscn` dialog sizing (`size = Vector2i(420, 150)`) and VBoxContainer offsets (`16, 12, -16, -48`).
+- Check `ProjectCreationDialogController._on_new_project_pressed()` and `_on_new_project_name_changed()`.
+- Check `ProjectsController._on_new_file_pressed()` instruction formatting and `_on_new_file_name_changed()`.
+- Check `ToolsPageController._on_remove_tool_pressed()` status label visibility handling.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-25, fill in this table:
+After completing Editor Tests 1-26, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -1496,6 +1556,7 @@ After completing Editor Tests 1-25, fill in this table:
 | 23: Tools Page Cards & Badges | ✅/⚠️/❌ | | |
 | 24: Tools Page Empty Categories & State | ✅/⚠️/❌ | | |
 | 25: Settings Cards & Inputs | ✅/⚠️/❌ | | |
+| 26: Compact Dialogs & Input Validation | ✅/⚠️/❌ | | |
 
 ---
 

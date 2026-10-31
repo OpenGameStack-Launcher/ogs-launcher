@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 2027
+tests passed: 2076
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -391,6 +391,9 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Resizable split container and explorer label truncation: verifies VSplitContainer presence dividing ToolchainSection (minimum height 120px) and ExplorerSection (minimum height 140px), split offset, and ExplorerLabel ellipsis clipping properties (`clip_text` and `text_overrun_behavior = 3`)
   - Contextual launch button states and transitions: verifies dynamic prompt text ("Select a Tool to Launch"), toolchain selection formatting ("Launch <Tool> <Version>"), explorer selection formatting ("Open <filename> in <Tool>"), double-click activation, empty-click deselection, and launch state resets
   - Offline policy toggles and persistence: verifies that offline policy toggles in Project Details initialize disabled, activate and reflect project config on selection, synchronize status label with normalized path, emit `project_selection_changed` and `offline_state_changed`, persist `offline_mode` and `force_offline` updates to `ogs_config.json` on disk, reset on project removal, and restore toggle states on project reload
+  - Compact confirmation and creation dialog layouts: verifies compact 420x150 dimensions and 16px horizontal / 12px vertical internal content margins for NewProjectDialog, RemoveProjectDialog, and NewFileDialog
+  - Input validation and empty-input guards: verifies that NewProjectDialog and NewFileDialog disable confirm buttons on empty or whitespace input and enable upon typing valid names
+  - New file instruction previews: verifies that NewFileDialog dynamically updates its instruction label with target subdirectories and inferred file extensions based on active explorer selection or project toolchain
 
 - **[tests/custom_item_list_tests.gd](tests/custom_item_list_tests.gd)** - Validates `CustomItemList` structured project cards, visual hierarchy, badge formatting, selection styling, and backward compatibility (6 tests).
   - Dedicated card surface with distinct background (`Color(0.14, 0.16, 0.20)`) and 1px border (`Color(0.22, 0.26, 0.32)`)
@@ -453,6 +456,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Tool cards assign dynamic theme variations: `PrimaryButton` for download buttons, `DangerButton` for installed tool removal buttons, and `SecondaryButton` for active download cancel buttons
   - Installed tab empty-state nodes: verifies `InstalledEmptyState` container, `InstalledEmptyTitle` ("No Tools Installed Yet"), `InstalledEmptyDescription` (mentioning Central Library), and `BrowseAvailableToolsButton` (`PrimaryButton` variation) exist in `main.tscn`
   - Dynamic category collapse and empty state integration: verifies that populating tools with 0 installed tools shows `InstalledEmptyState`, hides `InstalledContent`, and hides all empty category sections and dividers in `main.tscn`
+  - RemoveToolDialog compact layout and status visibility: verifies compact 420x150 sizing, 16px horizontal / 12px vertical content margins, and proper visibility transitions keeping status text and progress bar hidden until removal is actively underway or fails
 
 - **[tests/project_explorer_tests.gd](tests/project_explorer_tests.gd)** - Validates ProjectExplorer directory filtering, pruning, selection, tool icon rendering, stack-aware VSCodium mappings, and double-click activation (916 total passed tests across runner suites).
   - Non-relevant and empty folders excluded from tree
