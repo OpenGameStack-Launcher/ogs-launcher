@@ -76,8 +76,8 @@ python mcp_client.py eval "return get_viewport().get_visible_rect().size"
 After running `python mcp_client.py screenshot`, use the `read_file` tool on `screenshot.png` to visually inspect the rendered frame and confirm the application is visually working right (no text clipping, overlapping controls, broken icons, or misaligned dialogs).
 
 ### 5. Mandatory Cleanup (Release Windows File Locks)
-**CRITICAL:** As soon as visual QA is complete, you **must** terminate the background Godot process so it releases port `9090` and unlocks `.godot/` and `.import/` files on Windows (otherwise `git worktree remove` or branch switches will fail):
+**CRITICAL:** As soon as visual QA is complete, you **must** terminate the background Godot process so it releases port `9090` and unlocks `.godot/` and `.import/` files on Windows (otherwise `git worktree remove` or branch switches will fail), and remove temporary screenshots:
 ```powershell
 Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue
+Get-ChildItem -Path screenshot*, agent_screenshot* -ErrorAction SilentlyContinue | Remove-Item -Force
 ```
-Remove any temporary screenshot files if needed, though `screenshot.png` and `agent_screenshot.png` are gitignored.

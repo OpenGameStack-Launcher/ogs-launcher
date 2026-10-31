@@ -379,6 +379,12 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Updated `.agents/skills/release-management/SKILL.md` for remote GitHub Actions dispatch, liveness monitoring, and curated release note drafting.
 - Added offline test suite `tests/release_packaging_tests.gd` covering export preset invariants, strict semver regex, packaging script contract, logo icon asset, and workflow configurations (33 test suites passing, 969 total tests with zero failures).
 
+**Godot MCP Visual QA Bridge and Agentic UI Testing (Oct 31, 2026):**
+- Implemented debug-only `McpInteractionServer` autoload (`autoloads/mcp_interaction_server.gd`) listening on loopback `127.0.0.1:9090` (configurable via `GODOT_MCP_PORT`), inert in release builds and auto-disabled in headless mode.
+- Created zero-dependency Python CLI helper (`mcp_client.py`) for scene tree inspection, UI control bounding rect queries, input simulation, and viewport screenshot capture (`screenshot.png`).
+- Added autonomous visual QA skill (`.agents/skills/mcp-visual-qa/SKILL.md`) and updated agent workflows across issues, PR review, and code review.
+- Added startup test suite coverage in `tests/startup_tests.gd` (33 test suites passing, 975 total tests with zero failures).
+
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
 - Collapsible UI sections for scalability

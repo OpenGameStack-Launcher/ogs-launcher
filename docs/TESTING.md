@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 969
+tests passed: 975
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -379,8 +379,9 @@ python mcp_client.py get_scene_tree
 
 # 4. Inspect screenshot.png to confirm clean layout without clipping or overlap
 
-# 5. Terminate the background Godot process to release port 9090 and Windows file locks
+# 5. Terminate the background Godot process to release port 9090 and Windows file locks, and clean up temporary screenshots
 Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue
+Get-ChildItem -Path screenshot*, agent_screenshot* -ErrorAction SilentlyContinue | Remove-Item -Force
 ```
 
 ## Test Structure
