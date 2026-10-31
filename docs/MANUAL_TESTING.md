@@ -588,9 +588,49 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 12: Stack-Aware Project Explorer VSCodium Mappings and Double-Click Launch
+
+**Objective:** Verify that Project Explorer is stack-aware: displaying developer script, shader, text, and structured data files with the VSCodium icon when VSCodium is pinned, pruning text/script files in Godot-only stacks, suppressing internal engine and launcher metadata files, launching files immediately on double-click, and creating default text files when VSCodium is present.
+
+**Steps:**
+1. Select or create a project with VSCodium pinned in its stack (e.g. Godot + VSCodium).
+2. Inspect the Project Explorer tree view on the right:
+   - Confirm non-excluded text, script, shader, and data files (`.gd`, `.cs`, `.gdshader`, `.shader`, `.txt`, `.md`, `.csv`, `.json`, `.yaml`, `.yml`, `.toml`) appear in the tree.
+   - Confirm each recognized file displays the official VSCodium icon (`Images/tools/VSCodium.png`) at a max width of 20px.
+   - Confirm internal launcher and engine metadata files (`stack.json`, `ogs_config.json`, `ogs_metadata.json`, `.import`, `.uid`, `.cfg`, `.tres`, `.tscn`) remain strictly hidden.
+3. Double-click any recognized text or script file (e.g. `main.gd` or `notes.txt`) in the Project Explorer:
+   - Confirm the file is activated and VSCodium launches targeting that file.
+4. Switch to a Godot-only project (a project without VSCodium in its stack):
+   - Confirm that `.gd`, `.txt`, `.md`, and `.json` files are pruned from the tree.
+   - Confirm only `project.godot` and binary asset tool files/folders appear in the tree.
+5. In a project with VSCodium, click "New File" and enter a name with no extension (e.g. `todo_notes`):
+   - Confirm `.txt` is automatically appended to the filename.
+   - Confirm an empty file is created on disk at the target folder.
+   - Confirm VSCodium launches targeting the newly created file.
+
+**Expected Results:**
+- [x] Text, script, shader, and data files display with the VSCodium icon when VSCodium is in the stack.
+- [x] Internal launcher and engine metadata files remain hidden even when `.json` is supported.
+- [x] Godot-only projects prune text and script files to prevent unsupported tool associations.
+- [x] Double-clicking any launchable file in Project Explorer immediately triggers tool launch targeting that file.
+- [x] Creating a new file without an extension in a VSCodium stack defaults to `.txt` and launches VSCodium.
+
+**Pass Criteria:**
+- Project Explorer accurately reflects stack capabilities.
+- Double-click file activation triggers tool launch.
+- Metadata files are never surfaced.
+- Text file creation defaults to `.txt` with VSCodium.
+
+**If test fails:**
+- Check `scripts/tools/file_type_mapper.gd` for `VSCODIUM_EXTENSIONS`, `EXCLUDED_FILENAMES`, and `EXCLUDED_EXTENSIONS`.
+- Verify `scripts/projects/project_explorer.gd` signal `file_activated` emission in `_on_item_activated()`.
+- Check `scripts/projects/projects_controller.gd` connection `_on_explorer_file_activated()` and `_on_new_file_confirmed()`.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-11, fill in this table:
+After completing Editor Tests 1-12, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -607,6 +647,7 @@ After completing Editor Tests 1-11, fill in this table:
 | 9: Offline Tool Launch | ✅/⚠️/❌ | | |
 | 10: Code Tooling & Launch | ✅/⚠️/❌ | | |
 | 11: Project Tools List Launch | ✅/⚠️/❌ | | |
+| 12: Stack-Aware Explorer & Double-Click | ✅/⚠️/❌ | | |
 
 ---
 
@@ -983,4 +1024,4 @@ After completing all editor tests, move to installed-build testing with same rep
 
 ---
 
-Last updated: **October 30, 2026** (Added Code category and Git/VSCodium verification scenarios)
+Last updated: **October 31, 2026** (Added stack-aware VSCodium explorer mappings and double-click launch scenarios)
