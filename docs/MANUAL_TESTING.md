@@ -287,6 +287,41 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 3.4: Projects Page - Selecting and Removing Missing Tools in Project Details
+
+**Objective:** Verify that single-clicking an uninstalled or missing tool in Project Details selects the row and enables "Remove Tool" and "Change Version" without navigating away from the Projects page, while double-clicking or launching triggers download navigation to the Tools page.
+
+**Steps:**
+1. Select a project in Project Library that has at least one missing tool indicated by a warning triangle (e.g. `Blender v4.2 ⚠️`) or red X.
+2. Under the Project Details tab, locate the tools list (`ProjectToolsList`).
+3. Single-click the missing tool row.
+4. Verify that the tool row becomes selected (highlighted) and the active view remains on the Projects page without switching to the Tools page.
+5. Verify that both the "Remove Tool" and "Change Version" buttons become enabled.
+6. Verify that any previous selection in the Project Explorer tree is cleared (mutual deselection).
+7. Click the "Launch Selected Tool" button with the missing tool still selected.
+8. Verify that the status label updates to indicate the tool is not installed, and the view navigates to the Tools page to download it.
+9. Return to the Projects page, single-click the missing tool row again, then click "Remove Tool".
+10. Confirm that the tool is removed from the project manifest and the tools list refreshes immediately.
+
+**Expected Results:**
+- [x] Single-clicking a missing tool row selects the item without triggering navigation to the Tools page.
+- [x] "Remove Tool" and "Change Version" action buttons are enabled when the missing tool row is selected.
+- [x] Mutual deselection clears the Project Explorer selection when a tool row is clicked.
+- [x] Clicking "Launch Selected Tool" on a missing tool updates the status message and navigates to the Tools page.
+- [x] Double-clicking an uninstalled tool row directly navigates to the Tools page.
+- [x] "Remove Tool" successfully removes the selected missing tool from `stack.json`.
+
+**Pass Criteria:**
+- Missing tools can be selected, reconfigured, or removed directly from Project Details without unintended view switching.
+- Double-clicking or launch actions guide the user cleanly to the Tools page.
+
+**If test fails:**
+- Verify `ProjectsController._on_tool_item_clicked()` calls `_on_tool_item_selected()` and does not emit `tool_view_requested`.
+- Verify `ProjectsController._update_tool_action_buttons()` checks valid `_selected_tool_index` regardless of installation status.
+- Verify `ProjectsController._on_launch_tool_pressed()` checks `_is_tool_installed()` and emits `_emit_tool_view_request()`.
+
+---
+
 ### Editor Test 4: Settings Page — Mirror Configuration
 
 **Objective:** Verify mirror root can be configured and status indicator updates correctly.

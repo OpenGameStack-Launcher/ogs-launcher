@@ -346,12 +346,15 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Three-button toolbar layout (Add Local Project, Add Remote Project, New Project) with equal size flags and 16px separation
   - Missing-Git detection opens guided dialog and "Go to Tools" emits navigation hook
   - Offline mode disabling and descriptive tooltip enforcement on AddRemoteProjectButton
+  - Single-clicking a missing tool row in `project_tools_list` selects it and enables Remove Tool and Change Version without emitting `tool_view_requested` or navigating away
+  - Double-clicking (`item_activated`) a missing tool row in `project_tools_list` emits `tool_view_requested` to navigate to the Tools page
+  - Clicking "Launch Selected Tool" with a missing tool selected emits `tool_view_requested` to guide the user to download it, updating the status label rather than attempting execution
 
 - **[tests/projects_page_indicators_tests.gd](tests/projects_page_indicators_tests.gd)** - Tests tool availability indicators in Projects page.
   - Tool items populated with ID and version
   - Tool availability tracking (_tool_availability dictionary)
   - Visual indicators for missing vs available tools
-  - Click-through signal emission for tool navigation
+  - Double-click and launch signal emission for tool navigation on missing tools
   - Signal integration with ToolsController for availability checking
 
 - **[tests/main_scene_tests.gd](tests/main_scene_tests.gd)** - Smoke tests for the main launcher scene.
