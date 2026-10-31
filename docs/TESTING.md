@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (27 total, 33 suites across all categories):**
+**Current unit test suites (28 total, 34 suites across all categories):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -285,6 +285,20 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Valid multi-size Windows icon file presence at `Images/logo.ico`
   - Canonical `docs/RELEASE_PACKAGING.md` presence and retirement of `docs/ALPHA_PACKAGING.md`
   - GitHub Actions CI (`.github/workflows/ci.yml`) and Release (`.github/workflows/release.yml`) configuration contracts
+
+- **[tests/remote_project_cloner_tests.gd](tests/remote_project_cloner_tests.gd)** - Validates RemoteProjectCloner service and PortableGit resolution (17 tests).
+  - Valid remote URLs accepted across https://, http:// (local LAN mirrors), ssh://, and SCP-style syntax
+  - Disallowed URLs rejected: empty strings, argument injection (- prefix), local paths, traversal sequences, file://, ext::, and shell metacharacters
+  - Repo slug extraction and sanitization across various URL formats and trailing slashes
+  - Folder collision resolution: incremental folder name suggestion (slug, slug-1, slug-2)
+  - Target path boundary validation: ensures targets stay strictly within destination root
+  - PortableGit executable resolution in Central Library and semantic version comparison
+  - Air-gap blocking: OfflineEnforcer.is_offline() blocks clone operations immediately with error code offline
+  - Two-phase clone flow with mocked commands: verifying phase, show HEAD:stack.json, and checkout phase
+  - Fallback from blobless clone (--filter=blob:none) to standard no-checkout clone
+  - Missing or invalid root stack.json manifests rejected before checkout and target directory purged safely
+  - Working tree checkout failure handling and cancellation teardown killing child process
+  - Target directory pre-existence rejection and defensive directory deletion bounded by destination root
 
 ### Scene Tests (Integration with UI)
 

@@ -715,9 +715,52 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 15: Remote Project Git Cloner Backend and URL Security Validation
+
+**Objective:** Verify that `RemoteProjectCloner` accurately resolves PortableGit from the Central Library, validates and sanitizes remote Git URLs according to strict air-gap and injection-hardening rules, extracts clean slugs, suggests collision-free folder names, and enforces two-phase manifest verification.
+
+**Steps:**
+1. Verify PortableGit discovery in Central Library:
+   - Run a test script or evaluate in headless runner: `RemoteProjectCloner.is_git_installed()`.
+   - Confirm it returns `true` when Git is extracted at `%LOCALAPPDATA%\OGS\Library\git\<version>\cmd\git.exe` (Windows) or `bin/git` (Unix/macOS).
+   - Confirm `RemoteProjectCloner.resolve_git_executable()` returns the absolute path to the binary with the highest installed semantic version.
+2. Verify remote repository URL security validation:
+   - Test valid URLs: `https://github.com/org/repo.git`, `http://localhost:3000/repo.git` (local LAN mirror), `ssh://git@github.com/org/repo.git`, and `git@github.com:org/repo.git`.
+   - Confirm all valid URLs return `valid: true`.
+   - Test disallowed URLs:
+     - Argument injection: `-u https://...` or `--upload-pack=calc.exe` (fails with `argument_injection`).
+     - Disallowed protocols: `file:///C:/path` and `ext::sh -c evil` (fails with `disallowed_protocol`).
+     - Local paths: `C:\Projects\repo`, `/var/repos/repo`, `./repo`, `../repo` (fails with `local_path`).
+     - Shell metacharacters: `https://github.com/org/repo;rm -rf /`, `https://... & echo hacked` (fails with `shell_metacharacters`).
+     - Illegal characters and control codes (fails with `illegal_characters`).
+3. Verify slug extraction and folder collision naming:
+   - Extract slug from `https://github.com/org/my-game-repo.git/` -> `my-game-repo`.
+   - Call `suggest_next_available_folder_name(dest_root, "my-game-repo")` when `my-game-repo` already exists: verify it suggests `my-game-repo-1`, then `my-game-repo-2`.
+4. Verify air-gap enforcement:
+   - Enable offline mode (`OfflineEnforcer.set_offline(true)`).
+   - Call `cloner.clone_project_async("https://github.com/org/repo.git", "repo", dest_root)`.
+   - Verify `clone_failed` signal emits with error code `offline` without spawning child processes.
+5. Verify two-phase manifest verification:
+   - When cloning a repository lacking `stack.json` at root: verify `clone_failed` emits `missing_stack_json` and the target directory is deleted safely within destination bounds.
+
+**Expected Results:**
+- [x] PortableGit executable resolves accurately to the highest installed semantic version.
+- [x] Allowed URL schemes (https, http, ssh, scp) pass validation.
+- [x] Injection attacks, disallowed protocols (file, ext), local paths, and shell metacharacters are rejected.
+- [x] Slugs and collision avoidance names generate deterministically.
+- [x] Offline mode immediately blocks clone requests without spawning network processes.
+- [x] Two-phase manifest check deletes incomplete directories when stack.json is missing or invalid.
+
+**Pass Criteria:**
+- RemoteProjectCloner passes all validation and lifecycle checks.
+- Git arguments include hardened configuration flags.
+- Cleanup never deletes outside destination root.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-14, fill in this table:
+After completing Editor Tests 1-15, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -737,6 +780,7 @@ After completing Editor Tests 1-14, fill in this table:
 | 12: Stack-Aware Explorer & Double-Click | ✅/⚠️/❌ | | |
 | 13: Debug MCP Visual QA Bridge | ✅/⚠️/❌ | | |
 | 14: Primary Projects Folder & Auto-Config | ✅/⚠️/❌ | | |
+| 15: Remote Git Cloner & URL Validation | ✅/⚠️/❌ | | |
 
 ---
 
