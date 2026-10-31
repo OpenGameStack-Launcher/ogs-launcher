@@ -2,6 +2,7 @@ extends RefCounted
 class_name ProjectCreationDialogController
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
+const PathUtils = preload("res://scripts/utils/path_utils.gd")
 
 var _pc: ProjectsController
 var _ui: ProjectsController.UIDeps
@@ -15,9 +16,9 @@ func _on_new_project_pressed() -> void:
 	_ui.new_project_name_line_edit.text = ""
 	_on_new_project_name_changed("")
 	
-	var label = _ui.new_project_dialog.get_node_or_null("VBoxContainer/InstructionsLabel")
+	var label: Label = _ui.new_project_dialog.get_node_or_null("VBoxContainer/InstructionsLabel") as Label
 	if label:
-		label.text = "Enter project name. A folder will be created under:\n%s" % _pc.registry_manager.get_primary_projects_folder()
+		label.text = "Enter project name. A folder will be created under:\n%s" % PathUtils.format_for_display(_pc.registry_manager.get_primary_projects_folder())
 		
 	_ui.new_project_dialog.popup_centered_ratio(0.4)
 	_ui.new_project_name_line_edit.grab_focus()

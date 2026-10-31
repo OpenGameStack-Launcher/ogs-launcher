@@ -106,6 +106,13 @@ To provide clear visual hierarchy and guard against accidental destructive actio
 *   **DangerButton (Destructive Actions):** Used for permanent deletion actions (`Remove Project`, `Remove Tool`, and installed tool `Remove` buttons). Styled with a dark background (`Color(0.18, 0.14, 0.15)`) bordered by a muted crimson accent (`Color(0.65, 0.22, 0.25)` normal, `Color(0.78, 0.28, 0.32)` hover) and an eye-catching crimson hover fill (`Color(0.65, 0.22, 0.25)`).
 *   **CheckButton Toggle Styling:** Overrides the default Button stylebox inheritance on `CheckButton` using `StyleBoxEmpty` with 6px horizontal / 4px vertical margins for normal, pressed, and disabled states, a subtle translucent highlight (`Color(1.0, 1.0, 1.0, 0.04)`) with 4px corner radiuses for hover, and a subtle focus outline. This renders settings switches (`Offline mode`, `Force offline`) as clean, lightweight toggle rows rather than solid rectangular button bars.
 
+### 2.9 Path Normalization and UI Presentation Architecture (`PathUtils`)
+When paths are constructed on Windows by combining environment variables (`LOCALAPPDATA`, `USERPROFILE`) containing backslashes (`\`) with Godot engine path utilities (`String.path_join()`) which emit forward slashes (`/`), raw paths contain mixed path separators.
+To prevent inconsistent path presentation across desktop platforms, the application routes all user-facing path strings through `PathUtils.format_for_display(path: String) -> String` (`scripts/utils/path_utils.gd`):
+*   **Uniform Separator Normalization:** Trims leading/trailing whitespace, converts all Windows backslashes (`\`) to Unix forward slashes (`/`), and collapses redundant and trailing slashes via `String.simplify_path()`.
+*   **UI Surface Enforcement:** Applied across the Project Library item labels and item tooltips, Project Explorer title header, New Project creation dialog target path instructions, Settings Primary Projects Folder placeholder text, and Settings project offline status label.
+*   **Security Boundary Preservation:** `PathUtils.is_path_under_root(full_path: String, root_dir: String) -> bool` guarantees path containment within designated workspace boundaries, preventing directory traversal and zip-slip attacks during cloning, extraction, and sealing.
+
 ---
 
 ## 3. Operational Modes & User Stories

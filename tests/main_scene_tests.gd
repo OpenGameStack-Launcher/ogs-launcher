@@ -76,6 +76,17 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 	_expect(projects_root_path != null, "Projects root path line edit should exist", results)
 	_expect(projects_root_browse != null, "Projects root browse button should exist", results)
 	_expect(projects_root_reset != null, "Projects root reset button should exist", results)
+	if projects_root_path != null:
+		_expect(not projects_root_path.placeholder_text.is_empty(), "Projects root path placeholder_text should not be empty", results)
+		_expect(not projects_root_path.placeholder_text.contains("\\"), "Projects root path placeholder_text should not contain backslashes: %s" % projects_root_path.placeholder_text, results)
+
+	var project_offline_status_lbl = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineStatusLabel") as Label
+	_expect(project_offline_status_lbl != null, "ProjectOfflineStatusLabel should exist", results)
+	if project_offline_status_lbl != null and instance.get("settings_controller") != null:
+		var sc = instance.get("settings_controller")
+		sc.on_project_selection_changed("C:\\Users\\test_dev/OGS/MyProject", false, false)
+		_expect(not project_offline_status_lbl.text.contains("\\"), "ProjectOfflineStatusLabel should not contain backslashes: %s" % project_offline_status_lbl.text, results)
+		_expect(project_offline_status_lbl.text == "Selected: C:/Users/test_dev/OGS/MyProject", "ProjectOfflineStatusLabel should display normalized path: %s" % project_offline_status_lbl.text, results)
 
 	var new_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/NewProjectButton")
 	_expect(new_button != null, "New Project button should exist", results)
