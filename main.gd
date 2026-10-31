@@ -38,18 +38,18 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var tools_tabs = $AppLayout/Content/PageTools/ToolsTabs
 
 # Installed tab containers
-@onready var installed_engine_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/EngineSection/EngineTools
-@onready var installed_2d_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/"2DSection"/"2DTools"
-@onready var installed_3d_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/"3DSection"/"3DTools"
-@onready var installed_audio_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/AudioSection/AudioTools
-@onready var installed_code_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/CodeSection/CodeTools
+@onready var installed_engine_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/EngineSection/EngineTools
+@onready var installed_2d_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/"2DSection"/"2DTools"
+@onready var installed_3d_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/"3DSection"/"3DTools"
+@onready var installed_audio_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/AudioSection/AudioTools
+@onready var installed_code_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/CodeSection/CodeTools
 
 # Download tab containers
-@onready var download_engine_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/EngineSection/EngineTools
-@onready var download_2d_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/"2DSection"/"2DTools"
-@onready var download_3d_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/"3DSection"/"3DTools"
-@onready var download_audio_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/AudioSection/AudioTools
-@onready var download_code_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/CodeSection/CodeTools
+@onready var download_engine_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/EngineSection/EngineTools
+@onready var download_2d_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/"2DSection"/"2DTools"
+@onready var download_3d_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/"3DSection"/"3DTools"
+@onready var download_audio_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/AudioSection/AudioTools
+@onready var download_code_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/CodeSection/CodeTools
 
 @onready var btn_add_project = $AppLayout/Content/PageProjects/ProjectsControls/AddButton
 @onready var btn_add_remote_project = $AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton

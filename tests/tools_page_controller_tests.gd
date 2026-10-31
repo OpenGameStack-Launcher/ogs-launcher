@@ -10,6 +10,14 @@ extends RefCounted
 class_name ToolsPageControllerTests
 
 const ToolsPageControllerScript = preload("res://scripts/tools/tools_page_controller.gd")
+const ToolsControllerScript = preload("res://scripts/tools/tools_controller.gd")
+
+class MockToolsControllerForBadges extends ToolsController:
+	var mock_tools: Dictionary = {}
+	func _init() -> void:
+		super(null, "")
+	func get_categorized_tools() -> Dictionary:
+		return mock_tools
 
 func run() -> Dictionary:
 	var results := {
@@ -22,6 +30,7 @@ func run() -> Dictionary:
 	_test_predelete_no_crash_when_thread_null(results)
 	_test_thread_reference_cleared_after_predelete(results)
 	_test_main_notification_calls_cleanup(results)
+	_test_dynamic_tab_title_count_badges(results)
 
 	return results
 
@@ -111,3 +120,57 @@ func _test_main_notification_calls_cleanup(results: Dictionary) -> void:
 	if thread.is_started():
 		thread.wait_to_finish()
 	main_instance.free()
+
+func _test_dynamic_tab_title_count_badges(results: Dictionary) -> void:
+	var controller = ToolsPageControllerScript.new()
+	var mock_tools_controller = MockToolsControllerForBadges.new()
+
+	var deps = ToolsPageControllerScript.UIDeps.new()
+	var tabs = TabContainer.new()
+	var tab_installed = Control.new()
+	var tab_download = Control.new()
+	tabs.add_child(tab_installed)
+	tabs.add_child(tab_download)
+	deps.tools_tabs = tabs
+
+	controller.setup(deps, mock_tools_controller, null, null, null)
+
+	# 1. Empty catalog
+	mock_tools_controller.mock_tools = {}
+	controller.populate_tools_ui()
+	_expect(tabs.get_tab_title(0) == "Installed (0)", "Tab 0 should show 'Installed (0)' when empty (was: %s)" % tabs.get_tab_title(0), results)
+	_expect(tabs.get_tab_title(1) == "Download (0)", "Tab 1 should show 'Download (0)' when empty (was: %s)" % tabs.get_tab_title(1), results)
+
+	# 2. 3 tools in catalog, 1 installed
+	mock_tools_controller.mock_tools = {
+		"Engine": [
+			{"id": "godot", "version": "4.7.2", "installed": true}
+		],
+		"3D": [
+			{"id": "blender", "version": "4.2", "installed": false}
+		],
+		"2D": [
+			{"id": "krita", "version": "5.2", "installed": false}
+		]
+	}
+	controller.populate_tools_ui()
+	_expect(tabs.get_tab_title(0) == "Installed (1)", "Tab 0 should show 'Installed (1)' (was: %s)" % tabs.get_tab_title(0), results)
+	_expect(tabs.get_tab_title(1) == "Download (3)", "Tab 1 should show 'Download (3)' (was: %s)" % tabs.get_tab_title(1), results)
+
+	# 3. 2 tools installed, 3 total in catalog
+	mock_tools_controller.mock_tools = {
+		"Engine": [
+			{"id": "godot", "version": "4.7.2", "installed": true}
+		],
+		"3D": [
+			{"id": "blender", "version": "4.2", "installed": false}
+		],
+		"2D": [
+			{"id": "krita", "version": "5.2", "installed": true}
+		]
+	}
+	controller.populate_tools_ui()
+	_expect(tabs.get_tab_title(0) == "Installed (2)", "Tab 0 should show 'Installed (2)' after second install (was: %s)" % tabs.get_tab_title(0), results)
+	_expect(tabs.get_tab_title(1) == "Download (3)", "Tab 1 should show 'Download (3)' after second install (was: %s)" % tabs.get_tab_title(1), results)
+
+	tabs.free()

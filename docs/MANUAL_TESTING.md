@@ -1332,9 +1332,52 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 23: Tools Page - Tool Card Layout, Scrollbar Margins, and Dynamic Tab Count Badges
+
+**Objective:** Verify that tool cards render with compact 68px minimum height, elements are vertically centered with 14px horizontal separation, action buttons maintain 115x36 standard geometry, content margin containers prevent scrollbars from overlapping tool cards, and tab headers display accurate dynamic count badges ("Installed (X)" and "Download (Y)").
+
+**Steps:**
+1. Launch OGS Launcher in editor mode or standalone.
+2. Navigate to the **Tools** page (click "Tools" in the sidebar).
+3. Inspect the tab headers in `ToolsTabs`:
+   - Verify the first tab title displays `"Installed (X)"` where X matches the number of installed tools in the local library.
+   - Verify the second tab title displays `"Download (Y)"` where Y matches the total number of available tools discovered in the catalog.
+4. Inspect the **Installed** tab:
+   - For any installed tool card, verify the card panel height is compact (68px minimum height) without excessive empty dead space at the bottom.
+   - Verify the 42x42 tool icon, tool name/size label column, and action button ("Remove") are vertically centered within the card row.
+   - Verify 14px horizontal separation between the icon, text labels, and action button.
+   - Verify the action button has consistent dimensions (115px wide by 36px tall).
+   - If the installed list overflows vertically, inspect the right vertical scrollbar: confirm the scrollbar moves freely within the 14px margin without overlapping the right border or padding of the tool card panels.
+5. Switch to the **Download** tab:
+   - Verify tool cards render with matching compact 68px minimum height and vertical centering.
+   - Verify "Download" (or "Installed [check]" / "Cancel") action buttons maintain standardized 115x36 dimensions.
+   - Verify the 14px right margin keeps the vertical scrollbar completely separated from the card panels.
+6. Install or remove a tool (or mock catalog population):
+   - Verify that tab title count badges immediately update to reflect the new counts (e.g. "Installed (1)" and "Download (3)").
+
+**Expected Results:**
+- [x] Tab titles display dynamic count badges: `"Installed (X)"` and `"Download (Y)"`.
+- [x] Tool cards maintain compact 68px height without bottom dead space.
+- [x] Tool icons, labels, and action buttons are vertically centered within each card.
+- [x] Action buttons maintain uniform 115x36 dimensions across all states.
+- [x] Vertical scrollbars do not collide with or overlap tool card borders due to 14px right margin containers.
+- [x] Tab count badges refresh automatically on tool installation, removal, or catalog refresh.
+
+**Pass Criteria:**
+- Tool cards render cleanly with centered content and standardized button geometry.
+- Scrollbar clearance eliminates visual overlap on both tabs.
+- Dynamic count badges accurately reflect catalog and library state.
+
+**If test fails:**
+- Verify `scripts/tools/tools_page_controller.gd` card creation geometry and vertical size flags (`Control.SIZE_SHRINK_CENTER`).
+- Check `main.tscn` MarginContainer hierarchy and `margin_right = 14` under `ToolsTabs/Installed` and `ToolsTabs/Download`.
+- Confirm `populate_tools_ui()` calculates and sets `ToolsTabs` titles via `set_tab_title()`.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-22, fill in this table:
+After completing Editor Tests 1-23, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -1362,6 +1405,7 @@ After completing Editor Tests 1-22, fill in this table:
 | 20: Normalized Path Display | ✅/⚠️/❌ | | |
 | 21: Contextual Launch & Split Layout | ✅/⚠️/❌ | | |
 | 22: Project Details Offline Policy | ✅/⚠️/❌ | | |
+| 23: Tools Page Cards & Badges | ✅/⚠️/❌ | | |
 
 ---
 

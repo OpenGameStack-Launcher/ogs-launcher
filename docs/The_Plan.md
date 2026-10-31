@@ -255,6 +255,13 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Refactored SettingsController to focus purely on global settings and transferred project offline policy handling directly to ProjectsController
     *   [x] Dynamic status updates syncing normalized project path and persisting changes to ogs_config.json on disk
     *   [x] Added comprehensive scene tests in `tests/projects_controller_scene_tests.gd`, `tests/main_scene_tests.gd`, and `tests/startup_tests.gd` (1930 tests passing)
+*   [x] Tool Card Layout Polish, Scrollbar Margins, and Tab Count Badges (Issue #135) - 100% Complete ✅
+    *   [x] Reduced default tool card minimum height from 94px to 68px, eliminating dead bottom space
+    *   [x] Configured 14px horizontal separation and vertical centering (`Control.SIZE_SHRINK_CENTER`) across icon, label container, and action buttons
+    *   [x] Standardized action button dimensions to 115x36 across states (Download, Remove, Installed check, Cancel)
+    *   [x] Added MarginContainer with 14px right margin inside ToolsTabs/Installed and ToolsTabs/Download, preventing vertical scrollbar overlap on card panels
+    *   [x] Implemented dynamic tab title count badges (`Installed (X)` and `Download (Y)`) updating on UI population, install, removal, and refresh
+    *   [x] Added unit tests in `tests/tools_page_controller_tests.gd` and scene assertions in `tests/tools_page_scene_tests.gd` (1955 tests passing across 38 test suites with zero failures)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:
@@ -346,7 +353,7 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   Uniform 20x20 tool icon rendering with asset mapping from res://Images/tools/ and case-insensitive fallback
     *   Explicit status labels (✓ Installed, ⚠️ Missing (Available in Tools), ❌ Unavailable in Repository) and detailed status tooltips
     *   Comprehensive test coverage in projects_page_indicators_tests.gd and projects_controller_scene_tests.gd (1836 tests passing across 38 test suites)
-*   **Test Suite:** 1836 tests passing across 38 test suites (~3-5 sec execution), comprehensive coverage across all components
+*   **Test Suite:** 1955 tests passing across 38 test suites (~3-5 sec execution), comprehensive coverage across all components
     *   ToolsController unit tests: download tracking, duplicate suppression, repository validation
     *   Tools page scene tests: node existence, status updates, button state management
     *   ProgressController unit tests: inline tracking, phase transitions, signal emission
@@ -489,6 +496,14 @@ Granular, actionable items for the Tools/Projects page redesign:
   - `"Open <filename> in <Tool Name>"` (enabled) upon launchable file/folder selection in `ProjectExplorerTree`.
 - Added empty-space deselection listeners on both list and tree controls to cleanly revert launch state to prompt mode.
 - Added comprehensive scene tests in `tests/projects_controller_scene_tests.gd` asserting split container hierarchy, minimum constraints, ellipsis properties, and contextual label transitions (38 test suites passing, 1892 total tests with zero failures).
+
+**Tools Page Tool Card Polish, Scrollbar Margins, and Tab Count Badges (Oct 31, 2026):**
+- Reduced default tool card custom minimum height from 94px to 68px in `ToolsPageController._create_tool_card()`, maintaining compact rows while allowing natural expansion for error messages.
+- Added 14px horizontal separation override to card HBoxContainer and configured vertical centering (`Control.SIZE_SHRINK_CENTER`) on tool icons, label vertical containers, and action buttons.
+- Standardized action button dimensions to 115x36 across Download, Remove, Installed check, and Cancel button states.
+- Wrapped InstalledContent and DownloadContent inside MarginContainers with 14px right margins in `main.tscn`, providing clean clearance that prevents vertical scrollbar overlap.
+- Dynamically formatted ToolsTabs titles with count badges (`Installed (X)` and `Download (Y)`) calculated in `populate_tools_ui()` and refreshed on installation, removal, or catalog updates.
+- Added badge formatting unit tests in `tests/tools_page_controller_tests.gd` and layout/margin assertions in `tests/tools_page_scene_tests.gd` (38 test suites passing, 1955 total tests with zero failures).
 
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management

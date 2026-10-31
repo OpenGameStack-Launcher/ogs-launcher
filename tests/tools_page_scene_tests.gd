@@ -44,13 +44,22 @@ func _test_tools_nodes_exist(results: Dictionary) -> void:
 	_expect(instance.get_node_or_null("AppLayout/Content/PageTools") != null, "Tools page should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs") != null, "Tools tabs should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download") != null, "Download tab should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent") != null, "Download content should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/EngineSection/EngineTools") != null, "Download Engine tools container should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/2DSection/2DTools") != null, "Download 2D tools container should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/3DSection/3DTools") != null, "Download 3D tools container should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/AudioSection/AudioTools") != null, "Download Audio tools container should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/CodeSection/CodeTools") != null, "Download Code tools container should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/CodeSection/CodeTools") != null, "Installed Code tools container should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer") != null, "Download MarginContainer should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent") != null, "Download content should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/EngineSection/EngineTools") != null, "Download Engine tools container should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/2DSection/2DTools") != null, "Download 2D tools container should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/3DSection/3DTools") != null, "Download 3D tools container should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/AudioSection/AudioTools") != null, "Download Audio tools container should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/CodeSection/CodeTools") != null, "Download Code tools container should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer") != null, "Installed MarginContainer should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/CodeSection/CodeTools") != null, "Installed Code tools container should exist", results)
+
+	var installed_mc: MarginContainer = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer") as MarginContainer
+	var download_mc: MarginContainer = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer") as MarginContainer
+	if installed_mc != null:
+		_expect(installed_mc.get_theme_constant("margin_right") == 14, "Installed tab MarginContainer should have 14px right margin", results)
+	if download_mc != null:
+		_expect(download_mc.get_theme_constant("margin_right") == 14, "Download tab MarginContainer should have 14px right margin", results)
 
 	instance.free()
 
@@ -110,13 +119,30 @@ func _test_tool_card_style(results: Dictionary) -> void:
 	_expect(download_card != null, "Download tool card should be created", results)
 	if download_card != null:
 		var style = download_card.get_theme_stylebox("panel")
-		_expect(download_card.custom_minimum_size.y >= 94, "Tool cards should have stable vertical spacing", results)
+		_expect(download_card.custom_minimum_size == Vector2(0, 68), "Tool cards should have 68px minimum height (was: %s)" % str(download_card.custom_minimum_size), results)
 		_expect(style is StyleBoxFlat, "Tool cards should use a bordered panel style", results)
+
+		var main_vbox: VBoxContainer = download_card.get_child(0) as VBoxContainer
+		_expect(main_vbox != null, "Main VBox should exist in tool card", results)
+		if main_vbox != null:
+			var hbox: HBoxContainer = main_vbox.get_child(0) as HBoxContainer
+			_expect(hbox != null, "HBox should exist in tool card", results)
+			if hbox != null:
+				_expect(hbox.get_theme_constant("separation") == 14, "HBox should have 14px separation override", results)
+				var icon: TextureRect = hbox.get_child(0) as TextureRect
+				if icon != null:
+					_expect(icon.size_flags_vertical == Control.SIZE_SHRINK_CENTER, "Icon should be vertically centered", results)
+				var label_vbox: VBoxContainer = hbox.get_child(1) as VBoxContainer
+				if label_vbox != null:
+					_expect(label_vbox.size_flags_vertical == Control.SIZE_SHRINK_CENTER, "Label VBox should be vertically centered", results)
+
 		var download_button: Button = _find_button_in_card(download_card)
 		_expect(download_button != null, "Download button should exist in download card", results)
 		if download_button != null:
 			_expect(download_button.text == "Download", "Download button text should be 'Download'", results)
 			_expect(download_button.theme_type_variation == &"PrimaryButton", "Download button should have PrimaryButton variation (was: %s)" % String(download_button.theme_type_variation), results)
+			_expect(download_button.custom_minimum_size == Vector2(115, 36), "Download button should have 115x36 minimum size (was: %s)" % str(download_button.custom_minimum_size), results)
+			_expect(download_button.size_flags_vertical == Control.SIZE_SHRINK_CENTER, "Download button should be vertically centered", results)
 		download_card.free()
 
 	# 2. Installed tool card with remove action
@@ -128,7 +154,22 @@ func _test_tool_card_style(results: Dictionary) -> void:
 		if remove_button != null:
 			_expect(remove_button.text == "Remove", "Remove button text should be 'Remove'", results)
 			_expect(remove_button.theme_type_variation == &"DangerButton", "Remove button should have DangerButton variation (was: %s)" % String(remove_button.theme_type_variation), results)
+			_expect(remove_button.custom_minimum_size == Vector2(115, 36), "Remove button should have 115x36 minimum size (was: %s)" % str(remove_button.custom_minimum_size), results)
+			_expect(remove_button.size_flags_vertical == Control.SIZE_SHRINK_CENTER, "Remove button should be vertically centered", results)
 		remove_card.free()
+
+	# 3. Installed tool card without remove action ("Installed ✓")
+	var installed_card = page_controller._create_tool_card({"id": "godot", "version": "4.3", "size_bytes": 1024}, true, false)
+	_expect(installed_card != null, "Installed tool card should be created", results)
+	if installed_card != null:
+		var installed_button: Button = _find_button_in_card(installed_card)
+		_expect(installed_button != null, "Installed button should exist", results)
+		if installed_button != null:
+			_expect(installed_button.text == "Installed ✓", "Button text should be 'Installed ✓'", results)
+			_expect(installed_button.disabled == true, "Installed button should be disabled", results)
+			_expect(installed_button.custom_minimum_size == Vector2(115, 36), "Installed button should have 115x36 minimum size", results)
+			_expect(installed_button.size_flags_vertical == Control.SIZE_SHRINK_CENTER, "Installed button should be vertically centered", results)
+		installed_card.free()
 
 	remove_dialog.free()
 
