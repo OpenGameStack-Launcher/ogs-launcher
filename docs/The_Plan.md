@@ -181,6 +181,14 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Remove Project with confirmation dialog
     *   [x] New Project scaffolding under configurable Primary Projects Folder (defaults to `%USERPROFILE%/OGS_Projects` or `$HOME/OGS_Projects`)
     *   [x] Primary Projects Folder setting in PageSettings with Browse and Reset to Default buttons, persisted in `ogs_launcher_settings.json`
+*   [x] Remote Project Clone Workflow and Three-Button Toolbar - 100% Complete ✅
+    *   [x] Three-button Projects toolbar (Add Local Project, Add Remote Project, New Project) with equal width and 16px separation
+    *   [x] Offline mode enforcement disabling Add Remote Project with descriptive tooltip
+    *   [x] Guided missing-Git prompt navigating to Tools page if PortableGit is not installed
+    *   [x] Modal dialog with URL input validation, primary folder pre-fill, and Browse folder picker
+    *   [x] Subfolder collision detection with automatic incremental slug suggestions (slug-1, slug-2)
+    *   [x] Real-time progress updates, non-blocking cancellation, and URL preservation on manifest failure
+    *   [x] Automatic project registration and Project Library selection upon successful clone
 *   [x] Project Tool Management controls — 100% Complete ✅
     *   [x] Two-row action layout (Add/Remove/Launch tool + Remove/Seal project)
     *   [x] Add Tool dialog refactored from dropdown to list selection

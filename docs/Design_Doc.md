@@ -82,6 +82,16 @@ To enable seamless collaboration and distribution of frozen stacks across develo
     2.  *Phase B (Checkout & Auto-Config):* Populates the working tree with `git checkout --progress HEAD` and automatically generates a default `ogs_config.json` if missing.
 *   **Defensive Process and Path Management:** Hardens all Git executions with `-c protocol.ext.allow=never -c protocol.file.allow=never -c core.symlinks=false -c core.fsmonitor=false`. Streams progress via non-blocking pipes, supports thread-safe cancellation killing child PIDs, and bounds all directory deletions strictly within destination roots via `PathUtils.is_path_under_root`.
 
+### 2.6 Remote Project UI & Cloning Workflow (`RemoteProjectDialogController`)
+The user-facing remote project clone workflow on the Projects page is managed by `RemoteProjectDialogController`:
+*   **Three-Button Projects Toolbar:** Integrates "Add Remote Project" between "Add Local Project" and "New Project" in `ProjectsControls`, configured with equal horizontal expansion (`size_flags_horizontal = 3`) and 16px separation.
+*   **Air-Gap UI Enforcement:** Marks `AddRemoteProjectButton` with `metadata/network_ui = true`, automatically disabling the button with tooltip `"Disabled because OGS Launcher is currently in offline mode."` when offline mode is active.
+*   **Guided Missing-Git Workflow:** When PortableGit is not installed, clicking "Add Remote Project" opens an exclusive modal dialog prompting the user to install Git, with a "Go to Tools" button that navigates directly to the Tools page.
+*   **Exclusive Modal Clone Dialog:** Encapsulates repository URL validation, destination folder pre-filling with the configured Primary Projects Folder, and a "Browse..." directory picker.
+*   **Destination Subfolder Collision Handling:** Detects collisions if the repository slug already exists in the destination folder, presenting a collision prompt with suggested incremental folder naming (`slug-1`, `slug-2`).
+*   **Async Progress, Cancellation, and Error Recovery:** Observes `RemoteProjectCloner` signals (`phase_changed`, `progress_updated`, `clone_failed`, `clone_completed`), displays real-time progress, supports non-blocking cancellation with process termination, and preserves entered URLs while re-enabling input controls if manifest verification fails.
+*   **Automatic Registration and Selection:** On clone completion, registers the project directory into the launcher registry via `ProjectsController.add_project_from_path(cloned_dir)` and auto-selects the project in the Project Library.
+
 ---
 
 ## 3. Operational Modes & User Stories
