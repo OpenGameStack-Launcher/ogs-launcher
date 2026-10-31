@@ -41,6 +41,9 @@ func run() -> Dictionary:
 	_test_three_button_toolbar_layout(results)
 	_test_missing_git_opens_guided_dialog_and_emits_navigation(results)
 	_test_offline_mode_disables_remote_button_and_enforces_tooltip(results)
+	_test_single_click_missing_tool_selects_without_navigation(results)
+	_test_double_click_missing_tool_emits_navigation(results)
+	_test_launch_missing_tool_emits_navigation(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -137,6 +140,8 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"tabs": projects_tabs,
 		"change_version_btn": change_version_button,
 		"add_remote_btn": add_remote_button,
+		"remove_tool_btn": remove_tool_button,
+		"add_tool_btn": add_tool_button,
 		"nodes": [add_button, add_remote_button, new_button, projects_list, status_label, offline_label, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, remove_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button]
 	}
 
@@ -539,6 +544,8 @@ func _test_launch_selected_tool_from_project_tools_list_runs_at_project_root(res
 
 	# Add VSCodium tool (which has no explorer folder)
 	controller.tool_manager.add_tool_to_current_project("vscodium", "1.143.17232")
+	var tool_dir = PathResolver.new().get_tool_path("vscodium", "1.143.17232")
+	DirAccess.make_dir_recursive_absolute(tool_dir)
 	var vscodium_index := -1
 	for i in range(controller.current_manifest.tools.size()):
 		if String(controller.current_manifest.tools[i].get("id", "")) == "vscodium":
@@ -564,8 +571,9 @@ func _test_launch_selected_tool_from_project_tools_list_runs_at_project_root(res
 	_expect(controller._selected_launch_target_path == "", "activation should retain empty target path", results)
 	_expect(status_label.text.find("No known tool") == -1, "double click activation should attempt launch without explorer selection", results)
 
-	_cleanup_nodes(ctx["nodes"])
+	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_dir_recursive(projects_root)
+	_cleanup_dir_recursive(tool_dir)
 	_cleanup_registry(storage_path)
 
 func _test_project_switching_and_reset_clears_launch_state(results: Dictionary) -> void:
@@ -665,6 +673,8 @@ func _test_explorer_double_click_triggers_activation_and_launch(results: Diction
 	controller._create_new_project_from_name("Activation Launch Test")
 
 	controller.tool_manager.add_tool_to_current_project("vscodium", "1.143.17232")
+	var tool_dir = PathResolver.new().get_tool_path("vscodium", "1.143.17232")
+	DirAccess.make_dir_recursive_absolute(tool_dir)
 	var project_dir = controller.current_project_dir
 	var script_path = project_dir.path_join("player.gd")
 	var file = FileAccess.open(script_path, FileAccess.WRITE)
@@ -684,8 +694,9 @@ func _test_explorer_double_click_triggers_activation_and_launch(results: Diction
 	_expect(controller._selected_tool_index == -1, "activation should reset _selected_tool_index", results)
 	_expect(status_label.text.begins_with("Status: Launch failed") or status_label.text.begins_with("Status: Launched"), "launch should be triggered by activation", results)
 
-	_cleanup_nodes(ctx["nodes"])
+	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_dir_recursive(projects_root)
+	_cleanup_dir_recursive(tool_dir)
 	_cleanup_registry(storage_path)
 
 func _test_new_file_creation_with_vscodium_in_stack(results: Dictionary) -> void:
@@ -830,3 +841,130 @@ func _test_offline_mode_disables_remote_button_and_enforces_tooltip(results: Dic
 		_expect(add_remote.tooltip_text == "", "AddRemoteProjectButton tooltip should be empty when online", results)
 	
 	instance.free()
+
+func _test_single_click_missing_tool_selects_without_navigation(results: Dictionary) -> void:
+	## Verifies that single-clicking a missing tool row in ProjectToolsList selects it
+	## and enables Remove Tool and Change Version without emitting tool_view_requested.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_click_missing_%s.json" % str(Time.get_ticks_msec())
+	var projects_root = "user://projects_controller_scene_click_missing_root_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(projects_root)
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	controller.set_projects_root_path_for_tests(projects_root)
+	controller._create_new_project_from_name("Missing Tool Click Test")
+
+	# Add an uninstalled tool to project stack
+	controller.tool_manager.add_tool_to_current_project("blender", "4.2")
+
+	var tools_list: ItemList = ctx["project_tools_list"]
+	var remove_btn: Button = ctx["remove_tool_btn"]
+	var change_ver_btn: Button = ctx["change_version_btn"]
+
+	# Connect tool_view_requested signal to track any premature emission
+	var nav_emitted := false
+	controller.tool_view_requested.connect(func(_tool_id: String, _version: String):
+		nav_emitted = true
+	)
+
+	# Verify action buttons initially disabled before tool row selection
+	controller._selected_tool_index = -1
+	controller._update_tool_action_buttons()
+	_expect(remove_btn.disabled == true, "Remove Tool should be disabled before row selection", results)
+	_expect(change_ver_btn.disabled == true, "Change Version should be disabled before row selection", results)
+
+	# Single click missing tool row
+	tools_list.item_clicked.emit(0, Vector2.ZERO, 1)
+
+	_expect(nav_emitted == false, "Single-clicking missing tool row must not emit tool_view_requested", results)
+	_expect(controller._selected_tool_index == 0, "Selected tool index should be 0", results)
+	_expect(tools_list.is_selected(0) == true, "Tool row 0 should be selected in ItemList", results)
+	_expect(remove_btn.disabled == false, "Remove Tool button must be enabled when missing tool is selected", results)
+	_expect(change_ver_btn.disabled == false, "Change Version button must be enabled when missing tool is selected", results)
+
+	# Also verify selecting via item_selected preserves state without navigation
+	tools_list.item_selected.emit(0)
+	_expect(nav_emitted == false, "item_selected on missing tool must not emit tool_view_requested", results)
+	_expect(remove_btn.disabled == false, "Remove Tool button remains enabled after item_selected", results)
+	_expect(change_ver_btn.disabled == false, "Change Version button remains enabled after item_selected", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(projects_root)
+	_cleanup_registry(storage_path)
+
+func _test_double_click_missing_tool_emits_navigation(results: Dictionary) -> void:
+	## Verifies that double-clicking (item_activated) a missing tool in ProjectToolsList
+	## emits tool_view_requested(tool_id, tool_version).
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_activate_missing_%s.json" % str(Time.get_ticks_msec())
+	var projects_root = "user://projects_controller_scene_activate_missing_root_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(projects_root)
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	controller.set_projects_root_path_for_tests(projects_root)
+	controller._create_new_project_from_name("Activate Missing Tool Test")
+
+	controller.tool_manager.add_tool_to_current_project("blender", "4.2")
+
+	var nav_info := {"called": false, "tool_id": "", "version": ""}
+	controller.tool_view_requested.connect(func(tid: String, ver: String):
+		nav_info["called"] = true
+		nav_info["tool_id"] = tid
+		nav_info["version"] = ver
+	)
+
+	var tools_list: ItemList = ctx["project_tools_list"]
+	tools_list.item_activated.emit(0)
+
+	_expect(nav_info["called"] == true, "Double-clicking missing tool should emit tool_view_requested", results)
+	_expect(nav_info["tool_id"] == "blender", "Emitted tool_id should be 'blender', got: %s" % nav_info["tool_id"], results)
+	_expect(nav_info["version"] == "4.2", "Emitted version should be '4.2', got: %s" % nav_info["version"], results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(projects_root)
+	_cleanup_registry(storage_path)
+
+func _test_launch_missing_tool_emits_navigation(results: Dictionary) -> void:
+	## Verifies that clicking Launch Selected Tool with a missing tool selected
+	## emits tool_view_requested(tool_id, tool_version) instead of attempting execution.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_launch_missing_%s.json" % str(Time.get_ticks_msec())
+	var projects_root = "user://projects_controller_scene_launch_missing_root_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(projects_root)
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	controller.set_projects_root_path_for_tests(projects_root)
+	controller._create_new_project_from_name("Launch Missing Tool Test")
+
+	controller.tool_manager.add_tool_to_current_project("godot", "4.7.2")
+
+	var nav_info := {"called": false, "tool_id": "", "version": ""}
+	controller.tool_view_requested.connect(func(tid: String, ver: String):
+		nav_info["called"] = true
+		nav_info["tool_id"] = tid
+		nav_info["version"] = ver
+	)
+
+	var tools_list: ItemList = ctx["project_tools_list"]
+	tools_list.item_selected.emit(0)
+	_expect(nav_info["called"] == false, "Selecting tool should not emit navigation", results)
+
+	controller._on_launch_tool_pressed()
+
+	_expect(nav_info["called"] == true, "Launching uninstalled tool should emit tool_view_requested", results)
+	_expect(nav_info["tool_id"] == "godot", "Emitted tool_id should be 'godot', got: %s" % nav_info["tool_id"], results)
+	_expect(nav_info["version"] == "4.7.2", "Emitted version should be '4.7.2', got: %s" % nav_info["version"], results)
+	var status_label: Label = ctx["status"]
+	_expect(status_label.text.find("not installed") != -1, "Status should indicate tool is not installed", results)
+	_expect(status_label.text.find("Launch failed") == -1, "Status should not indicate Launch failed", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(projects_root)
+	_cleanup_registry(storage_path)
+

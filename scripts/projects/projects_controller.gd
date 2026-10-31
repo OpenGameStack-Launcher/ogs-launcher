@@ -793,7 +793,7 @@ func _populate_tools_list(tools: Array) -> void:
 ## - No indicator: tool is already installed in the library
 ## 
 ## Updates the _tool_availability dictionary with status for each tool,
-## enabling click-through navigation to download missing tools.
+## enabling double-click or launch navigation to download missing tools.
 ## 
 ## Parameters:
 ## tools (Array): Array of tool entries from stack.json
@@ -920,58 +920,16 @@ func _get_available_tools() -> Dictionary:
 	return available
 
 func _on_tool_item_clicked(index: int, _at_position: Vector2 = Vector2.ZERO, _mouse_button_index: int = 1) -> void:
-	## Handles click on a tool in the list to enable quick navigation.
-	## 
-	## When user clicks a tool that is not yet installed:
-	## 1. Logs the view request with tool context
-	## 2. Emits tool_view_requested signal to main.gd
-	## 3. UI navigates to Tools page for download
-	## 
-	## If tool is already installed, sets it as the active launch tool.
+	## Handles click on a tool in the list to select it without navigating away.
 	## 
 	## Parameters:
 	## index (int): Index in the tools list ItemList
 	## _at_position (Vector2): Position of mouse click
 	## _mouse_button_index (int): Mouse button index
-	_selected_tool_index = index
-	if project_tools_list != null and index >= 0 and index < project_tools_list.item_count:
-		project_tools_list.select(index)
-	if explorer_tree != null:
-		explorer_tree.deselect_all()
-	_update_tool_action_buttons()
-
-	if current_manifest == null or index < 0 or index >= current_manifest.tools.size():
-		_selected_launch_tool_id = ""
-		_selected_launch_target_path = ""
-		OgsLogger.debug("tool_item_clicked_invalid_index", {
-			"component": "projects",
-			"index": index,
-			"manifest_valid": current_manifest != null,
-			"tools_count": current_manifest.tools.size() if current_manifest != null else 0
-		})
-		return
-	
-	var tool_entry: Dictionary = current_manifest.tools[index]
-	var tool_id = String(tool_entry.get("id", "unknown"))
-	var tool_version = String(tool_entry.get("version", "?"))
-	_selected_launch_tool_id = String(tool_entry.get("id", ""))
-	_selected_launch_target_path = ""
-	var availability_key = "%s_%s" % [tool_id, tool_version]
-	
-	# Check if tool is not installed
-	if availability_key in _tool_availability:
-		var availability = _tool_availability[availability_key]
-		if not availability["installed"]:
-			OgsLogger.info("tool_view_requested_from_projects", {
-				"component": "projects",
-				"tool_id": tool_id,
-				"version": tool_version,
-				"available_in_repo": availability["available"]
-			})
-			tool_view_requested.emit(tool_id, tool_version)
+	_on_tool_item_selected(index)
 
 func _on_tool_item_selected(index: int) -> void:
-	## Tracks selected tool index for reliable launch button behavior.
+	## Tracks selected tool index, updates action button states, and deselects explorer.
 	## 
 	## Parameters:
 	## index (int): Selected index in tools list
@@ -991,24 +949,46 @@ func _on_tool_item_selected(index: int) -> void:
 	_update_tool_action_buttons()
 
 func _on_tool_item_activated(index: int) -> void:
-	## Launches tool on double-click in tools list.
+	## Handles double-click activation on a tool item in ProjectToolsList.
+	## If the tool is not installed, emits tool_view_requested to navigate to the Tools page.
+	## If the tool is installed, launches it.
 	## 
 	## Parameters:
 	## index (int): Activated (double-clicked) tool index
-	_selected_tool_index = index
-	if project_tools_list != null and index >= 0 and index < project_tools_list.item_count:
-		project_tools_list.select(index)
-	if explorer_tree != null:
-		explorer_tree.deselect_all()
+	_on_tool_item_selected(index)
 	if current_manifest != null and index >= 0 and index < current_manifest.tools.size():
 		var tool_entry: Dictionary = current_manifest.tools[index]
-		_selected_launch_tool_id = String(tool_entry.get("id", ""))
-		_selected_launch_target_path = ""
-	else:
-		_selected_launch_tool_id = ""
-		_selected_launch_target_path = ""
-	_update_tool_action_buttons()
+		var tool_id = String(tool_entry.get("id", "unknown"))
+		var tool_version = String(tool_entry.get("version", "?"))
+		if not _is_tool_installed(tool_id, tool_version):
+			_update_status("Status: Tool '%s' is not installed. Opening Tools page to download." % tool_id)
+			_emit_tool_view_request(tool_id, tool_version)
+			return
 	_on_launch_tool_pressed()
+
+func _is_tool_installed(tool_id: String, tool_version: String) -> bool:
+	## Checks whether the specified tool and version is installed in the local library.
+	var clean_version = "" if tool_version == "?" else tool_version
+	if _library_manager != null and _library_manager.tool_exists(tool_id, clean_version):
+		return true
+	var availability_key = "%s_%s" % [tool_id, tool_version]
+	if availability_key in _tool_availability:
+		return bool(_tool_availability[availability_key].get("installed", false))
+	return false
+
+func _emit_tool_view_request(tool_id: String, tool_version: String) -> void:
+	## Logs and emits tool_view_requested for an uninstalled tool.
+	var availability_key = "%s_%s" % [tool_id, tool_version]
+	var available_in_repo = false
+	if availability_key in _tool_availability:
+		available_in_repo = bool(_tool_availability[availability_key].get("available", false))
+	OgsLogger.info("tool_view_requested_from_projects", {
+		"component": "projects",
+		"tool_id": tool_id,
+		"version": tool_version,
+		"available_in_repo": available_in_repo
+	})
+	tool_view_requested.emit(tool_id, tool_version)
 	
 
 func _update_status(message: String) -> void:
@@ -1179,6 +1159,13 @@ func _on_launch_tool_pressed() -> void:
 			
 	if tool_entry == null:
 		_update_status("Status: Tool '%s' is not in this project's stack. Please add it first." % _selected_launch_tool_id)
+		return
+
+	var tool_id = String(tool_entry.get("id", "unknown"))
+	var tool_version = String(tool_entry.get("version", "?"))
+	if not _is_tool_installed(tool_id, tool_version):
+		_update_status("Status: Tool '%s' is not installed. Opening Tools page to download." % tool_id)
+		_emit_tool_view_request(tool_id, tool_version)
 		return
 
 	# If the target is a directory, don't pass it as a file argument. 
