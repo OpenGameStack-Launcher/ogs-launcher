@@ -44,6 +44,11 @@ func run() -> Dictionary:
 	_test_single_click_missing_tool_selects_without_navigation(results)
 	_test_double_click_missing_tool_emits_navigation(results)
 	_test_launch_missing_tool_emits_navigation(results)
+	_test_single_click_selects_project_without_switching_tab(results)
+	_test_double_click_activates_project_and_switches_tab(results)
+	_test_open_project_button_switches_tab(results)
+	_test_action_buttons_disabled_initially_and_on_empty(results)
+	_test_custom_item_list_double_click_activation(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -83,7 +88,9 @@ func _build_controller(storage_path: String) -> Dictionary:
 	var new_file_name = LineEdit.new()
 	var add_tool_button = Button.new()
 	var remove_tool_button = Button.new()
+	var open_button = Button.new()
 	var remove_button = Button.new()
+	var seal_button = Button.new()
 	var launch_button = Button.new()
 	var dialog = FileDialog.new()
 	var remove_dialog = ConfirmationDialog.new()
@@ -93,12 +100,24 @@ func _build_controller(storage_path: String) -> Dictionary:
 	var add_tool_option = ItemList.new()
 	var project_tools_list = ItemList.new()
 	var projects_tabs = TabContainer.new()
+	var tab_library = Control.new()
+	tab_library.name = "Project Library"
+	projects_tabs.add_child(tab_library)
+	var tab_details = Control.new()
+	tab_details.name = "Project Details"
+	projects_tabs.add_child(tab_details)
+	if Engine.get_main_loop() is SceneTree:
+		(Engine.get_main_loop() as SceneTree).root.add_child(projects_tabs)
+	projects_tabs.current_tab = 0
 	var change_version_button = Button.new()
 
 	var deps = ProjectsController.UIDeps.new()
 	deps.btn_add_project = add_button
 	deps.btn_add_remote_project = add_remote_button
 	deps.btn_new_project = new_button
+	deps.btn_open_project = open_button
+	deps.btn_remove_project = remove_button
+	deps.btn_seal_project = seal_button
 	deps.projects_list = projects_list
 	deps.lbl_project_status = status_label
 	deps.lbl_offline_status = offline_label
@@ -130,7 +149,9 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"status": status_label,
 		"offline": offline_label,
 		"tree": explorer_tree,
+		"open_btn": open_button,
 		"remove_btn": remove_button,
+		"seal_btn": seal_button,
 		"launch_btn": launch_button,
 		"new_name": new_project_name,
 		"new_file_name": new_file_name,
@@ -142,7 +163,7 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"add_remote_btn": add_remote_button,
 		"remove_tool_btn": remove_tool_button,
 		"add_tool_btn": add_tool_button,
-		"nodes": [add_button, add_remote_button, new_button, projects_list, status_label, offline_label, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, remove_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button]
+		"nodes": [add_button, add_remote_button, new_button, open_button, remove_button, seal_button, projects_list, status_label, offline_label, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button]
 	}
 
 func _cleanup_nodes(nodes: Array, controller: ProjectsController = null) -> void:
@@ -967,4 +988,141 @@ func _test_launch_missing_tool_emits_navigation(results: Dictionary) -> void:
 	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_dir_recursive(projects_root)
 	_cleanup_registry(storage_path)
+
+func _test_single_click_selects_project_without_switching_tab(results: Dictionary) -> void:
+	## Verifies that single-clicking a project in the library list selects it,
+	## loads metadata, updates the Tab 1 header title, and enables action buttons,
+	## while remaining on Tab 0 (Project Library).
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_ctrl_single_click_%s.json" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var tabs: TabContainer = ctx["tabs"]
+	var open_btn: Button = ctx["open_btn"]
+	var remove_btn: Button = ctx["remove_btn"]
+	var projects_list = ctx["projects"]
+
+	var added = controller.add_project_from_path("res://samples/sample_project")
+	_expect(added, "Sample project should be added", results)
+	_expect(tabs.current_tab == 0, "Current tab should remain Tab 0 after adding project", results)
+	_expect(open_btn.disabled == false, "Open Project button should be enabled after project is added and selected", results)
+	_expect(remove_btn.disabled == false, "Remove Project button should be enabled after project is added and selected", results)
+
+	projects_list.item_selected.emit(0)
+	_expect(tabs.current_tab == 0, "Single-clicking project in list must keep current_tab at 0", results)
+	_expect(controller.current_project_dir != "", "Selected project directory should be set", results)
+	_expect(controller.current_manifest != null, "Manifest should be loaded", results)
+	_expect(tabs.get_tab_title(1) == "Sample OGS Project", "Tab 1 title should match project stack_name", results)
+	_expect(open_btn.disabled == false, "Open Project button should remain enabled", results)
+	_expect(remove_btn.disabled == false, "Remove Project button should remain enabled", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_registry(storage_path)
+
+func _test_double_click_activates_project_and_switches_tab(results: Dictionary) -> void:
+	## Verifies that double-clicking (item_activated) a project in the library list
+	## selects the project and switches projects_tabs.current_tab to 1 (Project Details).
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_ctrl_double_click_%s.json" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var tabs: TabContainer = ctx["tabs"]
+	var projects_list = ctx["projects"]
+
+	controller.add_project_from_path("res://samples/sample_project")
+	tabs.current_tab = 0
+	_expect(tabs.current_tab == 0, "Tab should be 0 before activation", results)
+
+	projects_list.item_activated.emit(0)
+	_expect(tabs.current_tab == 1, "Double-clicking project must switch projects_tabs.current_tab to 1", results)
+	_expect(tabs.get_tab_title(1) == "Sample OGS Project", "Tab 1 title should match project stack_name", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_registry(storage_path)
+
+func _test_open_project_button_switches_tab(results: Dictionary) -> void:
+	## Verifies that clicking the Open Project button switches projects_tabs.current_tab to 1.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_ctrl_open_btn_%s.json" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var tabs: TabContainer = ctx["tabs"]
+	var open_btn: Button = ctx["open_btn"]
+
+	controller.add_project_from_path("res://samples/sample_project")
+	tabs.current_tab = 0
+	_expect(tabs.current_tab == 0, "Tab should be 0 before pressing Open Project", results)
+
+	open_btn.pressed.emit()
+	_expect(tabs.current_tab == 1, "Pressing Open Project button must switch current_tab to 1", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_registry(storage_path)
+
+func _test_action_buttons_disabled_initially_and_on_empty(results: Dictionary) -> void:
+	## Verifies that Open Project, Remove Project, and Seal buttons are disabled
+	## when no project is selected or when the library becomes empty.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_ctrl_action_btns_%s.json" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var open_btn: Button = ctx["open_btn"]
+	var remove_btn: Button = ctx["remove_btn"]
+	var seal_btn: Button = ctx["seal_btn"]
+
+	_expect(open_btn.disabled == true, "Open Project button should be disabled when library is empty", results)
+	_expect(remove_btn.disabled == true, "Remove Project button should be disabled when library is empty", results)
+	_expect(seal_btn.disabled == true, "Seal button should be disabled when library is empty", results)
+
+	controller.add_project_from_path("res://samples/sample_project")
+	_expect(open_btn.disabled == false, "Open Project button should be enabled after project added", results)
+	_expect(remove_btn.disabled == false, "Remove Project button should be enabled after project added", results)
+
+	controller._remove_project_at_index(0)
+	_expect(open_btn.disabled == true, "Open Project button should be disabled when library becomes empty", results)
+	_expect(remove_btn.disabled == true, "Remove Project button should be disabled when library becomes empty", results)
+	_expect(seal_btn.disabled == true, "Seal button should be disabled when library becomes empty", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_registry(storage_path)
+
+func _test_custom_item_list_double_click_activation(results: Dictionary) -> void:
+	## Verifies CustomItemList emits item_selected on single-click and item_activated on double-click.
+	var list := CustomItemList.new()
+	var selected_indices: Array[int] = []
+	var activated_indices: Array[int] = []
+	list.item_selected.connect(func(idx: int): selected_indices.append(idx))
+	list.item_activated.connect(func(idx: int): activated_indices.append(idx))
+
+	list.add_item("Project Alpha")
+	list.add_item("Project Beta")
+	_expect(list.item_count == 2, "CustomItemList should have 2 items", results)
+
+	var btn0: Button = list.get_item_button(0)
+	_expect(btn0 != null, "get_item_button(0) should return Button", results)
+
+	var press_event := InputEventMouseButton.new()
+	press_event.button_index = MOUSE_BUTTON_LEFT
+	press_event.pressed = true
+	press_event.double_click = false
+	btn0.gui_input.emit(press_event)
+	btn0.pressed.emit()
+
+	_expect(selected_indices.size() == 1 and selected_indices[0] == 0, "Single-click should emit item_selected(0)", results)
+	_expect(activated_indices.is_empty(), "Single-click should not emit item_activated", results)
+
+	var double_event := InputEventMouseButton.new()
+	double_event.button_index = MOUSE_BUTTON_LEFT
+	double_event.pressed = true
+	double_event.double_click = true
+	btn0.gui_input.emit(double_event)
+
+	_expect(activated_indices.size() == 1 and activated_indices[0] == 0, "Double-click should emit item_activated(0)", results)
+
+	list.free()
+
 

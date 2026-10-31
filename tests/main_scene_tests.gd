@@ -73,6 +73,14 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 	var projects_list = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsList")
 	_expect(projects_list != null, "Projects list should exist", results)
 
+	var open_project_btn = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/OpenProjectButton") as Button
+	_expect(open_project_btn != null, "Open Project button should exist", results)
+	if open_project_btn != null:
+		_expect(open_project_btn.text == "Open Project", "Open Project button text should be 'Open Project'", results)
+		_expect(open_project_btn.disabled == true, "Open Project button should be disabled initially", results)
+		_expect(open_project_btn.custom_minimum_size == Vector2(140, 32), "Open Project button minimum size should be (140, 32)", results)
+		_expect(open_project_btn.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "Open Project button size flags should be expand fill", results)
+
 	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/AddToolButton") != null, "Add Tool button should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/RemoveToolButton") != null, "Remove Tool button should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/LaunchButton") != null, "Launch button should exist", results)
@@ -97,6 +105,8 @@ func _test_controller_type_instances(results: Dictionary) -> void:
 	_expect(instance.tools_page_controller is ToolsPageController, "tools_page_controller should be ToolsPageController", results)
 	_expect(instance.settings_controller is SettingsController, "settings_controller should be SettingsController", results)
 	_expect(instance.download_dialog_controller is DownloadDialogController, "download_dialog_controller should be DownloadDialogController", results)
+	_expect(instance.btn_open_project != null, "btn_open_project should be wired in main", results)
+	_expect(instance.projects_controller.btn_open_project == instance.btn_open_project, "projects_controller.btn_open_project should match main node", results)
 	_expect(instance.btn_add_remote_project != null, "btn_add_remote_project should be wired in main", results)
 	_expect(instance.projects_controller.btn_add_remote_project == instance.btn_add_remote_project, "projects_controller.btn_add_remote_project should match main node", results)
 	_expect(instance.installed_code_tools != null, "installed_code_tools should be wired", results)

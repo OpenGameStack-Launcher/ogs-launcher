@@ -109,6 +109,13 @@ script = ExtResource("2_cui")
 [node name="ProjectActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library" unique_id=1423751299]
 layout_mode = 2
 
+[node name="OpenProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow" unique_id=2781934012]
+custom_minimum_size = Vector2(140, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Open Project"
+
 [node name="RemoveButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow" unique_id=538681926]
 custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
@@ -120,6 +127,7 @@ text = "Remove Project"
 custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
 size_flags_horizontal = 3
+disabled = true
 text = "Seal for Delivery"
 
 [node name="Project Details" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs"]

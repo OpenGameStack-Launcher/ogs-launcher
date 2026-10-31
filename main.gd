@@ -60,6 +60,7 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var btn_remove_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/RemoveToolButton"
 @onready var btn_change_version = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/ChangeVersionButton"
 @onready var btn_launch_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/LaunchButton"
+@onready var btn_open_project = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/OpenProjectButton"
 @onready var btn_remove_project = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/RemoveButton"
 @onready var btn_seal_for_delivery = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/SealButton"
 @onready var project_dir_dialog = $ProjectDirDialog
@@ -286,7 +287,9 @@ func _ready() -> void:
 	deps.new_file_name_edit = new_file_name_line_edit
 	deps.btn_add_tool = btn_add_tool
 	deps.btn_remove_tool = btn_remove_tool
+	deps.btn_open_project = btn_open_project
 	deps.btn_remove_project = btn_remove_project
+	deps.btn_seal_project = btn_seal_for_delivery
 	deps.btn_launch_tool = btn_launch_tool
 	deps.project_dir_dialog = project_dir_dialog
 	deps.remove_project_dialog = remove_project_dialog
@@ -334,7 +337,7 @@ func _ready() -> void:
 
 	_collect_network_ui_nodes()
 	_apply_offline_ui(false)
-	btn_seal_for_delivery.disabled = false
+	btn_seal_for_delivery.disabled = projects_controller.current_project_dir.is_empty()
 	btn_seal_for_delivery.tooltip_text = ""
 	
 	layout_controller.navigate_to("projects")
