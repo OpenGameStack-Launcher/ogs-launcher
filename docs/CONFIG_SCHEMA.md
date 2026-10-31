@@ -103,7 +103,7 @@ When importing an existing project via **Add Local Project** or selecting a trac
 
 ### User-Triggered Air-Gap
 
-The user enables offline mode through the launcher UI:
+The user enables offline mode through the launcher UI (in the Project Details tab under Project Offline Policy for the active project):
 
 ```json
 {
@@ -165,6 +165,8 @@ Logs are intended for operational events and avoid sensitive data such as full f
 ## Launcher Global Settings (ogs_launcher_settings.json)
 
 In addition to per-project configuration (`ogs_config.json`), the launcher persists global user settings in `ogs_launcher_settings.json` under `OS.get_user_data_dir()`.
+
+**Note on Scope:** Project-specific offline policy flags (`offline_mode` and `force_offline`) reside strictly within each project's local `ogs_config.json` and are configured through the **Project Details** tab on the Projects page. The global Settings page (`PageSettings`) manages launcher-wide system defaults.
 
 ### Settings Fields
 

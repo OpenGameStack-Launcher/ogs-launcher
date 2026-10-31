@@ -159,6 +159,14 @@ In the Project Details tab (Tab 1 of the Projects page), the interface adapts dy
     *   *Explorer Selection:* When a recognized file or direct tool folder is selected in `ProjectExplorerTree`, the button enables and displays `"Open <filename> in <Tool Name>"` (e.g., `"Open main.gd in VSCodium"`).
 *   **Clean Deselection Handlers:** Clicking empty space in either `ProjectToolsList` (`empty_clicked`) or `ProjectExplorerTree` (`nothing_selected`) deselects active items and cleanly reverts the launch button to its disabled prompt state.
 
+### 2.14 Per-Project Offline Policy Configuration (Project Details)
+Rather than managing project-specific offline toggles inside global launcher settings, per-project offline policies are configured directly in the **Project Details** tab (`PageProjects/ProjectsTabs/Project Details`):
+*   **Project Offline Policy Section:** Located beneath the Project Explorer pane, featuring a normalized project path indicator ("Selected: ...") and two dedicated checkbutton toggles with contextual helper descriptions:
+    *   *Offline mode (`offline_mode`):* Blocks outbound network activity while the project is active, allowing tool launches from the Central Library or local project stack.
+    *   *Force offline (`force_offline`):* Enforces strict air-gap isolation, requiring and launching tools exclusively from the project's sealed local `tools/` directory.
+*   **Decoupled State Persistence:** Toggling either policy setting immediately persists changes to the project's local `ogs_config.json`, triggers `OfflineEnforcer.apply_config()`, emits `offline_state_changed` to update status indicators and pill badge styling, and re-validates the project environment.
+*   **Global Settings Separation:** The Settings page (`PageSettings`) remains dedicated strictly to machine-wide configurations (Primary Projects Folder, Network update checks, Mirror settings).
+
 ---
 
 ## 3. Operational Modes & User Stories
