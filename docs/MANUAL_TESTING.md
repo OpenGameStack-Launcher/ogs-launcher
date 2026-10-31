@@ -196,24 +196,33 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
-### Editor Test 3.1: Projects Page — Add Tool / Remove Tool Flow
+### Editor Test 3.1: Projects Page - Add Tool / Remove Tool Flow
 
-**Objective:** Verify tool-management controls update `stack.json` reliably using the Add Tool list dialog.
+**Objective:** Verify tool-management controls update `stack.json` reliably using the Add Tool list dialog, displaying toolchain icons, installation status tags, tooltips, and balanced button sizing.
 
 **Steps:**
 1. Select a project in Project Library (for example `samples/sample_project`)
 2. Click **"Add Tool"**
-3. Confirm dialog opens with a selectable list of tool/version entries (not a dropdown)
-4. Select one tool and click **"Add Tool"**
-5. Verify tools list refreshes immediately and includes the new entry
-6. Repeat Add Tool for one more entry
-7. Select one tool in project tools list, then click **"Remove Tool"**
-8. Verify tools list refreshes immediately and removed entry is gone
+3. Confirm dialog opens with a selectable list of candidate tool/version entries
+4. Verify each tool option displays its 20x20 tool icon (e.g., Blender, GIMP, Godot, Krita, VSCodium) with graceful fallback for unknown tools
+5. Verify candidate items display clear installation status tags (`✓ Installed` or `⬇ Available for Download`)
+6. Hover over candidate items and verify tooltips describe whether the tool is in the Central Library or requires download
+7. Verify dialog footer action buttons maintain balanced sizing (180x36 for confirmation action button and 100x36 for Cancel button)
+8. Select one tool and click **"Add Tool"**
+9. Verify tools list refreshes immediately and includes the new entry
+10. Select a tool row in the project toolchain list and click **"Change Version"**
+11. Verify the Change Version dialog displays 20x20 icons, installation status badges, tooltips, and balanced button dimensions
+12. Close dialog, select a tool row, then click **"Remove Tool"**
+13. Verify tools list refreshes immediately and removed entry is gone
 
 **Expected Results:**
 - ✅ Add Tool dialog opens consistently across repeated opens
+- ✅ Candidate tool options display 20x20 tool icons and clear status tags (`✓ Installed` vs `⬇ Available for Download`)
+- ✅ Candidate items display informative tooltips indicating library presence
+- ✅ Dialog footer buttons render at balanced dimensions (180x36 confirm, 100x36 cancel) without stretching across the full footer width
 - ✅ Add Tool uses a list-style selector and supports single selection
 - ✅ Added tools persist to the project manifest and remain after app restart
+- ✅ Change Version dialog preserves icon rendering, status badges, and balanced button sizing
 - ✅ Remove Tool updates the project manifest and UI immediately
 - ✅ Status label reflects success/failure states clearly
 

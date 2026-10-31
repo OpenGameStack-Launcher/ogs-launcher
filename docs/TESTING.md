@@ -394,6 +394,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Compact confirmation and creation dialog layouts: verifies compact 420x150 dimensions and 16px horizontal / 12px vertical internal content margins for NewProjectDialog, RemoveProjectDialog, and NewFileDialog
   - Input validation and empty-input guards: verifies that NewProjectDialog and NewFileDialog disable confirm buttons on empty or whitespace input and enable upon typing valid names
   - New file instruction previews: verifies that NewFileDialog dynamically updates its instruction label with target subdirectories and inferred file extensions based on active explorer selection or project toolchain
+  - Add Tool dialog presentation, icons, status tags, and button sizing: verifies 20x20 uniform icon rendering on `add_tool_option_list`, tool icon caching and attachment, installation status tags (`✓ Installed` vs `⬇ Available for Download`), presence-checking tooltips, unknown tool fallback with null icon, selection/confirmation compatibility, and balanced confirmation (180x36) and cancel (100x36) button sizing across both Add Tool and Change Version dialog flows
 
 - **[tests/custom_item_list_tests.gd](tests/custom_item_list_tests.gd)** - Validates `CustomItemList` structured project cards, visual hierarchy, badge formatting, selection styling, and backward compatibility (6 tests).
   - Dedicated card surface with distinct background (`Color(0.14, 0.16, 0.20)`) and 1px border (`Color(0.22, 0.26, 0.32)`)
