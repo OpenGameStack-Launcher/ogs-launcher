@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 1304
+tests passed: 1358
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -349,6 +349,11 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Single-clicking a missing tool row in `project_tools_list` selects it and enables Remove Tool and Change Version without emitting `tool_view_requested` or navigating away
   - Double-clicking (`item_activated`) a missing tool row in `project_tools_list` emits `tool_view_requested` to navigate to the Tools page
   - Clicking "Launch Selected Tool" with a missing tool selected emits `tool_view_requested` to guide the user to download it, updating the status label rather than attempting execution
+  - Single-clicking a project in `projects_list` selects the project, updates Tab 1 title to the stack name, enables action buttons, and keeps `current_tab == 0` (Project Library)
+  - Double-clicking (`item_activated`) a project in `projects_list` selects the project and switches `current_tab` to 1 (Project Details)
+  - Clicking "Open Project" button switches `current_tab` to 1 (Project Details)
+  - Open Project, Remove Project, and Seal buttons are disabled initially when library is empty, enabled on project addition, and disabled when library becomes empty
+  - `CustomItemList` emits `item_selected` on single-click and `item_activated` on double-click
 
 - **[tests/projects_page_indicators_tests.gd](tests/projects_page_indicators_tests.gd)** - Tests tool availability indicators in Projects page.
   - Tool items populated with ID and version
@@ -364,6 +369,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Settings page Projects folder controls (label, path line edit, browse button, reset button) exist and wire properly
   - Primary projects root browse dialog is queued for free when closed or canceled without selection
   - Tool action rows include Add Tool, Remove Tool, Launch Selected Tool, Remove Project, and Seal for Delivery
+  - OpenProjectButton exists with minimum size Vector2(140, 32), starts disabled, and wires properly in UIDeps
   - `installed_code_tools` and `download_code_tools` node bindings are wired
   - AddRemoteProjectButton wired to UIDeps and toggles disabled state and descriptive tooltip on offline state change
 
