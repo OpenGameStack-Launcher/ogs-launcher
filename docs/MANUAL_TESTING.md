@@ -131,13 +131,13 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
-### Editor Test 2: Projects Page — Add sample_project (Development)
+### Editor Test 2: Projects Page - Add sample_project (Development)
 
 **Objective:** Verify that adding a development project to the Project Library shows missing tools with visual indicators and click-through navigation.
 
 **Steps:**
 1. Close onboarding wizard (if still visible)
-2. On Projects page, click **"Add Project"**
+2. On Projects page, click **"Add Local Project"**
 3. In folder picker, navigate to `samples/sample_project/`
 4. Click **"Add Project"** in the picker
 5. Observe tools list, visual indicators, button states, and status labels
@@ -165,12 +165,12 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
-### Editor Test 3: Projects Page — Add sample_project_sealed (Sealed/Air-Gapped)
+### Editor Test 3: Projects Page - Add sample_project_sealed (Sealed/Air-Gapped)
 
 **Objective:** Verify that sealed projects display offline enforcement and expected UI state even with missing tools.
 
 **Steps:**
-1. On Projects page, click **"Add Project"**
+1. On Projects page, click **"Add Local Project"**
 2. In folder picker, navigate to `samples/sample_project_sealed/`
 3. Click **"Add Project"** in the picker
 4. Observe offline status, tool indicators, and button states
@@ -670,9 +670,54 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 14: Primary Projects Folder Configuration and Auto-Generated ogs_config.json
+
+**Objective:** Verify that the Primary Projects Folder setting in PageSettings allows configuring and resetting the project directory, affects New Project creation, and verify that importing a project containing only `stack.json` auto-generates a valid `ogs_config.json`.
+
+**Steps:**
+1. Navigate to the **Settings** page (click "Settings" in sidebar).
+2. Locate the **Projects** section at the top of the Settings page.
+3. Verify that the **Primary Projects Folder** input displays the default path hint pointing to `%USERPROFILE%\OGS_Projects` (or `$HOME/OGS_Projects`).
+4. Click **"Browse"** next to Primary Projects Folder:
+   - Select a custom folder (such as a temporary folder `user://custom_projects` or `C:\Temp\Custom_OGS_Projects`).
+   - Confirm the input field updates to the selected folder path.
+5. Navigate to the **Projects** page and click **"New Project"**:
+   - Inspect the instructions label inside the New Project dialog.
+   - Confirm the instructions label states that the folder will be created under the custom folder path.
+   - Enter `Manual_Test_Project` and click **OK**.
+   - Verify that the new project directory `Manual_Test_Project` is created inside the custom folder on disk.
+6. Return to the **Settings** page and click **"Reset to Default"** next to Primary Projects Folder:
+   - Verify the input field clears and placeholder text returns to the default user directory.
+   - Return to Projects page, click "New Project", and confirm the instructions label points back to the default OGS Projects directory.
+7. Prepare a test folder containing ONLY `stack.json` (no `ogs_config.json`):
+   - In a temporary folder, create `stack.json` with a valid stack payload (`{"schema_version": 1, "stack_name": "Stack Only Test", "tools": []}`).
+   - Ensure no `ogs_config.json` exists in that directory.
+8. On the Projects page, click **"Add Local Project"**:
+   - In the folder picker, select the temporary folder.
+   - Confirm the "Add Project" button in the picker is enabled.
+   - Click "Add Project" in the picker dialog.
+   - Verify the project is added to the Project Library and selected.
+   - Inspect the folder on disk: verify `ogs_config.json` has been auto-generated with default offline settings (`offline_mode: false`, `force_offline: false`).
+
+**Expected Results:**
+- [x] Primary Projects Folder controls render cleanly at the top of the Settings page.
+- [x] Browse button opens directory dialog and updates path.
+- [x] New Project dialog instructions label reflects active primary folder.
+- [x] Project scaffolding is created in the configured folder.
+- [x] Reset to Default reverts the primary folder to the standard default path.
+- [x] Projects with only `stack.json` are accepted by Add Local Project.
+- [x] Missing `ogs_config.json` is auto-generated on disk with valid default settings.
+
+**Pass Criteria:**
+- Custom projects folder persists and redirects project creation.
+- Reset to Default restores standard directory.
+- Projects containing only stack.json import successfully with auto-generated configuration.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-13, fill in this table:
+After completing Editor Tests 1-14, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -691,6 +736,7 @@ After completing Editor Tests 1-13, fill in this table:
 | 11: Project Tools List Launch | ✅/⚠️/❌ | | |
 | 12: Stack-Aware Explorer & Double-Click | ✅/⚠️/❌ | | |
 | 13: Debug MCP Visual QA Bridge | ✅/⚠️/❌ | | |
+| 14: Primary Projects Folder & Auto-Config | ✅/⚠️/❌ | | |
 
 ---
 

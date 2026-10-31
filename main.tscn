@@ -68,7 +68,7 @@ layout_mode = 2
 custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
 size_flags_horizontal = 3
-text = "Add Project"
+text = "Add Local Project"
 
 [node name="NewProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls" unique_id=866719061]
 custom_minimum_size = Vector2(140, 32)
@@ -419,6 +419,32 @@ theme_override_constants/separation = 8
 [node name="Label" type="Label" parent="AppLayout/Content/PageSettings" unique_id=91038207]
 layout_mode = 2
 text = "Settings"
+
+[node name="ProjectsSettingsLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=2081194210]
+layout_mode = 2
+text = "Projects"
+
+[node name="ProjectsRootContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings" unique_id=1482093121]
+layout_mode = 2
+
+[node name="ProjectsRootLabel" type="Label" parent="AppLayout/Content/PageSettings/ProjectsRootContainer" unique_id=1748291032]
+custom_minimum_size = Vector2(100, 0)
+layout_mode = 2
+text = "Primary Projects Folder:"
+vertical_alignment = 1
+
+[node name="ProjectsRootPath" type="LineEdit" parent="AppLayout/Content/PageSettings/ProjectsRootContainer" unique_id=1938201948]
+layout_mode = 2
+size_flags_horizontal = 3
+placeholder_text = "Default (e.g. %USERPROFILE%/OGS_Projects)"
+
+[node name="ProjectsRootBrowseButton" type="Button" parent="AppLayout/Content/PageSettings/ProjectsRootContainer" unique_id=1392810481]
+layout_mode = 2
+text = "Browse"
+
+[node name="ProjectsRootResetButton" type="Button" parent="AppLayout/Content/PageSettings/ProjectsRootContainer" unique_id=1582910492]
+layout_mode = 2
+text = "Reset to Default"
 
 [node name="NetworkLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=486317142]
 layout_mode = 2

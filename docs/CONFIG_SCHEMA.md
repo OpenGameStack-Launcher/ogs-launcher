@@ -99,6 +99,8 @@ var config = OgsConfig.load_from_file("res://ogs_config.json")
 # Result: offline_mode=false, force_offline=false, no errors
 ```
 
+When importing an existing project via **Add Local Project** or selecting a tracked project that only contains `stack.json`, the launcher automatically writes a default `ogs_config.json` to the project root with standard settings (`offline_mode=false`, `force_offline=false`). This allows developers to clone repositories without local configuration files and begin development immediately.
+
 ### User-Triggered Air-Gap
 
 The user enables offline mode through the launcher UI:
@@ -159,6 +161,30 @@ Rotation:
 - Up to 3 backup files (`ogs_launcher.log.1` to `.3`)
 
 Logs are intended for operational events and avoid sensitive data such as full filesystem paths.
+
+## Launcher Global Settings (ogs_launcher_settings.json)
+
+In addition to per-project configuration (`ogs_config.json`), the launcher persists global user settings in `ogs_launcher_settings.json` under `OS.get_user_data_dir()`.
+
+### Settings Fields
+
+| Field | Type | Default | Required | Description |
+|-------|------|---------|----------|-------------|
+| `projects_root` | String | `""` | No | Custom primary directory where new project scaffolds are created. When empty, resolves to `%USERPROFILE%\OGS_Projects` or `$HOME/OGS_Projects`. |
+| `mirror_root` | String | `""` | No | Optional local filesystem mirror root containing pre-downloaded tool archives. |
+| `remote_repository_url` | String | Standard catalog URL | No | Remote URL pointing to the master `repository.json` catalog. |
+| `timestamp` | Integer | System ticks | No | Millisecond timestamp recording when settings were last saved. |
+
+### Example ogs_launcher_settings.json
+
+```json
+{
+  "projects_root": "D:/GameProjects",
+  "mirror_root": "E:/OGS_Mirror",
+  "remote_repository_url": "https://raw.githubusercontent.com/OpenGameStack-Launcher/ogs-frozen-stacks/main/repository.json",
+  "timestamp": 1740924000000
+}
+```
 
 ## Future Extensions (Phase 2+)
 
