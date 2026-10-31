@@ -146,11 +146,12 @@ dir "$env:LOCALAPPDATA\OGS\"
 5. Observe tools list, visual indicators, button states, and status labels
 
 **Expected Results:**
-- ✅ Tools list populates with two entries: "godot v4.7.2" and "blender v4.5.7"
-- ✅ Missing tools show **⚠️ yellow warning triangle** indicator (available but not installed)
-- ✅ Hovering over missing tool shows tooltip: "Tool not installed. Click to download."
+- ✅ "Stack Toolchain" section header label renders directly above the tools list in 18px cyan accent typography
+- ✅ Tools list populates with two entries: "Godot v4.7.2" and "Blender v4.5.7", each displaying its 20x20 tool icon
+- ✅ Missing tools show explicit warning indicator: "⚠️ Missing (Available in Tools)"
+- ✅ Hovering over missing tool shows tooltip: "Tool is not installed. This tool can be downloaded from the Tools page."
 - ✅ "Seal for Delivery" button appears but is **disabled** (with reason: missing tools)
-- ✅ Status label shows: "Manifest loaded. 2 tool(s) missing — visit Tools page to download."
+- ✅ Status label shows: "Manifest loaded. 2 tool(s) missing - visit Tools page to download."
 - ✅ "Offline" label shows: "Offline Mode: Disabled" (since force_offline=false in config)
 - ✅ No errors in Output console
 
@@ -179,11 +180,12 @@ dir "$env:LOCALAPPDATA\OGS\"
 4. Observe offline status, tool indicators, and button states
 
 **Expected Results:**
-- ✅ Tools list populates with "godot v4.7.2" and "blender v4.5.7"
-- ✅ Missing tools show **❌ red X** indicator (unavailable due to offline mode)
-- ✅ Hovering over missing tool shows tooltip: "Tool not available in offline mode."
+- ✅ "Stack Toolchain" section header label renders directly above the tools list in 18px cyan accent typography
+- ✅ Tools list populates with "Godot v4.7.2" and "Blender v4.5.7", each displaying its 20x20 tool icon
+- ✅ Missing tools show explicit unavailable indicator: "❌ Unavailable in Repository"
+- ✅ Hovering over missing tool shows tooltip: "Tool is not installed and is not available in the active repository."
 - ✅ "Seal for Delivery" button remains **disabled** (tools missing from library)
-- ✅ Status label shows: "Manifest loaded. 2 tool(s) missing — offline mode prevents downloads."
+- ✅ Status label shows: "Manifest loaded. 2 tool(s) missing - offline mode prevents downloads."
 - ✅ "Offline" label shows: **"Offline Mode: Forced (force_offline=true)"** in distinctive color (red text)
 - ✅ No online-only features in UI (if any implemented)
 
@@ -493,6 +495,46 @@ dir "$env:LOCALAPPDATA\OGS\"
 - Verify `ProjectsController._matches_search_filter()` query logic and attribute extraction.
 - Verify `ProjectsController._filtered_indices` mapping on selection and activation.
 - Verify `EmptyLibraryState` visibility toggling and button wiring in `_refresh_projects_list()`.
+
+---
+
+### Editor Test 3.9: Projects Page - Stack Toolchain Section Header, Tool Icons, and Status Labels
+
+**Objective:** Verify that the Project Details tab renders the "Stack Toolchain" section header, uniform 20x20 tool icons, explicit status labels (Installed, Missing, Unavailable), and informative status tooltips.
+
+**Steps:**
+1. Launch the launcher and navigate to the Projects page.
+2. Select a project in the Project Library (e.g. `samples/sample_project`) and switch to Tab 1 ("Project Details") by double-clicking or clicking "Open Project".
+3. Verify that the "Stack Toolchain" section header (`ToolchainHeaderLabel`) is rendered directly above `ProjectToolsList` with 18px font size and cyan accent color (`Color(0.45, 0.8, 1, 1)`).
+4. Inspect the tool items in `ProjectToolsList`:
+   - Verify standard tool entries (Godot, Blender, GIMP, Git, Krita, Audacity, VSCodium) display their corresponding 20x20 icon loaded from `res://Images/tools/`.
+   - Verify unknown or custom tool IDs fall back cleanly to null icon without errors.
+   - Verify tool icons render at a uniform 20x20 size (`fixed_icon_size = Vector2i(20, 20)`).
+5. Inspect the status indicator text appended to each tool item:
+   - Installed tools: display `✓ Installed`.
+   - Missing tools available in repository: display `⚠️ Missing (Available in Tools)`.
+   - Missing tools not in repository (or in offline mode): display `❌ Unavailable in Repository`.
+6. Hover over each tool item and inspect its tooltip:
+   - Installed tools: verify tooltip explains `<Tool> v<Version> is installed and ready to launch.` (including configured tool path if present).
+   - Missing tools: verify tooltip explains `<Tool> v<Version> is not installed. This tool can be downloaded from the Tools page.` (or indicates unavailable in repository).
+7. Double-click an uninstalled tool item:
+   - Verify that double-clicking emits `tool_view_requested` and navigates cleanly to the Tools page.
+
+**Expected Results:**
+- [x] "Stack Toolchain" section header sits directly above `ProjectToolsList` with matching header styling.
+- [x] Tool items render crisp, uniform 20x20 icons with proper fallback for unmapped tools.
+- [x] Explicit human-readable status labels clearly distinguish installed, downloadable, and unavailable tools.
+- [x] Informative tooltips provide context and action guidance on hover.
+- [x] Double-clicking uninstalled tools navigates to the Tools page.
+
+**Pass Criteria:**
+- Section header, icons, status labels, and tooltips render cleanly with zero clipping or layout defects.
+- Tool list interaction, selection, and activation workflows remain reliable.
+
+**If test fails:**
+- Verify `ToolchainHeaderLabel` node and properties in `main.tscn`.
+- Check `ProjectsController.TOOL_ICON_PATHS` and `_get_tool_icon()` caching.
+- Verify `ProjectsController._populate_tools_list()` status classification logic and tooltip generation.
 
 ---
 

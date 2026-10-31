@@ -383,6 +383,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Filtered selection and data loading: verifies index mapping between filtered UI card positions and `registry_manager.tracked_projects` so selecting or double-clicking a filtered project loads and activates the correct project
   - Empty state on zero search results and clear action: verifies empty state presentation with "No Projects Match Filter" when a query matches zero projects, and list restoration via the Clear Filter button
   - Empty state transitions on project addition: verifies that adding a project transitions from the empty state view to a populated projects list
+  - Toolchain section header and list icons: verifies ToolchainHeaderLabel presence in main.tscn, 20x20 uniform icon sizing on project_tools_list, tool icon assignment, and explicit status labels/tooltips
 
 - **[tests/custom_item_list_tests.gd](tests/custom_item_list_tests.gd)** - Validates `CustomItemList` structured project cards, visual hierarchy, badge formatting, selection styling, and backward compatibility (6 tests).
   - Dedicated card surface with distinct background (`Color(0.14, 0.16, 0.20)`) and 1px border (`Color(0.22, 0.26, 0.32)`)
@@ -393,10 +394,13 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Memory safety, `clear()` cleanup, and single-click (`item_selected`) / double-click (`item_activated`) signals
   - API backward compatibility for `add_item(text)`, `item_count`, `select(index)`, tooltips, and getters
 
-- **[tests/projects_page_indicators_tests.gd](tests/projects_page_indicators_tests.gd)** - Tests tool availability indicators in Projects page.
+- **[tests/projects_page_indicators_tests.gd](tests/projects_page_indicators_tests.gd)** - Tests tool availability indicators, section header, and tool icons in Projects page.
   - Tool items populated with ID and version
   - Tool availability tracking (_tool_availability dictionary)
-  - Visual indicators for missing vs available tools
+  - ToolchainHeaderLabel in main.tscn hierarchy directly above ProjectToolsList with 18px cyan accent styling
+  - Fixed 20x20 icon sizing configured on ProjectToolsList
+  - Tool icon mapping from res://Images/tools/ and case-insensitive lookup with graceful fallback for unknown tools
+  - Explicit status labels (✓ Installed, ⚠️ Missing (Available in Tools), ❌ Unavailable in Repository) and detailed status tooltips in ProjectToolsList
   - Double-click and launch signal emission for tool navigation on missing tools
   - Signal integration with ToolsController for availability checking
   - Status bar indicators integration: verifies warning severity modulation on missing tool guidance and pill badge initialization on offline status label
