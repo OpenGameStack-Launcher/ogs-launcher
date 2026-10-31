@@ -54,6 +54,12 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 	if add_button != null:
 		_expect(add_button.text == "Add Local Project", "Add button text should be 'Add Local Project'", results)
 
+	var add_remote_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton") as Button
+	_expect(add_remote_button != null, "Add Remote Project button should exist", results)
+	if add_remote_button != null:
+		_expect(add_remote_button.text == "Add Remote Project", "Add Remote Project button text should be 'Add Remote Project'", results)
+		_expect(add_remote_button.size_flags_horizontal == 3, "Add Remote Project button size_flags_horizontal should be 3", results)
+
 	var projects_root_path = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootPath") as LineEdit
 	var projects_root_browse = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootBrowseButton") as Button
 	var projects_root_reset = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootResetButton") as Button
@@ -91,6 +97,8 @@ func _test_controller_type_instances(results: Dictionary) -> void:
 	_expect(instance.tools_page_controller is ToolsPageController, "tools_page_controller should be ToolsPageController", results)
 	_expect(instance.settings_controller is SettingsController, "settings_controller should be SettingsController", results)
 	_expect(instance.download_dialog_controller is DownloadDialogController, "download_dialog_controller should be DownloadDialogController", results)
+	_expect(instance.btn_add_remote_project != null, "btn_add_remote_project should be wired in main", results)
+	_expect(instance.projects_controller.btn_add_remote_project == instance.btn_add_remote_project, "projects_controller.btn_add_remote_project should match main node", results)
 	_expect(instance.installed_code_tools != null, "installed_code_tools should be wired", results)
 	_expect(instance.download_code_tools != null, "download_code_tools should be wired", results)
 
@@ -105,10 +113,17 @@ func _test_network_ui_disabled_offline(results: Dictionary) -> void:
 	var instance = scene.instantiate()
 	var check_updates = instance.get_node_or_null("AppLayout/Content/PageSettings/CheckUpdatesButton")
 	_expect(check_updates != null, "Check Updates button should exist", results)
-	if check_updates != null:
+	var add_remote = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton") as Button
+	_expect(add_remote != null, "Add Remote Project button should exist for offline UI test", results)
+	if check_updates != null and add_remote != null:
 		instance._collect_network_ui_nodes()
 		instance._on_offline_state_changed(true, "offline_mode")
 		_expect(check_updates.disabled == true, "network UI should be disabled when offline", results)
+		_expect(add_remote.disabled == true, "Add Remote Project button should be disabled when offline", results)
+		_expect(add_remote.tooltip_text == "Disabled because OGS Launcher is currently in offline mode.", "Add Remote Project button should show descriptive offline tooltip", results)
+		instance._on_offline_state_changed(false, "online_mode")
+		_expect(add_remote.disabled == false, "Add Remote Project button should be enabled when online", results)
+		_expect(add_remote.tooltip_text == "", "Add Remote Project button tooltip should be empty when online", results)
 	instance.free()
 
 func _test_mirror_root_browse_dialog_frees_on_close(results: Dictionary) -> void:

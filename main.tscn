@@ -63,12 +63,20 @@ text = "Projects"
 
 [node name="ProjectsControls" type="HBoxContainer" parent="AppLayout/Content/PageProjects" unique_id=938020695]
 layout_mode = 2
+theme_override_constants/separation = 16
 
 [node name="AddButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls" unique_id=755997457]
 custom_minimum_size = Vector2(140, 32)
 layout_mode = 2
 size_flags_horizontal = 3
 text = "Add Local Project"
+
+[node name="AddRemoteProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls"]
+custom_minimum_size = Vector2(140, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Add Remote Project"
+metadata/network_ui = true
 
 [node name="NewProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls" unique_id=866719061]
 custom_minimum_size = Vector2(140, 32)

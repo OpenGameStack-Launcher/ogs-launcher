@@ -39,17 +39,21 @@ const PICKER_ACTION_ADD_PROJECT := "add_project"
 const ProjectRegistryManagerScript = preload("res://scripts/projects/project_registry_manager.gd")
 const ProjectToolManagerScript = preload("res://scripts/projects/project_tool_manager.gd")
 const ProjectCreationDialogControllerScript = preload("res://scripts/projects/project_creation_dialog.gd")
+const RemoteProjectDialogControllerScript = preload("res://scripts/projects/remote_project_dialog.gd")
 
 var registry_manager: ProjectRegistryManager
 var tool_manager: ProjectToolManager
 var creation_dialog: ProjectCreationDialogController
+var remote_dialog: RemoteProjectDialogController
 
 func _init() -> void:
 	registry_manager = ProjectRegistryManagerScript.new()
 	tool_manager = ProjectToolManagerScript.new()
 	creation_dialog = ProjectCreationDialogControllerScript.new()
+	remote_dialog = RemoteProjectDialogControllerScript.new()
 
 var btn_add_project: Button
+var btn_add_remote_project: Button
 var btn_new_project: Button
 var projects_list: Control
 var lbl_project_status: Label
@@ -92,6 +96,7 @@ var _add_tool_candidates: Array = []
 
 class UIDeps extends RefCounted:
 	var btn_add_project: Button
+	var btn_add_remote_project: Button = null
 	var btn_new_project: Button
 	var projects_list: Control
 	var lbl_project_status: Label
@@ -115,6 +120,7 @@ class UIDeps extends RefCounted:
 	var projects_tabs: TabContainer
 	var project_tools_list: ItemList
 	var btn_change_version: Button
+	var app_node: Node = null
 
 func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	registry_manager.setup(self)
@@ -129,6 +135,7 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	]:
 		assert(deps.get(dep_name) != null, "ProjectsController.setup: deps.%s is required" % dep_name)
 	btn_add_project = deps.btn_add_project
+	btn_add_remote_project = deps.btn_add_remote_project
 	btn_new_project = deps.btn_new_project
 	projects_list = deps.projects_list
 	lbl_project_status = deps.lbl_project_status
@@ -157,6 +164,8 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	
 	tools_controller = tools_ctrl
 	btn_add_project.pressed.connect(_on_add_project_pressed)
+	if btn_add_remote_project != null:
+		btn_add_remote_project.pressed.connect(_on_add_remote_project_pressed)
 	btn_new_project.pressed.connect(_on_new_project_pressed)
 	btn_add_tool.pressed.connect(_on_add_tool_pressed)
 	btn_remove_tool.pressed.connect(_on_remove_tool_pressed)
@@ -222,6 +231,22 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	environment_validator = ProjectEnvironmentValidator.new()
 	_library_manager = LibraryManager.new()
 	
+	var parent_node: Node = null
+	if deps.app_node != null:
+		parent_node = deps.app_node
+	elif btn_add_remote_project != null and btn_add_remote_project.get_parent() != null:
+		parent_node = btn_add_remote_project.get_parent()
+	elif btn_add_project != null and btn_add_project.get_parent() != null:
+		parent_node = btn_add_project.get_parent()
+	
+	if remote_dialog == null:
+		remote_dialog = RemoteProjectDialogControllerScript.new()
+	remote_dialog.setup(parent_node, _library_manager)
+	if not remote_dialog.clone_completed.is_connected(_on_remote_clone_completed):
+		remote_dialog.clone_completed.connect(_on_remote_clone_completed)
+	if not remote_dialog.tool_view_requested.is_connected(_on_remote_tool_view_requested):
+		remote_dialog.tool_view_requested.connect(_on_remote_tool_view_requested)
+	
 	_apply_offline_config(null)
 	_update_offline_status(null)
 
@@ -259,6 +284,30 @@ func _on_new_project_confirmed():
 	creation_dialog._on_new_project_confirmed()
 func _on_change_version_pressed():
 	tool_manager._on_change_version_pressed()
+
+func _on_add_remote_project_pressed() -> void:
+	## Handles Add Remote Project button press.
+	if OfflineEnforcer.is_offline():
+		_update_status("Status: Remote project operations are blocked in offline mode.")
+		return
+	var primary_root: String = ""
+	if registry_manager != null:
+		primary_root = registry_manager.get_primary_projects_folder()
+	if remote_dialog != null:
+		remote_dialog.open(primary_root)
+
+func _on_remote_clone_completed(cloned_dir: String) -> void:
+	## Registers newly cloned repository into project library and selects it.
+	add_project_from_path(cloned_dir)
+
+func _on_remote_tool_view_requested(tool_id: String, tool_version: String) -> void:
+	## Forwards tool view navigation request to main application.
+	tool_view_requested.emit(tool_id, tool_version)
+
+func cleanup() -> void:
+	## Cleans up active child processes, dialogs, and worker threads on application shutdown.
+	if remote_dialog != null:
+		remote_dialog.free_nodes()
 func _on_add_tool_pressed(title_override: String = "Add Tool"):
 	tool_manager._on_add_tool_pressed(title_override)
 func _on_add_tool_item_selected(index: int):

@@ -75,6 +75,7 @@ func _test_all_required_nodes_exist(results: Dictionary) -> void:
 		"AppLayout/Sidebar/VBoxContainer/BtnProjects",
 		"AppLayout/Sidebar/VBoxContainer/BtnSettings",
 		"AppLayout/Content/PageProjects",
+		"AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton",
 		"AppLayout/Content/PageSettings",
 		"AppLayout/Content/PageSettings/ProjectsSettingsLabel",
 		"AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootLabel",
