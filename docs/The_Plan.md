@@ -370,6 +370,15 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Enhanced new file creation flow: supports all text extensions, creates empty files on disk, and defaults extensionless files to .txt with VSCodium when VSCodium is in the stack
 - 32 test suites passing (916 total tests) with zero failures
 
+**Automated CI Testing, Release Packaging, and GitHub Release Publishing (Oct 31, 2026):**
+- Automated CI Workflow (`.github/workflows/ci.yml`): Runs on all pull requests and pushes to `main` on `windows-latest` with Godot 4.7.2, Windows export templates, and rcedit caching, headless editor import, full 33-suite headless test runner execution, and packaging smoke checks.
+- Build-First Automated Release Workflow (`.github/workflows/release.yml`): Triggered via `workflow_dispatch` on `main` with strict semantic version validation (`^[0-9]+\.[0-9]+\.[0-9]+$`), executing full test suite and release build, verifying EXE metadata and SHA-256 checksums, pushing git tag `v<version>`, and publishing a standard Latest GitHub Release.
+- Parameterized Windows Release Packaging Script (`scripts/release/build_release_package.ps1`): Replaces retired `build_alpha_package.ps1`, supporting `-Version`, `-GodotPath`, `-RcEditPath`, `-SkipTests`, and `-SkipZip`, generating deterministic staging artifacts, ZIP distribution, and companion `.sha256` checksum file.
+- Updated `export_presets.cfg`: Default export path transitioned from alpha to `artifacts/release/OGS-Launcher-win64/OGS-Launcher.exe`.
+- Retired `docs/ALPHA_PACKAGING.md` and created canonical `docs/RELEASE_PACKAGING.md`.
+- Updated `.agents/skills/release-management/SKILL.md` for remote GitHub Actions dispatch, liveness monitoring, and curated release note drafting.
+- Added offline test suite `tests/release_packaging_tests.gd` covering export preset invariants, strict semver regex, packaging script contract, logo icon asset, and workflow configurations (33 test suites passing, 969 total tests with zero failures).
+
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
 - Collapsible UI sections for scalability

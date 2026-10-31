@@ -57,7 +57,7 @@ This project uses a structured multi-agent workflow for issue creation, resoluti
 
 ### Agent Skills (`.agents/skills/`)
 - **Issue Orchestration (`.agents/skills/issue-orchestration/SKILL.md`):** Defines how the primary orchestrator spawns and manages single-task `issue_creator`, `issue_resolver`, and `pr_reviewer` subagents sequentially with 10-minute liveness timers and strict user authorization gates.
-- **Release Management (`.agents/skills/release-management/SKILL.md`):** Defines the `release_manager` subagent pipeline for building, stamping, verifying, and publishing Windows alpha release packages (`scripts/release/build_alpha_package.ps1`).
+- **Release Management (`.agents/skills/release-management/SKILL.md`):** Defines the `release_manager` subagent pipeline for dispatching, monitoring, verifying, and publishing Windows release packages via GitHub Actions and `scripts/release/build_release_package.ps1`.
 - **Code Review (`.agents/skills/code-review/SKILL.md`):** Structured checklist for reviewing GDScript, `.tscn`, `.tres`, and `project.godot` diffs against Godot 4.7.2 and OGS standards.
 
 ### Canonical Workflow Guides (`docs/`)
@@ -67,4 +67,4 @@ This project uses a structured multi-agent workflow for issue creation, resoluti
 - **Automated Testing Guide:** [docs/TESTING.md](docs/TESTING.md)
 - **Manual Testing Guide:** [docs/MANUAL_TESTING.md](docs/MANUAL_TESTING.md)
 - **Project Architecture & Roadmap:** [docs/Design_Doc.md](docs/Design_Doc.md) and [docs/The_Plan.md](docs/The_Plan.md)
-- **Alpha Packaging Guide:** [docs/ALPHA_PACKAGING.md](docs/ALPHA_PACKAGING.md)
+- **Release Packaging Guide:** [docs/RELEASE_PACKAGING.md](docs/RELEASE_PACKAGING.md)
