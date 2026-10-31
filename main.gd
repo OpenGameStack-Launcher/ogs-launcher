@@ -67,17 +67,17 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var projects_status_bar = $AppLayout/Content/PageProjects/ProjectsStatusBar
 @onready var lbl_project_status = $AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel
 @onready var lbl_offline_status = $AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel
-@onready var toolchain_header_label: Label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolchainHeaderLabel"
-@onready var project_tools_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectToolsList"
-@onready var lbl_tools_list_title = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/ExplorerLabel"
-@onready var project_explorer_tree = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectExplorerTree"
-@onready var new_folder_btn = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/NewFolderBtn"
-@onready var new_file_btn = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/NewFileBtn"
+@onready var toolchain_header_label: Label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel"
+@onready var project_tools_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ProjectToolsList"
+@onready var lbl_tools_list_title = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel"
+@onready var project_explorer_tree = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ProjectExplorerTree"
+@onready var new_folder_btn = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/NewFolderBtn"
+@onready var new_file_btn = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/NewFileBtn"
 @onready var new_file_dialog = $NewFileDialog
 @onready var new_file_name_line_edit = $NewFileDialog/VBoxContainer/FileNameLineEdit
-@onready var btn_add_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/AddToolButton"
-@onready var btn_remove_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/RemoveToolButton"
-@onready var btn_change_version = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/ChangeVersionButton"
+@onready var btn_add_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/AddToolButton"
+@onready var btn_remove_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/RemoveToolButton"
+@onready var btn_change_version = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/ChangeVersionButton"
 @onready var btn_launch_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/LaunchButton"
 @onready var btn_open_project = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/OpenProjectButton"
 @onready var btn_remove_project = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/RemoveButton"
@@ -341,8 +341,8 @@ func _apply_global_theme() -> void:
 		get_node_or_null("AppLayout/Content/PageSettings/NetworkLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageSettings/MirrorSettingsLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineSettingsLabel") as Label,
-		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolchainHeaderLabel") as Label,
-		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/ExplorerLabel") as Label,
+		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel") != null else find_child("ToolchainHeaderLabel", true, false) as Label),
+		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel") != null else find_child("ExplorerLabel", true, false) as Label),
 		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyTitleLabel") as Label
 	]
 	for header: Label in section_headers:

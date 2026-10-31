@@ -112,8 +112,8 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 		_expect(open_project_btn.custom_minimum_size == Vector2(140, 32), "Open Project button minimum size should be (140, 32)", results)
 		_expect(open_project_btn.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "Open Project button size flags should be expand fill", results)
 
-	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/AddToolButton") != null, "Add Tool button should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/RemoveToolButton") != null, "Remove Tool button should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/AddToolButton") != null, "Add Tool button should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/RemoveToolButton") != null, "Remove Tool button should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/LaunchButton") != null, "Launch button should exist", results)
 
 	instance.free()
@@ -282,7 +282,7 @@ func _test_typographic_scale(results: Dictionary) -> void:
 		"AppLayout/Content/PageSettings/NetworkLabel",
 		"AppLayout/Content/PageSettings/MirrorSettingsLabel",
 		"AppLayout/Content/PageSettings/ProjectOfflineSettingsLabel",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/ExplorerLabel"
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel"
 	]
 	for path: String in section_header_paths:
 		var header: Label = instance.get_node_or_null(path) as Label
@@ -544,10 +544,10 @@ func _test_main_scene_button_variations(results: Dictionary) -> void:
 	var expected_secondary: Array[String] = [
 		"AppLayout/Content/PageProjects/ProjectsControls/AddButton",
 		"AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/AddToolButton",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/ChangeVersionButton",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/NewFolderBtn",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/NewFileBtn",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/AddToolButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/ChangeVersionButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/NewFolderBtn",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/NewFileBtn",
 		"AppLayout/Content/PageTools/ToolsToolbar/RefreshButton",
 		"AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootBrowseButton",
 		"AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootResetButton",
@@ -564,7 +564,7 @@ func _test_main_scene_button_variations(results: Dictionary) -> void:
 
 	var expected_danger: Array[String] = [
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/RemoveButton",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/RemoveToolButton"
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/RemoveToolButton"
 	]
 	for path in expected_danger:
 		var btn: Button = instance.get_node_or_null(path) as Button

@@ -62,6 +62,8 @@ func run() -> Dictionary:
 	_test_empty_state_on_zero_search_results_and_clear_action(results)
 	_test_empty_state_hides_when_project_added(results)
 	_test_toolchain_section_header_and_list_icons(results)
+	_test_project_details_split_container_and_explorer_label(results)
+	_test_contextual_launch_button_states_and_transitions(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -457,7 +459,7 @@ func _test_launch_button_disabled_initially(results: Dictionary) -> void:
 	_cleanup_registry(storage_path)
 
 func _test_launch_button_enabled_after_select(results: Dictionary) -> void:
-	## Verifies launch button is enabled after selecting valid project.
+	## Verifies launch button is initially disabled until a tool is explicitly selected.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_launch1_%s.json" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)
@@ -466,7 +468,12 @@ func _test_launch_button_enabled_after_select(results: Dictionary) -> void:
 	var launch_btn: Button = ctx["launch_btn"]
 	var added = controller.add_project_from_path("res://samples/sample_project")
 	_expect(added, "project should add successfully", results)
-	_expect(launch_btn.disabled == false, "launch button should be enabled after valid select", results)
+	_expect(launch_btn.disabled == true, "launch button should remain disabled after valid project select when no tool is selected", results)
+	_expect(launch_btn.text == "Select a Tool to Launch", "launch button text should prompt selection", results)
+
+	controller._on_tool_item_selected(0)
+	_expect(launch_btn.disabled == false, "launch button should be enabled after tool item selected", results)
+	_expect(launch_btn.text.begins_with("Launch "), "launch button text should update to Launch <Tool>, got: %s" % launch_btn.text, results)
 	_cleanup_nodes(ctx["nodes"])
 	_cleanup_registry(storage_path)
 
@@ -492,16 +499,20 @@ func _test_launch_after_click_uses_selected_tool(results: Dictionary) -> void:
 	_cleanup_registry(storage_path)
 
 func _test_launch_no_selection(results: Dictionary) -> void:
-	## Verifies launching with no tool selected shows error.
+	## Verifies launching with no tool selected shows error and button remains disabled.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_launch2_%s.json" % str(Time.get_ticks_msec())
 	_cleanup_registry(storage_path)
 	var ctx = _build_controller(storage_path)
 	var controller = ctx["controller"]
 	var status_label: Label = ctx["status"]
+	var launch_btn: Button = ctx["launch_btn"]
 	controller.add_project_from_path("res://samples/sample_project")
+	_expect(launch_btn.disabled == true, "launch button should be disabled without tool selection", results)
+	_expect(launch_btn.text == "Select a Tool to Launch", "launch button text should prompt selection", results)
 	controller._on_launch_tool_pressed()
 	_expect(status_label.text.find("No tool selected") != -1, "launch with no selection should error", results)
+	_expect(launch_btn.disabled == true, "launch button should remain disabled after failed launch attempt", results)
 	_cleanup_nodes(ctx["nodes"])
 	_cleanup_registry(storage_path)
 
@@ -566,6 +577,7 @@ func _test_select_tool_in_project_tools_list_sets_launch_state(results: Dictiona
 	var ctx = _build_controller(storage_path)
 	var controller: ProjectsController = ctx["controller"]
 	controller.set_projects_root_path_for_tests(projects_root)
+	var launch_btn: Button = ctx["launch_btn"]
 	var created = controller._create_new_project_from_name("Select Tool Test")
 	_expect(created, "project should create successfully", results)
 
@@ -579,6 +591,8 @@ func _test_select_tool_in_project_tools_list_sets_launch_state(results: Dictiona
 	controller._on_explorer_file_selected("res://samples/sample_project/game/project.godot", "godot")
 	_expect(controller._selected_launch_target_path == "res://samples/sample_project/game/project.godot", "explorer target path should be set initially", results)
 	_expect(controller._selected_launch_tool_id == "godot", "explorer tool ID should be set initially", results)
+	_expect(launch_btn.disabled == false, "launch button should be enabled after selecting explorer file", results)
+	_expect(launch_btn.text == "Open project.godot in Godot", "launch button text should display Open <filename> in <tool>, got: %s" % launch_btn.text, results)
 
 	# Find vscodium index in project_tools_list
 	var vscodium_index := -1
@@ -595,6 +609,8 @@ func _test_select_tool_in_project_tools_list_sets_launch_state(results: Dictiona
 	_expect(controller._selected_launch_tool_id == "vscodium", "selecting tool in tools list should set _selected_launch_tool_id", results)
 	_expect(controller._selected_launch_target_path == "", "selecting tool in tools list should clear _selected_launch_target_path", results)
 	_expect(controller._selected_tool_index == vscodium_index, "_selected_tool_index should match selected tool", results)
+	_expect(launch_btn.disabled == false, "launch button should be enabled after selecting tool in list", results)
+	_expect(launch_btn.text.begins_with("Launch VSCodium"), "launch button text should display Launch <tool>, got: %s" % launch_btn.text, results)
 	var explorer_tree: Tree = ctx["tree"]
 	_expect(explorer_tree.get_selected() == null, "selecting tool should deselect explorer tree", results)
 
@@ -610,6 +626,8 @@ func _test_select_tool_in_project_tools_list_sets_launch_state(results: Dictiona
 	_expect(controller._selected_launch_tool_id == "godot", "clicking tool should update _selected_launch_tool_id", results)
 	_expect(controller._selected_launch_target_path == "", "clicking tool should keep target path cleared", results)
 	_expect(controller._selected_tool_index == godot_index, "clicking tool should update _selected_tool_index", results)
+	_expect(launch_btn.disabled == false, "launch button should be enabled after clicking godot", results)
+	_expect(launch_btn.text.begins_with("Launch Godot"), "launch button text should display Launch Godot, got: %s" % launch_btn.text, results)
 
 	_cleanup_nodes(ctx["nodes"])
 	_cleanup_dir_recursive(projects_root)
@@ -1700,6 +1718,143 @@ func _test_toolchain_section_header_and_list_icons(results: Dictionary) -> void:
 			_expect(not tooltip.is_empty(), "tool item %d tooltip should not be empty" % i, results)
 
 	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_registry(storage_path)
+
+func _test_project_details_split_container_and_explorer_label(results: Dictionary) -> void:
+	## Verifies VSplitContainer hierarchy, minimum sizes, and ExplorerLabel truncation properties in main.tscn.
+	var main_scene = load("res://main.tscn")
+	_expect(main_scene != null, "main.tscn should load successfully", results)
+	if main_scene == null:
+		return
+
+	var main_instance = main_scene.instantiate()
+	_expect(main_instance != null, "main.tscn should instantiate successfully", results)
+	if main_instance == null:
+		return
+
+	var project_details: Control = main_instance.find_child("Project Details", true, false) as Control
+	_expect(project_details != null, "Project Details tab container should exist in main.tscn", results)
+
+	if project_details != null:
+		var split: VSplitContainer = project_details.get_node_or_null("VSplitContainer") as VSplitContainer
+		_expect(split != null, "VSplitContainer should exist directly under Project Details", results)
+		if split != null:
+			_expect(split.size_flags_vertical == Control.SIZE_EXPAND_FILL, "VSplitContainer should have vertical expand fill flags", results)
+			
+			var toolchain_section: VBoxContainer = split.get_node_or_null("ToolchainSection") as VBoxContainer
+			_expect(toolchain_section != null, "ToolchainSection should exist under VSplitContainer", results)
+			if toolchain_section != null:
+				_expect(toolchain_section.custom_minimum_size.y >= 80.0, "ToolchainSection should have sensible minimum height", results)
+				var header_lbl: Label = toolchain_section.get_node_or_null("ToolchainHeaderLabel") as Label
+				_expect(header_lbl != null, "ToolchainHeaderLabel should exist under ToolchainSection", results)
+				var tools_list: ItemList = toolchain_section.get_node_or_null("ProjectToolsList") as ItemList
+				_expect(tools_list != null, "ProjectToolsList should exist under ToolchainSection", results)
+				var tool_action_row: HBoxContainer = toolchain_section.get_node_or_null("ToolActionRow") as HBoxContainer
+				_expect(tool_action_row != null, "ToolActionRow should exist under ToolchainSection", results)
+
+			var explorer_section: VBoxContainer = split.get_node_or_null("ExplorerSection") as VBoxContainer
+			_expect(explorer_section != null, "ExplorerSection should exist under VSplitContainer", results)
+			if explorer_section != null:
+				_expect(explorer_section.custom_minimum_size.y >= 100.0, "ExplorerSection should have sensible minimum height", results)
+				var explorer_toolbar: HBoxContainer = explorer_section.get_node_or_null("ExplorerToolbar") as HBoxContainer
+				_expect(explorer_toolbar != null, "ExplorerToolbar should exist under ExplorerSection", results)
+				var tree_node: Tree = explorer_section.get_node_or_null("ProjectExplorerTree") as Tree
+				_expect(tree_node != null, "ProjectExplorerTree should exist under ExplorerSection", results)
+
+				if explorer_toolbar != null:
+					var explorer_label: Label = explorer_toolbar.get_node_or_null("ExplorerLabel") as Label
+					_expect(explorer_label != null, "ExplorerLabel should exist under ExplorerToolbar", results)
+					if explorer_label != null:
+						_expect(explorer_label.clip_text == true, "ExplorerLabel should have clip_text enabled", results)
+						_expect(explorer_label.text_overrun_behavior == TextServer.OVERRUN_TRIM_ELLIPSIS, "ExplorerLabel text_overrun_behavior should be OVERRUN_TRIM_ELLIPSIS (3)", results)
+
+		var launch_btn: Button = project_details.get_node_or_null("LaunchButton") as Button
+		_expect(launch_btn != null, "LaunchButton should exist directly under Project Details", results)
+		if launch_btn != null:
+			_expect(launch_btn.disabled == true, "LaunchButton should be disabled by default in main.tscn", results)
+			_expect(launch_btn.text == "Select a Tool to Launch", "LaunchButton default text should be 'Select a Tool to Launch'", results)
+
+	main_instance.free()
+
+func _test_contextual_launch_button_states_and_transitions(results: Dictionary) -> void:
+	## Verifies contextual launch button states and transitions across tool and file selections, deselections, and resets.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_ctx_launch_%s.json" % str(Time.get_ticks_msec())
+	var projects_root = "user://projects_controller_scene_ctx_root_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(projects_root)
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	controller.set_projects_root_path_for_tests(projects_root)
+	var launch_btn: Button = ctx["launch_btn"]
+
+	# 1. Initially disabled before any project is added
+	_expect(launch_btn.disabled == true, "launch button should be disabled initially", results)
+	_expect(launch_btn.text == "Select a Tool to Launch", "launch button initial text should prompt tool selection", results)
+
+	# 2. Add project with Godot and VSCodium
+	var created = controller._create_new_project_from_name("Contextual Launch Project")
+	_expect(created, "new project should be created", results)
+	var added_godot = controller.tool_manager.add_tool_to_current_project("godot", "4.7.2")
+	_expect(added_godot, "godot should be added", results)
+	var added_codium = controller.tool_manager.add_tool_to_current_project("vscodium", "1.143.17232")
+	_expect(added_codium, "vscodium should be added", results)
+
+	# After project selection, launch button must remain disabled
+	_expect(launch_btn.disabled == true, "launch button should remain disabled upon project selection", results)
+	_expect(launch_btn.text == "Select a Tool to Launch", "launch button text should prompt tool selection after project load", results)
+
+	# 3. Select Godot in ProjectToolsList
+	var godot_idx := -1
+	var codium_idx := -1
+	for i in range(controller.current_manifest.tools.size()):
+		var t_id = String(controller.current_manifest.tools[i].get("id", ""))
+		if t_id == "godot": godot_idx = i
+		elif t_id == "vscodium": codium_idx = i
+	_expect(godot_idx >= 0 and codium_idx >= 0, "both tools should be present in manifest", results)
+
+	controller._on_tool_item_selected(godot_idx)
+	_expect(launch_btn.disabled == false, "launch button should be enabled after tool item selected", results)
+	_expect(launch_btn.text == "Launch Godot v4.7.2", "launch button text should display 'Launch Godot v4.7.2', got: %s" % launch_btn.text, results)
+
+	# 4. Select a file in ProjectExplorerTree with associated tool
+	controller._on_explorer_file_selected("res://samples/sample_project/game/main.gd", "vscodium")
+	_expect(launch_btn.disabled == false, "launch button should be enabled after file selected", results)
+	_expect(launch_btn.text == "Open main.gd in VSCodium", "launch button text should display 'Open main.gd in VSCodium', got: %s" % launch_btn.text, results)
+
+	# 5. Select a file with empty tool ID
+	controller._on_explorer_file_selected("res://samples/sample_project/README.unknown", "")
+	_expect(launch_btn.disabled == true, "launch button should be disabled for file with no associated tool", results)
+	_expect(launch_btn.text == "Select a Tool to Launch", "launch button text should revert to prompt when file has no tool", results)
+
+	# 6. Select VSCodium in tools list
+	controller._on_tool_item_selected(codium_idx)
+	_expect(launch_btn.disabled == false, "launch button should be enabled after selecting vscodium", results)
+	_expect(launch_btn.text == "Launch VSCodium v1.143.17232", "launch button text should display 'Launch VSCodium v1.143.17232', got: %s" % launch_btn.text, results)
+
+	# 7. Deselect / clear selection
+	controller.deselect_launch_target()
+	_expect(launch_btn.disabled == true, "launch button should be disabled after deselect_launch_target()", results)
+	_expect(launch_btn.text == "Select a Tool to Launch", "launch button text should revert to prompt after deselect", results)
+
+	# 8. Test double-click activation on tool item
+	controller._on_tool_item_activated(godot_idx)
+	_expect(launch_btn.disabled == false, "launch button should be enabled after tool activation", results)
+	_expect(launch_btn.text == "Launch Godot v4.7.2", "launch button text should be Launch Godot v4.7.2 after activation", results)
+
+	# 9. Test double-click activation on explorer file
+	controller._on_explorer_file_activated("res://samples/sample_project/game/project.godot", "godot")
+	_expect(launch_btn.disabled == false, "launch button should be enabled after file activation", results)
+	_expect(launch_btn.text == "Open project.godot in Godot", "launch button text should be Open project.godot in Godot after activation", results)
+
+	# 10. Deselect via clicking empty tools list
+	controller._on_tools_list_empty_clicked()
+	_expect(launch_btn.disabled == true, "launch button should be disabled after tools list empty click", results)
+	_expect(launch_btn.text == "Select a Tool to Launch", "launch button text should prompt selection after tools list empty click", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(projects_root)
 	_cleanup_registry(storage_path)
 
 

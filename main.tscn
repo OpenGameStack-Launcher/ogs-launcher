@@ -323,21 +323,32 @@ visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
-[node name="ToolchainHeaderLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+[node name="VSplitContainer" type="VSplitContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+layout_mode = 2
+size_flags_vertical = 3
+split_offset = 120
+
+[node name="ToolchainSection" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer"]
+custom_minimum_size = Vector2(0, 120)
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="ToolchainHeaderLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "Stack Toolchain"
 
-[node name="ProjectToolsList" type="ItemList" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
-custom_minimum_size = Vector2(0, 150)
+[node name="ProjectToolsList" type="ItemList" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection"]
+custom_minimum_size = Vector2(0, 80)
 layout_mode = 2
+size_flags_vertical = 3
 fixed_icon_size = Vector2i(20, 20)
 
-[node name="ToolActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details" unique_id=1082188753]
+[node name="ToolActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection" unique_id=1082188753]
 layout_mode = 2
 
-[node name="AddToolButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow" unique_id=2133794034]
+[node name="AddToolButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow" unique_id=2133794034]
 theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
@@ -345,7 +356,7 @@ size_flags_horizontal = 3
 disabled = true
 text = "Add Tool"
 
-[node name="RemoveToolButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow" unique_id=437998484]
+[node name="RemoveToolButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow" unique_id=437998484]
 theme_type_variation = &"DangerButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
@@ -353,7 +364,7 @@ size_flags_horizontal = 3
 disabled = true
 text = "Remove Tool"
 
-[node name="ChangeVersionButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow"]
+[node name="ChangeVersionButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow"]
 theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
@@ -361,33 +372,37 @@ size_flags_horizontal = 3
 disabled = true
 text = "Change Version"
 
-[node name="SectionSeparator" type="HSeparator" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+[node name="ExplorerSection" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer"]
+custom_minimum_size = Vector2(0, 140)
 layout_mode = 2
-theme_override_constants/separation = 16
+size_flags_vertical = 3
 
-[node name="ExplorerToolbar" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+[node name="ExplorerToolbar" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection"]
 layout_mode = 2
 
-[node name="ExplorerLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar"]
+[node name="ExplorerLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "Project Explorer"
+clip_text = true
+text_overrun_behavior = 3
 
-[node name="NewFolderBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar"]
+[node name="NewFolderBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar"]
 theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
 text = "New Folder"
 
-[node name="NewFileBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar"]
+[node name="NewFileBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar"]
 theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
 text = "New File"
 
-[node name="ProjectExplorerTree" type="Tree" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+[node name="ProjectExplorerTree" type="Tree" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection"]
+custom_minimum_size = Vector2(0, 100)
 layout_mode = 2
 size_flags_vertical = 3
 hide_root = true
@@ -396,7 +411,8 @@ hide_root = true
 theme_type_variation = &"PrimaryButton"
 custom_minimum_size = Vector2(160, 32)
 layout_mode = 2
-text = "Launch Selected Tool"
+disabled = true
+text = "Select a Tool to Launch"
 
 [node name="PageTools" type="VBoxContainer" parent="AppLayout/Content" unique_id=238307947]
 layout_mode = 2

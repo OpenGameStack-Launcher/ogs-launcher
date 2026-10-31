@@ -269,6 +269,8 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 		project_tools_list.item_selected.connect(_on_tool_item_selected)
 		project_tools_list.item_activated.connect(_on_tool_item_activated)
 		project_tools_list.item_clicked.connect(_on_tool_item_clicked)
+		if project_tools_list.has_signal("empty_clicked"):
+			project_tools_list.empty_clicked.connect(_on_tools_list_empty_clicked)
 	btn_remove_project.pressed.connect(_on_remove_project_pressed)
 	btn_launch_tool.pressed.connect(_on_launch_tool_pressed)
 	remove_project_dialog.confirmed.connect(_on_remove_project_confirmed)
@@ -311,6 +313,8 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 			explorer.file_selected.connect(_on_explorer_file_selected)
 			explorer.folder_selected.connect(_on_explorer_folder_selected)
 			explorer.file_activated.connect(_on_explorer_file_activated)
+		if explorer_tree.has_signal("nothing_selected"):
+			explorer_tree.nothing_selected.connect(_on_explorer_nothing_selected)
 			
 	if btn_new_folder != null:
 		btn_new_folder.pressed.connect(_on_new_folder_pressed)
@@ -345,6 +349,7 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 
 	# Initially disable launch button until a project is selected
 	btn_launch_tool.disabled = true
+	btn_launch_tool.text = "Select a Tool to Launch"
 	btn_add_tool.disabled = true
 	btn_remove_tool.disabled = true
 	_disable_remove_button()
@@ -454,6 +459,7 @@ func _remove_project_at_index(index: int) -> void:
 	if registry_manager.tracked_projects.is_empty():
 		if lbl_tools_for_project:
 			lbl_tools_for_project.text = "Project Explorer"
+			lbl_tools_for_project.tooltip_text = ""
 		if projects_tabs != null:
 			projects_tabs.set_tab_title(1, "Project Details")
 		current_project_dir = ""
@@ -927,7 +933,9 @@ func _select_project(index: int) -> void:
 		_save_project_registry()
 	
 	if lbl_tools_for_project != null:
-		lbl_tools_for_project.text = "Project Explorer - " + PathUtils.format_for_display(project_dir)
+		var display_path: String = PathUtils.format_for_display(project_dir)
+		lbl_tools_for_project.text = "Project Explorer - " + display_path
+		lbl_tools_for_project.tooltip_text = display_path
 		
 	if project_dir.is_empty():
 		_update_status("Status: Selected project entry is invalid.")
@@ -1508,6 +1516,7 @@ func _on_new_file_confirmed() -> void:
 	
 	# Launch automatically
 	_selected_launch_tool_id = tool_id
+	_update_tool_action_buttons()
 	if not tool_id.is_empty():
 		_on_launch_tool_pressed()
 
@@ -1560,21 +1569,19 @@ func _on_launch_tool_pressed() -> void:
 		_update_status("Status: Launch failed - %s" % result["error_message"])
 
 func _enable_launch_button() -> void:
-	## Enables the launch button when a valid project is loaded.
-	if btn_launch_tool:
-		btn_launch_tool.disabled = false
+	## Refreshes launch button and tool action button states when a project environment is validated.
+	_update_launch_button_state()
 	_update_tool_action_buttons()
 
 func _disable_launch_button() -> void:
 	## Disables the launch button when no valid project is loaded.
-	if btn_launch_tool:
-		btn_launch_tool.disabled = true
 	current_project_dir = ""
 	current_manifest = null
 	_selected_project_index = -1
 	_selected_tool_index = -1
 	_selected_launch_tool_id = ""
 	_selected_launch_target_path = ""
+	_update_launch_button_state()
 	
 	if explorer_tree != null and self.has_meta("project_explorer_instance"):
 		var explorer = self.get_meta("project_explorer_instance")
@@ -1586,13 +1593,12 @@ func _disable_launch_button() -> void:
 
 func _disable_launch_for_selected_project() -> void:
 	## Disables launch state while preserving selected project for safe removal.
-	if btn_launch_tool:
-		btn_launch_tool.disabled = true
 	current_project_dir = ""
 	current_manifest = null
 	_selected_tool_index = -1
 	_selected_launch_tool_id = ""
 	_selected_launch_target_path = ""
+	_update_launch_button_state()
 	
 	if explorer_tree != null and self.has_meta("project_explorer_instance"):
 		var explorer = self.get_meta("project_explorer_instance")
@@ -1618,6 +1624,60 @@ func _update_tool_action_buttons() -> void:
 	if btn_change_version != null:
 		var can_change = has_project and _selected_tool_index >= 0 and _selected_tool_index < current_manifest.tools.size()
 		btn_change_version.disabled = not can_change
+	_update_launch_button_state()
+
+func _update_launch_button_state() -> void:
+	## Updates btn_launch_tool text and disabled state based on active selection context.
+	if btn_launch_tool == null:
+		return
+
+	if current_manifest == null or current_project_dir.is_empty() or _selected_launch_tool_id.is_empty():
+		btn_launch_tool.text = "Select a Tool to Launch"
+		btn_launch_tool.disabled = true
+		return
+
+	if not _selected_launch_target_path.is_empty():
+		var filename: String = _selected_launch_target_path.get_file()
+		var tool_name: String = ToolCategoryMapper.get_display_name(_selected_launch_tool_id)
+		btn_launch_tool.text = "Open %s in %s" % [filename, tool_name]
+		btn_launch_tool.disabled = false
+	else:
+		var tool_name: String = ToolCategoryMapper.get_display_name(_selected_launch_tool_id)
+		var tool_version: String = ""
+		if _selected_tool_index >= 0 and _selected_tool_index < current_manifest.tools.size():
+			var candidate: Dictionary = current_manifest.tools[_selected_tool_index]
+			if String(candidate.get("id", "")) == _selected_launch_tool_id:
+				tool_version = String(candidate.get("version", "")).strip_edges()
+		if tool_version.is_empty():
+			for t: Variant in current_manifest.tools:
+				if t is Dictionary and String((t as Dictionary).get("id", "")) == _selected_launch_tool_id:
+					tool_version = String((t as Dictionary).get("version", "")).strip_edges()
+					break
+		var tool_display := tool_name
+		if not tool_version.is_empty() and tool_version != "?":
+			var v_str := tool_version if (tool_version.begins_with("v") or tool_version.begins_with("V")) else ("v" + tool_version)
+			tool_display = "%s %s" % [tool_name, v_str]
+		btn_launch_tool.text = "Launch %s" % tool_display
+		btn_launch_tool.disabled = false
+
+func deselect_launch_target() -> void:
+	## Clears active tool and file launch selections and reverts launch button to disabled.
+	_selected_tool_index = -1
+	_selected_launch_tool_id = ""
+	_selected_launch_target_path = ""
+	if project_tools_list != null:
+		project_tools_list.deselect_all()
+	if explorer_tree != null:
+		explorer_tree.deselect_all()
+	_update_tool_action_buttons()
+
+func _on_tools_list_empty_clicked(_at_position: Vector2 = Vector2.ZERO, _mouse_button_index: int = 1) -> void:
+	## Deselects any tool when clicking empty area in ProjectToolsList.
+	deselect_launch_target()
+
+func _on_explorer_nothing_selected() -> void:
+	## Deselects explorer launch target when clicking empty area in ProjectExplorerTree.
+	deselect_launch_target()
 
 func _enable_project_action_buttons() -> void:
 	## Enables library action buttons (Open Project, Remove Project, Seal for Delivery)
