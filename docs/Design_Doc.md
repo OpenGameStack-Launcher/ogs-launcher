@@ -127,6 +127,16 @@ To replace unstyled full-width console-style text lines and provide instantaneou
     *   *Forced Offline:* High-contrast crimson danger pill (`Color(0.38, 0.12, 0.14, 0.85)`) with bright red border (`Color(0.90, 0.30, 0.32, 0.95)`) and text (`Color(1.0, 0.65, 0.65)`).
     *   *Unknown:* Muted slate pill (`Color(0.16, 0.18, 0.22, 0.6)`) with muted border and text.
 
+### 2.11 Structured Project Cards and Tool Badges (`CustomItemList`)
+In the Project Library (Tab 0 of the Projects page), registered projects are rendered using `CustomItemList` as dedicated, structured project cards rather than generic buttons:
+*   **Dedicated Card Surfaces:** Each entry is rendered with a dark card background (`Color(0.14, 0.16, 0.20)`), 1px border (`Color(0.22, 0.26, 0.32)`), and 6px rounded corners, cleanly differentiating project items from clickable action buttons (`Add Local Project`, `New Project`, `Remove Project`, `Seal for Delivery`).
+*   **Prominent Selection State:** When selected, the active card displays an elevated dark background (`Color(0.18, 0.22, 0.28)`) and a prominent 2px cyan accent border (`Color(0.35, 0.68, 0.95)`), providing clear focus feedback.
+*   **Visual Hierarchy and Pill Badges:** Each card organizes project data into a clear hierarchy:
+    *   *Title:* 16px high-contrast project title label (`Color(0.95, 0.96, 0.98)`).
+    *   *Tool Badges:* Styled rounded pill badges aligned to the right displaying canonical tool names via `ToolCategoryMapper.get_display_name()` (e.g. `Godot 4.7.2`, `GIMP 3.2.4`, `VSCodium 1.143.17232`), with clean overflow pills (e.g. `+1 more`, `+2 more`) when more than two tools are present. If a project has no tools, a subtle `No tools` badge is displayed.
+    *   *Path:* 12px secondary path text (`Color(0.65, 0.70, 0.75)`) normalized via `PathUtils.format_for_display()`.
+*   **API Backward Compatibility:** `CustomItemList` preserves complete API parity with previous string-based implementations (`add_item()`, `clear()`, `select()`, `item_count`, `set_item_tooltip()`, `set_item_disabled()`, and signals `item_selected` on single-click / `item_activated` on double-click).
+
 ---
 
 ## 3. Operational Modes & User Stories

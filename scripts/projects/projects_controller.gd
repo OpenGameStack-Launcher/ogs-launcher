@@ -659,8 +659,11 @@ func _refresh_projects_list() -> void:
 		var summary = _summarize_tools(tools)
 		var project_path = String(entry.get("path", ""))
 		var display_path: String = PathUtils.format_for_display(project_path)
-		var label = "%s — %s\n%s" % [display_name, summary, display_path]
-		projects_list.add_item(label)
+		var label = "%s - %s\n%s" % [display_name, summary, display_path]
+		if projects_list.has_method("add_project_card"):
+			projects_list.add_project_card(display_name, summary, display_path, tools)
+		else:
+			projects_list.add_item(label)
 		projects_list.set_item_tooltip(index, display_path)
 
 func _summarize_tools(tools: Array) -> String:
@@ -679,9 +682,13 @@ func _summarize_tools(tools: Array) -> String:
 	for tool in tools:
 		if labels.size() >= 2:
 			break
-		var tool_id = String(tool.get("id", "unknown"))
-		var tool_version = String(tool.get("version", "?"))
-		labels.append("%s %s" % [tool_id, tool_version])
+		var tool_id: String = String(tool.get("id", "unknown")).strip_edges()
+		var tool_version: String = String(tool.get("version", "?")).strip_edges()
+		var display_name: String = ToolCategoryMapper.get_display_name(tool_id)
+		if tool_version.is_empty() or tool_version == "?":
+			labels.append(display_name)
+		else:
+			labels.append("%s %s" % [display_name, tool_version])
 
 	if tools.size() > 2:
 		return "%s (+%d more)" % [", ".join(labels), tools.size() - 2]

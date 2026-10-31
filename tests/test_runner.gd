@@ -89,6 +89,7 @@ func _run_tests_async() -> void:
 		"res://tests/ogs_config_tests.gd",
 		"res://tests/stack_generator_tests.gd",
 		"res://tests/projects_controller_scene_tests.gd",
+		"res://tests/custom_item_list_tests.gd",
 		"res://tests/projects_page_indicators_tests.gd",
 		"res://tests/main_scene_tests.gd",
 		"res://tests/layout_controller_tests.gd",

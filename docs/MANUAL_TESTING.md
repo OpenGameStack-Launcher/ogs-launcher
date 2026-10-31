@@ -403,6 +403,47 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 3.7: Projects Page - Structured Project Cards and Tool Badges
+
+**Objective:** Verify that project entries in the Project Library render as dedicated structured project cards with distinct dark card backgrounds, prominent cyan selection borders, visual typography hierarchy, and canonical tool badge pills.
+
+**Steps:**
+1. Launch the launcher and navigate to the Projects page.
+2. Confirm Tab 0 ("Project Library") is active.
+3. Observe the rendered project list in `CustomItemList`:
+   - Verify each project renders as a distinct card with a dark resting surface (`Color(0.14, 0.16, 0.20)`) bounded by a subtle 1px border (`Color(0.22, 0.26, 0.32)`), cleanly differentiated from surrounding action buttons.
+   - Verify the visual hierarchy within each card: a 16px high-contrast title, tool badges aligned to the right, and a 12px muted path below (`Color(0.65, 0.70, 0.75)`).
+4. Inspect the tool badges on the right side of each project card:
+   - Verify tools display canonical names via `ToolCategoryMapper` (e.g. `Godot 4.7.2`, `GIMP 3.2.4`, `Blender 4.2`).
+   - If a project has more than 2 tools, verify an overflow badge pill renders (e.g. `+1 more`, `+2 more`).
+   - If a project has no tools, verify a subtle `No tools` pill badge renders.
+5. Hover over unselected project cards:
+   - Verify hover state displays a subtle background highlight (`Color(0.16, 0.19, 0.24)`) and lighter border without layout jump.
+6. Click to select a project card:
+   - Verify the selected card displays an elevated dark background (`Color(0.18, 0.22, 0.28)`) and a prominent 2px cyan accent border (`Color(0.35, 0.68, 0.95)`).
+   - Verify other project cards remain unselected.
+7. Test disabled card behavior (if applicable):
+   - Verify disabled project cards dim title and path contrast cleanly.
+
+**Expected Results:**
+- [x] Project entries render as dedicated card surfaces rather than generic buttons.
+- [x] Selected card features an elevated dark surface with a high-contrast 2px cyan accent border.
+- [x] Typography hierarchy separates 16px title from 12px secondary path.
+- [x] Canonical tool badge pills display tool names and versions with clean overflow pills for 3+ tools.
+- [x] Hover and selection states give immediate, clear visual feedback.
+
+**Pass Criteria:**
+- Project Library presents a clean, modern card-based layout.
+- Tool badges format canonical names and overflow counts accurately.
+- Selection contrast is immediately visible across both dark backgrounds and light monitors.
+
+**If test fails:**
+- Verify `CustomItemList._create_card()` structure and `StyleBoxFlat` theme overrides.
+- Verify `CustomItemList._populate_badges()` tool parsing and overflow pill logic.
+- Verify `ProjectsController._summarize_tools()` canonical mapping via `ToolCategoryMapper`.
+
+---
+
 ### Editor Test 4: Settings Page — Mirror Configuration
 
 **Objective:** Verify mirror root can be configured and status indicator updates correctly.

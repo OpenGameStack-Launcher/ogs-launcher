@@ -9,6 +9,7 @@ extends RefCounted
 class_name ProjectsControllerSceneTests
 
 const ProjectsControllerScript = preload("res://scripts/projects/projects_controller.gd")
+const CustomItemListScript = preload("res://scripts/projects/custom_item_list.gd")
 const PathUtils = preload("res://scripts/utils/path_utils.gd")
 
 func run() -> Dictionary:
@@ -53,6 +54,8 @@ func run() -> Dictionary:
 	_test_project_display_paths_normalized(results)
 	_test_status_bar_severity_color_modulation(results)
 	_test_offline_status_pill_badge_styling(results)
+	_test_summarize_tools_canonical_names_and_overflow(results)
+	_test_project_cards_rendered_in_custom_item_list(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -81,7 +84,7 @@ func _build_controller(storage_path: String) -> Dictionary:
 	var add_button = Button.new()
 	var add_remote_button = Button.new()
 	var new_button = Button.new()
-	var projects_list = ItemList.new()
+	var projects_list = CustomItemListScript.new()
 	var status_label = Label.new()
 	var offline_label = Label.new()
 	var explorer_title_lbl = Label.new()
@@ -1312,6 +1315,89 @@ func _test_offline_status_pill_badge_styling(results: Dictionary) -> void:
 		_expect(forced_style.border_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_FORCED_BORDER), "Forced badge should have danger red border", results)
 	var forced_text_color: Color = offline_label.get_theme_color("font_color")
 	_expect(forced_text_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_FORCED_TEXT), "Forced badge font color should be high-contrast red", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_registry(storage_path)
+
+func _test_summarize_tools_canonical_names_and_overflow(results: Dictionary) -> void:
+	## Verifies _summarize_tools formats canonical display names and handles tool count overflow.
+	var storage_path := "user://test_summarize_tools.json"
+	_cleanup_registry(storage_path)
+	var ctx := _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+
+	# 1. Empty tools
+	_expect(controller._summarize_tools([]) == "No tools", "Empty tools list should summarize as 'No tools'", results)
+
+	# 2. Single tool with canonical name mapping
+	var one_tool: Array = [{"id": "godot", "version": "4.7.2"}]
+	_expect(controller._summarize_tools(one_tool) == "Godot 4.7.2", "Single tool should format as canonical 'Godot 4.7.2', got '%s'" % controller._summarize_tools(one_tool), results)
+
+	# 3. Two tools
+	var two_tools: Array = [
+		{"id": "godot", "version": "4.7.2"},
+		{"id": "gimp", "version": "3.2.4"}
+	]
+	_expect(controller._summarize_tools(two_tools) == "Godot 4.7.2, GIMP 3.2.4", "Two tools should format canonical names separated by comma", results)
+
+	# 4. Three tools with overflow (+1 more)
+	var three_tools: Array = [
+		{"id": "godot", "version": "4.7.2"},
+		{"id": "gimp", "version": "3.2.4"},
+		{"id": "blender", "version": "4.2"}
+	]
+	_expect(controller._summarize_tools(three_tools) == "Godot 4.7.2, GIMP 3.2.4 (+1 more)", "Three tools should format with (+1 more) overflow", results)
+
+	# 5. Four tools with overflow (+2 more) and VSCodium canonical casing
+	var four_tools: Array = [
+		{"id": "godot", "version": "4.7.2"},
+		{"id": "vscodium", "version": "1.143.17232"},
+		{"id": "blender", "version": "4.2"},
+		{"id": "krita", "version": "5.2.2"}
+	]
+	_expect(controller._summarize_tools(four_tools) == "Godot 4.7.2, VSCodium 1.143.17232 (+2 more)", "Four tools should format with VSCodium casing and (+2 more) overflow", results)
+
+	# 6. Tool without version (omits '?')
+	var unversioned_tool: Array = [{"id": "git"}]
+	_expect(controller._summarize_tools(unversioned_tool) == "Git", "Tool with missing version should omit question mark and format as 'Git'", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_registry(storage_path)
+
+func _test_project_cards_rendered_in_custom_item_list(results: Dictionary) -> void:
+	## Verifies that ProjectsController populates CustomItemList with structured cards and badges.
+	var storage_path := "user://test_project_cards_render.json"
+	_cleanup_registry(storage_path)
+	var ctx := _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var projects_list: CustomItemList = ctx["projects"] as CustomItemList
+
+	_expect(projects_list != null, "Projects list should be CustomItemList instance", results)
+
+	var added = controller.add_project_from_path("res://samples/sample_project")
+	_expect(added, "Sample project should be added successfully", results)
+	_expect(projects_list.item_count == 1, "Projects list should contain 1 project card", results)
+
+	if projects_list.item_count > 0:
+		var title: String = projects_list.get_card_title(0)
+		_expect(title == "Sample OGS Project", "Card title should match 'Sample OGS Project', got '%s'" % title, results)
+
+		var path: String = projects_list.get_card_path(0)
+		_expect(not path.contains("\\"), "Card path should be normalized without backslashes", results)
+
+		var badges := projects_list.get_card_badge_texts(0)
+		_expect(not badges.is_empty(), "Card should contain tool badges", results)
+
+		# Verify selection state
+		_expect(projects_list.get_selected_index() == 0, "Added project should be automatically selected", results)
+		var btn: Button = projects_list.get_item_button(0)
+		_expect(btn.button_pressed == true, "Selected project button should have button_pressed = true", results)
+
+		var pressed_style: StyleBoxFlat = btn.get_theme_stylebox("pressed") as StyleBoxFlat
+		_expect(pressed_style != null, "Selected card should have StyleBoxFlat", results)
+		if pressed_style != null:
+			_expect(pressed_style.border_width_left == 2, "Selected card border width should be 2px", results)
+			_expect(pressed_style.border_color.is_equal_approx(CustomItemListScript.COLOR_CARD_BORDER_SELECTED), "Selected card border should have accent color", results)
 
 	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_registry(storage_path)
