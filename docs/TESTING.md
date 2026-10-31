@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 702
+tests passed: 916
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (24 total):**
+**Current unit test suites (26 total, 32 suites across all categories):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -255,6 +255,28 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Tool categorization for "Code" category tools
   - Defensive dynamic bucket creation for unknown or future categories
 
+- **[tests/onboarding_wizard_tests.gd](tests/onboarding_wizard_tests.gd)** - Validates first-run detection behavior for onboarding wizard.
+  - Returns false when library has visible entries
+  - Returns true when library only contains hidden or empty directories
+
+- **[tests/seal_controller_tests.gd](tests/seal_controller_tests.gd)** - Validates SealController thread lifecycle and safety.
+  - Thread joined cleanly when controller freed during active execution
+  - Predelete handler safe when no thread is active
+  - Thread start failure clears state and emits failure
+
+- **[tests/tools_page_controller_tests.gd](tests/tools_page_controller_tests.gd)** - Validates ToolsPageController thread lifecycle and cleanup.
+  - Predelete joins active tool removal thread
+  - Cleanup safe when removal thread is null
+  - Main scene pre-quit cleanup triggers controller cleanup
+
+- **[tests/file_type_mapper_tests.gd](tests/file_type_mapper_tests.gd)** - Validates FileTypeMapper extension mapping and exclusions.
+  - VSCodium supported extensions recognized (gd, cs, gdshader, shader, txt, md, csv, json, yaml, yml, toml) in lowercase and uppercase
+  - Non-text extensions (png, exe, tscn, tres) rejected
+  - Internal metadata files (stack.json, ogs_config.json, ogs_metadata.json) and extensions (.import, .uid, .cfg, .tres, .tscn) excluded
+  - Direct query maps text/script extensions to vscodium, project.godot to godot, and asset files to binary tools
+  - Stack-aware tool queries require vscodium presence in active tools for text/script mapping while Godot-only stacks return empty string
+  - Tool to extension mapping returns txt for vscodium (case-insensitive) and empty string for godot
+
 ### Scene Tests (Integration with UI)
 
 Scene tests instantiate UI nodes and verify controller behaviors. These are similar to Unity's "Play Mode tests" but run headlessly in Godot.
@@ -279,6 +301,8 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Double-click item activation launches the selected tool immediately at the project root
   - Project switching, list repopulation, and launch button disable handlers reset launch tool ID and launch target path to prevent state leakage
   - Bidirectional mutual deselection synchronizes selection states between `project_tools_list` and `explorer_tree`
+  - Double-click file activation in project explorer triggers launch targeting the activated file
+  - New file creation in projects with VSCodium creates empty files on disk and defaults extensionless files to .txt with VSCodium launch state
 
 - **[tests/projects_page_indicators_tests.gd](tests/projects_page_indicators_tests.gd)** - Tests tool availability indicators in Projects page.
   - Tool items populated with ID and version
@@ -300,10 +324,10 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Online/offline status label updates
   - Download button disablement during active download
 
-- **[tests/project_explorer_tests.gd](tests/project_explorer_tests.gd)** - Validates ProjectExplorer directory filtering, pruning, selection, and tool icon rendering (584 total passed tests across runner suites).
+- **[tests/project_explorer_tests.gd](tests/project_explorer_tests.gd)** - Validates ProjectExplorer directory filtering, pruning, selection, tool icon rendering, stack-aware VSCodium mappings, and double-click activation (916 total passed tests across runner suites).
   - Non-relevant and empty folders excluded from tree
   - Direct tool folders (gimp, blender, krita, audacity, godot, game) and ancestor folders retained even when empty
-  - Launchable files displayed while non-launchable files (.gd, .md, .png, etc.) omitted
+  - Launchable files displayed while non-launchable files (.png, etc.) omitted
   - Dot-prefixed directories (.git, .godot, .worktrees, .github) skipped during traversal
   - Projects with zero launchable files and zero tool folders display root item only
   - TreeItem selection signals, folder/file tool inference, and context menu initialization
@@ -311,6 +335,11 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Direct tool folders (gimp, blender, krita, audacity, godot, game) receive corresponding tool icons with max width 20px
   - Container folders (project root, intermediate folders like assets, 2D, 3D, Audio, and nested subfolders) maintain null icons
   - Icon caching in ProjectExplorer verifies texture instance reuse and missing tool handling
+  - Stack-aware text and script file display: when VSCodium is in the stack, all mapped extensions (gd, cs, gdshader, shader, txt, md, csv, json, yaml, yml, toml) appear with the VSCodium icon and emit vscodium on selection
+  - Strict metadata exclusion: internal launcher and engine metadata files (stack.json, ogs_config.json, ogs_metadata.json, .import, .uid, .cfg, .tres, .tscn) remain hidden even when .json is supported
+  - Godot-only pruning: text and script files are pruned when VSCodium is not in the project stack
+  - Double-click activation: double-clicking a file emits file_activated signal while double-clicking a folder toggles collapse
+  - Stack fallback: when active tool IDs are omitted in load_project, reads tool IDs from project stack.json
 
 ### Startup Tests (Initialization Verification)
 
@@ -464,4 +493,4 @@ Target coverage for all new features:
 
 ---
 
-Last updated: **October 30, 2026**
+Last updated: **October 31, 2026**

@@ -20,9 +20,11 @@ const ICON_MAX_WIDTH: int = 20
 
 signal file_selected(file_path: String, tool_id: String)
 signal folder_selected(folder_path: String, tool_id: String)
+signal file_activated(file_path: String, tool_id: String)
 
 var tree: Tree
 var current_project_dir: String = ""
+var active_tool_ids: Array[String] = []
 var context_menu: PopupMenu
 var context_target_path: String = ""
 var _icon_cache: Dictionary = {}
@@ -70,8 +72,29 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		OS.shell_show_in_file_manager(path_to_open)
 
 ## Loads a new project directory into the Tree.
-func load_project(project_dir: String) -> void:
+## When active_tool_ids is omitted or empty, reads tool IDs from <project_dir>/stack.json if present.
+func load_project(project_dir: String, p_active_tool_ids: Array[String] = []) -> void:
 	current_project_dir = project_dir
+	active_tool_ids.clear()
+	
+	if not p_active_tool_ids.is_empty():
+		for tid: String in p_active_tool_ids:
+			active_tool_ids.append(tid.to_lower())
+	elif not project_dir.is_empty():
+		var stack_path: String = project_dir.path_join("stack.json")
+		if FileAccess.file_exists(stack_path):
+			var file: FileAccess = FileAccess.open(stack_path, FileAccess.READ)
+			if file != null:
+				var json_text: String = file.get_as_text()
+				file.close()
+				var json: JSON = JSON.new()
+				if json.parse(json_text) == OK and json.data is Dictionary:
+					var tools_val: Variant = (json.data as Dictionary).get("tools", [])
+					if tools_val is Array:
+						for t: Variant in (tools_val as Array):
+							if t is Dictionary and (t as Dictionary).has("id"):
+								active_tool_ids.append(String((t as Dictionary)["id"]).to_lower())
+
 	tree.clear()
 	
 	if current_project_dir.is_empty() or not DirAccess.dir_exists_absolute(current_project_dir):
@@ -127,7 +150,7 @@ func _populate_dir(dir_path: String, parent_item: TreeItem) -> void:
 		item.set_text(0, f)
 		var full_path: String = dir_path.path_join(f)
 		item.set_metadata(0, {"path": full_path, "is_dir": false})
-		var tool_id: String = FileTypeMapper.get_tool_for_file(full_path)
+		var tool_id: String = _get_tool_for_file(full_path)
 		if not tool_id.is_empty():
 			var icon: Texture2D = _get_tool_icon(tool_id)
 			if icon != null:
@@ -165,10 +188,30 @@ func _has_relevant_content(dir_path: String) -> bool:
 			
 	return false
 
-## Determines if a file is recognized as launchable by FileTypeMapper or is project.godot.
+## Determines if a file is recognized as launchable based on active tools and exclusions.
 func _is_launchable_file(file_name: String) -> bool:
+	if FileTypeMapper.is_excluded_file(file_name):
+		return false
+	if file_name.to_lower() == "project.godot":
+		return true
 	var ext: String = file_name.get_extension().to_lower()
-	return FileTypeMapper.EXTENSION_TO_TOOL.has(ext) or file_name.to_lower() == "project.godot"
+	if FileTypeMapper.EXTENSION_TO_TOOL.has(ext) and ext != "godot":
+		return true
+	if _has_vscodium() and FileTypeMapper.is_vscodium_extension(ext):
+		return true
+	return false
+
+## Returns true if VSCodium is present among the active tool IDs.
+func _has_vscodium() -> bool:
+	return "vscodium" in active_tool_ids
+
+## Returns the resolved tool ID for a file path within the current project context.
+func _get_tool_for_file(file_path: String) -> String:
+	var ext: String = file_path.get_extension().to_lower()
+	if FileTypeMapper.is_vscodium_extension(ext):
+		if not _has_vscodium():
+			return ""
+	return FileTypeMapper.get_tool_for_file(file_path, active_tool_ids)
 
 ## Returns true if the folder directly represents a recognized tool.
 func _is_direct_tool_folder(folder_path: String) -> bool:
@@ -189,14 +232,25 @@ func _on_item_selected() -> void:
 		var tool_id: String = _infer_tool_from_folder(path)
 		folder_selected.emit(path, tool_id)
 	else:
-		var tool_id: String = FileTypeMapper.get_tool_for_file(path)
+		var tool_id: String = _get_tool_for_file(path)
 		file_selected.emit(path, tool_id)
 
 func _on_item_activated() -> void:
-	# Double click to toggle collapse
 	var item: TreeItem = tree.get_selected()
-	if item != null and not item.get_children().is_empty():
-		item.collapsed = not item.collapsed
+	if item == null:
+		return
+	var meta: Variant = item.get_metadata(0)
+	if not (meta is Dictionary):
+		return
+
+	var is_dir: bool = bool(meta.get("is_dir", false))
+	if is_dir:
+		if not item.get_children().is_empty():
+			item.collapsed = not item.collapsed
+	else:
+		var path: String = String(meta.get("path", ""))
+		var tool_id: String = _get_tool_for_file(path)
+		file_activated.emit(path, tool_id)
 
 func _infer_tool_from_folder(folder_path: String) -> String:
 	# If they select assets/2D/gimp, the tool is gimp.
@@ -236,4 +290,4 @@ func get_selected_path() -> String:
 	return current_project_dir
 
 func refresh() -> void:
-	load_project(current_project_dir)
+	load_project(current_project_dir, active_tool_ids)

@@ -15,6 +15,7 @@ class_name ProjectsController
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 const ToolCategoryMapper = preload("res://scripts/tools/tool_category_mapper.gd")
+const FileTypeMapper = preload("res://scripts/tools/file_type_mapper.gd")
 
 ## Emitted when offline state changes after loading a project or config.
 signal offline_state_changed(active: bool, reason: String)
@@ -207,6 +208,7 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 			var explorer = self.get_meta("project_explorer_instance")
 			explorer.file_selected.connect(_on_explorer_file_selected)
 			explorer.folder_selected.connect(_on_explorer_folder_selected)
+			explorer.file_activated.connect(_on_explorer_file_activated)
 			
 	if btn_new_folder != null:
 		btn_new_folder.pressed.connect(_on_new_folder_pressed)
@@ -728,9 +730,14 @@ func _populate_tools_list(tools: Array) -> void:
 	_selected_launch_target_path = ""
 	_update_tool_action_buttons()
 	
+	var active_tool_ids: Array[String] = []
+	for tool_entry: Variant in tools:
+		if tool_entry is Dictionary and (tool_entry as Dictionary).has("id"):
+			active_tool_ids.append(String((tool_entry as Dictionary)["id"]).to_lower())
+
 	if explorer_tree != null and self.has_meta("project_explorer_instance"):
 		var explorer = self.get_meta("project_explorer_instance")
-		explorer.load_project(current_project_dir)
+		explorer.load_project(current_project_dir, active_tool_ids)
 	
 	# Build availability map from ToolsController
 	var available_tools = _get_available_tools()
@@ -979,6 +986,17 @@ func _on_explorer_file_selected(file_path: String, tool_id: String) -> void:
 	btn_remove_tool.disabled = true
 	_update_tool_action_buttons()
 
+func _on_explorer_file_activated(file_path: String, tool_id: String) -> void:
+	## Handles double-click activation of a file in the project explorer to launch its tool.
+	_selected_launch_target_path = file_path
+	_selected_launch_tool_id = tool_id
+	if project_tools_list != null:
+		project_tools_list.deselect_all()
+	_selected_tool_index = -1
+	btn_remove_tool.disabled = true
+	_update_tool_action_buttons()
+	_on_launch_tool_pressed()
+
 func _on_explorer_folder_selected(folder_path: String, tool_id: String) -> void:
 	_selected_launch_target_path = folder_path
 	_selected_launch_tool_id = tool_id
@@ -1016,25 +1034,40 @@ func _on_new_file_confirmed() -> void:
 	if file_name.is_empty(): return
 	
 	var tool_id = explorer._infer_tool_from_folder(folder_path)
-	var ext = FileTypeMapper.get_extension_for_tool(tool_id)
-	
-	if not ext.is_empty() and not file_name.ends_with("." + ext):
-		file_name += "." + ext
+	var stack_has_vscodium = false
+	if current_manifest != null and current_manifest.tools != null:
+		for t: Variant in current_manifest.tools:
+			if t is Dictionary and String((t as Dictionary).get("id", "")).to_lower() == "vscodium":
+				stack_has_vscodium = true
+				break
+
+	if tool_id.is_empty() and stack_has_vscodium:
+		var file_ext = file_name.get_extension().to_lower()
+		if file_ext.is_empty():
+			file_name += ".txt"
+			file_ext = "txt"
+			tool_id = "vscodium"
+		elif FileTypeMapper.is_vscodium_extension(file_ext):
+			tool_id = "vscodium"
+		else:
+			tool_id = FileTypeMapper.get_tool_for_file(file_name)
+	elif not tool_id.is_empty():
+		var ext = FileTypeMapper.get_extension_for_tool(tool_id)
+		if not ext.is_empty() and not file_name.to_lower().ends_with("." + ext):
+			file_name += "." + ext
 		
 	var new_file_path = folder_path.path_join(file_name)
+	var final_ext = file_name.get_extension().to_lower()
+	var is_text = FileTypeMapper.is_vscodium_extension(final_ext)
 	
-	# Binary tools like GIMP and Blender crash when given 0-byte files.
-	# We only create empty text files on disk. For binary assets, we 
-	# just launch the tool empty so the user can 'Save As' from the tool.
-	var is_text = ext in ["txt", "json", "md", "gd"]
-	
-	if is_text or ext.is_empty():
+	if is_text or final_ext.is_empty():
 		var file = FileAccess.open(new_file_path, FileAccess.WRITE)
 		if file != null:
 			file.store_string("")
 			file.close()
 		_selected_launch_target_path = new_file_path
 	else:
+		# Binary tools like GIMP and Blender crash when given 0-byte files.
 		# Don't pass the non-existent file path, just launch the tool empty
 		_selected_launch_target_path = ""
 		

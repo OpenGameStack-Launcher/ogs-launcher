@@ -27,6 +27,11 @@ func run() -> Dictionary:
 	_test_direct_tool_folders_receive_tool_icons(results)
 	_test_container_folders_have_null_icons(results)
 	_test_icon_cache_reuses_textures(results)
+	_test_vscodium_files_displayed_and_emit_selection(results)
+	_test_metadata_files_hidden_even_when_json_supported(results)
+	_test_vscodium_files_pruned_when_not_in_stack(results)
+	_test_double_click_file_activated_signal(results)
+	_test_load_project_reads_stack_json_when_tools_omitted(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -557,3 +562,208 @@ func _test_icon_cache_reuses_textures(results: Dictionary) -> void:
 	_expect(explorer._icon_cache.has("nonexistent_tool"), "_icon_cache should record null for missing tool", results)
 	
 	tree.free()
+
+func _test_vscodium_files_displayed_and_emit_selection(results: Dictionary) -> void:
+	## When vscodium is in the stack, all mapped extensions appear, show the icon, and emit "vscodium" on selection.
+	var proj: String = _create_test_dir("vscodium_files")
+	var exts: Array[String] = [
+		"gd", "cs", "gdshader", "shader", "txt", "md", "csv", "json", "yaml", "yml", "toml"
+	]
+	for ext: String in exts:
+		_create_file(proj.path_join("src/sample.%s" % ext), "content")
+
+	var tree: Tree = Tree.new()
+	var explorer = ProjectExplorerScript.new(tree)
+	var active_tools: Array[String] = ["godot", "vscodium"]
+	explorer.load_project(proj, active_tools)
+
+	var selected_path: Array[String] = [""]
+	var selected_tool: Array[String] = [""]
+	explorer.file_selected.connect(func(path: String, tool_id: String) -> void:
+		selected_path[0] = path
+		selected_tool[0] = tool_id
+	)
+
+	var root: TreeItem = tree.get_root()
+	_expect(root != null, "root should exist", results)
+	if root != null:
+		var texts: Array[String] = _collect_item_texts(root)
+		_expect(texts.has("src"), "src folder should appear in tree", results)
+		for ext: String in exts:
+			var fname: String = "sample.%s" % ext
+			_expect(texts.has(fname), "%s should appear in tree when vscodium is in stack" % fname, results)
+			var item: TreeItem = _find_child_item(root, fname)
+			if item != null:
+				var icon: Texture2D = item.get_icon(0)
+				_expect(icon != null, "%s should have an icon" % fname, results)
+				if icon != null:
+					_expect(icon.resource_path == ProjectExplorerScript.TOOL_ICON_PATHS["vscodium"], "%s icon should match vscodium tool icon" % fname, results)
+				_expect(item.get_icon_max_width(0) == 20, "%s icon max width should be 20" % fname, results)
+
+				# Test selection
+				item.select(0)
+				explorer._on_item_selected()
+				_expect(selected_tool[0] == "vscodium", "selecting %s should emit vscodium" % fname, results)
+				_expect(selected_path[0].ends_with(fname), "selecting %s should emit correct path" % fname, results)
+
+	tree.free()
+	_cleanup_dir_recursive(proj)
+
+func _test_metadata_files_hidden_even_when_json_supported(results: Dictionary) -> void:
+	## Internal metadata files (stack.json, ogs_config.json, ogs_metadata.json, .import, .uid, .cfg, .tres, .tscn) are never displayed.
+	var proj: String = _create_test_dir("metadata_hidden")
+	_create_file(proj.path_join("stack.json"), '{"stack_name": "Test"}')
+	_create_file(proj.path_join("ogs_config.json"), '{"offline_mode": false}')
+	_create_file(proj.path_join("ogs_metadata.json"), '{"version": "1.0"}')
+	_create_file(proj.path_join("art/hero.png.import"), "import data")
+	_create_file(proj.path_join("scripts/player.gd.uid"), "uid data")
+	_create_file(proj.path_join("export_presets.cfg"), "cfg data")
+	_create_file(proj.path_join("theme.tres"), "tres data")
+	_create_file(proj.path_join("level.tscn"), "tscn data")
+	_create_file(proj.path_join("data/game_data.json"), '{"score": 100}')
+
+	var tree: Tree = Tree.new()
+	var explorer = ProjectExplorerScript.new(tree)
+	var active_tools: Array[String] = ["godot", "vscodium"]
+	explorer.load_project(proj, active_tools)
+
+	var root: TreeItem = tree.get_root()
+	_expect(root != null, "root should exist", results)
+	if root != null:
+		var texts: Array[String] = _collect_item_texts(root)
+		_expect(texts.has("game_data.json"), "user game_data.json should be visible", results)
+		_expect(not texts.has("stack.json"), "stack.json must be hidden", results)
+		_expect(not texts.has("ogs_config.json"), "ogs_config.json must be hidden", results)
+		_expect(not texts.has("ogs_metadata.json"), "ogs_metadata.json must be hidden", results)
+		_expect(not texts.has("hero.png.import"), ".import file must be hidden", results)
+		_expect(not texts.has("player.gd.uid"), ".uid file must be hidden", results)
+		_expect(not texts.has("export_presets.cfg"), ".cfg file must be hidden", results)
+		_expect(not texts.has("theme.tres"), ".tres file must be hidden", results)
+		_expect(not texts.has("level.tscn"), ".tscn file must be hidden", results)
+
+	tree.free()
+	_cleanup_dir_recursive(proj)
+
+func _test_vscodium_files_pruned_when_not_in_stack(results: Dictionary) -> void:
+	## When vscodium is NOT in the stack, text and script files are pruned while project.godot and binary assets appear.
+	var proj: String = _create_test_dir("no_vscodium_pruning")
+	_create_file(proj.path_join("project.godot"), "; godot project")
+	_create_file(proj.path_join("art/hero.xcf"), "xcf data")
+	_create_file(proj.path_join("models/character.blend"), "blend data")
+	_create_file(proj.path_join("textures/canvas.kra"), "kra data")
+	_create_file(proj.path_join("audio/music.aup3"), "aup3 data")
+	_create_file(proj.path_join("scripts/player.gd"), "extends Node")
+	_create_file(proj.path_join("docs/readme.md"), "# Readme")
+	_create_file(proj.path_join("data/config.json"), "{}")
+	_create_file(proj.path_join("notes/todo.txt"), "TODO")
+
+	var tree: Tree = Tree.new()
+	var explorer = ProjectExplorerScript.new(tree)
+	var godot_stack: Array[String] = ["godot", "gimp", "blender", "krita", "audacity"]
+	explorer.load_project(proj, godot_stack)
+
+	var root: TreeItem = tree.get_root()
+	_expect(root != null, "root should exist", results)
+	if root != null:
+		var texts: Array[String] = _collect_item_texts(root)
+		# Binary assets and project.godot appear
+		_expect(texts.has("project.godot"), "project.godot should be visible", results)
+		_expect(texts.has("hero.xcf"), "hero.xcf should be visible", results)
+		_expect(texts.has("character.blend"), "character.blend should be visible", results)
+		_expect(texts.has("canvas.kra"), "canvas.kra should be visible", results)
+		_expect(texts.has("music.aup3"), "music.aup3 should be visible", results)
+		# Text/script files are pruned
+		_expect(not texts.has("player.gd"), "player.gd should be pruned when vscodium not in stack", results)
+		_expect(not texts.has("readme.md"), "readme.md should be pruned when vscodium not in stack", results)
+		_expect(not texts.has("config.json"), "config.json should be pruned when vscodium not in stack", results)
+		_expect(not texts.has("todo.txt"), "todo.txt should be pruned when vscodium not in stack", results)
+		_expect(not texts.has("scripts"), "scripts folder should be pruned", results)
+		_expect(not texts.has("docs"), "docs folder should be pruned", results)
+		_expect(not texts.has("data"), "data folder should be pruned", results)
+		_expect(not texts.has("notes"), "notes folder should be pruned", results)
+
+	tree.free()
+	_cleanup_dir_recursive(proj)
+
+func _test_double_click_file_activated_signal(results: Dictionary) -> void:
+	## Double clicking a file emits file_activated(file_path, tool_id).
+	var proj: String = _create_test_dir("double_click")
+	_create_file(proj.path_join("notes.txt"), "some notes")
+	_create_file(proj.path_join("assets/hero.xcf"), "xcf data")
+
+	var tree: Tree = Tree.new()
+	var explorer = ProjectExplorerScript.new(tree)
+	var active_tools: Array[String] = ["vscodium", "gimp"]
+	explorer.load_project(proj, active_tools)
+
+	var activated_path: Array[String] = [""]
+	var activated_tool: Array[String] = [""]
+	explorer.file_activated.connect(func(path: String, tool_id: String) -> void:
+		activated_path[0] = path
+		activated_tool[0] = tool_id
+	)
+
+	var root: TreeItem = tree.get_root()
+	_expect(root != null, "root should exist", results)
+	if root != null:
+		# Double-click text file
+		var text_item: TreeItem = _find_child_item(root, "notes.txt")
+		_expect(text_item != null, "notes.txt should exist", results)
+		if text_item != null:
+			text_item.select(0)
+			explorer._on_item_activated()
+			_expect(activated_tool[0] == "vscodium", "double clicking text file should emit tool_id vscodium", results)
+			_expect(activated_path[0].ends_with("notes.txt"), "double clicking text file should emit correct path", results)
+
+		# Double-click binary asset file
+		var xcf_item: TreeItem = _find_child_item(root, "hero.xcf")
+		_expect(xcf_item != null, "hero.xcf should exist", results)
+		if xcf_item != null:
+			xcf_item.select(0)
+			explorer._on_item_activated()
+			_expect(activated_tool[0] == "gimp", "double clicking xcf file should emit tool_id gimp", results)
+			_expect(activated_path[0].ends_with("hero.xcf"), "double clicking xcf file should emit correct path", results)
+
+		# Double-click folder item should NOT emit file_activated
+		activated_tool[0] = ""
+		activated_path[0] = ""
+		var assets_item: TreeItem = _find_child_item(root, "assets")
+		_expect(assets_item != null, "assets folder should exist", results)
+		if assets_item != null:
+			assets_item.select(0)
+			explorer._on_item_activated()
+			_expect(activated_tool[0] == "", "activating folder should not emit file_activated", results)
+			_expect(activated_path[0] == "", "activating folder should not set path", results)
+
+	tree.free()
+	_cleanup_dir_recursive(proj)
+
+func _test_load_project_reads_stack_json_when_tools_omitted(results: Dictionary) -> void:
+	## When active_tool_ids is omitted, load_project reads tool IDs from stack.json.
+	var proj: String = _create_test_dir("stack_json_fallback")
+	var stack_content: String = JSON.stringify({
+		"stack_name": "TestStack",
+		"tools": [
+			{"id": "godot", "version": "4.7.2"},
+			{"id": "vscodium", "version": "1.143.17232"}
+		]
+	})
+	_create_file(proj.path_join("stack.json"), stack_content)
+	_create_file(proj.path_join("scripts/helper.gd"), "extends Node")
+
+	var tree: Tree = Tree.new()
+	var explorer = ProjectExplorerScript.new(tree)
+	# Call without active_tool_ids parameter
+	explorer.load_project(proj)
+
+	_expect("vscodium" in explorer.active_tool_ids, "active_tool_ids should contain vscodium read from stack.json", results)
+	_expect("godot" in explorer.active_tool_ids, "active_tool_ids should contain godot read from stack.json", results)
+
+	var root: TreeItem = tree.get_root()
+	_expect(root != null, "root should exist", results)
+	if root != null:
+		var texts: Array[String] = _collect_item_texts(root)
+		_expect(texts.has("helper.gd"), "helper.gd should appear because stack.json enabled vscodium", results)
+
+	tree.free()
+	_cleanup_dir_recursive(proj)

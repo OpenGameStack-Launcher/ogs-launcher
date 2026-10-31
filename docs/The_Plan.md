@@ -361,6 +361,15 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Clean display name formatting (`ToolCategoryMapper.get_display_name()`) across UI surfaces (VSCodium, Git, GIMP)
 - 31 test suites passing (631 total tests) with zero failures
 
+**Stack-Aware Project Explorer VSCodium Mappings and Double-Click Launch (Oct 31, 2026):**
+- Expanded FileTypeMapper with VSCodium supported extensions: gd, cs, gdshader, shader, txt, md, csv, json, yaml, yml, toml
+- Implemented explicit metadata file and extension exclusions (stack.json, ogs_config.json, ogs_metadata.json, .import, .uid, .cfg, .tres, .tscn) to keep launcher and engine internals hidden
+- Stack awareness in ProjectExplorer: when VSCodium is in project's pinned tools, surfaces text, script, shader, and data files with the VSCodium icon (20px width)
+- Preserved clean directory pruning for Godot-only projects: script and text files remain pruned when VSCodium is not in the project's pinned stack
+- Added double-click file activation (file_activated signal) in ProjectExplorer to trigger immediate tool launch targeting the activated file
+- Enhanced new file creation flow: supports all text extensions, creates empty files on disk, and defaults extensionless files to .txt with VSCodium when VSCodium is in the stack
+- 32 test suites passing (916 total tests) with zero failures
+
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
 - Collapsible UI sections for scalability
