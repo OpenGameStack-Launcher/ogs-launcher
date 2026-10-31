@@ -6,6 +6,7 @@ extends RefCounted
 class_name ToolsPageSceneTests
 
 const ToolsControllerScript = preload("res://scripts/tools/tools_controller.gd")
+const DownloadDialogControllerScript = preload("res://scripts/tools/download_dialog_controller.gd")
 
 func run() -> Dictionary:
 	## Runs Tools page scene tests.
@@ -20,6 +21,7 @@ func run() -> Dictionary:
 	_test_installed_empty_state_nodes_exist(results)
 	_test_main_scene_tools_dynamic_collapse_and_empty_state(results)
 	_test_remove_tool_dialog_compact_sizing_and_status_visibility(results)
+	_test_download_dialog_controller_styling_and_layout(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -325,3 +327,56 @@ func _test_remove_tool_dialog_compact_sizing_and_status_visibility(results: Dict
 	_expect(deps.remove_tool_dialog.get_ok_button().disabled == false, "OK button should be re-enabled on failure", results)
 	
 	instance.free()
+
+func _test_download_dialog_controller_styling_and_layout(results: Dictionary) -> void:
+	## Verifies DownloadDialogController layout wrapping inside MarginContainer,
+	## margin theme overrides, progress bar styling, and single authoritative status text.
+	var root = Node.new()
+	var controller = DownloadDialogControllerScript.new()
+	controller.setup(root, null)
+	
+	_expect(controller.dialog != null, "DownloadDialogController dialog should exist", results)
+	_expect(controller.margin_container != null, "DownloadDialogController margin_container should exist", results)
+	if controller.margin_container != null:
+		_expect(controller.margin_container.get_parent() == controller.dialog, "MarginContainer should be direct child of ConfirmationDialog", results)
+		_expect(controller.margin_container.get_theme_constant("margin_left") == 16, "MarginContainer should have 16px left margin", results)
+		_expect(controller.margin_container.get_theme_constant("margin_right") == 16, "MarginContainer should have 16px right margin", results)
+		_expect(controller.margin_container.get_theme_constant("margin_top") == 12, "MarginContainer should have 12px top margin", results)
+		_expect(controller.margin_container.get_theme_constant("margin_bottom") == 12, "MarginContainer should have 12px bottom margin", results)
+		
+		var vbox: VBoxContainer = controller.margin_container.get_child(0) as VBoxContainer
+		_expect(vbox != null, "MarginContainer should contain VBoxContainer", results)
+		if vbox != null:
+			_expect(vbox.get_theme_constant("separation") == 12, "VBoxContainer separation should be 12px", results)
+	
+	_expect(controller.progress_bar != null, "DownloadDialogController progress_bar should exist", results)
+	if controller.progress_bar != null:
+		_expect(controller.progress_bar.show_percentage == false, "ProgressBar show_percentage should be false", results)
+		_expect(controller.progress_bar.custom_minimum_size == Vector2(360, 18), "ProgressBar custom_minimum_size should be Vector2(360, 18)", results)
+		
+		var bg_style: StyleBoxFlat = controller.progress_bar.get_theme_stylebox("background") as StyleBoxFlat
+		_expect(bg_style != null, "ProgressBar background should have StyleBoxFlat override", results)
+		if bg_style != null:
+			_expect(bg_style.bg_color == Color("#1A1D24"), "ProgressBar background color should be #1A1D24", results)
+			_expect(bg_style.border_color == Color("#2A2F3A"), "ProgressBar border color should be #2A2F3A", results)
+			_expect(bg_style.border_width_left == 1 and bg_style.border_width_top == 1 and bg_style.border_width_right == 1 and bg_style.border_width_bottom == 1, "ProgressBar background border width should be 1px", results)
+			_expect(bg_style.corner_radius_top_left == 6 and bg_style.corner_radius_top_right == 6 and bg_style.corner_radius_bottom_right == 6 and bg_style.corner_radius_bottom_left == 6, "ProgressBar background corner radius should be 6px", results)
+		
+		var fill_style: StyleBoxFlat = controller.progress_bar.get_theme_stylebox("fill") as StyleBoxFlat
+		_expect(fill_style != null, "ProgressBar fill should have StyleBoxFlat override", results)
+		if fill_style != null:
+			_expect(fill_style.bg_color == Color("#3B82F6"), "ProgressBar fill color should be #3B82F6", results)
+			_expect(fill_style.corner_radius_top_left == 6 and fill_style.corner_radius_top_right == 6 and fill_style.corner_radius_bottom_right == 6 and fill_style.corner_radius_bottom_left == 6, "ProgressBar fill corner radius should be 6px", results)
+	
+	_expect(controller.label != null, "DownloadDialogController label should exist", results)
+	if controller.label != null:
+		_expect(controller.label.horizontal_alignment == HORIZONTAL_ALIGNMENT_CENTER, "Label should be center-aligned", results)
+	
+	controller.show_dialog("godot", "4.3", null)
+	_expect(controller.dialog.title == "Downloading Godot 4.3", "Dialog title should be set to tool display name and version", results)
+	_expect(controller.dialog.get_cancel_button().text == "Cancel", "Cancel button text should be Cancel", results)
+	_expect(controller.dialog.get_cancel_button().disabled == false, "Cancel button should be enabled", results)
+	controller.hide_dialog()
+	
+	root.free()
+
