@@ -772,18 +772,20 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Confirm an exclusive modal dialog titled "Git Required" appears stating that PortableGit must be installed.
    - Click **"Go to Tools"** and verify the launcher automatically switches to the Tools page with the Download tab focused.
    - Restore the Git folder in the Central Library.
-3. Clone dialog and URL validation:
+3. Clone dialog, sizing, and URL validation:
    - Click **"Add Remote Project"**.
    - Verify an exclusive modal dialog titled "Add Remote Project" opens with focus on the repository URL input field.
+   - Verify the dialog renders with compact, bounded dimensions (approx. 540x280 to 540x320px) with 10px MarginContainer padding on all sides, the header text wraps smoothly across lines without vertical ballooning, and both Clone and Cancel buttons remain visible within view.
    - Confirm the Destination Folder field is pre-filled with the active Primary Projects Folder.
    - Confirm the "Clone" button is initially disabled.
    - Type whitespace into the URL field: confirm "Clone" remains disabled.
    - Enter a valid repository URL (e.g. `https://github.com/OpenGameStack/sample-project.git`): confirm "Clone" becomes enabled.
    - Click **"Browse..."** next to Destination Folder: select an alternate directory in the folder picker and confirm the destination updates.
-4. Folder collision resolution:
+4. Folder collision resolution and sizing:
    - In your destination folder, create a test directory named `sample-project`.
    - Enter `https://github.com/OpenGameStack/sample-project.git` in the URL field and click **"Clone"**.
    - Confirm an exclusive modal dialog titled "Folder Name Collision" appears.
+   - Verify the collision dialog renders with bounded dimensions (approx. 480x160 to 480x260px) with 10px MarginContainer padding on all sides, the warning text and any collision error labels wrap cleanly across lines without stretching the window horizontally, and Continue and Cancel buttons remain visible and centered.
    - Confirm the suggested folder name is auto-incremented to `sample-project-1`.
    - Click **"Cancel"** on the collision dialog and remove the temporary test directory.
 5. In-progress cancellation:
@@ -800,7 +802,9 @@ dir "$env:LOCALAPPDATA\OGS\"
 **Expected Results:**
 - [x] Three-button toolbar layout renders with equal button widths and 16px separation.
 - [x] Missing PortableGit opens guided dialog and "Go to Tools" navigates to Tools page.
+- [x] Modal clone dialog renders at compact, bounded dimensions (~540x280 to 540x320px) with 10px MarginContainer padding and word-wrapped header/status labels without vertical ballooning.
 - [x] Modal dialog pre-fills primary folder and enables Clone button only when non-empty URL is provided.
+- [x] Folder collision dialog renders at compact, bounded dimensions (~480x160 to 480x260px) with 10px MarginContainer padding and word-wrapped warning/error text without horizontal stretching.
 - [x] Folder collision dialog suggests auto-incremented folder names (slug-1, slug-2).
 - [x] Cancellation terminates child processes and resets the dialog cleanly.
 - [x] Offline mode disables Add Remote Project with descriptive tooltip.

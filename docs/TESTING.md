@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 1001
+tests passed: 1304
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -300,8 +300,11 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Working tree checkout failure handling and cancellation teardown killing child process
   - Target directory pre-existence rejection and defensive directory deletion bounded by destination root
 
-- **[tests/remote_project_dialog_tests.gd](tests/remote_project_dialog_tests.gd)** - Validates RemoteProjectDialogController UI flow and modal lifecycle (10 tests).
-  - Dialog hierarchy instantiation: modal ConfirmationDialog (exclusive, unresizable), LineEdits, Browse button, status label, progress bar, missing-Git prompt, and collision dialog
+- **[tests/remote_project_dialog_tests.gd](tests/remote_project_dialog_tests.gd)** - Validates RemoteProjectDialogController UI flow and modal lifecycle (12 tests).
+  - Dialog hierarchy instantiation: modal ConfirmationDialog (exclusive, unresizable), MarginContainers, LineEdits, Browse button, status label, progress bar, missing-Git prompt, and collision dialog
+  - Autowrap mode (AUTOWRAP_WORD_SMART) and explicit horizontal minimum size constraints (480px, 440px) on labels to prevent vertical and horizontal layout inflation
+  - MarginContainer padding (10px on all sides) around clone dialog and collision dialog internal controls
+  - Bounded dialog opening dimensions (540x280 and 480x160 targets) and visible, accessible action buttons (OK/Continue, Cancel)
   - URL input validation and Clone button state transitions (disabled for empty/whitespace, enabled for valid URL)
   - Destination folder pre-filling with configured Primary Projects Folder and manual override via browse dialog
   - Subfolder collision detection and incremental folder name suggestion (slug-1, slug-2)
@@ -526,7 +529,7 @@ All pull requests and pushes to `main` must pass continuous integration on GitHu
 The CI workflow executes on `windows-latest` and performs the following verification gates:
 1. **Tooling Cache & Installation:** Installs and caches Godot 4.7.2 Stable (`Godot_v4.7.2-stable_win64_console.exe`), Windows export templates, and `rcedit-x64.exe` (v2.0.0).
 2. **Headless Editor Import:** Executes `godot --headless --editor --quit` to register class names, resources, and UID metadata.
-3. **Headless Test Suite:** Runs the full 33-suite headless test runner:
+3. **Headless Test Suite:** Runs the full 35-suite headless test runner:
    ```powershell
    godot --headless -s res://tests/test_runner.gd
    ```
