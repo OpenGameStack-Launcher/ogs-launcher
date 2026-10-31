@@ -29,6 +29,7 @@ func run() -> Dictionary:
 	_test_button_theme_variations(results)
 	_test_checkbutton_styling(results)
 	_test_main_scene_button_variations(results)
+	_test_projects_status_bar_structure(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -284,8 +285,8 @@ func _test_typographic_scale(results: Dictionary) -> void:
 
 	# Secondary & Metadata Labels (font_size = 13)
 	var secondary_label_paths: Array[String] = [
-		"AppLayout/Content/PageProjects/ProjectsStatusLabel",
-		"AppLayout/Content/PageProjects/OfflineStatusLabel",
+		"AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel",
+		"AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel",
 		"AppLayout/Content/PageTools/ToolsStatusLabel",
 		"AppLayout/Content/PageSettings/ProjectOfflineStatusLabel",
 		"AppLayout/Content/PageSettings/MirrorStatusLabel"
@@ -561,6 +562,41 @@ func _test_main_scene_button_variations(results: Dictionary) -> void:
 		_expect(btn != null, "Button at %s should exist" % path, results)
 		if btn != null:
 			_expect(btn.theme_type_variation == &"DangerButton", "%s should have DangerButton variation (was: %s)" % [path, String(btn.theme_type_variation)], results)
+
+	instance.free()
+
+func _test_projects_status_bar_structure(results: Dictionary) -> void:
+	## Verifies that Projects page has a compact horizontal status bar with pill badge.
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for status bar test", results)
+	if scene == null:
+		return
+
+	var instance: Node = scene.instantiate()
+	var status_bar: PanelContainer = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar") as PanelContainer
+	_expect(status_bar != null, "ProjectsStatusBar PanelContainer should exist", results)
+	if status_bar != null:
+		var bar_style: StyleBoxFlat = status_bar.get_theme_stylebox("panel") as StyleBoxFlat
+		_expect(bar_style != null, "ProjectsStatusBar should have panel style", results)
+		if bar_style != null:
+			_expect(bar_style.corner_radius_top_left == 6, "ProjectsStatusBar should have rounded corners", results)
+			_expect(bar_style.content_margin_left == 12.0, "ProjectsStatusBar should have 12px horizontal margin", results)
+
+	var hbox: HBoxContainer = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer") as HBoxContainer
+	_expect(hbox != null, "ProjectsStatusBar HBoxContainer should exist", results)
+
+	var project_status: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel") as Label
+	_expect(project_status != null, "ProjectsStatusLabel should exist inside status bar", results)
+	if project_status != null:
+		_expect(project_status.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "ProjectsStatusLabel should expand horizontally", results)
+
+	var offline_status: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel") as Label
+	_expect(offline_status != null, "OfflineStatusLabel should exist inside status bar", results)
+	if offline_status != null:
+		var pill_style: StyleBoxFlat = offline_status.get_theme_stylebox("normal") as StyleBoxFlat
+		_expect(pill_style != null, "OfflineStatusLabel should have pill badge normal style", results)
+		if pill_style != null:
+			_expect(pill_style.corner_radius_top_left == 10, "OfflineStatusLabel pill should have corner radius 10", results)
 
 	instance.free()
 

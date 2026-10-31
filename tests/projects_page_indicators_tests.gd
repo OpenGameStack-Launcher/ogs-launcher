@@ -23,6 +23,7 @@ func run() -> Dictionary:
 		"failures": []
 	}
 	_test_availability_tracking(results)
+	_test_status_bar_indicators_integration(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -91,6 +92,8 @@ func _build_projects_controller() -> Dictionary:
 	return {
 		"controller": projects_controller,
 		"tools_controller": tools_controller,
+		"status": status_label,
+		"offline": offline_label,
 		"tree": explorer_tree,
 		"nodes": [add_button, new_button, projects_list, status_label, offline_label, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, remove_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option]
 	}
@@ -125,4 +128,26 @@ func _test_availability_tracking(results: Dictionary) -> void:
 	_expect(godot_info.has("installed"), "Availability entry should have 'installed' key", results)
 	_expect(godot_info.has("available"), "Availability entry should have 'available' key", results)
 	
+	_cleanup_nodes(ctx["nodes"])
+
+func _test_status_bar_indicators_integration(results: Dictionary) -> void:
+	## Verifies that indicator-related status updates apply appropriate semantic styling.
+	var ctx = _build_projects_controller()
+	var controller: ProjectsController = ctx["controller"]
+	var status_label: Label = ctx["status"]
+	var offline_label: Label = ctx["offline"]
+
+	# Missing tool guidance status -> warning severity & amber color
+	controller._update_status("Status: Tool 'godot' is not installed. Opening Tools page to download.")
+	_expect(controller.get_current_status_severity() == "warning", "Tool missing guidance should be warning severity", results)
+	_expect(status_label.get_theme_color("font_color").is_equal_approx(ProjectsController.COLOR_STATUS_WARNING), "Tool missing guidance should have amber color", results)
+
+	# Verify offline pill badge styling on controller
+	controller._update_offline_status(null)
+	_expect(controller.get_current_offline_state() == "unknown", "Initial offline state should be unknown", results)
+	var pill: StyleBoxFlat = offline_label.get_theme_stylebox("normal") as StyleBoxFlat
+	_expect(pill != null, "Offline label should have StyleBoxFlat pill", results)
+	if pill != null:
+		_expect(pill.corner_radius_top_left == 10, "Offline pill should have 10px rounded corners", results)
+
 	_cleanup_nodes(ctx["nodes"])

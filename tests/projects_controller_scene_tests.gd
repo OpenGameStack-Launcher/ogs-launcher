@@ -51,6 +51,8 @@ func run() -> Dictionary:
 	_test_action_buttons_disabled_initially_and_on_empty(results)
 	_test_custom_item_list_double_click_activation(results)
 	_test_project_display_paths_normalized(results)
+	_test_status_bar_severity_color_modulation(results)
+	_test_offline_status_pill_badge_styling(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -1185,6 +1187,133 @@ func _test_project_display_paths_normalized(results: Dictionary) -> void:
 
 	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_dir_recursive(test_dir)
+	_cleanup_registry(storage_path)
+
+func _test_status_bar_severity_color_modulation(results: Dictionary) -> void:
+	## Verifies ProjectsController._update_status modulates font color and severity properly.
+	var storage_path := "user://test_status_bar_severity.json"
+	_cleanup_registry(storage_path)
+	var ctx := _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var status_label: Label = ctx["status"]
+
+	# 1. Ready / Success state
+	controller._update_status("Status: Manifest loaded. Environment ready - all tools in library.")
+	_expect(controller.get_current_status_severity() == "ready", "Manifest loaded ready status should be 'ready' severity", results)
+	_expect(status_label.text == "Status: Manifest loaded. Environment ready - all tools in library.", "Status text preserved for ready", results)
+	var ready_color: Color = status_label.get_theme_color("font_color")
+	_expect(ready_color.is_equal_approx(ProjectsController.COLOR_STATUS_READY), "Ready status should have green font_color accent", results)
+
+	# 2. Launched success state
+	controller._update_status("Status: Launched godot (PID: 1234)")
+	_expect(controller.get_current_status_severity() == "ready", "Launched tool should have 'ready' severity", results)
+	_expect(status_label.get_theme_color("font_color").is_equal_approx(ProjectsController.COLOR_STATUS_READY), "Launched tool should have green font_color accent", results)
+
+	# 3. Warning / Incomplete state (missing tools in library)
+	controller._update_status("Status: Manifest loaded (1 tool(s) missing - use Tools page to download).")
+	_expect(controller.get_current_status_severity() == "warning", "Missing tools status should be 'warning' severity", results)
+	_expect(status_label.text.contains("1 tool(s) missing"), "Status text preserved for missing tools warning", results)
+	var warning_color: Color = status_label.get_theme_color("font_color")
+	_expect(warning_color.is_equal_approx(ProjectsController.COLOR_STATUS_WARNING), "Warning status should have amber font_color accent", results)
+
+	# 4. Warning / Incomplete state (offline mode download prevention)
+	controller._update_status("Status: Manifest loaded (2 tool(s) missing - offline mode prevents downloads).")
+	_expect(controller.get_current_status_severity() == "warning", "Offline mode missing tools should be 'warning' severity", results)
+	_expect(status_label.get_theme_color("font_color").is_equal_approx(ProjectsController.COLOR_STATUS_WARNING), "Offline missing tools should have amber font_color accent", results)
+
+	# 5. Error / Failure state (launch failed)
+	controller._update_status("Status: Launch failed - Binary not found")
+	_expect(controller.get_current_status_severity() == "error", "Launch failed should be 'error' severity", results)
+	_expect(status_label.text == "Status: Launch failed - Binary not found", "Status text preserved for launch failed", results)
+	var error_color: Color = status_label.get_theme_color("font_color")
+	_expect(error_color.is_equal_approx(ProjectsController.COLOR_STATUS_ERROR), "Error status should have red font_color accent", results)
+
+	# 6. Error / Failure state (missing stack.json)
+	controller._update_status("Status: Selected project is missing stack.json.")
+	_expect(controller.get_current_status_severity() == "error", "Missing stack.json should be 'error' severity", results)
+	_expect(status_label.get_theme_color("font_color").is_equal_approx(ProjectsController.COLOR_STATUS_ERROR), "Missing stack.json should have red font_color accent", results)
+
+	# 7. Neutral / Idle state (initial waiting prompt)
+	controller._update_status("Status: Waiting for project selection.")
+	_expect(controller.get_current_status_severity() == "neutral", "Waiting prompt should be 'neutral' severity", results)
+	_expect(status_label.text == "Status: Waiting for project selection.", "Status text preserved for neutral waiting prompt", results)
+	var neutral_color: Color = status_label.get_theme_color("font_color")
+	_expect(neutral_color.is_equal_approx(ProjectsController.COLOR_STATUS_NEUTRAL), "Neutral status should have muted font_color", results)
+
+	# 8. Explicit severity override
+	controller._update_status("Custom test message", "error")
+	_expect(controller.get_current_status_severity() == "error", "Explicit severity should be honored", results)
+	_expect(status_label.get_theme_color("font_color").is_equal_approx(ProjectsController.COLOR_STATUS_ERROR), "Explicit severity should apply red color", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_registry(storage_path)
+
+func _test_offline_status_pill_badge_styling(results: Dictionary) -> void:
+	## Verifies ProjectsController._update_offline_status renders styled pill badges.
+	var storage_path := "user://test_offline_badge.json"
+	_cleanup_registry(storage_path)
+	var ctx := _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var offline_label: Label = ctx["offline"]
+
+	# 1. Null config (Unknown)
+	controller._update_offline_status(null)
+	_expect(controller.get_current_offline_state() == "unknown", "Null config should be 'unknown' offline state", results)
+	_expect(offline_label.text == "Offline Mode: Unknown", "Offline label text preserved for unknown", results)
+	var unknown_style: StyleBoxFlat = offline_label.get_theme_stylebox("normal") as StyleBoxFlat
+	_expect(unknown_style != null, "Offline label should have normal StyleBoxFlat for unknown", results)
+	if unknown_style != null:
+		_expect(unknown_style.corner_radius_top_left == 10, "Pill badge should have rounded corners (10px)", results)
+		_expect(unknown_style.bg_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_UNKNOWN_BG), "Unknown badge should have muted bg", results)
+	var unknown_text_color: Color = offline_label.get_theme_color("font_color")
+	_expect(unknown_text_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_UNKNOWN_TEXT), "Unknown badge font color should match", results)
+
+	# 2. Online (Disabled)
+	var online_cfg := OgsConfig.new()
+	online_cfg.offline_mode = false
+	online_cfg.force_offline = false
+	controller._update_offline_status(online_cfg)
+	_expect(controller.get_current_offline_state() == "disabled", "Online config should be 'disabled' offline state", results)
+	_expect(offline_label.text == "Offline Mode: Disabled", "Offline label text preserved for online", results)
+	var online_style: StyleBoxFlat = offline_label.get_theme_stylebox("normal") as StyleBoxFlat
+	_expect(online_style != null, "Online badge should have StyleBoxFlat", results)
+	if online_style != null:
+		_expect(online_style.bg_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_ONLINE_BG), "Online badge should have neutral bg", results)
+		_expect(online_style.border_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_ONLINE_BORDER), "Online badge border should match", results)
+	var online_text_color: Color = offline_label.get_theme_color("font_color")
+	_expect(online_text_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_ONLINE_TEXT), "Online badge font color should match", results)
+
+	# 3. Offline Mode Enabled (Amber badge)
+	var offline_cfg := OgsConfig.new()
+	offline_cfg.offline_mode = true
+	offline_cfg.force_offline = false
+	controller._update_offline_status(offline_cfg)
+	_expect(controller.get_current_offline_state() == "enabled", "Offline mode should be 'enabled' offline state", results)
+	_expect(offline_label.text == "Offline Mode: Enabled (offline_mode=true)", "Offline label text preserved for enabled", results)
+	var enabled_style: StyleBoxFlat = offline_label.get_theme_stylebox("normal") as StyleBoxFlat
+	_expect(enabled_style != null, "Enabled badge should have StyleBoxFlat", results)
+	if enabled_style != null:
+		_expect(enabled_style.bg_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_ENABLED_BG), "Enabled badge should have amber bg", results)
+		_expect(enabled_style.border_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_ENABLED_BORDER), "Enabled badge should have amber border", results)
+	var enabled_text_color: Color = offline_label.get_theme_color("font_color")
+	_expect(enabled_text_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_ENABLED_TEXT), "Enabled badge font color should be amber", results)
+
+	# 4. Forced Offline (Red / high-contrast badge)
+	var forced_cfg := OgsConfig.new()
+	forced_cfg.offline_mode = true
+	forced_cfg.force_offline = true
+	controller._update_offline_status(forced_cfg)
+	_expect(controller.get_current_offline_state() == "forced", "Forced offline should be 'forced' offline state", results)
+	_expect(offline_label.text == "Offline Mode: Forced (force_offline=true)", "Offline label text preserved for forced", results)
+	var forced_style: StyleBoxFlat = offline_label.get_theme_stylebox("normal") as StyleBoxFlat
+	_expect(forced_style != null, "Forced badge should have StyleBoxFlat", results)
+	if forced_style != null:
+		_expect(forced_style.bg_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_FORCED_BG), "Forced badge should have danger red bg", results)
+		_expect(forced_style.border_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_FORCED_BORDER), "Forced badge should have danger red border", results)
+	var forced_text_color: Color = offline_label.get_theme_color("font_color")
+	_expect(forced_text_color.is_equal_approx(ProjectsController.COLOR_OFFLINE_FORCED_TEXT), "Forced badge font color should be high-contrast red", results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_registry(storage_path)
 
 

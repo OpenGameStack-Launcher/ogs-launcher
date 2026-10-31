@@ -37,6 +37,29 @@ signal project_selection_changed(project_dir: String, offline_mode: bool, force_
 const DEFAULT_PROJECTS_INDEX_PATH := "user://ogs_projects_index.json"
 const PICKER_ACTION_ADD_PROJECT := "add_project"
 
+# Semantic status colors
+const COLOR_STATUS_READY := Color(0.35, 0.85, 0.55, 1.0)
+const COLOR_STATUS_WARNING := Color(0.95, 0.75, 0.25, 1.0)
+const COLOR_STATUS_ERROR := Color(0.95, 0.40, 0.40, 1.0)
+const COLOR_STATUS_NEUTRAL := Color(0.65, 0.70, 0.78, 1.0)
+
+# Offline pill badge colors
+const COLOR_OFFLINE_ONLINE_TEXT := Color(0.70, 0.78, 0.88, 1.0)
+const COLOR_OFFLINE_ONLINE_BG := Color(0.18, 0.22, 0.28, 0.7)
+const COLOR_OFFLINE_ONLINE_BORDER := Color(0.28, 0.35, 0.45, 0.8)
+
+const COLOR_OFFLINE_ENABLED_TEXT := Color(1.0, 0.85, 0.40, 1.0)
+const COLOR_OFFLINE_ENABLED_BG := Color(0.35, 0.25, 0.08, 0.8)
+const COLOR_OFFLINE_ENABLED_BORDER := Color(0.85, 0.65, 0.20, 0.9)
+
+const COLOR_OFFLINE_FORCED_TEXT := Color(1.0, 0.65, 0.65, 1.0)
+const COLOR_OFFLINE_FORCED_BG := Color(0.38, 0.12, 0.14, 0.85)
+const COLOR_OFFLINE_FORCED_BORDER := Color(0.90, 0.30, 0.32, 0.95)
+
+const COLOR_OFFLINE_UNKNOWN_TEXT := Color(0.60, 0.65, 0.72, 1.0)
+const COLOR_OFFLINE_UNKNOWN_BG := Color(0.16, 0.18, 0.22, 0.6)
+const COLOR_OFFLINE_UNKNOWN_BORDER := Color(0.26, 0.30, 0.36, 0.7)
+
 const ProjectRegistryManagerScript = preload("res://scripts/projects/project_registry_manager.gd")
 const ProjectToolManagerScript = preload("res://scripts/projects/project_tool_manager.gd")
 const ProjectCreationDialogControllerScript = preload("res://scripts/projects/project_creation_dialog.gd")
@@ -96,6 +119,8 @@ var _selected_launch_target_path: String = ""
 var _selected_launch_tool_id: String = ""
 var _picker_state_monitoring := false
 var _add_tool_candidates: Array = []
+var _current_status_severity: String = "neutral"
+var _current_offline_state: String = "unknown"
 
 class UIDeps extends RefCounted:
 	var btn_add_project: Button
@@ -1006,21 +1031,119 @@ func _emit_tool_view_request(tool_id: String, tool_version: String) -> void:
 	tool_view_requested.emit(tool_id, tool_version)
 	
 
-func _update_status(message: String) -> void:
-	## Updates the projects status label.
+func get_current_status_severity() -> String:
+	## Returns the classified severity of the current status message ("ready", "warning", "error", "neutral").
+	return _current_status_severity
+
+func get_current_offline_state() -> String:
+	## Returns the current offline state ("unknown", "disabled", "enabled", "forced").
+	return _current_offline_state
+
+static func _classify_status_severity(message: String) -> String:
+	## Classifies a status message into a semantic severity level.
+	var lower: String = message.to_lower()
+	
+	# Neutral / guidance prompts take precedence over generic word matches
+	if lower.contains("waiting for project") or lower.contains("select a project") \
+		or lower.contains("select a tool") or lower.contains("no projects added") \
+		or lower.contains("enter a valid") or lower.contains("already in the list"):
+		return "neutral"
+		
+	# Error conditions
+	if lower.contains("error") or lower.contains("failed") or lower.contains("failure") \
+		or lower.contains("invalid") or lower.contains("missing required") \
+		or lower.contains("missing stack.json") or lower.contains("missing stack_name") \
+		or lower.contains("cannot add") or lower.contains("cannot launch") \
+		or lower.contains("unable to"):
+		return "error"
+		
+	# Warning / Incomplete conditions
+	if lower.contains("missing") or lower.contains("incomplete") \
+		or lower.contains("not installed") or lower.contains("not in this project's stack") \
+		or lower.contains("offline mode prevents") or lower.contains("no known tool") \
+		or lower.contains("blocked in offline") or lower.contains("no additional tools"):
+		return "warning"
+		
+	# Ready / Success conditions
+	if lower.contains("environment ready") or lower.contains("all tools in library") \
+		or lower.contains("launched ") or lower.contains("created project") \
+		or lower.contains("to project stack") or lower.contains("from project library") \
+		or lower.contains("library is now empty") or lower.contains("updated "):
+		return "ready"
+		
+	return "neutral"
+
+func _update_status(message: String, explicit_severity: String = "") -> void:
+	## Updates the projects status label with semantic color modulation and severity tracking.
+	if lbl_project_status == null:
+		return
 	lbl_project_status.text = message
+	var severity: String = explicit_severity if not explicit_severity.is_empty() else _classify_status_severity(message)
+	_current_status_severity = severity
+	var color: Color = COLOR_STATUS_NEUTRAL
+	match severity:
+		"ready", "success":
+			color = COLOR_STATUS_READY
+		"warning", "incomplete":
+			color = COLOR_STATUS_WARNING
+		"error", "failure":
+			color = COLOR_STATUS_ERROR
+		_:
+			color = COLOR_STATUS_NEUTRAL
+	lbl_project_status.add_theme_color_override("font_color", color)
 
 func _update_offline_status(config: OgsConfig) -> void:
-	## Updates the offline status label based on config state.
-	if config == null:
-		lbl_offline_status.text = "Offline Mode: Unknown"
+	## Updates the offline status label based on config state, applying compact pill badge styling.
+	if lbl_offline_status == null:
 		return
-	if config.force_offline:
-		lbl_offline_status.text = "Offline Mode: Forced (force_offline=true)"
+	var text: String = ""
+	var state: String = "unknown"
+	var text_color: Color = COLOR_OFFLINE_UNKNOWN_TEXT
+	var bg_color: Color = COLOR_OFFLINE_UNKNOWN_BG
+	var border_color: Color = COLOR_OFFLINE_UNKNOWN_BORDER
+
+	if config == null:
+		text = "Offline Mode: Unknown"
+		state = "unknown"
+	elif config.force_offline:
+		text = "Offline Mode: Forced (force_offline=true)"
+		state = "forced"
+		text_color = COLOR_OFFLINE_FORCED_TEXT
+		bg_color = COLOR_OFFLINE_FORCED_BG
+		border_color = COLOR_OFFLINE_FORCED_BORDER
 	elif config.offline_mode:
-		lbl_offline_status.text = "Offline Mode: Enabled (offline_mode=true)"
+		text = "Offline Mode: Enabled (offline_mode=true)"
+		state = "enabled"
+		text_color = COLOR_OFFLINE_ENABLED_TEXT
+		bg_color = COLOR_OFFLINE_ENABLED_BG
+		border_color = COLOR_OFFLINE_ENABLED_BORDER
 	else:
-		lbl_offline_status.text = "Offline Mode: Disabled"
+		text = "Offline Mode: Disabled"
+		state = "disabled"
+		text_color = COLOR_OFFLINE_ONLINE_TEXT
+		bg_color = COLOR_OFFLINE_ONLINE_BG
+		border_color = COLOR_OFFLINE_ONLINE_BORDER
+
+	_current_offline_state = state
+	lbl_offline_status.text = text
+	lbl_offline_status.add_theme_color_override("font_color", text_color)
+
+	var pill: StyleBoxFlat = StyleBoxFlat.new()
+	pill.bg_color = bg_color
+	pill.border_color = border_color
+	pill.border_width_left = 1
+	pill.border_width_top = 1
+	pill.border_width_right = 1
+	pill.border_width_bottom = 1
+	pill.corner_radius_top_left = 10
+	pill.corner_radius_top_right = 10
+	pill.corner_radius_bottom_left = 10
+	pill.corner_radius_bottom_right = 10
+	pill.content_margin_left = 10.0
+	pill.content_margin_right = 10.0
+	pill.content_margin_top = 3.0
+	pill.content_margin_bottom = 3.0
+	lbl_offline_status.add_theme_stylebox_override("normal", pill)
 
 func _apply_offline_config(config: OgsConfig) -> void:
 	## Applies offline configuration and notifies listeners.
