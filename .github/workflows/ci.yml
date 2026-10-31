@@ -30,6 +30,7 @@ jobs:
         shell: powershell
         run: |
           $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
           $toolsDir = "C:\Tools"
           $godotDir = "$toolsDir\Godot"
           $rceditDir = "$toolsDir\rcedit"
@@ -46,7 +47,7 @@ jobs:
           if (-not (Test-Path $godotConsoleExe)) {
               Write-Host "Downloading Godot 4.7.2 Stable..." -ForegroundColor Cyan
               $godotZip = "$env:RUNNER_TEMP\godot.zip"
-              Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_win64.exe.zip" -OutFile $godotZip
+              curl.exe -fL "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_win64.exe.zip" -o $godotZip
               Expand-Archive -Path $godotZip -DestinationPath $godotDir -Force
               Remove-Item -Path $godotZip -Force
           }
@@ -56,7 +57,7 @@ jobs:
           $rceditExe = "$rceditDir\rcedit-x64.exe"
           if (-not (Test-Path $rceditExe)) {
               Write-Host "Downloading rcedit v2.0.0..." -ForegroundColor Cyan
-              Invoke-WebRequest -Uri "https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe" -OutFile $rceditExe
+              curl.exe -fL "https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe" -o $rceditExe
           }
           Copy-Item -Path $rceditExe -Destination "C:\Tools\rcedit-x64.exe" -Force
 
@@ -65,7 +66,7 @@ jobs:
           if (-not (Test-Path $templateFileCheck)) {
               Write-Host "Downloading Godot 4.7.2 export templates..." -ForegroundColor Cyan
               $tpzPath = "$env:RUNNER_TEMP\templates.tpz"
-              Invoke-WebRequest -Uri "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" -OutFile $tpzPath
+              curl.exe -fL "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" -o $tpzPath
 
               Add-Type -AssemblyName System.IO.Compression.FileSystem
               $zip = [System.IO.Compression.ZipFile]::OpenRead($tpzPath)
