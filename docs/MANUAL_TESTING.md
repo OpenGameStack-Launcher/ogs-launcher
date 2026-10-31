@@ -110,8 +110,11 @@ dir "$env:LOCALAPPDATA\OGS\"
 **Expected Results:**
 - ✅ Launcher window appears without errors
 - ✅ Scene tree loads with no "Parse Error" or compilation failures
-- ✅ All page buttons visible in sidebar (Projects, Engine, Tools, Settings)
+- ✅ Sidebar panel displays dedicated dark surface styling with a 1px right border separating navigation from page content
+- ✅ Brand header displays 32x32 OGS logo and "OGS Launcher" title separated from navigation buttons by an HSeparator
+- ✅ Navigation buttons (Projects, Tools, Settings) visible with Projects highlighted as active (elevated background with 3px primary blue accent border)
 - ✅ Projects page is default/active
+- ✅ Sidebar footer displays global connectivity status indicator ("● Online" / "● Offline") and launcher version label ("v0.1.0")
 - ✅ Onboarding wizard appears (welcome dialog with default stack info)
 - ✅ Clicking **Start** completes onboarding and closes the dialog
 - ✅ `%LOCALAPPDATA%\OGS\Library` exists after onboarding completes
@@ -929,9 +932,54 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 18: Sidebar Brand Header, Active Page Highlight, and Connectivity Footer
+
+**Objective:** Verify that the redesigned sidebar features the persistent brand header (32x32 logo and title), active page highlight styling with accent border on the active navigation button, and footer connectivity indicator and launcher version.
+
+**Steps:**
+1. Launch OGS Launcher in editor mode or standalone.
+2. Brand Header Inspection:
+   - Verify 32x32 OGS logo (`res://Images/logo.png`) renders crisply at the top left.
+   - Verify "OGS Launcher" title renders in 16px font next to the logo.
+   - Verify horizontal separator line below the brand header divides branding from navigation buttons.
+3. Active Page Highlight Inspection (Startup):
+   - Verify "Projects" button is highlighted as active with an elevated dark background (`Color(0.18, 0.22, 0.28)`), bright white font color, and a 3px primary blue left border (`Color(0.35, 0.68, 0.95)`).
+   - Verify "Tools" and "Settings" buttons display flat normal styling with no left border and muted text color (`Color(0.70, 0.75, 0.82)`).
+4. Page Navigation Switching:
+   - Click "Tools" in the sidebar.
+   - Verify the "Tools" button transitions to active styling with the 3px blue left border and bright font color.
+   - Verify the "Projects" button restores normal flat styling with 0px left border.
+   - Click "Settings" in the sidebar.
+   - Verify the "Settings" button transitions to active styling and "Tools" restores normal flat styling.
+5. Sidebar Footer Inspection:
+   - Verify the expanding spacer pushes the footer container cleanly to the bottom of the sidebar.
+   - Verify the footer separator line.
+   - Verify the connectivity status label displays "● Offline" (in amber) or "● Online" (in green) depending on repository connectivity.
+   - Verify the version label displays the launcher version (e.g. "v0.1.0").
+6. Connectivity State Synchronization:
+   - Navigate to Settings and toggle "Force offline" (or "Offline mode") to ON.
+   - Verify the sidebar footer status label immediately updates to "● Offline" in amber with descriptive tooltip ("Offline Mode (enforced: force_offline)").
+   - Toggle offline mode OFF (when connected to the internet) and click "Check for Updates" or refresh on Tools page.
+   - Verify the sidebar footer status label updates to "● Online" in green with tooltip ("Online: Connected to repository").
+
+**Expected Results:**
+- [x] Persistent brand header displays 32x32 logo, "OGS Launcher" title, and divider.
+- [x] Active page highlight clearly identifies the active view with an elevated background and 3px blue left accent border.
+- [x] Inactive navigation buttons display muted flat styling.
+- [x] Navigation clicks cleanly transfer the active highlight to the selected page.
+- [x] Sidebar footer displays global connectivity state and launcher version.
+- [x] Toggling offline mode immediately updates the footer status indicator between green Online and amber Offline.
+
+**Pass Criteria:**
+- Sidebar branding and active highlights render cleanly without visual glitches.
+- Active highlight transfers seamlessly on page switching.
+- Global connectivity indicator accurately reflects OfflineEnforcer and ToolsController state.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-17, fill in this table:
+After completing Editor Tests 1-18, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -954,6 +1002,7 @@ After completing Editor Tests 1-17, fill in this table:
 | 15: Remote Git Cloner & URL Validation | ✅/⚠️/❌ | | |
 | 16: Remote Project Toolbar & Modal Clone | ✅/⚠️/❌ | | |
 | 17: Shell Margins & Typography Scale | ✅/⚠️/❌ | | |
+| 18: Sidebar Redesign & Footer Sync | ✅/⚠️/❌ | | |
 
 ---
 
