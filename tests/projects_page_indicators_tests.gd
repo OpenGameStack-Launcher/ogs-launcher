@@ -171,14 +171,14 @@ func _test_toolchain_header_and_fixed_icon_size(results: Dictionary) -> void:
 	_expect(scene != null, "main.tscn should load for header and icon size test", results)
 	if scene != null:
 		var instance = scene.instantiate()
-		var header = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolchainHeaderLabel") as Label
+		var header = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel") as Label
 		_expect(header != null, "ToolchainHeaderLabel should exist in main.tscn", results)
 		if header != null:
 			_expect(header.text == "Stack Toolchain", "ToolchainHeaderLabel text should be 'Stack Toolchain'", results)
 			_expect(header.get_theme_font_size("font_size") == 18, "ToolchainHeaderLabel font size should be 18", results)
 			_expect(header.get_theme_color("font_color").is_equal_approx(Color(0.45, 0.8, 1, 1)), "ToolchainHeaderLabel color should match header accent", results)
 		
-		var list = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectToolsList") as ItemList
+		var list = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ProjectToolsList") as ItemList
 		_expect(list != null, "ProjectToolsList should exist in main.tscn", results)
 		if list != null:
 			_expect(list.fixed_icon_size == Vector2i(20, 20), "ProjectToolsList fixed_icon_size should be Vector2i(20, 20)", results)

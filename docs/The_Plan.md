@@ -240,6 +240,15 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Added clear-query trigger (`Clear Filter` button) and contextual messaging (`No Projects Match Filter`) when search filter yields zero matching projects
     *   [x] Automatic search query reset upon project addition so new projects are immediately visible and selected
     *   [x] Added comprehensive scene tests in `tests/projects_controller_scene_tests.gd` and smoke tests in `tests/main_scene_tests.gd` (1789 tests passing)
+*   [x] Contextual Launch Button and Resizable Split Layout (Issue #133) - 100% Complete ✅
+    *   [x] Divided Project Details into resizable Stack Toolchain and Project Explorer panes via a vertical `VSplitContainer` with minimum dimension constraints
+    *   [x] Configured `ExplorerLabel` with ellipsis text overrun truncation (`TextServer.OVERRUN_TRIM_ELLIPSIS`) and clipping (`clip_text = true`) to prevent toolbar distortion on long project directory paths
+    *   [x] Implemented contextual enablement and dynamic action labels on `LaunchButton`:
+        *   Prompt state: `"Select a Tool to Launch"` (disabled) when no tool or launchable file is selected
+        *   Toolchain selection: `"Launch <Tool Name> <Version>"` (enabled) when a tool is selected in `ProjectToolsList`
+        *   File explorer selection: `"Open <filename> in <Tool Name>"` (enabled) when a recognized file or folder is selected in `ProjectExplorerTree`
+    *   [x] Added empty-area deselection handlers (`empty_clicked` / `nothing_selected`) restoring disabled prompt state
+    *   [x] Added comprehensive scene tests in `tests/projects_controller_scene_tests.gd`, `tests/main_scene_tests.gd`, and `tests/projects_page_indicators_tests.gd` (38 test suites passing, 1892 total tests with zero failures)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:
@@ -464,6 +473,16 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Implemented static helper `PathUtils.format_for_display(path: String) -> String` (`scripts/utils/path_utils.gd`) to unify mixed Windows backslashes and Unix forward slashes into consistent forward-slash presentation, strip whitespace, and simplify redundant slashes.
 - Applied display normalization across user-facing surfaces: Project Library list items and tooltips, Project Explorer title header, New Project creation dialog target path instructions, Settings Primary Projects Folder placeholder text, and Settings project offline status label.
 - Added comprehensive unit test suite in `tests/path_utils_tests.gd` and scene assertions in `tests/projects_controller_scene_tests.gd` and `tests/main_scene_tests.gd` (37 test suites passing, 1591 total tests with zero failures).
+
+**Project Details Resizable Split Layout and Contextual Tool Launch (Oct 31, 2026):**
+- Converted Project Details tab into a resizable vertical split layout (`VSplitContainer` with `split_offset = 120`), dividing `ToolchainSection` (minimum height 120px) and `ExplorerSection` (minimum height 140px).
+- Enabled ellipsis text overrun trimming (`TextServer.OVERRUN_TRIM_ELLIPSIS`) and clipping on `ExplorerLabel` to maintain clean toolbar proportions on deep file paths.
+- Replaced static launch button behavior with contextual enablement and dynamic action labels:
+  - `"Select a Tool to Launch"` (disabled) when no tool or launchable file is selected.
+  - `"Launch <Tool Name> <Version>"` (enabled) upon tool selection in `ProjectToolsList`.
+  - `"Open <filename> in <Tool Name>"` (enabled) upon launchable file/folder selection in `ProjectExplorerTree`.
+- Added empty-space deselection listeners on both list and tree controls to cleanly revert launch state to prompt mode.
+- Added comprehensive scene tests in `tests/projects_controller_scene_tests.gd` asserting split container hierarchy, minimum constraints, ellipsis properties, and contextual label transitions (38 test suites passing, 1892 total tests with zero failures).
 
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
