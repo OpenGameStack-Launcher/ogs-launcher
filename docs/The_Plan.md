@@ -114,6 +114,7 @@ The MVP is not complete until this full sequence works end to end:
     *   *MirrorRepository:* Loads and validates repository.json manifests
     *   *MirrorPathResolver:* Safe path resolution for Windows/Unix with security checks
     *   *MirrorHydrator:* Offline tool installation from local archives
+    *   *RemoteMirrorHydrator:* Remote HTTP/HTTPS mirror hydration with indeterminate progress support for unknown or redirected downloads and end-to-end loopback integration test coverage
     *   *ToolExtractor:* Real ZIP extraction with common-root stripping and path safety
     *   *LibraryHydrationController Integration:* Wired mirror hydration into repair workflow
     *   *Tests:* Comprehensive test coverage (schema validation, path safety, hydration, UI integration)
