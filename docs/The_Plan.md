@@ -225,6 +225,13 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Added semantic font color modulation in ProjectsController._update_status(): green for ready/success, amber for warnings/missing tools, red for errors/failures, and muted neutral for idle prompts
     *   [x] Added rounded pill badge styling (StyleBoxFlat with 10px corner radius) in ProjectsController._update_offline_status(): neutral for online, amber for offline mode, and high-contrast red for forced offline
     *   [x] Added comprehensive scene tests in tests/main_scene_tests.gd, tests/projects_controller_scene_tests.gd, and tests/projects_page_indicators_tests.gd (1651 tests passing)
+*   [x] Structured Project Cards and Tool Badges (Issue #130) - 100% Complete ✅
+    *   [x] Refactored CustomItemList entries into dedicated structured project cards with distinct dark card backgrounds (`Color(0.14, 0.16, 0.20)`) and 1px borders (`Color(0.22, 0.26, 0.32)`), distinct from adjacent action buttons
+    *   [x] Elevated selected card surface (`Color(0.18, 0.22, 0.28)`) with a prominent 2px cyan accent border (`Color(0.35, 0.68, 0.95)`)
+    *   [x] Visual hierarchy: 16px high-contrast title, canonical tool badge pills with overflow (+N more), and normalized secondary path text (`Color(0.65, 0.70, 0.75)`)
+    *   [x] Canonical tool naming via `ToolCategoryMapper.get_display_name()` (e.g. Godot 4.7.2, GIMP 3.2.4, VSCodium)
+    *   [x] Preserved full API backward compatibility for `add_item(text)`, `item_count`, `select(index)`, tooltips, and click/double-click signals
+    *   [x] Added dedicated test suite in tests/custom_item_list_tests.gd and scene tests in tests/projects_controller_scene_tests.gd (1734 tests passing)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:

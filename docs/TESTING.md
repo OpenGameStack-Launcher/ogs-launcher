@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 1651
+tests passed: 1734
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (31 total, 37 suites across all categories):**
+**Current unit test suites (31 total, 38 suites across all categories):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -376,6 +376,17 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Path normalization across project list items, item tooltips, Project Explorer title header, and New Project dialog instructions
   - Status bar severity color modulation: verifies `_update_status` modulates font color across ready (green), warning (amber), error (red), and neutral states while preserving status text
   - Offline status pill badge styling: verifies `_update_offline_status` renders styled pill badges with state-specific backgrounds, borders, text colors, and 10px rounded corners across unknown, disabled, enabled, and forced states
+  - Tool summarization with canonical names and overflow: verifies `_summarize_tools` maps tool IDs to canonical display names via `ToolCategoryMapper` and formats overflow counts (e.g. `+1 more`, `+2 more`)
+  - Project cards rendered in CustomItemList: verifies `ProjectsController` populates `CustomItemList` with structured cards, canonical tool badges, normalized paths, and active selection styling
+
+- **[tests/custom_item_list_tests.gd](tests/custom_item_list_tests.gd)** - Validates `CustomItemList` structured project cards, visual hierarchy, badge formatting, selection styling, and backward compatibility (6 tests).
+  - Dedicated card surface with distinct background (`Color(0.14, 0.16, 0.20)`) and 1px border (`Color(0.22, 0.26, 0.32)`)
+  - Elevated selected card state with cyan accent 2px border (`Color(0.35, 0.68, 0.95)`) and background (`Color(0.18, 0.22, 0.28)`)
+  - Visual hierarchy: 16px high-contrast title, canonical tool badge pills with overflow (+N more), and 12px muted path
+  - Hover, hover_pressed, focus, and disabled stylebox configurations
+  - Disabled state contrast modulation (dimmed alpha on title and path labels) and restore on enable
+  - Memory safety, `clear()` cleanup, and single-click (`item_selected`) / double-click (`item_activated`) signals
+  - API backward compatibility for `add_item(text)`, `item_count`, `select(index)`, tooltips, and getters
 
 - **[tests/projects_page_indicators_tests.gd](tests/projects_page_indicators_tests.gd)** - Tests tool availability indicators in Projects page.
   - Tool items populated with ID and version
