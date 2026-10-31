@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 1591
+tests passed: 1651
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -374,6 +374,8 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Open Project, Remove Project, and Seal buttons are disabled initially when library is empty, enabled on project addition, and disabled when library becomes empty
   - `CustomItemList` emits `item_selected` on single-click and `item_activated` on double-click
   - Path normalization across project list items, item tooltips, Project Explorer title header, and New Project dialog instructions
+  - Status bar severity color modulation: verifies `_update_status` modulates font color across ready (green), warning (amber), error (red), and neutral states while preserving status text
+  - Offline status pill badge styling: verifies `_update_offline_status` renders styled pill badges with state-specific backgrounds, borders, text colors, and 10px rounded corners across unknown, disabled, enabled, and forced states
 
 - **[tests/projects_page_indicators_tests.gd](tests/projects_page_indicators_tests.gd)** - Tests tool availability indicators in Projects page.
   - Tool items populated with ID and version
@@ -381,11 +383,13 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Visual indicators for missing vs available tools
   - Double-click and launch signal emission for tool navigation on missing tools
   - Signal integration with ToolsController for availability checking
+  - Status bar indicators integration: verifies warning severity modulation on missing tool guidance and pill badge initialization on offline status label
 
 - **[tests/main_scene_tests.gd](tests/main_scene_tests.gd)** - Smoke tests for the main launcher scene.
   - main.tscn loads without errors
   - All page nodes exist (Projects, Engine, Tools, Settings)
   - Add Local Project / Add Remote Project / New Project buttons and Projects list exist
+  - Compact horizontal status bar container (`ProjectsStatusBar` PanelContainer with inner HBoxContainer, 6px rounded corners, 12px horizontal margins, expanding status label, and pill badge offline status label)
   - Settings page Projects folder controls (label, path line edit, browse button, reset button) exist and wire properly
   - Primary projects root browse dialog is queued for free when closed or canceled without selection
   - Tool action rows include Add Tool, Remove Tool, Launch Selected Tool, Remove Project, and Seal for Delivery

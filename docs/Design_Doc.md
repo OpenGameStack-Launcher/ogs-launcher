@@ -113,6 +113,20 @@ To prevent inconsistent path presentation across desktop platforms, the applicat
 *   **UI Surface Enforcement:** Applied across the Project Library item labels and item tooltips, Project Explorer title header, New Project creation dialog target path instructions, Settings Primary Projects Folder placeholder text, and Settings project offline status label.
 *   **Security Boundary Preservation:** `PathUtils.is_path_under_root(full_path: String, root_dir: String) -> bool` guarantees path containment within designated workspace boundaries, preventing directory traversal and zip-slip attacks during cloning, extraction, and sealing.
 
+### 2.10 Compact Projects Status Bar and Semantic Pill Badges
+To replace unstyled full-width console-style text lines and provide instantaneous visual feedback on environment readiness, the Projects page wraps status indicators inside a compact horizontal status bar (`ProjectsStatusBar` `PanelContainer` with an inner `HBoxContainer`) positioned directly between `ProjectsControls` and `ProjectsTabs`:
+*   **ProjectsStatusBar Layout:** Styled with a dark elevated panel background (`Color(0.12, 0.14, 0.18, 0.8)`), subtle 1px border (`Color(0.20, 0.24, 0.30, 0.8)`), 6px rounded corners, and 12px horizontal / 6px vertical margins.
+*   **Semantic Status Font Modulation (`ProjectsStatusLabel`):** Dynamically modulated in `ProjectsController._update_status()` based on message severity classification (`_classify_status_severity()`):
+    *   *Ready / Success:* Green accent (`Color(0.35, 0.85, 0.55)`) when environment is ready or tools are launched.
+    *   *Warning / Incomplete:* Amber accent (`Color(0.95, 0.75, 0.25)`) when tools are missing or offline mode blocks downloads.
+    *   *Error / Failure:* Danger red accent (`Color(0.95, 0.40, 0.40)`) for manifest parse errors or launch failures.
+    *   *Neutral / Idle:* Muted text color (`Color(0.65, 0.70, 0.78)`) for initial waiting and selection prompts.
+*   **Offline Mode Pill Badges (`OfflineStatusLabel`):** Rendered as rounded pill badges (`StyleBoxFlat` with 10px corner radius, 10px horizontal padding, 3px vertical padding) in `ProjectsController._update_offline_status()`:
+    *   *Online (Disabled):* Subtle dark slate pill (`Color(0.18, 0.22, 0.28, 0.7)`) with slate border (`Color(0.28, 0.35, 0.45, 0.8)`).
+    *   *Offline Mode Enabled:* Amber pill (`Color(0.35, 0.25, 0.08, 0.8)`) with vibrant amber border (`Color(0.85, 0.65, 0.20, 0.9)`) and text (`Color(1.0, 0.85, 0.40)`).
+    *   *Forced Offline:* High-contrast crimson danger pill (`Color(0.38, 0.12, 0.14, 0.85)`) with bright red border (`Color(0.90, 0.30, 0.32, 0.95)`) and text (`Color(1.0, 0.65, 0.65)`).
+    *   *Unknown:* Muted slate pill (`Color(0.16, 0.18, 0.22, 0.6)`) with muted border and text.
+
 ---
 
 ## 3. Operational Modes & User Stories

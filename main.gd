@@ -56,8 +56,9 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var btn_new_project = $AppLayout/Content/PageProjects/ProjectsControls/NewProjectButton
 @onready var projects_tabs = $AppLayout/Content/PageProjects/ProjectsTabs
 @onready var projects_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsList"
-@onready var lbl_project_status = $AppLayout/Content/PageProjects/ProjectsStatusLabel
-@onready var lbl_offline_status = $AppLayout/Content/PageProjects/OfflineStatusLabel
+@onready var projects_status_bar = $AppLayout/Content/PageProjects/ProjectsStatusBar
+@onready var lbl_project_status = $AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel
+@onready var lbl_offline_status = $AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel
 @onready var project_tools_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectToolsList"
 @onready var lbl_tools_list_title = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/ExplorerLabel"
 @onready var project_explorer_tree = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectExplorerTree"
@@ -338,9 +339,15 @@ func _apply_global_theme() -> void:
 			header.add_theme_font_size_override("font_size", SECTION_FONT_SIZE)
 			header.add_theme_color_override("font_color", SECTION_ACCENT_COLOR)
 	
+	var project_status_node := get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel") as Label
+	if project_status_node == null:
+		project_status_node = get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusLabel") as Label
+	var offline_status_node := get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel") as Label
+	if offline_status_node == null:
+		offline_status_node = get_node_or_null("AppLayout/Content/PageProjects/OfflineStatusLabel") as Label
 	var secondary_labels: Array[Label] = [
-		get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusLabel") as Label,
-		get_node_or_null("AppLayout/Content/PageProjects/OfflineStatusLabel") as Label,
+		project_status_node,
+		offline_status_node,
 		get_node_or_null("AppLayout/Content/PageTools/ToolsStatusLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineStatusLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageSettings/MirrorStatusLabel") as Label

@@ -362,6 +362,47 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 3.6: Projects Page - Compact Status Bar and Pill Badges
+
+**Objective:** Verify that the Projects page displays a compact horizontal status bar with semantic color modulation and styled pill badges for offline status.
+
+**Steps:**
+1. Launch the launcher and navigate to the Projects page.
+2. Inspect the region between the project action buttons ("Add Local Project", "Add Remote Project", "New Project") and the Projects tabs.
+3. Confirm `ProjectsStatusBar` is rendered as a compact horizontal panel container (`PanelContainer`) with an inner `HBoxContainer`.
+4. Note the initial idle/waiting status message ("Status: Waiting for project selection.") and verify it renders in muted neutral text (`Color(0.65, 0.70, 0.78)`).
+5. Check the initial offline pill badge: verify it renders as a rounded pill badge with 10px corner radius showing "Offline Mode: Unknown" (or configured state).
+6. Add a project with missing tools (e.g. `samples/sample_project` with online config):
+   - Verify status message modulates to warning amber (`Color(0.95, 0.75, 0.25)`): "Status: Manifest loaded (2 tool(s) missing - use Tools page to download)."
+   - Verify offline status badge updates to a subtle online/disabled pill badge: "Offline Mode: Disabled" with dark slate background and border.
+7. Add or select a sealed project (e.g. `samples/sample_project_sealed` with `force_offline=true`):
+   - Verify status message displays in warning amber (`Color(0.95, 0.75, 0.25)`): "Status: Manifest loaded (2 tool(s) missing - offline mode prevents downloads)."
+   - Verify offline status badge updates to a high-contrast danger red pill badge: "Offline Mode: Forced (force_offline=true)" with dark crimson background, bright red border, and high-contrast text.
+8. Navigate to Settings, enable "Offline mode" (with `force_offline=false`), and return to Projects:
+   - Verify offline status badge updates to an amber pill badge: "Offline Mode: Enabled (offline_mode=true)" with dark amber background, amber border, and amber text.
+9. Select a ready project where all tools are installed in the library (or launch a tool):
+   - Verify status message displays with green accent (`Color(0.35, 0.85, 0.55)`): "Status: Environment ready - all tools in library."
+10. Trigger an error condition (such as selecting a project missing `stack.json` or a failed launch):
+   - Verify status message displays in danger red (`Color(0.95, 0.40, 0.40)`).
+
+**Expected Results:**
+- [x] Compact status bar occupies minimal vertical height and prevents visual clutter.
+- [x] ProjectsStatusLabel expands horizontally on the left with vertical centering.
+- [x] OfflineStatusLabel renders on the right as a rounded pill badge with 10px corner radius and state-specific styling.
+- [x] Semantic status colors distinguish Ready (green), Warning (amber), Error (red), and Neutral (muted) clearly.
+- [x] Offline pill badges clearly indicate Disabled (neutral/slate), Enabled (amber), and Forced (high-contrast red).
+
+**Pass Criteria:**
+- Status bar and badges render cleanly without clipping or text overflow.
+- Visual colors and styling accurately communicate environment readiness and offline policy.
+
+**If test fails:**
+- Verify `ProjectsStatusBar` panel container and `HBoxContainer` hierarchy in `main.tscn`.
+- Check `ProjectsController._classify_status_severity()` keyword matching and color modulation.
+- Verify `ProjectsController._update_offline_status()` pill `StyleBoxFlat` creation and color assignment.
+
+---
+
 ### Editor Test 4: Settings Page — Mirror Configuration
 
 **Objective:** Verify mirror root can be configured and status indicator updates correctly.

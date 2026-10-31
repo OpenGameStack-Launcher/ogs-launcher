@@ -220,6 +220,11 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Replaced solid rectangular CheckButton styling with empty panel styleboxes and subtle hover highlight
     *   [x] Assigned semantic button variations across Projects, Tools, and Settings pages in main.tscn and ToolsPageController
     *   [x] Added comprehensive scene tests in tests/main_scene_tests.gd and tests/tools_page_scene_tests.gd (1555 tests passing)
+*   [x] Compact Projects Status Bar and Semantic Pill Badges (Issue #129) - 100% Complete ✅
+    *   [x] Wrapped ProjectsStatusLabel and OfflineStatusLabel in a compact ProjectsStatusBar PanelContainer with inner HBoxContainer between ProjectsControls and ProjectsTabs
+    *   [x] Added semantic font color modulation in ProjectsController._update_status(): green for ready/success, amber for warnings/missing tools, red for errors/failures, and muted neutral for idle prompts
+    *   [x] Added rounded pill badge styling (StyleBoxFlat with 10px corner radius) in ProjectsController._update_offline_status(): neutral for online, amber for offline mode, and high-contrast red for forced offline
+    *   [x] Added comprehensive scene tests in tests/main_scene_tests.gd, tests/projects_controller_scene_tests.gd, and tests/projects_page_indicators_tests.gd (1651 tests passing)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:
