@@ -202,11 +202,15 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 		if not sha_value.is_empty():
 			var hash_result = CryptoUtils.compute_sha256(temp_archive)
 			if not hash_result["success"]:
+				if FileAccess.file_exists(temp_archive):
+					DirAccess.remove_absolute(temp_archive)
 				result["failed_count"] += 1
 				result["failed_tools"].append(tool_entry)
 				_emit_tool_install_complete(tool_id, version, false, hash_result["error_message"])
 				continue
 			if hash_result["sha256"] != sha_value:
+				if FileAccess.file_exists(temp_archive):
+					DirAccess.remove_absolute(temp_archive)
 				var mismatch = "Archive sha256 does not match repository"
 				OgsLogger.error("remote_hash_mismatch", {
 					"component": "mirror",
@@ -264,6 +268,9 @@ func _hydrate_internal(tools_to_install: Array) -> Dictionary:
 			_emit_tool_install_complete(tool_id, version, false, "Cancelled")
 			continue
 			
+		if FileAccess.file_exists(temp_archive):
+			DirAccess.remove_absolute(temp_archive)
+
 		if not extract_result["success"]:
 			result["failed_count"] += 1
 			result["failed_tools"].append(tool_entry)
@@ -383,32 +390,36 @@ func _http_download_to_file(url: String, dest_path: String, tool_id: String = ""
 	if FileAccess.file_exists(dest_path):
 		DirAccess.remove_absolute(dest_path)
 		
-	var http = HTTPRequest.new()
-	var tree = scene_tree if scene_tree != null else Engine.get_main_loop() as SceneTree
+	var http: HTTPRequest = HTTPRequest.new()
+	var tree: SceneTree = scene_tree if scene_tree != null else Engine.get_main_loop() as SceneTree
 	if tree == null:
 		http.free()
 		return {"success": false, "error": "no_scene_tree"}
 		
-	tree.root.call_deferred("add_child", http)
-	await tree.process_frame
+	if not http.is_inside_tree():
+		tree.root.add_child(http)
 		
 	http.download_file = dest_path
-	var is_done = false
-	var request_result = 0
-	var response_code = 0
+	var state: Dictionary = {
+		"done": false,
+		"result": 0,
+		"code": 0
+	}
 	
-	http.request_completed.connect(func(res, code, _h, _b):
-		is_done = true
-		request_result = res
-		response_code = code
+	http.request_completed.connect(func(res: int, code: int, _h: PackedStringArray, _b: PackedByteArray) -> void:
+		state["done"] = true
+		state["result"] = res
+		state["code"] = code
 	)
 	
-	var err = http.request(url, ["User-Agent: OGS-Launcher"])
+	var err: Error = http.request(url, ["User-Agent: OGS-Launcher"])
 	if err != OK:
 		http.queue_free()
+		if FileAccess.file_exists(dest_path):
+			DirAccess.remove_absolute(dest_path)
 		return {"success": false, "error": "request_failed"}
 		
-	while not is_done:
+	while not state["done"]:
 		if not tool_id.is_empty() and not version.is_empty():
 			if _is_cancelled(tool_id, version):
 				http.cancel_request()
@@ -417,23 +428,32 @@ func _http_download_to_file(url: String, dest_path: String, tool_id: String = ""
 					DirAccess.remove_absolute(dest_path)
 				return {"success": false, "error": "cancelled"}
 				
-			var downloaded = http.get_downloaded_bytes()
-			var total = http.get_body_size()
+			var downloaded: int = http.get_downloaded_bytes()
+			var total: int = http.get_body_size()
 			if downloaded > 0:
-				_emit_tool_download_progress(tool_id, version, downloaded, total if total > 0 else downloaded)
+				_emit_tool_download_progress(tool_id, version, downloaded, total if total > 0 else 0)
 		
 		await tree.create_timer(0.05).timeout
 		
+	if not tool_id.is_empty() and not version.is_empty():
+		var final_downloaded: int = http.get_downloaded_bytes()
+		var final_total: int = http.get_body_size()
+		if final_downloaded > 0:
+			var reported_total: int = final_total if final_total > 0 else final_downloaded
+			_emit_tool_download_progress(tool_id, version, final_downloaded, reported_total)
+
 	http.queue_free()
 	
-	if request_result != HTTPRequest.RESULT_SUCCESS:
+	var res_code: int = state["result"]
+	var http_code: int = state["code"]
+	if res_code != HTTPRequest.RESULT_SUCCESS:
 		if FileAccess.file_exists(dest_path):
 			DirAccess.remove_absolute(dest_path)
-		return {"success": false, "error": "transport_error_%d" % request_result}
-	if response_code < 200 or response_code >= 300:
+		return {"success": false, "error": "transport_error_%d" % res_code}
+	if http_code < 200 or http_code >= 300:
 		if FileAccess.file_exists(dest_path):
 			DirAccess.remove_absolute(dest_path)
-		return {"success": false, "error": "http_status_%d" % response_code}
+		return {"success": false, "error": "http_status_%d" % http_code}
 		
 	return {"success": true}
 
@@ -446,8 +466,8 @@ func _http_get_bytes(url: String) -> Dictionary:
 		http.free()
 		return {"success": false, "error": "no_scene_tree"}
 		
-	tree.root.call_deferred("add_child", http)
-	await tree.process_frame
+	if not http.is_inside_tree():
+		tree.root.add_child(http)
 		
 	var err = http.request(url, ["User-Agent: OGS-Launcher"])
 	if err != OK:
