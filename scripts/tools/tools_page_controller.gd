@@ -19,6 +19,10 @@ const TOOL_ICON_PATHS := {
 
 class UIDeps extends RefCounted:
 	var tools_tabs: TabContainer
+	var installed_content: Container
+	var download_content: Container
+	var installed_empty_state: Control
+	var browse_available_tools_button: Button
 	var installed_engine_tools: Container
 	var installed_2d_tools: Container
 	var installed_3d_tools: Container
@@ -74,15 +78,31 @@ func setup(deps: UIDeps, tools_controller: ToolsController, progress_controller:
 	_projects_controller = projects_controller
 	_download_dialog_controller = download_dialog_controller
 	
-	if _ui != null and _ui.remove_tool_dialog != null:
-		_ui.remove_tool_dialog.confirmed.connect(_on_remove_tool_confirmed)
+	if _ui != null:
+		if _ui.remove_tool_dialog != null:
+			_ui.remove_tool_dialog.confirmed.connect(_on_remove_tool_confirmed)
+		if _ui.browse_available_tools_button == null and _ui.installed_empty_state != null:
+			_ui.browse_available_tools_button = _ui.installed_empty_state.find_child("BrowseAvailableToolsButton", true, false) as Button
+		if _ui.browse_available_tools_button != null and not _ui.browse_available_tools_button.pressed.is_connected(_on_browse_available_tools_pressed):
+			_ui.browse_available_tools_button.pressed.connect(_on_browse_available_tools_pressed)
 	
 	populate_tools_ui()
+
+## Switches the tools view to the Download tab when the installed empty state action is triggered.
+func _on_browse_available_tools_pressed() -> void:
+	if _ui != null and _ui.tools_tabs != null:
+		_ui.tools_tabs.current_tab = 1
+		var tab_bar = _ui.tools_tabs.get_tab_bar()
+		if tab_bar != null:
+			tab_bar.current_tab = 1
 
 func navigate_to_tool(tool_id: String, tool_version: String) -> void:
 	requested_tool_key = "%s_%s" % [tool_id, tool_version]
 	if _ui.tools_tabs != null:
 		_ui.tools_tabs.current_tab = 1
+		var tab_bar = _ui.tools_tabs.get_tab_bar()
+		if tab_bar != null:
+			tab_bar.current_tab = 1
 	_focus_requested_tool_card()
 
 func update_connectivity_status(is_online: bool) -> void:
@@ -124,10 +144,16 @@ func populate_tools_ui() -> void:
 		_ui.tools_tabs.set_tab_title(0, "Installed (%d)" % installed_count)
 		_ui.tools_tabs.set_tab_title(1, "Download (%d)" % available_count)
 
+	_update_category_sections_and_dividers(_get_installed_category_containers(), _get_installed_content())
+	_update_category_sections_and_dividers(_get_download_category_containers(), _get_download_content())
+	_update_installed_empty_state(installed_count)
+
 	update_download_button_states()
 	_focus_requested_tool_card()
 
 func _clear_tool_containers() -> void:
+	if _ui == null:
+		return
 	var containers = [
 		_ui.installed_engine_tools, _ui.installed_2d_tools, _ui.installed_3d_tools, _ui.installed_audio_tools, _ui.installed_code_tools,
 		_ui.download_engine_tools, _ui.download_2d_tools, _ui.download_3d_tools, _ui.download_audio_tools, _ui.download_code_tools
@@ -135,7 +161,121 @@ func _clear_tool_containers() -> void:
 	for container in containers:
 		if container != null:
 			for child in container.get_children():
+				container.remove_child(child)
 				child.queue_free()
+
+## Returns the list of installed tool category containers configured in UIDeps.
+func _get_installed_category_containers() -> Array[Container]:
+	if _ui == null:
+		return []
+	var list: Array[Container] = []
+	if _ui.installed_engine_tools != null: list.append(_ui.installed_engine_tools)
+	if _ui.installed_2d_tools != null: list.append(_ui.installed_2d_tools)
+	if _ui.installed_3d_tools != null: list.append(_ui.installed_3d_tools)
+	if _ui.installed_audio_tools != null: list.append(_ui.installed_audio_tools)
+	if _ui.installed_code_tools != null: list.append(_ui.installed_code_tools)
+	return list
+
+## Returns the list of download tool category containers configured in UIDeps.
+func _get_download_category_containers() -> Array[Container]:
+	if _ui == null:
+		return []
+	var list: Array[Container] = []
+	if _ui.download_engine_tools != null: list.append(_ui.download_engine_tools)
+	if _ui.download_2d_tools != null: list.append(_ui.download_2d_tools)
+	if _ui.download_3d_tools != null: list.append(_ui.download_3d_tools)
+	if _ui.download_audio_tools != null: list.append(_ui.download_audio_tools)
+	if _ui.download_code_tools != null: list.append(_ui.download_code_tools)
+	return list
+
+## Resolves the InstalledContent container from UIDeps, container parents, or the scene tree.
+func _get_installed_content() -> Container:
+	if _ui == null:
+		return null
+	if _ui.installed_content != null:
+		return _ui.installed_content
+	if _ui.installed_engine_tools != null and _ui.installed_engine_tools.get_parent() != null and _ui.installed_engine_tools.get_parent().get_parent() is Container:
+		return _ui.installed_engine_tools.get_parent().get_parent() as Container
+	if _ui.tools_tabs != null:
+		return _ui.tools_tabs.find_child("InstalledContent", true, false) as Container
+	return null
+
+## Resolves the DownloadContent container from UIDeps, container parents, or the scene tree.
+func _get_download_content() -> Container:
+	if _ui == null:
+		return null
+	if _ui.download_content != null:
+		return _ui.download_content
+	if _ui.download_engine_tools != null and _ui.download_engine_tools.get_parent() != null and _ui.download_engine_tools.get_parent().get_parent() is Container:
+		return _ui.download_engine_tools.get_parent().get_parent() as Container
+	if _ui.tools_tabs != null:
+		return _ui.tools_tabs.find_child("DownloadContent", true, false) as Container
+	return null
+
+## Resolves the InstalledEmptyState control from UIDeps or the tools tab hierarchy.
+func _get_installed_empty_state() -> Control:
+	if _ui == null:
+		return null
+	if _ui.installed_empty_state != null:
+		return _ui.installed_empty_state
+	if _ui.tools_tabs != null:
+		return _ui.tools_tabs.find_child("InstalledEmptyState", true, false) as Control
+	return null
+
+## Toggles InstalledEmptyState and InstalledContent visibility based on installed tool count.
+func _update_installed_empty_state(installed_count: int) -> void:
+	var empty_state = _get_installed_empty_state()
+	var installed_content = _get_installed_content()
+	var is_empty: bool = (installed_count == 0)
+	
+	if empty_state != null:
+		empty_state.visible = is_empty
+	if installed_content != null:
+		installed_content.visible = not is_empty
+
+## Hides empty category sections and ensures dividers appear strictly between visible sections.
+func _update_category_sections_and_dividers(category_containers: Array, content_container: Container) -> void:
+	for container in category_containers:
+		if container == null:
+			continue
+		var section = container.get_parent() as CanvasItem
+		if section != null:
+			section.visible = (container.get_child_count() > 0)
+	
+	if content_container == null:
+		return
+	
+	for child in content_container.get_children():
+		if child is HSeparator:
+			continue
+		if child is Container:
+			var handled: bool = false
+			for c in category_containers:
+				if c != null and c.get_parent() == child:
+					handled = true
+					break
+			if not handled:
+				var tool_container: Container = null
+				for sub in child.get_children():
+					if sub is Container:
+						tool_container = sub as Container
+						break
+				if tool_container != null:
+					child.visible = (tool_container.get_child_count() > 0)
+	
+	var seen_first_visible_section: bool = false
+	var pending_divider: CanvasItem = null
+	
+	for child in content_container.get_children():
+		if child is HSeparator:
+			child.visible = false
+			if seen_first_visible_section and pending_divider == null:
+				pending_divider = child
+		elif child is Control and child.visible:
+			if seen_first_visible_section and pending_divider != null:
+				pending_divider.visible = true
+			seen_first_visible_section = true
+			pending_divider = null
 
 func _add_tool_card_to_category(category: String, tool: Dictionary, is_installed: bool, target_installed_section: bool = true) -> void:
 	var container: VBoxContainer = null

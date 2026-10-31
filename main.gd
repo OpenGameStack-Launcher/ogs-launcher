@@ -36,6 +36,10 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var tools_status_label = $AppLayout/Content/PageTools/ToolsStatusLabel
 @onready var tools_offline_message = $AppLayout/Content/PageTools/OfflineMessage
 @onready var tools_tabs = $AppLayout/Content/PageTools/ToolsTabs
+@onready var installed_content = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent
+@onready var download_content = $AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent
+@onready var installed_empty_state = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState
+@onready var browse_available_tools_button = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/BrowseAvailableToolsButton
 
 # Installed tab containers
 @onready var installed_engine_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/EngineSection/EngineTools
@@ -347,7 +351,8 @@ func _apply_global_theme() -> void:
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel") != null else find_child("ProjectOfflineSettingsLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel") != null else find_child("ToolchainHeaderLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel") != null else find_child("ExplorerLabel", true, false) as Label),
-		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyTitleLabel") as Label
+		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyTitleLabel") as Label,
+		(get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/InstalledEmptyTitle") as Label if get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/InstalledEmptyTitle") != null else find_child("InstalledEmptyTitle", true, false) as Label)
 	]
 	for header: Label in section_headers:
 		if header != null:
@@ -368,7 +373,8 @@ func _apply_global_theme() -> void:
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeHelperLabel") != null else find_child("ProjectOfflineModeHelperLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineHelperLabel") != null else find_child("ProjectForceOfflineHelperLabel", true, false) as Label),
 		get_node_or_null("AppLayout/Content/PageSettings/MirrorStatusLabel") as Label,
-		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyMessageLabel") as Label
+		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyMessageLabel") as Label,
+		(get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/InstalledEmptyDescription") as Label if get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/InstalledEmptyDescription") != null else find_child("InstalledEmptyDescription", true, false) as Label)
 	]
 	for sec_label: Label in secondary_labels:
 		if sec_label != null:
@@ -466,6 +472,10 @@ func _ready() -> void:
 	tools_page_controller = ToolsPageControllerScript.new()
 	var tools_page_deps = ToolsPageControllerScript.UIDeps.new()
 	tools_page_deps.tools_tabs = tools_tabs
+	tools_page_deps.installed_content = installed_content
+	tools_page_deps.download_content = download_content
+	tools_page_deps.installed_empty_state = installed_empty_state
+	tools_page_deps.browse_available_tools_button = browse_available_tools_button
 	tools_page_deps.installed_engine_tools = installed_engine_tools
 	tools_page_deps.installed_2d_tools = installed_2d_tools
 	tools_page_deps.installed_3d_tools = installed_3d_tools
