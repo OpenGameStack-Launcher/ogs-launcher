@@ -95,6 +95,15 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 	var projects_list = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsList")
 	_expect(projects_list != null, "Projects list should exist", results)
 
+	var search_edit = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectSearchLineEdit") as LineEdit
+	_expect(search_edit != null, "ProjectSearchLineEdit should exist in main.tscn", results)
+	if search_edit != null:
+		_expect(search_edit.placeholder_text == "Filter projects by name, path, or tool...", "ProjectSearchLineEdit placeholder text should match specification", results)
+		_expect(search_edit.clear_button_enabled == true, "ProjectSearchLineEdit clear_button_enabled should be true", results)
+
+	var empty_state = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState")
+	_expect(empty_state != null, "EmptyLibraryState should exist in main.tscn", results)
+
 	var open_project_btn = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/OpenProjectButton") as Button
 	_expect(open_project_btn != null, "Open Project button should exist", results)
 	if open_project_btn != null:

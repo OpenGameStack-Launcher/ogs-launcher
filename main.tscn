@@ -225,10 +225,72 @@ current_tab = 0
 layout_mode = 2
 metadata/_tab_index = 0
 
+[node name="ProjectSearchLineEdit" type="LineEdit" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library"]
+custom_minimum_size = Vector2(0, 32)
+layout_mode = 2
+placeholder_text = "Filter projects by name, path, or tool..."
+clear_button_enabled = true
+
 [node name="ProjectsList" type="ScrollContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library" unique_id=2121007457]
+visible = false
 layout_mode = 2
 size_flags_vertical = 3
 script = ExtResource("2_cui")
+
+[node name="EmptyLibraryState" type="CenterContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="EmptyStateContent" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState"]
+custom_minimum_size = Vector2(400, 0)
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="EmptyTitleLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+horizontal_alignment = 1
+text = "No Projects Tracked"
+
+[node name="EmptyMessageLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 13
+horizontal_alignment = 1
+autowrap_mode = 2
+text = "Get started by creating a new project, adding an existing local stack, or cloning a remote repository."
+
+[node name="EmptyActionsContainer" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent"]
+layout_mode = 2
+theme_override_constants/separation = 12
+alignment = 1
+
+[node name="EmptyNewProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyActionsContainer"]
+theme_type_variation = &"PrimaryButton"
+custom_minimum_size = Vector2(120, 32)
+layout_mode = 2
+text = "New Project"
+
+[node name="EmptyAddLocalButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyActionsContainer"]
+theme_type_variation = &"SecondaryButton"
+custom_minimum_size = Vector2(130, 32)
+layout_mode = 2
+text = "Add Local Project"
+
+[node name="EmptyAddRemoteButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyActionsContainer"]
+theme_type_variation = &"SecondaryButton"
+custom_minimum_size = Vector2(140, 32)
+layout_mode = 2
+text = "Add Remote Project"
+metadata/network_ui = true
+
+[node name="EmptyClearFilterButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyActionsContainer"]
+visible = false
+theme_type_variation = &"SecondaryButton"
+custom_minimum_size = Vector2(120, 32)
+layout_mode = 2
+text = "Clear Filter"
 
 [node name="ProjectActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library" unique_id=1423751299]
 layout_mode = 2

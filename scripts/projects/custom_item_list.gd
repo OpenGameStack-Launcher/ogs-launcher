@@ -309,6 +309,9 @@ func is_item_disabled(idx: int) -> bool:
 
 func select(idx: int, _single: bool = true) -> void:
 	## Visually highlights the selected card and unselects others.
+	if idx < 0 or idx >= _items.size():
+		deselect_all()
+		return
 	_selected_index = idx
 	for i in range(_items.size()):
 		_items[i].button_pressed = (i == idx)
@@ -329,6 +332,10 @@ func deselect_all() -> void:
 func is_selected(idx: int) -> bool:
 	## Returns whether card at index is currently selected.
 	return _selected_index == idx
+
+func get_item_count() -> int:
+	## Returns total number of project cards in the list.
+	return item_count
 
 func get_selected_index() -> int:
 	## Returns index of selected card, or -1 if none selected.
