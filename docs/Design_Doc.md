@@ -165,7 +165,15 @@ Rather than managing project-specific offline toggles inside global launcher set
     *   *Offline mode (`offline_mode`):* Blocks outbound network activity while the project is active, allowing tool launches from the Central Library or local project stack.
     *   *Force offline (`force_offline`):* Enforces strict air-gap isolation, requiring and launching tools exclusively from the project's sealed local `tools/` directory.
 *   **Decoupled State Persistence:** Toggling either policy setting immediately persists changes to the project's local `ogs_config.json`, triggers `OfflineEnforcer.apply_config()`, emits `offline_state_changed` to update status indicators and pill badge styling, and re-validates the project environment.
-*   **Global Settings Separation:** The Settings page (`PageSettings`) remains dedicated strictly to machine-wide configurations (Primary Projects Folder, Network update checks, Mirror settings).
+*   **Global Settings Separation:** The Settings page (`PageSettings`) remains dedicated strictly to machine-wide configurations (Primary Projects Folder, Mirror & Offline Repository settings).
+
+### 2.17 Redesigned Global Settings Page with Section Cards and Aligned Form Controls
+The global launcher settings page (`PageSettings` in `main.tscn`), managed by `SettingsController` (`scripts/launcher/settings_controller.gd`), organizes machine-wide preferences into structured section cards:
+*   **Section Cards Architecture:** Encapsulates settings into two distinct `PanelContainer` cards (`ProjectsCard` and `MirrorCard`) styled with `StyleBoxFlat_settings_card` (dark surface `Color(0.12, 0.14, 0.18, 0.8)`, subtle 1px border `Color(0.2, 0.24, 0.3, 0.8)`, 6px corner radii, and 16px internal padding).
+*   **Typography & In-Context Guidance:** Each card features an 18px cyan accent section header ("Projects Directory" and "Mirror & Offline Repository") accompanied by 13px muted helper text explaining default project paths and offline tool installation fallback via local mirrors and remote manifests.
+*   **Uniform Form Label Alignment:** All form labels (`ProjectsRootLabel`, `MirrorRootLabel`, `MirrorRepoLabel`) enforce a minimum width of 195px (`custom_minimum_size = Vector2(195, 0)`), ensuring all text input boxes start at the exact same horizontal coordinate across sections without ragged offsets.
+*   **Embedded Quick-Clear Controls:** All three `LineEdit` controls (`ProjectsRootPath`, `MirrorRootPath`, `MirrorRepoPath`) enable native clear buttons (`clear_button_enabled = true`), providing a one-click reset for custom overrides.
+*   **Clean Up of Dead Controls:** Removed unwired `CheckUpdatesButton` and orphaned `NetworkLabel`, eliminating non-functional UI elements from the settings experience.
 
 ### 2.15 Tools Page Card Layout, Scrollbar Margins, and Tab Count Badges (`ToolsPageController`)
 On the Tools page (`PageTools` in `main.tscn`), managed by `ToolsPageController` (`scripts/tools/tools_page_controller.gd`), tool card presentation, action geometry, and tab headers are structured for visual polish and operational clarity:

@@ -268,6 +268,13 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Added InstalledEmptyState container (VBoxContainer) under ToolsTabs/Installed with high-contrast accent title ("No Tools Installed Yet"), descriptive guidance explaining Central Library offline storage, and a "Browse Available Tools" button (PrimaryButton)
     *   [x] Wired "Browse Available Tools" button to switch directly to Download tab (current_tab = 1)
     *   [x] Added unit tests in tests/tools_page_controller_tests.gd and scene tests in tests/tools_page_scene_tests.gd (2010 tests passing across 38 test suites with zero failures)
+*   [x] Redesign Global Settings Page with Section Cards and Aligned Form Inputs (Issue #137) - 100% Complete ✅
+    *   [x] Grouped global settings into two styled `PanelContainer` section cards (`ProjectsCard` and `MirrorCard`) with `StyleBoxFlat_settings_card`, 6px corner radii, and 16px internal padding
+    *   [x] Added 18px cyan accent headers ("Projects Directory", "Mirror & Offline Repository") and 13px muted helper descriptions
+    *   [x] Removed unwired dead `CheckUpdatesButton` and orphaned `NetworkLabel`
+    *   [x] Enforced uniform minimum width of 195px (`custom_minimum_size = Vector2(195, 0)`) on `ProjectsRootLabel`, `MirrorRootLabel`, and `MirrorRepoLabel` for uniform horizontal alignment of all text inputs
+    *   [x] Enabled clear buttons (`clear_button_enabled = true`) across `ProjectsRootPath`, `MirrorRootPath`, and `MirrorRepoPath` LineEdit controls
+    *   [x] Updated tests in `tests/main_scene_tests.gd`, `tests/startup_tests.gd`, and registered `settings_controller.gd` in `tests/test_runner.gd` (2027 tests passing across 38 test suites with zero failures)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:
@@ -510,6 +517,14 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Wrapped InstalledContent and DownloadContent inside MarginContainers with 14px right margins in `main.tscn`, providing clean clearance that prevents vertical scrollbar overlap.
 - Dynamically formatted ToolsTabs titles with count badges (`Installed (X)` and `Download (Y)`) calculated in `populate_tools_ui()` and refreshed on installation, removal, or catalog updates.
 - Added badge formatting unit tests in `tests/tools_page_controller_tests.gd` and layout/margin assertions in `tests/tools_page_scene_tests.gd` (38 test suites passing, 1955 total tests with zero failures).
+
+**Settings Page Card Layout, Form Input Alignment, and Dead Control Clean Up (Oct 31, 2026):**
+- Restructured `PageSettings` into two clear `PanelContainer` section cards (`ProjectsCard` and `MirrorCard`) styled with dark panel backgrounds (`Color(0.12, 0.14, 0.18, 0.8)`), subtle 1px border (`Color(0.2, 0.24, 0.3, 0.8)`), 6px corner radii, and 16px internal padding.
+- Added 18px cyan accent headers ("Projects Directory" and "Mirror & Offline Repository") with 13px muted helper text providing contextual guidance for project paths and mirror/offline repository usage.
+- Removed unwired dead `CheckUpdatesButton` and orphaned `NetworkLabel`.
+- Set `custom_minimum_size = Vector2(195, 0)` across form labels (`ProjectsRootLabel`, `MirrorRootLabel`, and `MirrorRepoLabel`), aligning all input text boxes on the same horizontal axis.
+- Enabled `clear_button_enabled = true` on `ProjectsRootPath`, `MirrorRootPath`, and `MirrorRepoPath` LineEdit controls.
+- Added comprehensive assertions in `tests/main_scene_tests.gd` and updated `tests/startup_tests.gd` (38 test suites passing, 2027 total tests with zero failures).
 
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
