@@ -341,9 +341,13 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	if btn_new_file != null:
 		btn_new_file.pressed.connect(_on_new_file_pressed)
 	if new_file_name_edit != null:
+		new_file_name_edit.text_changed.connect(_on_new_file_name_changed)
 		new_file_name_edit.text_submitted.connect(func(_t): _on_new_file_confirmed())
 	if new_file_dialog != null:
 		new_file_dialog.confirmed.connect(_on_new_file_confirmed)
+		var ok_btn = new_file_dialog.get_ok_button()
+		if ok_btn != null:
+			ok_btn.disabled = true
 	
 	environment_validator = ProjectEnvironmentValidator.new()
 	_library_manager = LibraryManager.new()
@@ -451,7 +455,9 @@ func _on_remove_project_pressed() -> void:
 	var entry: Dictionary = registry_manager.tracked_projects[_selected_project_index]
 	var stack_name = String(entry.get("stack_name", "Unnamed Stack"))
 	remove_project_dialog.dialog_text = "Remove '%s' from the Project Library?\nThis does not delete project files from disk." % stack_name
-	remove_project_dialog.popup_centered_ratio(0.4)
+	if remove_project_dialog.is_inside_tree():
+		remove_project_dialog.size = Vector2i(420, 150)
+		remove_project_dialog.popup_centered(Vector2i(420, 150))
 
 func _on_remove_project_confirmed() -> void:
 	## Removes selected project after user confirms removal intent.
@@ -1508,10 +1514,104 @@ func _on_new_folder_pressed() -> void:
 	DirAccess.make_dir_recursive_absolute(new_dir)
 	explorer.refresh()
 
+func _on_new_file_name_changed(new_text: String) -> void:
+	## Enables create button in NewFileDialog only when file name is non-empty.
+	if new_file_dialog == null:
+		return
+	var ok_button: Button = new_file_dialog.get_ok_button()
+	if ok_button == null:
+		return
+	ok_button.disabled = new_text.strip_edges().is_empty()
+
+func _is_tool_in_manifest(tool_id: String) -> bool:
+	if current_manifest != null and current_manifest.tools != null:
+		var lower_id = tool_id.to_lower()
+		for t: Variant in current_manifest.tools:
+			if t is Dictionary and String((t as Dictionary).get("id", "")).to_lower() == lower_id:
+				return true
+	return false
+
 func _on_new_file_pressed() -> void:
 	if new_file_name_edit != null:
 		new_file_name_edit.text = ""
-		new_file_dialog.popup_centered(Vector2(300, 150))
+		_on_new_file_name_changed("")
+		
+		var target_subfolder := ""
+		var tool_id := ""
+		var inferred_ext := ""
+		
+		if self.has_meta("project_explorer_instance"):
+			var explorer = self.get_meta("project_explorer_instance")
+			var selected_path: String = explorer.get_selected_path()
+			var folder_path: String = selected_path if DirAccess.dir_exists_absolute(selected_path) else selected_path.get_base_dir()
+			
+			if not current_project_dir.is_empty() and folder_path.begins_with(current_project_dir):
+				var rel: String = folder_path.substr(current_project_dir.length()).replace("\\", "/")
+				if rel.begins_with("/"):
+					rel = rel.substr(1)
+				if not rel.is_empty():
+					if not rel.ends_with("/"):
+						rel += "/"
+					target_subfolder = rel
+			elif not folder_path.is_empty() and folder_path != current_project_dir:
+				var file_name: String = folder_path.get_file()
+				if not file_name.is_empty():
+					target_subfolder = file_name + "/"
+			
+			tool_id = explorer._infer_tool_from_folder(folder_path)
+			if tool_id.is_empty():
+				var check_path: String = folder_path
+				while not check_path.is_empty() and check_path != current_project_dir:
+					var folder_name: String = check_path.get_file().to_lower()
+					if folder_name in ["models", "3d", "mesh", "meshes"]:
+						tool_id = "blender"
+						break
+					if folder_name in ["audio", "sound", "sounds", "music"]:
+						tool_id = "audacity"
+						break
+					if folder_name in ["textures", "sprites", "images", "2d"]:
+						tool_id = "krita" if _is_tool_in_manifest("krita") else "gimp"
+						break
+					if folder_name in ["scripts", "src", "code"]:
+						tool_id = "vscodium"
+						break
+					if folder_name == "game":
+						tool_id = "godot"
+						break
+					var parent: String = check_path.get_base_dir()
+					if parent == check_path:
+						break
+					check_path = parent
+		
+		if tool_id.is_empty() and not _selected_launch_tool_id.is_empty():
+			tool_id = _selected_launch_tool_id
+			
+		var stack_has_vscodium := _is_tool_in_manifest("vscodium")
+		if tool_id.is_empty() and stack_has_vscodium:
+			tool_id = "vscodium"
+			
+		if not tool_id.is_empty():
+			inferred_ext = "gd" if tool_id == "godot" else FileTypeMapper.get_extension_for_tool(tool_id)
+			
+		var label: Label = null
+		if new_file_dialog != null:
+			label = new_file_dialog.get_node_or_null("VBoxContainer/InstructionsLabel") as Label
+			if label == null:
+				label = new_file_dialog.find_child("InstructionsLabel", true, false) as Label
+				
+		if label != null:
+			if not target_subfolder.is_empty() and not inferred_ext.is_empty():
+				label.text = "Enter a file name (will be created as <name>.%s in %s):" % [inferred_ext, target_subfolder]
+			elif not inferred_ext.is_empty():
+				label.text = "Enter a file name (will be created as <name>.%s):" % inferred_ext
+			elif not target_subfolder.is_empty():
+				label.text = "Enter a file name (will be created in %s):" % target_subfolder
+			else:
+				label.text = "Enter file name. Extension will be added automatically."
+				
+		if new_file_dialog != null and new_file_dialog.is_inside_tree():
+			new_file_dialog.size = Vector2i(420, 150)
+			new_file_dialog.popup_centered(Vector2i(420, 150))
 		new_file_name_edit.grab_focus()
 
 func _on_new_file_confirmed() -> void:
@@ -1541,10 +1641,34 @@ func _on_new_file_confirmed() -> void:
 			tool_id = "vscodium"
 		else:
 			tool_id = FileTypeMapper.get_tool_for_file(file_name)
-	elif not tool_id.is_empty():
-		var ext = FileTypeMapper.get_extension_for_tool(tool_id)
-		if not ext.is_empty() and not file_name.to_lower().ends_with("." + ext):
-			file_name += "." + ext
+	else:
+		if tool_id.is_empty():
+			var check_path: String = folder_path
+			while not check_path.is_empty() and check_path != current_project_dir:
+				var folder_name: String = check_path.get_file().to_lower()
+				if folder_name in ["models", "3d", "mesh", "meshes"]:
+					tool_id = "blender"
+					break
+				if folder_name in ["audio", "sound", "sounds", "music"]:
+					tool_id = "audacity"
+					break
+				if folder_name in ["textures", "sprites", "images", "2d"]:
+					tool_id = "krita" if _is_tool_in_manifest("krita") else "gimp"
+					break
+				if folder_name in ["scripts", "src", "code"]:
+					tool_id = "vscodium"
+					break
+				if folder_name == "game":
+					tool_id = "godot"
+					break
+				var parent: String = check_path.get_base_dir()
+				if parent == check_path:
+					break
+				check_path = parent
+		if not tool_id.is_empty():
+			var ext = "gd" if tool_id == "godot" else FileTypeMapper.get_extension_for_tool(tool_id)
+			if not ext.is_empty() and not file_name.to_lower().ends_with("." + ext):
+				file_name += "." + ext
 		
 	var new_file_path = folder_path.path_join(file_name)
 	var final_ext = file_name.get_extension().to_lower()

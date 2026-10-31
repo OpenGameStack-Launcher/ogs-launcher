@@ -20,7 +20,9 @@ func _on_new_project_pressed() -> void:
 	if label:
 		label.text = "Enter project name. A folder will be created under:\n%s" % PathUtils.format_for_display(_pc.registry_manager.get_primary_projects_folder())
 		
-	_ui.new_project_dialog.popup_centered_ratio(0.4)
+	if _ui.new_project_dialog.is_inside_tree():
+		_ui.new_project_dialog.size = Vector2i(420, 150)
+		_ui.new_project_dialog.popup_centered(Vector2i(420, 150))
 	_ui.new_project_name_line_edit.grab_focus()
 
 func _on_new_project_name_changed(new_text: String) -> void:
@@ -37,6 +39,9 @@ func _on_new_project_name_changed(new_text: String) -> void:
 
 func _on_new_project_confirmed() -> void:
 	## Creates a new project scaffold from dialog-entered project name.
+	var sanitized = _sanitize_project_name(_ui.new_project_name_line_edit.text)
+	if sanitized.is_empty():
+		return
 	_create_new_project_from_name(_ui.new_project_name_line_edit.text)
 
 func _create_new_project_from_name(project_name: String) -> bool:

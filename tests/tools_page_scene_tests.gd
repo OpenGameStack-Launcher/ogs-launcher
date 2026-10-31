@@ -19,6 +19,7 @@ func run() -> Dictionary:
 	_test_download_button_state(results)
 	_test_installed_empty_state_nodes_exist(results)
 	_test_main_scene_tools_dynamic_collapse_and_empty_state(results)
+	_test_remove_tool_dialog_compact_sizing_and_status_visibility(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -261,4 +262,66 @@ func _test_main_scene_tools_dynamic_collapse_and_empty_state(results: Dictionary
 			elif child is Container:
 				_expect(not child.visible, "Category section in InstalledContent should be hidden when empty: %s" % child.name, results)
 
+	instance.free()
+
+func _test_remove_tool_dialog_compact_sizing_and_status_visibility(results: Dictionary) -> void:
+	## Verifies RemoveToolDialog compact sizing, margin offsets, and status label visibility transitions.
+	var instance = _instantiate_main_scene(results)
+	if instance == null:
+		return
+	
+	var remove_tool_dialog: ConfirmationDialog = instance.get_node_or_null("RemoveToolDialog") as ConfirmationDialog
+	_expect(remove_tool_dialog != null, "RemoveToolDialog should exist", results)
+	if remove_tool_dialog != null:
+		_expect(remove_tool_dialog.min_size == Vector2i(420, 150), "RemoveToolDialog min_size should be 420x150, got %s" % str(remove_tool_dialog.min_size), results)
+		_expect(remove_tool_dialog.size == Vector2i(420, 150), "RemoveToolDialog size should be 420x150, got %s" % str(remove_tool_dialog.size), results)
+		
+		var vbox: VBoxContainer = remove_tool_dialog.get_node_or_null("VBoxContainer") as VBoxContainer
+		_expect(vbox != null, "RemoveToolDialog VBoxContainer should exist", results)
+		if vbox != null:
+			_expect(vbox.offset_left == 16.0, "RemoveToolDialog VBoxContainer offset_left should be 16px, got %f" % vbox.offset_left, results)
+			_expect(vbox.offset_top == 12.0, "RemoveToolDialog VBoxContainer offset_top should be 12px, got %f" % vbox.offset_top, results)
+			_expect(vbox.offset_right == -16.0, "RemoveToolDialog VBoxContainer offset_right should be -16px, got %f" % vbox.offset_right, results)
+			
+		var status_label: Label = remove_tool_dialog.get_node_or_null("VBoxContainer/StatusLabel") as Label
+		var progress_bar: ProgressBar = remove_tool_dialog.get_node_or_null("VBoxContainer/ProgressBar") as ProgressBar
+		_expect(status_label != null, "RemoveToolDialog StatusLabel should exist", results)
+		_expect(progress_bar != null, "RemoveToolDialog ProgressBar should exist", results)
+		
+		if status_label != null:
+			_expect(status_label.visible == false, "StatusLabel should default to hidden in scene", results)
+		if progress_bar != null:
+			_expect(progress_bar.visible == false, "ProgressBar should default to hidden in scene", results)
+			
+	# Test controller runtime behavior
+	var page_controller = ToolsPageController.new()
+	var deps = ToolsPageController.UIDeps.new()
+	deps.remove_tool_dialog = remove_tool_dialog
+	deps.remove_tool_confirmation_label = remove_tool_dialog.get_node_or_null("VBoxContainer/ConfirmationLabel") as Label
+	deps.remove_tool_status_label = remove_tool_dialog.get_node_or_null("VBoxContainer/StatusLabel") as Label
+	deps.remove_tool_progress_bar = remove_tool_dialog.get_node_or_null("VBoxContainer/ProgressBar") as ProgressBar
+	page_controller.setup(deps, null, null, null, null)
+	
+	# Initial open: status and progress must be hidden
+	page_controller._on_remove_tool_pressed("godot", "4.3")
+	_expect(deps.remove_tool_status_label.visible == false, "StatusLabel must be hidden when dialog initially opens", results)
+	_expect(deps.remove_tool_progress_bar.visible == false, "ProgressBar must be hidden when dialog initially opens", results)
+	_expect(deps.remove_tool_dialog.get_ok_button().disabled == false, "OK button should be enabled when dialog opens", results)
+	
+	# Simulate underway confirmation: status and progress become visible
+	page_controller.removal_tool_id = "godot"
+	page_controller.removal_tool_version = "4.3"
+	deps.remove_tool_status_label.visible = true
+	deps.remove_tool_status_label.text = "Removing Godot 4.3..."
+	deps.remove_tool_progress_bar.visible = true
+	_expect(deps.remove_tool_status_label.visible == true, "StatusLabel should be visible while removal is underway", results)
+	_expect(deps.remove_tool_progress_bar.visible == true, "ProgressBar should be visible while removal is underway", results)
+	
+	# Simulate removal failure: status label shows failure, progress bar hidden
+	page_controller._on_tool_removal_finished({"success": false, "error_message": "Disk write failed"})
+	_expect(deps.remove_tool_status_label.visible == true, "StatusLabel should remain visible on removal failure", results)
+	_expect(deps.remove_tool_status_label.text == "Removal failed: Disk write failed", "StatusLabel should show failure message", results)
+	_expect(deps.remove_tool_progress_bar.visible == false, "ProgressBar should be hidden after removal fails", results)
+	_expect(deps.remove_tool_dialog.get_ok_button().disabled == false, "OK button should be re-enabled on failure", results)
+	
 	instance.free()
