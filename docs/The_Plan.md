@@ -412,6 +412,13 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Threaded execution with non-blocking pipe streaming, live percentage/phase signals, thread-safe cancellation, and safe cleanup bounded by destination root (`PathUtils.is_path_under_root`).
 - 34 test suites passing (1189 total tests) with zero failures.
 
+**Shell Content Margins and Typography Scale Standardization (Oct 31, 2026):**
+- Added theme margin overrides to `AppLayout/Content` in `main.tscn` (margin_left = 20, margin_right = 20, margin_top = 16, margin_bottom = 16), ensuring page titles, controls, scrollbars, and bottom action buttons do not touch or clip against the outer window borders.
+- Standardized typography scale across main views: 24px page titles (Projects, Tools, Settings), 18px section headers with cyan accent styling (`Color(0.45, 0.8, 1.0)`), 16px form controls and body text, and 13px secondary status and metadata labels with muted styling (`Color(0.65, 0.70, 0.78)`).
+- Coordinated runtime overrides in `_apply_global_theme()` in `main.gd` while preserving custom tool category colors on `PageTools` (Engine, 2D, 3D, Audio, Code).
+- Added comprehensive automated scene tests in `tests/main_scene_tests.gd` covering content margins, typographic scale, and runtime theme persistence.
+- 35 test suites passing (1405 total tests) with zero failures.
+
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
 - Collapsible UI sections for scalability

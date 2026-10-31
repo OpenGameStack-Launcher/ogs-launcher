@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 1358
+tests passed: 1405
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -372,6 +372,9 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - OpenProjectButton exists with minimum size Vector2(140, 32), starts disabled, and wires properly in UIDeps
   - `installed_code_tools` and `download_code_tools` node bindings are wired
   - AddRemoteProjectButton wired to UIDeps and toggles disabled state and descriptive tooltip on offline state change
+  - Uniform content margins (20px horizontal, 16px vertical) on `AppLayout/Content` in both scene definition and runtime
+  - Standard typographic hierarchy across page titles (24px), section headers (18px cyan accent Color(0.45, 0.8, 1.0)), form labels/body (16px), and secondary/metadata labels (13px muted Color(0.65, 0.70, 0.78))
+  - Runtime theme application in `_apply_global_theme()` persists content margins and font sizes during scene readiness
 
 - **[tests/tools_page_scene_tests.gd](tests/tools_page_scene_tests.gd)** - Scene tests for Tools page UI.
   - Tools/Download tab nodes exist

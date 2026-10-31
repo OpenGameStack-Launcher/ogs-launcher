@@ -15,6 +15,9 @@ func run() -> Dictionary:
 		"failures": []
 	}
 	_test_main_scene_loads(results)
+	_test_content_margins(results)
+	_test_typographic_scale(results)
+	_test_ready_theme_application(results)
 	_test_controller_type_instances(results)
 	_test_network_ui_disabled_offline(results)
 	_test_mirror_root_browse_dialog_frees_on_close(results)
@@ -84,6 +87,103 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/AddToolButton") != null, "Add Tool button should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/RemoveToolButton") != null, "Remove Tool button should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/LaunchButton") != null, "Launch button should exist", results)
+
+	instance.free()
+
+func _test_content_margins(results: Dictionary) -> void:
+	## Verifies that AppLayout/Content has standard 20px horizontal and 16px vertical margins.
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for content margins test", results)
+	if scene == null:
+		return
+
+	var instance: Node = scene.instantiate()
+	var content: MarginContainer = instance.get_node_or_null("AppLayout/Content") as MarginContainer
+	_expect(content != null, "AppLayout/Content should exist as MarginContainer", results)
+	if content != null:
+		_expect(content.get_theme_constant("margin_left") == 20, "Content margin_left should be 20", results)
+		_expect(content.get_theme_constant("margin_right") == 20, "Content margin_right should be 20", results)
+		_expect(content.get_theme_constant("margin_top") == 16, "Content margin_top should be 16", results)
+		_expect(content.get_theme_constant("margin_bottom") == 16, "Content margin_bottom should be 16", results)
+
+	instance.free()
+
+func _test_typographic_scale(results: Dictionary) -> void:
+	## Verifies that page titles, section headers, and secondary labels follow standard typography hierarchy.
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for typographic scale test", results)
+	if scene == null:
+		return
+
+	var instance: Node = scene.instantiate()
+
+	# Page Titles (font_size = 24)
+	var projects_title: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTitle") as Label
+	var tools_title: Label = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsToolbar/ToolsTitle") as Label
+	var settings_title: Label = instance.get_node_or_null("AppLayout/Content/PageSettings/Label") as Label
+
+	_expect(projects_title != null, "ProjectsTitle should exist", results)
+	if projects_title != null:
+		_expect(projects_title.get_theme_font_size("font_size") == 24, "ProjectsTitle font_size should be 24", results)
+
+	_expect(tools_title != null, "ToolsTitle should exist", results)
+	if tools_title != null:
+		_expect(tools_title.get_theme_font_size("font_size") == 24, "ToolsTitle font_size should be 24", results)
+
+	_expect(settings_title != null, "Settings title Label should exist", results)
+	if settings_title != null:
+		_expect(settings_title.get_theme_font_size("font_size") == 24, "Settings title font_size should be 24", results)
+
+	# Section Headers (font_size = 18)
+	var section_header_paths: Array[String] = [
+		"AppLayout/Content/PageSettings/ProjectsSettingsLabel",
+		"AppLayout/Content/PageSettings/NetworkLabel",
+		"AppLayout/Content/PageSettings/MirrorSettingsLabel",
+		"AppLayout/Content/PageSettings/ProjectOfflineSettingsLabel",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/ExplorerLabel"
+	]
+	for path: String in section_header_paths:
+		var header: Label = instance.get_node_or_null(path) as Label
+		_expect(header != null, "Section header at %s should exist" % path, results)
+		if header != null:
+			_expect(header.get_theme_font_size("font_size") == 18, "%s font_size should be 18" % path, results)
+			var font_color: Color = header.get_theme_color("font_color")
+			_expect(font_color.is_equal_approx(Color(0.45, 0.8, 1.0, 1.0)), "%s font_color should be accent color" % path, results)
+
+	# Secondary & Metadata Labels (font_size = 13)
+	var secondary_label_paths: Array[String] = [
+		"AppLayout/Content/PageProjects/ProjectsStatusLabel",
+		"AppLayout/Content/PageProjects/OfflineStatusLabel",
+		"AppLayout/Content/PageTools/ToolsStatusLabel",
+		"AppLayout/Content/PageSettings/ProjectOfflineStatusLabel",
+		"AppLayout/Content/PageSettings/MirrorStatusLabel"
+	]
+	for path: String in secondary_label_paths:
+		var sec_label: Label = instance.get_node_or_null(path) as Label
+		_expect(sec_label != null, "Secondary label at %s should exist" % path, results)
+		if sec_label != null:
+			_expect(sec_label.get_theme_font_size("font_size") == 13, "%s font_size should be 13" % path, results)
+			var font_color: Color = sec_label.get_theme_color("font_color")
+			_expect(font_color.is_equal_approx(Color(0.65, 0.70, 0.78, 1.0)), "%s font_color should be muted color" % path, results)
+
+	instance.free()
+
+func _test_ready_theme_application(results: Dictionary) -> void:
+	## Verifies that _apply_global_theme maintains typography and content margins at runtime.
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for ready theme test", results)
+	if scene == null:
+		return
+
+	var instance: Node = scene.instantiate()
+	(Engine.get_main_loop() as SceneTree).root.add_child(instance)
+
+	var content: MarginContainer = instance.get_node_or_null("AppLayout/Content") as MarginContainer
+	_expect(content != null and content.get_theme_constant("margin_left") == 20, "Content margin_left should remain 20 after ready", results)
+	_expect(content != null and content.get_theme_constant("margin_top") == 16, "Content margin_top should remain 16 after ready", results)
+
+	var projects_title: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTitle") as Label
+	_expect(projects_title != null and projects_title.get_theme_font_size("font_size") == 24, "ProjectsTitle font_size should remain 24 after ready", results)
 
 	instance.free()
 

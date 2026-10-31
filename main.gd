@@ -116,8 +116,8 @@ func _resolve_ogs_root_path() -> String:
 	return OS.get_user_data_dir().path_join("OGS")
 
 func _apply_global_theme() -> void:
-	var global_theme = Theme.new()
-	var normal_style = StyleBoxFlat.new()
+	var global_theme: Theme = Theme.new()
+	var normal_style: StyleBoxFlat = StyleBoxFlat.new()
 	normal_style.bg_color = Color(0.25, 0.3, 0.35)
 	normal_style.corner_radius_top_left = 6
 	normal_style.corner_radius_top_right = 6
@@ -128,13 +128,13 @@ func _apply_global_theme() -> void:
 	normal_style.content_margin_top = 8
 	normal_style.content_margin_bottom = 8
 	
-	var hover_style = normal_style.duplicate()
+	var hover_style: StyleBoxFlat = normal_style.duplicate() as StyleBoxFlat
 	hover_style.bg_color = Color(0.32, 0.38, 0.45)
 	
-	var pressed_style = normal_style.duplicate()
+	var pressed_style: StyleBoxFlat = normal_style.duplicate() as StyleBoxFlat
 	pressed_style.bg_color = Color(0.18, 0.22, 0.26)
 	
-	var disabled_style = normal_style.duplicate()
+	var disabled_style: StyleBoxFlat = normal_style.duplicate() as StyleBoxFlat
 	disabled_style.bg_color = Color(0.2, 0.2, 0.2, 0.5)
 	
 	global_theme.set_stylebox("normal", "Button", normal_style)
@@ -142,7 +142,7 @@ func _apply_global_theme() -> void:
 	global_theme.set_stylebox("pressed", "Button", pressed_style)
 	global_theme.set_stylebox("disabled", "Button", disabled_style)
 	
-	var tree_panel = StyleBoxFlat.new()
+	var tree_panel: StyleBoxFlat = StyleBoxFlat.new()
 	tree_panel.bg_color = Color(0.16, 0.16, 0.16, 1)
 	tree_panel.border_width_bottom = 1
 	tree_panel.border_width_top = 1
@@ -153,9 +153,57 @@ func _apply_global_theme() -> void:
 	tree_panel.corner_radius_top_right = 4
 	tree_panel.corner_radius_bottom_left = 4
 	tree_panel.corner_radius_bottom_right = 4
-	project_explorer_tree.add_theme_stylebox_override("panel", tree_panel)
-	project_tools_list.add_theme_stylebox_override("panel", tree_panel)
+	if project_explorer_tree != null:
+		project_explorer_tree.add_theme_stylebox_override("panel", tree_panel)
+	if project_tools_list != null:
+		project_tools_list.add_theme_stylebox_override("panel", tree_panel)
 	global_theme.set_stylebox("panel", "Tree", tree_panel)
+	
+	var content_margin: MarginContainer = get_node_or_null("AppLayout/Content") as MarginContainer
+	if content_margin != null:
+		content_margin.add_theme_constant_override("margin_left", 20)
+		content_margin.add_theme_constant_override("margin_top", 16)
+		content_margin.add_theme_constant_override("margin_right", 20)
+		content_margin.add_theme_constant_override("margin_bottom", 16)
+	
+	const TITLE_FONT_SIZE: int = 24
+	const SECTION_FONT_SIZE: int = 18
+	const SECONDARY_FONT_SIZE: int = 13
+	const SECTION_ACCENT_COLOR: Color = Color(0.45, 0.8, 1.0, 1.0)
+	const MUTED_LABEL_COLOR: Color = Color(0.65, 0.70, 0.78, 1.0)
+	
+	var page_titles: Array[Label] = [
+		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTitle") as Label,
+		get_node_or_null("AppLayout/Content/PageTools/ToolsToolbar/ToolsTitle") as Label,
+		get_node_or_null("AppLayout/Content/PageSettings/Label") as Label
+	]
+	for title: Label in page_titles:
+		if title != null:
+			title.add_theme_font_size_override("font_size", TITLE_FONT_SIZE)
+	
+	var section_headers: Array[Label] = [
+		get_node_or_null("AppLayout/Content/PageSettings/ProjectsSettingsLabel") as Label,
+		get_node_or_null("AppLayout/Content/PageSettings/NetworkLabel") as Label,
+		get_node_or_null("AppLayout/Content/PageSettings/MirrorSettingsLabel") as Label,
+		get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineSettingsLabel") as Label,
+		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/ExplorerLabel") as Label
+	]
+	for header: Label in section_headers:
+		if header != null:
+			header.add_theme_font_size_override("font_size", SECTION_FONT_SIZE)
+			header.add_theme_color_override("font_color", SECTION_ACCENT_COLOR)
+	
+	var secondary_labels: Array[Label] = [
+		get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusLabel") as Label,
+		get_node_or_null("AppLayout/Content/PageProjects/OfflineStatusLabel") as Label,
+		get_node_or_null("AppLayout/Content/PageTools/ToolsStatusLabel") as Label,
+		get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineStatusLabel") as Label,
+		get_node_or_null("AppLayout/Content/PageSettings/MirrorStatusLabel") as Label
+	]
+	for sec_label: Label in secondary_labels:
+		if sec_label != null:
+			sec_label.add_theme_font_size_override("font_size", SECONDARY_FONT_SIZE)
+			sec_label.add_theme_color_override("font_color", MUTED_LABEL_COLOR)
 	
 	self.theme = global_theme
 
