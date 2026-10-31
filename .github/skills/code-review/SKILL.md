@@ -40,9 +40,10 @@ Walk the diff against each section below. Only comment on lines that are part of
 - Archive extraction (`tool_extractor.gd` and similar): Confirm zip-slip protections and SHA-256 verification are preserved when touching extraction logic.
 - No hardcoded secrets, tokens, or credentials.
 
-### 6. Scenes & Resources (`.tscn` / `.tres`)
+### 6. Scenes, Resources & Visual QA (`.tscn` / `.tres` / MCP Bridge)
 - Confirm node paths referenced in scripts (`$NodePath`, `%UniqueName`) still match the scene tree structure in the diff.
 - Confirm freed/removed nodes do not leave dangling signal connections.
+- When UI layouts, scenes, dialogs, or icons are modified, verify via the MCP visual QA bridge (`McpInteractionServer` on `127.0.0.1:9090` + `python mcp_client.py screenshot` / `get_ui_elements`, see [`.agents/skills/mcp-visual-qa/SKILL.md`](../../../.agents/skills/mcp-visual-qa/SKILL.md)) that the app renders cleanly without clipping, overlapping controls, or broken layout.
 
 ## Output Format
 

@@ -69,6 +69,7 @@ func _run_tests_async() -> void:
 	load("res://scripts/tools/tools_controller.gd")
 	load("res://scripts/tools/progress_controller.gd")
 	load("res://scripts/projects/project_explorer.gd")
+	load("res://autoloads/mcp_interaction_server.gd")
 	
 	var summary := {
 		"passed": 0,

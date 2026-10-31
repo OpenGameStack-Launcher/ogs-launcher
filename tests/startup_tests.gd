@@ -14,6 +14,7 @@ func run() -> Dictionary:
 	_test_all_required_nodes_exist(results)
 	_test_controllers_initialize(results)
 	_test_no_runtime_errors(results)
+	_test_mcp_interaction_server_setup(results)
 	
 	return results
 
@@ -168,6 +169,39 @@ func _test_no_runtime_errors(results: Dictionary) -> void:
 	
 	test_instance.free()
 	_expect(success, message, results)
+
+## Test 5: Verifies McpInteractionServer autoload and mcp_client.py setup for visual QA.
+func _test_mcp_interaction_server_setup(results: Dictionary) -> void:
+	## Validates that project.godot registers McpInteractionServer and the autoload script and CLI client exist.
+	var proj_file: FileAccess = FileAccess.open("res://project.godot", FileAccess.READ)
+	_expect(proj_file != null, "project.godot should be readable", results)
+	if proj_file != null:
+		var proj_content: String = proj_file.get_as_text()
+		proj_file.close()
+		_expect(
+			proj_content.contains("McpInteractionServer=\"*res://autoloads/mcp_interaction_server.gd\""),
+			"project.godot should register McpInteractionServer autoload",
+			results
+		)
+
+	_expect(
+		FileAccess.file_exists("res://autoloads/mcp_interaction_server.gd"),
+		"autoloads/mcp_interaction_server.gd should exist",
+		results
+	)
+	_expect(
+		FileAccess.file_exists("res://mcp_client.py"),
+		"mcp_client.py CLI helper should exist at project root",
+		results
+	)
+
+	var mcp_script: GDScript = load("res://autoloads/mcp_interaction_server.gd") as GDScript
+	_expect(mcp_script != null, "mcp_interaction_server.gd should load as a valid GDScript", results)
+	if mcp_script != null:
+		var mcp_node: Node = mcp_script.new() as Node
+		_expect(mcp_node != null, "McpInteractionServer should instantiate cleanly", results)
+		if mcp_node != null:
+			mcp_node.free()
 
 ## Helper to record test results.
 func _expect(condition: bool, message: String, results: Dictionary) -> void:

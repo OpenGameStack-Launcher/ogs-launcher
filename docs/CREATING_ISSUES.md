@@ -47,10 +47,11 @@ Checklist grouped by component or responsibility:
 #### [Component / Feature Area 2]
 - [ ] Explicit requirement 3
 
-#### Automated Tests (`tests/`)
+#### Automated Tests & Visual QA (`tests/` & MCP Bridge)
 - [ ] Add or update unit or scene test cases in `tests/<test_name>_tests.gd` verifying the new behavior.
 - [ ] If adding a new test file or `class_name`, register it in `tests/test_runner.gd`.
 - [ ] Ensure all existing automated test suites pass without regressions (`tests failed: 0`).
+- [ ] (For UI changes) Verify the running application visually via the MCP bridge (`python mcp_client.py screenshot` / `get_ui_elements`; see `.agents/skills/mcp-visual-qa/SKILL.md`) to ensure the layout renders cleanly without clipping or overlap.
 
 #### Documentation Coordination (Mandatory per docs/REVIEWING_AND_MERGING_PRS.md)
 - [ ] Update `docs/The_Plan.md` or `docs/Design_Doc.md` if architecture, roadmap tasks, or specifications changed.

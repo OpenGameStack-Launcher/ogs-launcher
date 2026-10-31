@@ -25,6 +25,10 @@ When executing the Godot 4.7.2 engine from the terminal (`godot` in `PATH`, whic
      ```
    - Remember that `tests/test_runner.gd` does **not** auto-discover test files on disk. Any new `class_name` script must be preloaded in `tests/test_runner.gd`, and any new `tests/*_tests.gd` file must be added to the `test_files` array in `tests/test_runner.gd`.
 
-4. **Lingering Process Cleanup**:
+4. **Runtime Visual QA via MCP Bridge (`McpInteractionServer` & `mcp_client.py`)**:
+   - When verifying UI layout, scenes, dialogs, icons, or visual behavior (see `.agents/skills/mcp-visual-qa/SKILL.md`), stop any stale Godot processes first (`Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue`), then launch OGS Launcher in the background (`godot` or `godot --path .worktrees/issue-<number>`).
+   - Query and inspect the live application over `127.0.0.1:9090` using `python mcp_client.py ping`, `python mcp_client.py screenshot`, `python mcp_client.py get_ui_elements`, `python mcp_client.py get_scene_tree`, `python mcp_client.py click <x> <y>` (or the `godot-bridge` MCP server tools), and view `screenshot.png` with `read_file` to ensure the app is visually working right.
+
+5. **Lingering Process Cleanup**:
    - Remember that running Godot with `--headless` does not automatically exit unless `--quit` is passed or the script calls `quit()`.
-   - If a long-running Godot process is started by mistake or for visual QA, immediately terminate it via `manage_task` (`kill`) or `Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue` so it does not consume resources or lock worktree files on Windows.
+   - Whenever a background Godot instance is started for visual QA or by mistake, immediately terminate it via `manage_task` (`kill`) or `Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue` once finished so it releases port `9090` and does not lock worktree files on Windows.
