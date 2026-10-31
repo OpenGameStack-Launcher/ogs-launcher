@@ -1,8 +1,8 @@
 [CmdletBinding()]
 param(
-    [string]$Version = "0.1.4-alpha",
-    [string]$GodotPath = "C:\Program Files\Godot\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64.exe",
-    [string]$RcEditPath = "C:\Tools\rcedit-x64.exe",
+    [string]$Version = "0.1.6",
+    [string]$GodotPath,
+    [string]$RcEditPath,
     [string]$CompanyName = "Open Game Stack",
     [string]$ProductName = "OGS Launcher",
     [string]$FileDescription = "Open Game Stack Launcher",
@@ -28,6 +28,7 @@ function Invoke-GodotCommand {
     terminating errors. Pass/fail is determined by process exit code.
     #>
     param(
+        [string]$ExecutablePath,
         [string[]]$Arguments,
         [int]$TailLines = 0
     )
@@ -44,7 +45,7 @@ function Invoke-GodotCommand {
     }) -join ' '
 
     try {
-        $process = Start-Process -FilePath $GodotPath -ArgumentList $argumentString -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
+        $process = Start-Process -FilePath $ExecutablePath -ArgumentList $argumentString -Wait -PassThru -NoNewWindow -RedirectStandardOutput $stdoutPath -RedirectStandardError $stderrPath
 
         $allLines = @()
         if (Test-Path $stdoutPath) {
@@ -76,14 +77,14 @@ function Invoke-GodotCommand {
 function Write-Step {
     <#
     .SYNOPSIS
-    Writes a consistent progress line for OGS alpha packaging lifecycle steps.
+    Writes a consistent progress line for OGS release packaging lifecycle steps.
     .DESCRIPTION
     OGS uses explicit lifecycle steps (test, export, package) so maintainers can
     verify the launcher artifact was built in a deterministic order.
     #>
     param([string]$Message)
 
-    Write-Host "[OGS Alpha Build] $Message" -ForegroundColor Cyan
+    Write-Host "[OGS Release Build] $Message" -ForegroundColor Cyan
 }
 
 function Convert-ToWindowsVersion {
@@ -92,7 +93,7 @@ function Convert-ToWindowsVersion {
     Converts a semantic-like version label into Windows file version format.
     .DESCRIPTION
     Windows file metadata expects 4 numeric parts. This function extracts up to
-    the first 4 numeric components from labels such as 0.1.4-alpha and pads
+    the first 4 numeric components from labels such as 0.1.6 and pads
     missing parts with zeros.
     #>
     param([string]$VersionLabel)
@@ -118,9 +119,12 @@ function Invoke-RcEditCommand {
     Centralizes error handling for executable resource updates so packaging
     fails fast if icon or metadata patching does not succeed.
     #>
-    param([string[]]$Arguments)
+    param(
+        [string]$ExecutablePath,
+        [string[]]$Arguments
+    )
 
-    & $RcEditPath @Arguments
+    & $ExecutablePath @Arguments
     if ($LASTEXITCODE -ne 0) {
         throw "rcedit failed with exit code $LASTEXITCODE for arguments: $($Arguments -join ' ')"
     }
@@ -129,19 +133,79 @@ function Invoke-RcEditCommand {
 $scriptDir = Split-Path -Parent $MyInvocation.MyCommand.Path
 $repoRoot = (Resolve-Path (Join-Path $scriptDir "..\..")).Path
 $exportPresetPath = Join-Path $repoRoot "export_presets.cfg"
-$artifactRoot = Join-Path $repoRoot "artifacts\alpha"
-$stagingDir = Join-Path $artifactRoot ("OGS-Launcher-alpha-win64-" + $Version)
-$zipPath = Join-Path $artifactRoot ("OGS-Launcher-alpha-win64-" + $Version + ".zip")
+$artifactRoot = Join-Path $repoRoot "artifacts\release"
+$stagingDir = Join-Path $artifactRoot ("OGS-Launcher-win64-" + $Version)
+$zipPath = Join-Path $artifactRoot ("OGS-Launcher-win64-" + $Version + ".zip")
+$shaPath = Join-Path $artifactRoot ("OGS-Launcher-win64-" + $Version + ".zip.sha256")
 
 Write-Step "Repository root: $repoRoot"
 
-if (-not (Test-Path $GodotPath)) {
-    throw "Godot executable not found at: $GodotPath"
+# Resolve Godot executable path
+if (-not $GodotPath) {
+    $godotCandidates = @(
+        "C:\Program Files\Godot\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64_console.exe",
+        "C:\Program Files\Godot\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64.exe",
+        "C:\Tools\Godot\Godot_v4.7.2-stable_win64_console.exe",
+        "C:\Tools\Godot\Godot_v4.7.2-stable_win64.exe",
+        "C:\Tools\Godot\godot.exe"
+    )
+    foreach ($candidate in $godotCandidates) {
+        if (Test-Path $candidate) {
+            $GodotPath = $candidate
+            break
+        }
+    }
+    if (-not $GodotPath) {
+        $cmd = Get-Command godot -ErrorAction SilentlyContinue
+        if ($cmd) {
+            $GodotPath = $cmd.Source
+        }
+    }
 }
 
-if (-not (Test-Path $RcEditPath)) {
-    throw "rcedit executable not found at: $RcEditPath"
+if (-not $GodotPath -or -not (Test-Path $GodotPath)) {
+    throw "Godot executable not found at: '$GodotPath'. Specify -GodotPath or install Godot 4.7.2."
 }
+
+# If GodotPath points to the GUI editor executable, prefer the console executable in the same directory for headless CLI runs
+if ($GodotPath -match 'Godot_v[^\\]+_win64\.exe$' -and -not ($GodotPath -match '_console\.exe$')) {
+    $consoleCandidate = $GodotPath -replace '\.exe$', '_console.exe'
+    if (Test-Path $consoleCandidate) {
+        $GodotPath = $consoleCandidate
+    }
+}
+
+Write-Step "Using Godot executable: $GodotPath"
+
+# Resolve rcedit executable path
+if (-not $RcEditPath) {
+    $rcCandidates = @(
+        "C:\Tools\rcedit-x64.exe",
+        "C:\Tools\rcedit\rcedit-x64.exe",
+        "C:\Tools\rcedit.exe"
+    )
+    foreach ($candidate in $rcCandidates) {
+        if (Test-Path $candidate) {
+            $RcEditPath = $candidate
+            break
+        }
+    }
+    if (-not $RcEditPath) {
+        $cmd = Get-Command rcedit-x64.exe -ErrorAction SilentlyContinue
+        if (-not $cmd) {
+            $cmd = Get-Command rcedit.exe -ErrorAction SilentlyContinue
+        }
+        if ($cmd) {
+            $RcEditPath = $cmd.Source
+        }
+    }
+}
+
+if (-not $RcEditPath -or -not (Test-Path $RcEditPath)) {
+    throw "rcedit executable not found at: '$RcEditPath'. Specify -RcEditPath or install rcedit."
+}
+
+Write-Step "Using rcedit executable: $RcEditPath"
 
 if (-not (Test-Path $exportPresetPath)) {
     throw "Missing export_presets.cfg at repo root. Open the project in Godot and create a Windows Desktop export preset named 'Windows Desktop'."
@@ -154,9 +218,9 @@ if (Test-Path $stagingDir) {
 New-Item -ItemType Directory -Path $stagingDir -Force | Out-Null
 
 if (-not $SkipTests) {
-    Write-Step "Running manifest test suite before packaging"
+    Write-Step "Running test suite before packaging"
     $start = Get-Date
-    $testExitCode = Invoke-GodotCommand -Arguments @("--headless", "--path", $repoRoot, "--script", "res://tests/test_runner.gd") -TailLines 12
+    $testExitCode = Invoke-GodotCommand -ExecutablePath $GodotPath -Arguments @("--headless", "--path", $repoRoot, "--script", "res://tests/test_runner.gd") -TailLines 12
     $elapsed = ((Get-Date) - $start).TotalSeconds
 
     if ($testExitCode -ne 0) {
@@ -171,7 +235,7 @@ else {
 
 Write-Step "Exporting launcher executable"
 $exportPath = Join-Path $stagingDir "OGS-Launcher.exe"
-$exportExitCode = Invoke-GodotCommand -Arguments @("--headless", "--path", $repoRoot, "--export-release", "Windows Desktop", $exportPath)
+$exportExitCode = Invoke-GodotCommand -ExecutablePath $GodotPath -Arguments @("--headless", "--path", $repoRoot, "--export-release", "Windows Desktop", $exportPath)
 
 if ($exportExitCode -ne 0) {
     throw "Godot export failed with exit code $exportExitCode"
@@ -188,20 +252,20 @@ if (-not (Test-Path $iconPath)) {
 
 $windowsVersion = Convert-ToWindowsVersion -VersionLabel $Version
 Write-Step "Stamping executable icon and Windows metadata via rcedit"
-Invoke-RcEditCommand -Arguments @($exportPath, "--set-icon", $iconPath)
-Invoke-RcEditCommand -Arguments @($exportPath, "--set-file-version", $windowsVersion)
-Invoke-RcEditCommand -Arguments @($exportPath, "--set-product-version", $windowsVersion)
-Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "CompanyName", $CompanyName)
-Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "ProductName", $ProductName)
-Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "FileDescription", $FileDescription)
-Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "InternalName", $InternalName)
-Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "LegalCopyright", $LegalCopyright)
-Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "FileVersion", $Version)
-Invoke-RcEditCommand -Arguments @($exportPath, "--set-version-string", "ProductVersion", $Version)
+Invoke-RcEditCommand -ExecutablePath $RcEditPath -Arguments @($exportPath, "--set-icon", $iconPath)
+Invoke-RcEditCommand -ExecutablePath $RcEditPath -Arguments @($exportPath, "--set-file-version", $windowsVersion)
+Invoke-RcEditCommand -ExecutablePath $RcEditPath -Arguments @($exportPath, "--set-product-version", $windowsVersion)
+Invoke-RcEditCommand -ExecutablePath $RcEditPath -Arguments @($exportPath, "--set-version-string", "CompanyName", $CompanyName)
+Invoke-RcEditCommand -ExecutablePath $RcEditPath -Arguments @($exportPath, "--set-version-string", "ProductName", $ProductName)
+Invoke-RcEditCommand -ExecutablePath $RcEditPath -Arguments @($exportPath, "--set-version-string", "FileDescription", $FileDescription)
+Invoke-RcEditCommand -ExecutablePath $RcEditPath -Arguments @($exportPath, "--set-version-string", "InternalName", $InternalName)
+Invoke-RcEditCommand -ExecutablePath $RcEditPath -Arguments @($exportPath, "--set-version-string", "LegalCopyright", $LegalCopyright)
+Invoke-RcEditCommand -ExecutablePath $RcEditPath -Arguments @($exportPath, "--set-version-string", "FileVersion", $Version)
+Invoke-RcEditCommand -ExecutablePath $RcEditPath -Arguments @($exportPath, "--set-version-string", "ProductVersion", $Version)
 
-$alphaReadme = @"
-OGS Launcher Alpha Package
-==========================
+$readme = @"
+OGS Launcher
+============
 
 Version: $Version
 Build Date (UTC): $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
@@ -212,12 +276,12 @@ Quick Start:
 3. Add or create a project with stack.json and ogs_config.json.
 
 Notes:
-- This is an alpha build intended for validation and feedback.
 - Tools are managed through the launcher using OGS manifests.
+- For documentation and updates, visit https://github.com/OpenGameStack-Launcher/ogs-launcher
 "@
 
-$alphaReadmePath = Join-Path $stagingDir "README_ALPHA.txt"
-Set-Content -Path $alphaReadmePath -Value $alphaReadme -Encoding ASCII
+$readmePath = Join-Path $stagingDir "README.txt"
+Set-Content -Path $readmePath -Value $readme -Encoding ASCII
 
 if (-not $SkipZip) {
     Write-Step "Creating distributable zip"
@@ -231,7 +295,13 @@ if (-not $SkipZip) {
         throw "Zip creation failed: $zipPath"
     }
 
-    Write-Step "Alpha package ready: $zipPath"
+    Write-Step "Calculating SHA-256 checksum"
+    $hash = (Get-FileHash -Path $zipPath -Algorithm SHA256).Hash.ToLower()
+    $checksumContent = "$hash  $([System.IO.Path]::GetFileName($zipPath))`n"
+    Set-Content -Path $shaPath -Value $checksumContent -Encoding ASCII -NoNewline
+
+    Write-Step "Release package ready: $zipPath"
+    Write-Step "SHA-256 Checksum: $hash ($shaPath)"
 }
 else {
     Write-Step "Skipping zip creation (requested)"
@@ -241,4 +311,7 @@ Write-Step "Build complete"
 Write-Host "Staging directory: $stagingDir"
 if (Test-Path $zipPath) {
     Write-Host "Zip artifact: $zipPath"
+}
+if (Test-Path $shaPath) {
+    Write-Host "Checksum artifact: $shaPath"
 }

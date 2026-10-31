@@ -1,0 +1,222 @@
+name: Release
+
+on:
+  workflow_dispatch:
+    inputs:
+      version:
+        description: "Release version (semantic X.Y.Z, e.g. 0.1.6)"
+        required: true
+        type: string
+
+permissions:
+  contents: write
+
+jobs:
+  build-win64:
+    name: Build & Verify Windows Package
+    runs-on: windows-latest
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          lfs: true
+          fetch-depth: 0
+
+      - name: Validate Version Input
+        shell: powershell
+        run: |
+          $version = "${{ inputs.version }}".Trim()
+          if ($version -notmatch '^[0-9]+\.[0-9]+\.[0-9]+$') {
+              throw "Invalid version format '$version'. Version must follow strict semantic format X.Y.Z without 'v' prefix or '-alpha' suffix."
+          }
+          git fetch --tags origin
+          $existing = git tag -l "v$version"
+          if ($existing) {
+              throw "Git tag 'v$version' already exists on remote. Cannot publish duplicate release."
+          }
+          Write-Host "Version '$version' validated successfully." -ForegroundColor Green
+
+      - name: Cache Godot, Export Templates & rcedit
+        id: cache-godot-tools
+        uses: actions/cache@v4
+        with:
+          path: |
+            C:\Tools\Godot
+            C:\Tools\rcedit
+            C:\Tools\templates
+          key: godot-4.7.2-stable-win64-templates-rcedit-v2
+
+      - name: Install Godot 4.7.2, Templates, and rcedit
+        shell: powershell
+        run: |
+          $ErrorActionPreference = 'Stop'
+          $ProgressPreference = 'SilentlyContinue'
+          $toolsDir = "C:\Tools"
+          $godotDir = "$toolsDir\Godot"
+          $rceditDir = "$toolsDir\rcedit"
+          $templatesCacheDir = "$toolsDir\templates\4.7.2.stable"
+          $templateTargetDir = "$env:APPDATA\Godot\export_templates\4.7.2.stable"
+
+          New-Item -ItemType Directory -Path $godotDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $rceditDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $templatesCacheDir -Force | Out-Null
+          New-Item -ItemType Directory -Path $templateTargetDir -Force | Out-Null
+
+          # 1. Godot Editor (x64)
+          $godotConsoleExe = "$godotDir\Godot_v4.7.2-stable_win64_console.exe"
+          if (-not (Test-Path $godotConsoleExe)) {
+              Write-Host "Downloading Godot 4.7.2 Stable..." -ForegroundColor Cyan
+              $godotZip = "$env:RUNNER_TEMP\godot.zip"
+              curl.exe -fL "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_win64.exe.zip" -o $godotZip
+              Expand-Archive -Path $godotZip -DestinationPath $godotDir -Force
+              Remove-Item -Path $godotZip -Force
+          }
+          # Create godot.cmd CLI wrapper pointing to the console executable
+          "@`"$godotConsoleExe`" %*" | Out-File -FilePath "$godotDir\godot.cmd" -Encoding ascii
+
+          # 2. rcedit (x64)
+          $rceditExe = "$rceditDir\rcedit-x64.exe"
+          if (-not (Test-Path $rceditExe)) {
+              Write-Host "Downloading rcedit v2.0.0..." -ForegroundColor Cyan
+              curl.exe -fL "https://github.com/electron/rcedit/releases/download/v2.0.0/rcedit-x64.exe" -o $rceditExe
+          }
+          Copy-Item -Path $rceditExe -Destination "C:\Tools\rcedit-x64.exe" -Force
+
+          # 3. Export Templates (Windows only)
+          $templateFileCheck = "$templatesCacheDir\windows_release_x86_64.exe"
+          if (-not (Test-Path $templateFileCheck)) {
+              Write-Host "Downloading Godot 4.7.2 export templates..." -ForegroundColor Cyan
+              $tpzPath = "$env:RUNNER_TEMP\templates.tpz"
+              curl.exe -fL "https://github.com/godotengine/godot/releases/download/4.7.2-stable/Godot_v4.7.2-stable_export_templates.tpz" -o $tpzPath
+
+              Add-Type -AssemblyName System.IO.Compression.FileSystem
+              $zip = [System.IO.Compression.ZipFile]::OpenRead($tpzPath)
+              try {
+                  foreach ($entry in $zip.Entries) {
+                      if ($entry.FullName -like "templates/windows_*") {
+                          $destFile = Join-Path $templatesCacheDir $entry.Name
+                          if ($entry.Name -ne "") {
+                              [System.IO.Compression.ZipFileExtensions]::ExtractToFile($entry, $destFile, $true)
+                          }
+                      }
+                  }
+              }
+              finally {
+                  $zip.Dispose()
+                  Remove-Item -Path $tpzPath -Force
+              }
+          }
+
+          # Copy cached templates to Godot APPDATA export_templates directory
+          Get-ChildItem -Path $templatesCacheDir | Copy-Item -Destination $templateTargetDir -Force
+
+          # Add tools to PATH
+          "$godotDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          "$toolsDir" | Out-File -FilePath $env:GITHUB_PATH -Encoding utf8 -Append
+          Write-Host "Godot 4.7.2 and rcedit configured successfully." -ForegroundColor Green
+
+      - name: Headless Editor Import Pass
+        shell: powershell
+        run: |
+          godot --headless --editor --quit
+
+      - name: Build & Package Windows Release
+        shell: powershell
+        run: |
+          $version = "${{ inputs.version }}".Trim()
+          powershell -ExecutionPolicy Bypass -File .\scripts\release\build_release_package.ps1 -Version $version
+
+      - name: Verify Executable Metadata and Package Integrity
+        shell: powershell
+        run: |
+          $version = "${{ inputs.version }}".Trim()
+          $exe = "artifacts/release/OGS-Launcher-win64-$version/OGS-Launcher.exe"
+          $zip = "artifacts/release/OGS-Launcher-win64-$version.zip"
+          $sha = "artifacts/release/OGS-Launcher-win64-$version.zip.sha256"
+
+          if (-not (Test-Path $exe)) { throw "Missing expected executable: $exe" }
+          if (-not (Test-Path $zip)) { throw "Missing expected zip package: $zip" }
+          if (-not (Test-Path $sha)) { throw "Missing expected sha256 file: $sha" }
+
+          $v = (Get-Item $exe).VersionInfo
+          Write-Host "FileVersion:     $($v.FileVersion)"
+          Write-Host "ProductVersion:  $($v.ProductVersion)"
+          Write-Host "CompanyName:     $($v.CompanyName)"
+          Write-Host "ProductName:     $($v.ProductName)"
+          Write-Host "FileDescription: $($v.FileDescription)"
+
+          if ($v.FileVersion -ne $version) {
+              throw "Expected FileVersion '$version' but found '$($v.FileVersion)'"
+          }
+          if ($v.CompanyName -ne "Open Game Stack") {
+              throw "Expected CompanyName 'Open Game Stack' but found '$($v.CompanyName)'"
+          }
+
+          $hash = (Get-FileHash -Path $zip -Algorithm SHA256).Hash.ToLower()
+          $shaLine = (Get-Content -Path $sha -Raw).Trim()
+          Write-Host "Calculated Hash: $hash"
+          Write-Host "Recorded Hash:   $shaLine"
+          if (-not ($shaLine -match "^$hash")) {
+              throw "SHA-256 hash mismatch between zip ($hash) and checksum file ($shaLine)"
+          }
+          Write-Host "Build verification passed." -ForegroundColor Green
+
+      - name: Upload Release Artifacts
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-artifacts-win64
+          path: |
+            artifacts/release/OGS-Launcher-win64-${{ inputs.version }}.zip
+            artifacts/release/OGS-Launcher-win64-${{ inputs.version }}.zip.sha256
+          if-no-files-found: error
+
+  publish-release:
+    name: Publish GitHub Release
+    needs: build-win64
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      - name: Download Release Artifacts
+        uses: actions/download-artifact@v4
+        with:
+          name: release-artifacts-win64
+          path: artifacts/release
+
+      - name: Create and Push Git Tag
+        shell: powershell
+        run: |
+          $version = "${{ inputs.version }}".Trim()
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git tag -a "v$version" -m "Release v$version"
+          git push origin "v$version"
+          Write-Host "Tag v$version pushed successfully." -ForegroundColor Green
+
+      - name: Publish GitHub Release
+        shell: powershell
+        env:
+          GH_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $version = "${{ inputs.version }}".Trim()
+          $zipPath = "artifacts/release/OGS-Launcher-win64-$version.zip"
+          $shaPath = "artifacts/release/OGS-Launcher-win64-$version.zip.sha256"
+
+          if (-not (Test-Path $zipPath)) { throw "Artifact not found: $zipPath" }
+          if (-not (Test-Path $shaPath)) { throw "Artifact not found: $shaPath" }
+
+          $shaContent = (Get-Content -Path $shaPath -Raw).Trim()
+          $notesHeader = "### SHA-256 Checksum`n`n``````n$shaContent`n```````n"
+
+          gh release create "v$version" "$zipPath" "$shaPath" `
+            --repo "${{ github.repository }}" `
+            --title "OGS Launcher v$version" `
+            --notes "$notesHeader" `
+            --generate-notes
+
+          Write-Host "Release v$version published successfully." -ForegroundColor Green

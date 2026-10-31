@@ -1013,6 +1013,88 @@ After completing all editor tests, move to installed-build testing with same rep
 
 ---
 
+# PART C: RELEASE & CI WORKFLOW TESTING
+
+## Release Test 1: Local Release Packaging & Smoke Check
+
+**Objective:** Verify that the release packaging script runs deterministically locally, produces the expected directory structure, stamps Windows executable metadata, and calculates valid SHA-256 checksums.
+
+**Prerequisites:**
+- Godot 4.7.2 executable available in PATH or default install path
+- `rcedit-x64.exe` available at `C:\Tools\rcedit-x64.exe`
+- Passing test suite
+
+**Steps:**
+1. Open PowerShell at the repository root
+2. Run packaging smoke check:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\release\build_release_package.ps1 -Version 0.0.0-smoke -SkipTests -SkipZip
+   ```
+3. Inspect the staging directory at `artifacts/release/OGS-Launcher-win64-0.0.0-smoke/`
+4. Verify executable metadata:
+   ```powershell
+   $exe = "artifacts/release/OGS-Launcher-win64-0.0.0-smoke/OGS-Launcher.exe"
+   (Get-Item $exe).VersionInfo | Format-List FileVersion, ProductVersion, CompanyName, ProductName, FileDescription
+   ```
+5. Run full packaging with ZIP and checksum generation:
+   ```powershell
+   powershell -ExecutionPolicy Bypass -File .\scripts\release\build_release_package.ps1 -Version 0.0.0-smoke -SkipTests
+   ```
+6. Verify checksum calculation:
+   ```powershell
+   $zip = "artifacts/release/OGS-Launcher-win64-0.0.0-smoke.zip"
+   $sha = "artifacts/release/OGS-Launcher-win64-0.0.0-smoke.zip.sha256"
+   $calcHash = (Get-FileHash -Path $zip -Algorithm SHA256).Hash.ToLower()
+   $savedHash = (Get-Content $sha -Raw).Trim()
+   Write-Host "Calculated: $calcHash"
+   Write-Host "Saved:      $savedHash"
+   ```
+
+**Expected Results:**
+- ✅ Script exits with exit code 0
+- ✅ Staging directory contains `OGS-Launcher.exe`, `OGS-Launcher.pck`, and `README.txt`
+- ✅ FileVersion is stamped as `0.0.0-smoke` and CompanyName as `Open Game Stack`
+- ✅ Stamped `Images/logo.ico` icon is embedded in `OGS-Launcher.exe`
+- ✅ Checksum file contains the exact lowercase SHA-256 hash matching the ZIP file
+
+---
+
+## Release Test 2: GitHub Actions Automated Release Dispatch
+
+**Objective:** Verify that `.github/workflows/release.yml` triggers via workflow_dispatch, validates input, executes build and tests, tags the commit, and publishes the release.
+
+**Prerequisites:**
+- Remote `main` branch clean and passing CI
+- GitHub CLI (`gh`) authenticated with repository write access
+- Target semantic version (e.g., `0.1.6`) does not match an existing tag
+
+**Steps:**
+1. Ensure working directory is clean and up to date with `origin/main`
+2. Verify latest CI run on `main` passed:
+   ```powershell
+   gh run list --workflow=ci.yml --branch=main --limit=1
+   ```
+3. Dispatch the release workflow:
+   ```powershell
+   gh workflow run release.yml -f version=<version> --ref main
+   ```
+4. Monitor the workflow execution:
+   ```powershell
+   gh run list --workflow=release.yml --limit=1
+   gh run watch <run_id>
+   ```
+5. When complete, inspect the published release:
+   ```powershell
+   gh release view v<version> --json tagName,name,isPrerelease,assets
+   ```
+
+**Expected Results:**
+- ✅ `build-win64` job succeeds: executes headless tests, exports release binary, patches metadata, and uploads artifacts
+- ✅ `publish-release` job succeeds: tags `v<version>`, creates standard Latest release (not prerelease), attaches ZIP and SHA-256 assets, and includes SHA-256 checksum in release description
+- ✅ No duplicate releases or orphan tags created on build failure
+
+---
+
 ## Future Enhancement Areas (Not Tested Yet)
 
 - Integration with Git LFS for tool distribution
@@ -1024,4 +1106,4 @@ After completing all editor tests, move to installed-build testing with same rep
 
 ---
 
-Last updated: **October 31, 2026** (Added stack-aware VSCodium explorer mappings and double-click launch scenarios)
+Last updated: **October 31, 2026** (Added CI and automated release packaging verification scenarios)

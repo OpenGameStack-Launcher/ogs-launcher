@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 916
+tests passed: 969
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (26 total, 32 suites across all categories):**
+**Current unit test suites (27 total, 33 suites across all categories):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -277,6 +277,15 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Stack-aware tool queries require vscodium presence in active tools for text/script mapping while Godot-only stacks return empty string
   - Tool to extension mapping returns txt for vscodium (case-insensitive) and empty string for godot
 
+- **[tests/release_packaging_tests.gd](tests/release_packaging_tests.gd)** - Validates release packaging contract, export presets, semantic version rules, and workflow files.
+  - Windows Desktop preset defined in `export_presets.cfg` without hardcoded machine paths or private keys
+  - Strict semantic version validation (`X.Y.Z`) accepting clean numbers and rejecting `v` prefix or `-alpha` suffix
+  - `build_release_package.ps1` parameterization (`-Version`, `-GodotPath`, `-RcEditPath`, `-SkipTests`, `-SkipZip`) and artifact naming
+  - Clean `README.txt` generation and retirement of `README_ALPHA.txt` and `build_alpha_package.ps1`
+  - Valid multi-size Windows icon file presence at `Images/logo.ico`
+  - Canonical `docs/RELEASE_PACKAGING.md` presence and retirement of `docs/ALPHA_PACKAGING.md`
+  - GitHub Actions CI (`.github/workflows/ci.yml`) and Release (`.github/workflows/release.yml`) configuration contracts
+
 ### Scene Tests (Integration with UI)
 
 Scene tests instantiate UI nodes and verify controller behaviors. These are similar to Unity's "Play Mode tests" but run headlessly in Godot.
@@ -451,13 +460,18 @@ godot --headless --script res://tests/test_runner.gd
 
 ## Continuous Integration
 
-All pull requests must pass the test suite. The CI pipeline runs:
+All pull requests and pushes to `main` must pass continuous integration on GitHub Actions (`.github/workflows/ci.yml`).
 
-```powershell
-& "C:\Program Files\Godot\Godot_v4.7.2-stable_win64\Godot_v4.7.2-stable_win64.exe" --headless --script res://tests/test_runner.gd
-```
-
-Exit code 0 = all tests passed; exit code 1 = failures detected.
+The CI workflow executes on `windows-latest` and performs the following verification gates:
+1. **Tooling Cache & Installation:** Installs and caches Godot 4.7.2 Stable (`Godot_v4.7.2-stable_win64_console.exe`), Windows export templates, and `rcedit-x64.exe` (v2.0.0).
+2. **Headless Editor Import:** Executes `godot --headless --editor --quit` to register class names, resources, and UID metadata.
+3. **Headless Test Suite:** Runs the full 33-suite headless test runner:
+   ```powershell
+   godot --headless -s res://tests/test_runner.gd
+   ```
+   Exit code 0 = all tests passed; exit code 1 = failures detected.
+4. **Packaging Smoke Check:** Runs `build_release_package.ps1` with `-Version 0.0.0-ci -SkipTests -SkipZip` to verify that Windows executable export and deterministic `rcedit` icon/metadata stamping succeed.
+5. **Metadata Verification:** Inspects exported `OGS-Launcher.exe` file version info (`FileVersion`, `ProductVersion`, `CompanyName`, `ProductName`, `FileDescription`) using PowerShell `(Get-Item $exe).VersionInfo` to catch export regressions before merge.
 
 ## Troubleshooting
 
