@@ -26,8 +26,14 @@ func run() -> Dictionary:
 	_test_new_project_creates_scaffold_and_adds(results)
 	_test_launch_button_disabled_initially(results)
 	_test_launch_button_enabled_after_select(results)
+	_test_launch_after_click_uses_selected_tool(results)
+	_test_launch_no_selection(results)
 	_test_offline_enforcer_updates(results)
 	_test_add_code_tool_skips_asset_folder_creation(results)
+	_test_select_tool_in_project_tools_list_sets_launch_state(results)
+	_test_launch_selected_tool_from_project_tools_list_runs_at_project_root(results)
+	_test_project_switching_and_reset_clears_launch_state(results)
+	_test_mutual_deselection_between_tools_list_and_explorer(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -74,6 +80,9 @@ func _build_controller(storage_path: String) -> Dictionary:
 	var new_project_name = LineEdit.new()
 	var add_tool_dialog = ConfirmationDialog.new()
 	var add_tool_option = ItemList.new()
+	var project_tools_list = ItemList.new()
+	var projects_tabs = TabContainer.new()
+	var change_version_button = Button.new()
 
 	var deps = ProjectsController.UIDeps.new()
 	deps.btn_add_project = add_button
@@ -97,6 +106,9 @@ func _build_controller(storage_path: String) -> Dictionary:
 	deps.new_project_name_line_edit = new_project_name
 	deps.add_tool_dialog = add_tool_dialog
 	deps.add_tool_option_list = add_tool_option
+	deps.projects_tabs = projects_tabs
+	deps.project_tools_list = project_tools_list
+	deps.btn_change_version = change_version_button
 	
 	controller.setup(deps, null)
 
@@ -110,7 +122,11 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"launch_btn": launch_button,
 		"new_name": new_project_name,
 		"remove_dialog": remove_dialog,
-		"nodes": [add_button, new_button, projects_list, status_label, offline_label, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, remove_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option]
+		"list": project_tools_list,
+		"project_tools_list": project_tools_list,
+		"tabs": projects_tabs,
+		"change_version_btn": change_version_button,
+		"nodes": [add_button, new_button, projects_list, status_label, offline_label, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, remove_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button]
 	}
 
 func _cleanup_nodes(nodes: Array) -> void:
@@ -352,4 +368,191 @@ func _test_add_code_tool_skips_asset_folder_creation(results: Dictionary) -> voi
 
 	_cleanup_nodes(ctx["nodes"])
 	_cleanup_dir_recursive(projects_root)
+	_cleanup_registry(storage_path)
+
+func _test_select_tool_in_project_tools_list_sets_launch_state(results: Dictionary) -> void:
+	## Verifies selecting a tool in project_tools_list sets _selected_launch_tool_id and clears _selected_launch_target_path.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_select_tool_%s.json" % str(Time.get_ticks_msec())
+	var projects_root = "user://projects_controller_scene_select_tool_root_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(projects_root)
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	controller.set_projects_root_path_for_tests(projects_root)
+	var created = controller._create_new_project_from_name("Select Tool Test")
+	_expect(created, "project should create successfully", results)
+
+	# Add Godot and VSCodium tools
+	var added_godot = controller.tool_manager.add_tool_to_current_project("godot", "4.7.2")
+	_expect(added_godot, "godot should be added to project", results)
+	var added_codium = controller.tool_manager.add_tool_to_current_project("vscodium", "1.143.17232")
+	_expect(added_codium, "vscodium should be added to project", results)
+
+	# Set simulated explorer selection with target file
+	controller._on_explorer_file_selected("res://samples/sample_project/game/project.godot", "godot")
+	_expect(controller._selected_launch_target_path == "res://samples/sample_project/game/project.godot", "explorer target path should be set initially", results)
+	_expect(controller._selected_launch_tool_id == "godot", "explorer tool ID should be set initially", results)
+
+	# Find vscodium index in project_tools_list
+	var vscodium_index := -1
+	for i in range(controller.current_manifest.tools.size()):
+		if String(controller.current_manifest.tools[i].get("id", "")) == "vscodium":
+			vscodium_index = i
+			break
+	_expect(vscodium_index >= 0, "vscodium index should be found in manifest tools", results)
+
+	# Select vscodium in project_tools_list via item_selected
+	var tools_list: ItemList = ctx["project_tools_list"]
+	tools_list.item_selected.emit(vscodium_index)
+
+	_expect(controller._selected_launch_tool_id == "vscodium", "selecting tool in tools list should set _selected_launch_tool_id", results)
+	_expect(controller._selected_launch_target_path == "", "selecting tool in tools list should clear _selected_launch_target_path", results)
+	_expect(controller._selected_tool_index == vscodium_index, "_selected_tool_index should match selected tool", results)
+	var explorer_tree: Tree = ctx["tree"]
+	_expect(explorer_tree.get_selected() == null, "selecting tool should deselect explorer tree", results)
+
+	# Click godot in project_tools_list via item_clicked
+	var godot_index := -1
+	for i in range(controller.current_manifest.tools.size()):
+		if String(controller.current_manifest.tools[i].get("id", "")) == "godot":
+			godot_index = i
+			break
+	_expect(godot_index >= 0, "godot index should be found in manifest tools", results)
+
+	tools_list.item_clicked.emit(godot_index, Vector2.ZERO, 1)
+	_expect(controller._selected_launch_tool_id == "godot", "clicking tool should update _selected_launch_tool_id", results)
+	_expect(controller._selected_launch_target_path == "", "clicking tool should keep target path cleared", results)
+	_expect(controller._selected_tool_index == godot_index, "clicking tool should update _selected_tool_index", results)
+
+	_cleanup_nodes(ctx["nodes"])
+	_cleanup_dir_recursive(projects_root)
+	_cleanup_registry(storage_path)
+
+func _test_launch_selected_tool_from_project_tools_list_runs_at_project_root(results: Dictionary) -> void:
+	## Verifies pressing launch or double-clicking with a tools list selection runs at project root.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_launch_root_%s.json" % str(Time.get_ticks_msec())
+	var projects_root = "user://projects_controller_scene_launch_root_dir_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(projects_root)
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	controller.set_projects_root_path_for_tests(projects_root)
+	controller._create_new_project_from_name("Root Launch Test")
+
+	# Add VSCodium tool (which has no explorer folder)
+	controller.tool_manager.add_tool_to_current_project("vscodium", "1.143.17232")
+	var vscodium_index := -1
+	for i in range(controller.current_manifest.tools.size()):
+		if String(controller.current_manifest.tools[i].get("id", "")) == "vscodium":
+			vscodium_index = i
+			break
+	_expect(vscodium_index >= 0, "vscodium index should exist", results)
+
+	var tools_list: ItemList = ctx["project_tools_list"]
+	var status_label: Label = ctx["status"]
+
+	# Select vscodium and launch
+	tools_list.item_selected.emit(vscodium_index)
+	_expect(controller._selected_launch_target_path == "", "target path should be empty before launch", results)
+	controller._on_launch_tool_pressed()
+
+	_expect(status_label.text.find("No known tool associated with this file/folder") == -1, "launching selected tool should not report no known tool", results)
+	_expect(status_label.text.find("No tool selected") == -1, "launching selected tool should not report no tool selected", results)
+	_expect(status_label.text.begins_with("Status: Launch failed") or status_label.text.begins_with("Status: Launched"), "launch should be attempted at project root", results)
+
+	# Now test double-click activation via item_activated
+	tools_list.item_activated.emit(vscodium_index)
+	_expect(controller._selected_launch_tool_id == "vscodium", "activation should retain tool ID", results)
+	_expect(controller._selected_launch_target_path == "", "activation should retain empty target path", results)
+	_expect(status_label.text.find("No known tool") == -1, "double click activation should attempt launch without explorer selection", results)
+
+	_cleanup_nodes(ctx["nodes"])
+	_cleanup_dir_recursive(projects_root)
+	_cleanup_registry(storage_path)
+
+func _test_project_switching_and_reset_clears_launch_state(results: Dictionary) -> void:
+	## Verifies switching projects or disabling launch resets launch tool and target path.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_reset_%s.json" % str(Time.get_ticks_msec())
+	var projects_root = "user://projects_controller_scene_reset_root_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(projects_root)
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	controller.set_projects_root_path_for_tests(projects_root)
+
+	controller._create_new_project_from_name("Project One")
+	controller.tool_manager.add_tool_to_current_project("godot", "4.7.2")
+	controller._on_tool_item_selected(0)
+	_expect(not controller._selected_launch_tool_id.is_empty(), "tool should be selected in Project One", results)
+
+	# Switch to a second project
+	controller._create_new_project_from_name("Project Two")
+	_expect(controller._selected_launch_tool_id == "", "switching project should clear _selected_launch_tool_id", results)
+	_expect(controller._selected_launch_target_path == "", "switching project should clear _selected_launch_target_path", results)
+	_expect(controller._selected_tool_index == -1, "switching project should reset _selected_tool_index", results)
+
+	# Set launch state again and test _disable_launch_button
+	controller.tool_manager.add_tool_to_current_project("vscodium", "1.143.17232")
+	controller._on_tool_item_selected(0)
+	_expect(not controller._selected_launch_tool_id.is_empty(), "tool should be re-selected", results)
+	controller._disable_launch_button()
+	_expect(controller._selected_launch_tool_id == "", "_disable_launch_button should clear _selected_launch_tool_id", results)
+	_expect(controller._selected_launch_target_path == "", "_disable_launch_button should clear _selected_launch_target_path", results)
+
+	# Select project again and test _disable_launch_for_selected_project
+	controller._select_project(0)
+	controller._on_tool_item_selected(0)
+	_expect(not controller._selected_launch_tool_id.is_empty(), "tool should be selected again", results)
+	controller._disable_launch_for_selected_project()
+	_expect(controller._selected_launch_tool_id == "", "_disable_launch_for_selected_project should clear _selected_launch_tool_id", results)
+	_expect(controller._selected_launch_target_path == "", "_disable_launch_for_selected_project should clear _selected_launch_target_path", results)
+
+	_cleanup_nodes(ctx["nodes"])
+	_cleanup_dir_recursive(projects_root)
+	_cleanup_registry(storage_path)
+
+func _test_mutual_deselection_between_tools_list_and_explorer(results: Dictionary) -> void:
+	## Verifies selecting an explorer item deselects project_tools_list, and vice versa.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_mutual_%s.json" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var added = controller.add_project_from_path("res://samples/sample_project")
+	_expect(added, "sample project should be added", results)
+
+	var tools_list: ItemList = ctx["project_tools_list"]
+	var explorer_tree: Tree = ctx["tree"]
+
+	# Select tool in tools list
+	controller._on_tool_item_selected(0)
+	_expect(tools_list.is_selected(0), "tool index 0 should be selected", results)
+	_expect(controller._selected_tool_index == 0, "_selected_tool_index should be 0", results)
+
+	# Now select explorer file
+	controller._on_explorer_file_selected("res://samples/sample_project/game/project.godot", "godot")
+	_expect(tools_list.get_selected_items().is_empty(), "selecting explorer file should deselect tools list", results)
+	_expect(controller._selected_tool_index == -1, "selecting explorer file should reset _selected_tool_index", results)
+	_expect(controller._selected_launch_target_path == "res://samples/sample_project/game/project.godot", "explorer file path should be set", results)
+
+	# Now select explorer folder
+	controller._on_explorer_folder_selected("res://samples/sample_project/assets/3D/blender", "blender")
+	_expect(tools_list.get_selected_items().is_empty(), "selecting explorer folder should deselect tools list", results)
+	_expect(controller._selected_tool_index == -1, "selecting explorer folder should reset _selected_tool_index", results)
+	_expect(controller._selected_launch_target_path == "res://samples/sample_project/assets/3D/blender", "explorer folder path should be set", results)
+
+	# Now select tool in tools list again
+	controller._on_tool_item_selected(1)
+	_expect(explorer_tree.get_selected() == null, "selecting tool should deselect explorer tree", results)
+	_expect(controller._selected_launch_target_path == "", "selecting tool should reset target path", results)
+	_expect(controller._selected_launch_tool_id == "blender", "selecting tool should update launch tool ID", results)
+
+	_cleanup_nodes(ctx["nodes"])
 	_cleanup_registry(storage_path)

@@ -84,6 +84,8 @@ var _library_manager: LibraryManager = null
 var _last_selected_project_path: String = ""
 var _selected_project_index: int = -1
 var _selected_tool_index: int = -1
+var _selected_launch_target_path: String = ""
+var _selected_launch_tool_id: String = ""
 var _picker_state_monitoring := false
 var _add_tool_candidates: Array = []
 
@@ -163,6 +165,7 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	if project_tools_list != null:
 		project_tools_list.item_selected.connect(_on_tool_item_selected)
 		project_tools_list.item_activated.connect(_on_tool_item_activated)
+		project_tools_list.item_clicked.connect(_on_tool_item_clicked)
 	btn_remove_project.pressed.connect(_on_remove_project_pressed)
 	btn_launch_tool.pressed.connect(_on_launch_tool_pressed)
 	remove_project_dialog.confirmed.connect(_on_remove_project_confirmed)
@@ -592,6 +595,8 @@ func _select_project(index: int) -> void:
 
 	_selected_project_index = index
 	_selected_tool_index = -1
+	_selected_launch_tool_id = ""
+	_selected_launch_target_path = ""
 	projects_list.select(index)
 	_enable_remove_button()
 	_update_tool_action_buttons()
@@ -719,6 +724,8 @@ func _populate_tools_list(tools: Array) -> void:
 ## 
 	_tool_availability.clear()
 	_selected_tool_index = -1
+	_selected_launch_tool_id = ""
+	_selected_launch_target_path = ""
 	_update_tool_action_buttons()
 	
 	if explorer_tree != null and self.has_meta("project_explorer_instance"):
@@ -831,26 +838,30 @@ func _get_available_tools() -> Dictionary:
 	
 	return available
 
-func _on_tool_item_clicked(index: int) -> void:
+func _on_tool_item_clicked(index: int, _at_position: Vector2 = Vector2.ZERO, _mouse_button_index: int = 1) -> void:
 	## Handles click on a tool in the list to enable quick navigation.
-## 
-## When user clicks a tool that is not yet installed:
-## 1. Logs the view request with tool context
-## 2. Emits tool_view_requested signal to main.gd
-## 3. UI navigates to Tools page for download
-## 
-## If tool is already installed, no action is taken
-## (the launch button handles launching installed tools).
-## 
-## Parameters:
-## index (int): Index in the tools list ItemList
-## 
+	## 
+	## When user clicks a tool that is not yet installed:
+	## 1. Logs the view request with tool context
+	## 2. Emits tool_view_requested signal to main.gd
+	## 3. UI navigates to Tools page for download
+	## 
+	## If tool is already installed, sets it as the active launch tool.
+	## 
+	## Parameters:
+	## index (int): Index in the tools list ItemList
+	## _at_position (Vector2): Position of mouse click
+	## _mouse_button_index (int): Mouse button index
 	_selected_tool_index = index
-	_update_tool_action_buttons()
 	if project_tools_list != null and index >= 0 and index < project_tools_list.item_count:
 		project_tools_list.select(index)
+	if explorer_tree != null:
+		explorer_tree.deselect_all()
+	_update_tool_action_buttons()
 
 	if current_manifest == null or index < 0 or index >= current_manifest.tools.size():
+		_selected_launch_tool_id = ""
+		_selected_launch_target_path = ""
 		OgsLogger.debug("tool_item_clicked_invalid_index", {
 			"component": "projects",
 			"index": index,
@@ -859,9 +870,11 @@ func _on_tool_item_clicked(index: int) -> void:
 		})
 		return
 	
-	var tool_entry = current_manifest.tools[index]
+	var tool_entry: Dictionary = current_manifest.tools[index]
 	var tool_id = String(tool_entry.get("id", "unknown"))
 	var tool_version = String(tool_entry.get("version", "?"))
+	_selected_launch_tool_id = String(tool_entry.get("id", ""))
+	_selected_launch_target_path = ""
 	var availability_key = "%s_%s" % [tool_id, tool_version]
 	
 	# Check if tool is not installed
@@ -878,22 +891,42 @@ func _on_tool_item_clicked(index: int) -> void:
 
 func _on_tool_item_selected(index: int) -> void:
 	## Tracks selected tool index for reliable launch button behavior.
-## 
-## Parameters:
-## index (int): Selected index in tools list
-## 
+	## 
+	## Parameters:
+	## index (int): Selected index in tools list
 	_selected_tool_index = index
+	if project_tools_list != null and index >= 0 and index < project_tools_list.item_count:
+		if not project_tools_list.is_selected(index):
+			project_tools_list.select(index)
+	if explorer_tree != null:
+		explorer_tree.deselect_all()
+	if current_manifest != null and index >= 0 and index < current_manifest.tools.size():
+		var tool_entry: Dictionary = current_manifest.tools[index]
+		_selected_launch_tool_id = String(tool_entry.get("id", ""))
+		_selected_launch_target_path = ""
+	else:
+		_selected_launch_tool_id = ""
+		_selected_launch_target_path = ""
 	_update_tool_action_buttons()
 
 func _on_tool_item_activated(index: int) -> void:
 	## Launches tool on double-click in tools list.
-## 
-## Parameters:
-## index (int): Activated (double-clicked) tool index
-## 
+	## 
+	## Parameters:
+	## index (int): Activated (double-clicked) tool index
 	_selected_tool_index = index
 	if project_tools_list != null and index >= 0 and index < project_tools_list.item_count:
 		project_tools_list.select(index)
+	if explorer_tree != null:
+		explorer_tree.deselect_all()
+	if current_manifest != null and index >= 0 and index < current_manifest.tools.size():
+		var tool_entry: Dictionary = current_manifest.tools[index]
+		_selected_launch_tool_id = String(tool_entry.get("id", ""))
+		_selected_launch_target_path = ""
+	else:
+		_selected_launch_tool_id = ""
+		_selected_launch_target_path = ""
+	_update_tool_action_buttons()
 	_on_launch_tool_pressed()
 	
 
@@ -937,19 +970,22 @@ func refresh_project_tools_state() -> void:
 		"tool_count": current_manifest.tools.size()
 	})
 
-var _selected_launch_target_path: String = ""
-var _selected_launch_tool_id: String = ""
-
 func _on_explorer_file_selected(file_path: String, tool_id: String) -> void:
 	_selected_launch_target_path = file_path
 	_selected_launch_tool_id = tool_id
+	if project_tools_list != null:
+		project_tools_list.deselect_all()
+	_selected_tool_index = -1
 	btn_remove_tool.disabled = true
 	_update_tool_action_buttons()
 
 func _on_explorer_folder_selected(folder_path: String, tool_id: String) -> void:
 	_selected_launch_target_path = folder_path
 	_selected_launch_tool_id = tool_id
-	btn_remove_tool.disabled = tool_id.is_empty()
+	if project_tools_list != null:
+		project_tools_list.deselect_all()
+	_selected_tool_index = -1
+	btn_remove_tool.disabled = true
 	_update_tool_action_buttons()
 	
 func _on_new_folder_pressed() -> void:
@@ -1017,16 +1053,22 @@ func _on_launch_tool_pressed() -> void:
 		return
 	
 	if _selected_launch_tool_id.is_empty():
-		_update_status("Status: No known tool associated with this file/folder.")
+		_update_status("Status: No tool selected or no known tool associated with this file/folder.")
 		return
 		
 	var tool_entry = null
 	var selected_index = -1
-	for i in range(current_manifest.tools.size()):
-		if current_manifest.tools[i].get("id") == _selected_launch_tool_id:
-			tool_entry = current_manifest.tools[i]
-			selected_index = i
-			break
+	if _selected_tool_index >= 0 and _selected_tool_index < current_manifest.tools.size():
+		var candidate = current_manifest.tools[_selected_tool_index]
+		if candidate.get("id") == _selected_launch_tool_id:
+			tool_entry = candidate
+			selected_index = _selected_tool_index
+	if tool_entry == null:
+		for i in range(current_manifest.tools.size()):
+			if current_manifest.tools[i].get("id") == _selected_launch_tool_id:
+				tool_entry = current_manifest.tools[i]
+				selected_index = i
+				break
 			
 	if tool_entry == null:
 		_update_status("Status: Tool '%s' is not in this project's stack. Please add it first." % _selected_launch_tool_id)
@@ -1059,6 +1101,8 @@ func _disable_launch_button() -> void:
 	current_manifest = null
 	_selected_project_index = -1
 	_selected_tool_index = -1
+	_selected_launch_tool_id = ""
+	_selected_launch_target_path = ""
 	
 	if explorer_tree != null and self.has_meta("project_explorer_instance"):
 		var explorer = self.get_meta("project_explorer_instance")
@@ -1075,6 +1119,8 @@ func _disable_launch_for_selected_project() -> void:
 	current_project_dir = ""
 	current_manifest = null
 	_selected_tool_index = -1
+	_selected_launch_tool_id = ""
+	_selected_launch_target_path = ""
 	
 	if explorer_tree != null and self.has_meta("project_explorer_instance"):
 		var explorer = self.get_meta("project_explorer_instance")
