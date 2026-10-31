@@ -51,7 +51,8 @@ jobs:
               Expand-Archive -Path $godotZip -DestinationPath $godotDir -Force
               Remove-Item -Path $godotZip -Force
           }
-          Copy-Item -Path $godotConsoleExe -Destination "$godotDir\godot.exe" -Force
+          # Create godot.cmd CLI wrapper pointing to the console executable
+          "@`"$godotConsoleExe`" %*" | Out-File -FilePath "$godotDir\godot.cmd" -Encoding ascii
 
           # 2. rcedit (x64)
           $rceditExe = "$rceditDir\rcedit-x64.exe"
