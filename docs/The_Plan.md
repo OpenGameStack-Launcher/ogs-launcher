@@ -171,7 +171,7 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] ⚠️ Yellow warning triangle: tool not installed but available in repository
     *   [x] ❌ Red X: tool not installed and not available
     *   [x] Tooltip on hover: "Tool not installed. Click to download."
-*   [x] Implement click-through navigation: clicking tool → jump to Tools page + highlight tool — 100% Complete ✅
+*   [x] Missing tool download navigation: double-clicking or launching a missing tool navigates to Tools page while single-clicking selects to enable Remove Tool and Change Version - 100% Complete ✅
 *   [x] Remove "Repair Environment" button from Projects page — 100% Complete ✅ (hidden by default)
 *   [x] Remove LibraryHydrationController integration from Projects page — Partial ✅ (wiring still in place for backward compat)
 *   [x] Add tests for tool availability indicators — 3 scene tests + 9 total tests passing ✅
@@ -198,7 +198,9 @@ Granular, actionable items for the Tools/Projects page redesign:
 *   [x] Project Tools List Selection and Launch - 100% Complete ✅
     *   [x] Pinned tools in stack.json selectable in ProjectToolsList as launch targets
     *   [x] Direct launch at project root without requiring explorer tree file selection
-    *   [x] Double-click item activation launches installed tools immediately at project root
+    *   [x] Single-clicking missing tools in ProjectToolsList selects row and enables Remove Tool and Change Version without navigating away
+    *   [x] Double-click item activation launches installed tools immediately at project root, or navigates to Tools page if uninstalled
+    *   [x] Launch button guides users to download uninstalled tools on Tools page instead of attempting execution
     *   [x] Bidirectional mutual deselection between ProjectToolsList and ProjectExplorerTree
     *   [x] Clean launch state resets on project switching, list population, and launch disablement
 *   [x] Project Explorer File Tree and Directory Pruning - 100% Complete ✅

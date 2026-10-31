@@ -4,7 +4,7 @@
 ## - ⚠️ indicator for missing but available tools
 ## - ❌ indicator for missing and unavailable tools
 ## - No indicator for installed tools
-## - Click-through navigation to Tools page
+## - Double-click and launch navigation to Tools page for missing tools
 
 extends RefCounted
 class_name ProjectsPageIndicatorsTests
