@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 2076
+tests passed: 2104
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -458,6 +458,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Installed tab empty-state nodes: verifies `InstalledEmptyState` container, `InstalledEmptyTitle` ("No Tools Installed Yet"), `InstalledEmptyDescription` (mentioning Central Library), and `BrowseAvailableToolsButton` (`PrimaryButton` variation) exist in `main.tscn`
   - Dynamic category collapse and empty state integration: verifies that populating tools with 0 installed tools shows `InstalledEmptyState`, hides `InstalledContent`, and hides all empty category sections and dividers in `main.tscn`
   - RemoveToolDialog compact layout and status visibility: verifies compact 420x150 sizing, 16px horizontal / 12px vertical content margins, and proper visibility transitions keeping status text and progress bar hidden until removal is actively underway or fails
+  - DownloadDialogController layout and styling: verifies MarginContainer wrapping with 16px horizontal and 12px vertical padding, 12px VBoxContainer separation, progress bar dimensions (360x18), single authoritative status text (`show_percentage = false`), and custom StyleBoxFlat background (#1A1D24, 1px border #2A2F3A, 6px corner radius) and fill (#3B82F6, 6px corner radius)
 
 - **[tests/project_explorer_tests.gd](tests/project_explorer_tests.gd)** - Validates ProjectExplorer directory filtering, pruning, selection, tool icon rendering, stack-aware VSCodium mappings, and double-click activation (916 total passed tests across runner suites).
   - Non-relevant and empty folders excluded from tree

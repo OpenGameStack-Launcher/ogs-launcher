@@ -659,7 +659,9 @@ dir "$env:LOCALAPPDATA\OGS\"
 3. Observe connectivity status indicator (should show "Online ✓" if network available)
 4. Locate "godot v4.7.2" in the tools list (under "Engine" category)
 5. Click the **"Download"** button next to godot v4.7.2
-6. Watch progress bar as tool downloads/installs to `%LOCALAPPDATA%\OGS\Library\`. Observe progress behavior:
+6. Watch progress bar as tool downloads/installs to `%LOCALAPPDATA%\OGS\Library\`. Observe dialog and progress behavior:
+   - Download dialog opens with 16px horizontal and 12px vertical padding, 12px separation, and custom-styled `#1A1D24` progress bar with `#3B82F6` blue fill and rounded corners.
+   - Status label directly above the bar acts as the single authoritative progress readout without duplicate percentage text inside the bar.
    - For standard downloads with known size, progress bar shows percentage and label formats as `X.X / Y.Y MB`.
    - For remote downloads without Content-Length (such as HTTP redirects or chunked streams), progress bar remains in indeterminate mode displaying `X.X MB downloaded` without prematurely jumping to "Installing...".
 7. Wait for completion (may take 30+ seconds depending on archive size)
@@ -673,6 +675,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 - ✅ Download tab shows available tools with "Download" buttons
 - ✅ Connectivity status shows "Online ✓" (if network available)
 - ✅ Clicking "Download" button starts the download
+- ✅ Download dialog opens with 16px horizontal and 12px vertical padding, `#3B82F6` styled progress bar, and single authoritative status text without duplicate percentage readouts
 - ✅ Progress bar appears showing download percentage (or indeterminate mode with `X.X MB downloaded` when Content-Length is unavailable)
 - ✅ Auto-transition to "Installing..." occurs only after the download payload is completely received
 - ✅ All other download buttons become disabled during active download
@@ -1717,6 +1720,7 @@ If onboarding wizard does NOT appear, fresh state was not achieved. Repeat the c
 4. Observe available tools list (should show godot v4.7.2 and blender v4.5.7)
 5. Click **"Download"** button next to godot v4.7.2
 6. Watch progress bar as tool downloads/installs to %LOCALAPPDATA%/OGS/Library/
+   - Verify download dialog displays 16px horizontal and 12px vertical padding, `#3B82F6` styled progress bar, and single authoritative status text without duplicate percentage text
 7. Allow process to complete
 8. Switch to **"Installed"** tab and verify godot v4.7.2 appears there
 9. Return to **Projects** page
@@ -1726,6 +1730,7 @@ If onboarding wizard does NOT appear, fresh state was not achieved. Repeat the c
 - ✅ Tools page loads and shows available tools in Download tab
 - ✅ "Download" button is visible and enabled for each available tool
 - ✅ Clicking "Download" starts the installation process
+- ✅ Download dialog opens with 16px/12px padding, custom `#3B82F6` progress bar, and single authoritative status text without duplicate percentage text
 - ✅ Progress bar displays download/install percentage
 - ✅ Other download buttons are disabled during active download
 - ✅ Tool is extracted to %LOCALAPPDATA%/OGS/Library/godot/4.7.2/ correctly
