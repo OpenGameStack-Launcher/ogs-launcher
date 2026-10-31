@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 1955
+tests passed: 2010
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -269,6 +269,9 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Cleanup safe when removal thread is null
   - Main scene pre-quit cleanup triggers controller cleanup
   - Dynamic tab title count badge formatting across empty catalog, partially installed, and updated catalog states (`Installed (X)` / `Download (Y)`)
+  - Empty state visibility toggles: verifies that `InstalledEmptyState` is visible and `InstalledContent` is hidden when 0 tools are installed, and vice versa when 1+ tools are installed
+  - Browse Available Tools action: verifies clicking "Browse Available Tools" switches active tools tab to the Download tab (`current_tab = 1`)
+  - Dynamic category section and divider visibility: verifies empty category sections are hidden, single visible category hides all dividers, and dividers appear strictly between visible sections with leading, trailing, and consecutive dividers suppressed
 
 - **[tests/file_type_mapper_tests.gd](tests/file_type_mapper_tests.gd)** - Validates FileTypeMapper extension mapping and exclusions.
   - VSCodium supported extensions recognized (gd, cs, gdshader, shader, txt, md, csv, json, yaml, yml, toml) in lowercase and uppercase
@@ -443,6 +446,8 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Online/offline status label updates
   - Download button disablement during active download
   - Tool cards assign dynamic theme variations: `PrimaryButton` for download buttons, `DangerButton` for installed tool removal buttons, and `SecondaryButton` for active download cancel buttons
+  - Installed tab empty-state nodes: verifies `InstalledEmptyState` container, `InstalledEmptyTitle` ("No Tools Installed Yet"), `InstalledEmptyDescription` (mentioning Central Library), and `BrowseAvailableToolsButton` (`PrimaryButton` variation) exist in `main.tscn`
+  - Dynamic category collapse and empty state integration: verifies that populating tools with 0 installed tools shows `InstalledEmptyState`, hides `InstalledContent`, and hides all empty category sections and dividers in `main.tscn`
 
 - **[tests/project_explorer_tests.gd](tests/project_explorer_tests.gd)** - Validates ProjectExplorer directory filtering, pruning, selection, tool icon rendering, stack-aware VSCodium mappings, and double-click activation (916 total passed tests across runner suites).
   - Non-relevant and empty folders excluded from tree

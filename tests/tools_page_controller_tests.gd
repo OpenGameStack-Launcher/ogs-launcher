@@ -31,6 +31,9 @@ func run() -> Dictionary:
 	_test_thread_reference_cleared_after_predelete(results)
 	_test_main_notification_calls_cleanup(results)
 	_test_dynamic_tab_title_count_badges(results)
+	_test_installed_empty_state_visibility_toggles(results)
+	_test_browse_available_tools_button_switches_tab(results)
+	_test_category_sections_and_dividers_visibility(results)
 
 	return results
 
@@ -174,3 +177,157 @@ func _test_dynamic_tab_title_count_badges(results: Dictionary) -> void:
 	_expect(tabs.get_tab_title(1) == "Download (3)", "Tab 1 should show 'Download (3)' after second install (was: %s)" % tabs.get_tab_title(1), results)
 
 	tabs.free()
+
+func _test_installed_empty_state_visibility_toggles(results: Dictionary) -> void:
+	var controller = ToolsPageControllerScript.new()
+	var mock_tools_controller = MockToolsControllerForBadges.new()
+
+	var deps = ToolsPageControllerScript.UIDeps.new()
+	var tabs = TabContainer.new()
+	var tab_installed = Control.new()
+	var tab_download = Control.new()
+	tabs.add_child(tab_installed)
+	tabs.add_child(tab_download)
+	deps.tools_tabs = tabs
+
+	var installed_content = VBoxContainer.new()
+	var empty_state = VBoxContainer.new()
+	tab_installed.add_child(installed_content)
+	tab_installed.add_child(empty_state)
+	deps.installed_content = installed_content
+	deps.installed_empty_state = empty_state
+
+	controller.setup(deps, mock_tools_controller, null, null, null)
+
+	# 1. 0 installed tools -> empty state visible, installed content hidden
+	mock_tools_controller.mock_tools = {}
+	controller.populate_tools_ui()
+	_expect(empty_state.visible == true, "InstalledEmptyState should be visible when 0 tools installed", results)
+	_expect(installed_content.visible == false, "InstalledContent should be hidden when 0 tools installed", results)
+
+	# 2. Add uninstalled tool in catalog (0 installed) -> still empty state visible
+	mock_tools_controller.mock_tools = {
+		"Engine": [{"id": "godot", "version": "4.7.2", "installed": false}]
+	}
+	controller.populate_tools_ui()
+	_expect(empty_state.visible == true, "InstalledEmptyState should remain visible when catalog tools are not installed", results)
+	_expect(installed_content.visible == false, "InstalledContent should remain hidden when catalog tools are not installed", results)
+
+	# 3. 1 installed tool -> empty state hidden, installed content visible
+	mock_tools_controller.mock_tools = {
+		"Engine": [{"id": "godot", "version": "4.7.2", "installed": true}]
+	}
+	controller.populate_tools_ui()
+	_expect(empty_state.visible == false, "InstalledEmptyState should be hidden when 1 tool installed", results)
+	_expect(installed_content.visible == true, "InstalledContent should be visible when 1 tool installed", results)
+
+	tabs.free()
+
+func _test_browse_available_tools_button_switches_tab(results: Dictionary) -> void:
+	var controller = ToolsPageControllerScript.new()
+	var mock_tools_controller = MockToolsControllerForBadges.new()
+
+	var deps = ToolsPageControllerScript.UIDeps.new()
+	var tabs = TabContainer.new()
+	var tab_installed = Control.new()
+	var tab_download = Control.new()
+	tabs.add_child(tab_installed)
+	tabs.add_child(tab_download)
+	tabs.current_tab = 0
+	deps.tools_tabs = tabs
+
+	var browse_btn = Button.new()
+	deps.browse_available_tools_button = browse_btn
+
+	controller.setup(deps, mock_tools_controller, null, null, null)
+
+	_expect(tabs.current_tab == 0, "Current tab should initially be 0 (Installed)", results)
+	browse_btn.pressed.emit()
+	_expect(tabs.current_tab == 1, "Clicking Browse Available Tools button should switch to tab 1 (Download)", results)
+
+	browse_btn.free()
+	tabs.free()
+
+func _test_category_sections_and_dividers_visibility(results: Dictionary) -> void:
+	var controller = ToolsPageControllerScript.new()
+
+	var content = VBoxContainer.new()
+	var sections: Array[VBoxContainer] = []
+	var tool_containers: Array[VBoxContainer] = []
+	var dividers: Array[HSeparator] = []
+
+	for i in range(5):
+		var sec = VBoxContainer.new()
+		sec.name = "Section_%d" % i
+		var tools = VBoxContainer.new()
+		tools.name = "Tools_%d" % i
+		sec.add_child(tools)
+		content.add_child(sec)
+		sections.append(sec)
+		tool_containers.append(tools)
+		if i < 4:
+			var div = HSeparator.new()
+			div.name = "Divider_%d" % i
+			content.add_child(div)
+			dividers.append(div)
+
+	# Case 1: All sections empty
+	controller._update_category_sections_and_dividers(tool_containers, content)
+	for i in range(5):
+		_expect(not sections[i].visible, "Section %d should be hidden when empty" % i, results)
+	for i in range(4):
+		_expect(not dividers[i].visible, "Divider %d should be hidden when all sections empty" % i, results)
+
+	# Case 2: Only Section 1 and Section 3 have cards
+	var dummy_card1 = Control.new()
+	tool_containers[1].add_child(dummy_card1)
+	var dummy_card3 = Control.new()
+	tool_containers[3].add_child(dummy_card3)
+
+	controller._update_category_sections_and_dividers(tool_containers, content)
+	_expect(not sections[0].visible, "Section 0 should be hidden", results)
+	_expect(sections[1].visible, "Section 1 should be visible", results)
+	_expect(not sections[2].visible, "Section 2 should be hidden", results)
+	_expect(sections[3].visible, "Section 3 should be visible", results)
+	_expect(not sections[4].visible, "Section 4 should be hidden", results)
+
+	# Divider checks:
+	# Divider 0 (before Section 1) must be hidden (no leading divider)
+	_expect(not dividers[0].visible, "Divider 0 (leading before section 1) must be hidden", results)
+	# One divider between Section 1 and Section 3 must be visible, but not both (no consecutive dividers)
+	var middle_dividers_visible: int = 0
+	if dividers[1].visible: middle_dividers_visible += 1
+	if dividers[2].visible: middle_dividers_visible += 1
+	_expect(middle_dividers_visible == 1, "Exactly one divider must be visible between section 1 and 3 (was: %d)" % middle_dividers_visible, results)
+	# Divider 3 (after Section 3) must be hidden (no trailing divider)
+	_expect(not dividers[3].visible, "Divider 3 (trailing after section 3) must be hidden", results)
+
+	# Case 3: All sections have cards
+	var dummy_card0 = Control.new()
+	tool_containers[0].add_child(dummy_card0)
+	var dummy_card2 = Control.new()
+	tool_containers[2].add_child(dummy_card2)
+	var dummy_card4 = Control.new()
+	tool_containers[4].add_child(dummy_card4)
+
+	controller._update_category_sections_and_dividers(tool_containers, content)
+	for i in range(5):
+		_expect(sections[i].visible, "Section %d should be visible when non-empty" % i, results)
+	for i in range(4):
+		_expect(dividers[i].visible, "Divider %d should be visible between non-empty sections" % i, results)
+
+	# Case 4: Only Section 0 has cards (single visible section)
+	dummy_card1.free()
+	dummy_card2.free()
+	dummy_card3.free()
+	dummy_card4.free()
+
+	controller._update_category_sections_and_dividers(tool_containers, content)
+	_expect(sections[0].visible, "Section 0 should be visible", results)
+	for i in range(1, 5):
+		_expect(not sections[i].visible, "Section %d should be hidden" % i, results)
+	for i in range(4):
+		_expect(not dividers[i].visible, "Divider %d must be hidden when only 1 section visible" % i, results)
+
+	dummy_card0.free()
+	content.free()

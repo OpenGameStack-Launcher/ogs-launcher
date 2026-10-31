@@ -17,6 +17,8 @@ func run() -> Dictionary:
 	_test_enforced_offline_status_label(results)
 	_test_tool_card_style(results)
 	_test_download_button_state(results)
+	_test_installed_empty_state_nodes_exist(results)
+	_test_main_scene_tools_dynamic_collapse_and_empty_state(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -207,3 +209,56 @@ func _test_download_button_state(results: Dictionary) -> void:
 	
 	button_active.free()
 	button_other.free()
+
+func _test_installed_empty_state_nodes_exist(results: Dictionary) -> void:
+	## Verifies InstalledEmptyState and its child nodes exist in main.tscn.
+	var instance = _instantiate_main_scene(results)
+	if instance == null:
+		return
+
+	var empty_state: VBoxContainer = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState") as VBoxContainer
+	_expect(empty_state != null, "InstalledEmptyState container should exist in main.tscn", results)
+	if empty_state != null:
+		var title_label: Label = empty_state.get_node_or_null("InstalledEmptyTitle") as Label
+		_expect(title_label != null, "InstalledEmptyTitle label should exist", results)
+		if title_label != null:
+			_expect(title_label.text == "No Tools Installed Yet", "Empty state title should be 'No Tools Installed Yet' (was: %s)" % title_label.text, results)
+
+		var desc_label: Label = empty_state.get_node_or_null("InstalledEmptyDescription") as Label
+		_expect(desc_label != null, "InstalledEmptyDescription label should exist", results)
+		if desc_label != null:
+			_expect(desc_label.text.find("Central Library") != -1, "Empty state description should mention Central Library (was: %s)" % desc_label.text, results)
+
+		var browse_button: Button = empty_state.get_node_or_null("BrowseAvailableToolsButton") as Button
+		_expect(browse_button != null, "BrowseAvailableToolsButton should exist", results)
+		if browse_button != null:
+			_expect(browse_button.text == "Browse Available Tools", "Browse button text should be 'Browse Available Tools' (was: %s)" % browse_button.text, results)
+			_expect(browse_button.theme_type_variation == &"PrimaryButton", "Browse button should have PrimaryButton variation", results)
+
+	instance.free()
+
+func _test_main_scene_tools_dynamic_collapse_and_empty_state(results: Dictionary) -> void:
+	## Verifies that populating tools with 0 installed tools correctly hides InstalledContent,
+	## shows InstalledEmptyState, hides empty category sections, and hides dividers.
+	var instance = _instantiate_main_scene(results)
+	if instance == null:
+		return
+
+	var empty_state: Control = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState") as Control
+	var installed_content: Container = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent") as Container
+
+	_expect(empty_state != null, "InstalledEmptyState should exist", results)
+	_expect(installed_content != null, "InstalledContent should exist", results)
+
+	if instance.tools_page_controller != null:
+		instance.tools_page_controller.populate_tools_ui()
+		_expect(empty_state.visible == true, "InstalledEmptyState should be visible on fresh startup with 0 installed tools", results)
+		_expect(installed_content.visible == false, "InstalledContent should be hidden when 0 tools installed", results)
+
+		for child in installed_content.get_children():
+			if child is HSeparator:
+				_expect(not child.visible, "Category divider in InstalledContent should be hidden when empty: %s" % child.name, results)
+			elif child is Container:
+				_expect(not child.visible, "Category section in InstalledContent should be hidden when empty: %s" % child.name, results)
+
+	instance.free()

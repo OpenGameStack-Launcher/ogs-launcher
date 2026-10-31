@@ -262,6 +262,12 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Added MarginContainer with 14px right margin inside ToolsTabs/Installed and ToolsTabs/Download, preventing vertical scrollbar overlap on card panels
     *   [x] Implemented dynamic tab title count badges (`Installed (X)` and `Download (Y)`) updating on UI population, install, removal, and refresh
     *   [x] Added unit tests in `tests/tools_page_controller_tests.gd` and scene assertions in `tests/tools_page_scene_tests.gd` (1955 tests passing across 38 test suites with zero failures)
+*   [x] Hide Empty Tool Category Sections and Add Installed Tab Empty-State View (Issue #136) - 100% Complete ✅
+    *   [x] Dynamically collapsed empty tool category sections (Engine, 2D Tools, 3D Tools, Audio Tools, Code Tools) in both Installed and Download tabs when containing zero tool cards
+    *   [x] Dynamically suppressed category dividers (HSeparator) to display strictly between visible sections, eliminating leading, trailing, and consecutive dividers
+    *   [x] Added InstalledEmptyState container (VBoxContainer) under ToolsTabs/Installed with high-contrast accent title ("No Tools Installed Yet"), descriptive guidance explaining Central Library offline storage, and a "Browse Available Tools" button (PrimaryButton)
+    *   [x] Wired "Browse Available Tools" button to switch directly to Download tab (current_tab = 1)
+    *   [x] Added unit tests in tests/tools_page_controller_tests.gd and scene tests in tests/tools_page_scene_tests.gd (2010 tests passing across 38 test suites with zero failures)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:

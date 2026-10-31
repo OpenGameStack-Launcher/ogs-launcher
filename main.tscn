@@ -613,6 +613,37 @@ text = "Code Tools"
 layout_mode = 2
 theme_override_constants/separation = 8
 
+[node name="InstalledEmptyState" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer"]
+visible = false
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="InstalledEmptyTitle" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 18
+text = "No Tools Installed Yet"
+horizontal_alignment = 1
+
+[node name="InstalledEmptyDescription" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState"]
+custom_minimum_size = Vector2(420, 0)
+layout_mode = 2
+size_flags_horizontal = 4
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 13
+text = "Downloaded tools are stored in the Central Library for offline use across projects."
+horizontal_alignment = 1
+autowrap_mode = 2
+
+[node name="BrowseAvailableToolsButton" type="Button" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState"]
+theme_type_variation = &"PrimaryButton"
+custom_minimum_size = Vector2(180, 36)
+layout_mode = 2
+size_flags_horizontal = 4
+text = "Browse Available Tools"
+
 [node name="Download" type="ScrollContainer" parent="AppLayout/Content/PageTools/ToolsTabs" unique_id=1569399598]
 visible = false
 layout_mode = 2
