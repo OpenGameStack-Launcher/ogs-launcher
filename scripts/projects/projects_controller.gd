@@ -16,6 +16,7 @@ class_name ProjectsController
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 const ToolCategoryMapper = preload("res://scripts/tools/tool_category_mapper.gd")
 const FileTypeMapper = preload("res://scripts/tools/file_type_mapper.gd")
+const PathUtils = preload("res://scripts/utils/path_utils.gd")
 
 ## Emitted when offline state changes after loading a project or config.
 signal offline_state_changed(active: bool, reason: String)
@@ -632,9 +633,10 @@ func _refresh_projects_list() -> void:
 		var tools: Array = entry.get("tools", [])
 		var summary = _summarize_tools(tools)
 		var project_path = String(entry.get("path", ""))
-		var label = "%s — %s\n%s" % [display_name, summary, project_path]
+		var display_path: String = PathUtils.format_for_display(project_path)
+		var label = "%s — %s\n%s" % [display_name, summary, display_path]
 		projects_list.add_item(label)
-		projects_list.set_item_tooltip(index, project_path)
+		projects_list.set_item_tooltip(index, display_path)
 
 func _summarize_tools(tools: Array) -> String:
 	## Builds compact tool summary text for project list entries.
@@ -698,7 +700,7 @@ func _select_project(index: int) -> void:
 		_save_project_registry()
 	
 	if lbl_tools_for_project != null:
-		lbl_tools_for_project.text = "Project Explorer - " + project_dir
+		lbl_tools_for_project.text = "Project Explorer - " + PathUtils.format_for_display(project_dir)
 		
 	if project_dir.is_empty():
 		_update_status("Status: Selected project entry is invalid.")

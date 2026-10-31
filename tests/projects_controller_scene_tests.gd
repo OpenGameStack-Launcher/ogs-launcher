@@ -9,6 +9,7 @@ extends RefCounted
 class_name ProjectsControllerSceneTests
 
 const ProjectsControllerScript = preload("res://scripts/projects/projects_controller.gd")
+const PathUtils = preload("res://scripts/utils/path_utils.gd")
 
 func run() -> Dictionary:
 	## Runs all ProjectsController scene tests.
@@ -49,6 +50,7 @@ func run() -> Dictionary:
 	_test_open_project_button_switches_tab(results)
 	_test_action_buttons_disabled_initially_and_on_empty(results)
 	_test_custom_item_list_double_click_activation(results)
+	_test_project_display_paths_normalized(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -95,6 +97,12 @@ func _build_controller(storage_path: String) -> Dictionary:
 	var dialog = FileDialog.new()
 	var remove_dialog = ConfirmationDialog.new()
 	var new_project_dialog = ConfirmationDialog.new()
+	var new_project_vbox = VBoxContainer.new()
+	new_project_vbox.name = "VBoxContainer"
+	var instructions_label = Label.new()
+	instructions_label.name = "InstructionsLabel"
+	new_project_vbox.add_child(instructions_label)
+	new_project_dialog.add_child(new_project_vbox)
 	var new_project_name = LineEdit.new()
 	var add_tool_dialog = ConfirmationDialog.new()
 	var add_tool_option = ItemList.new()
@@ -156,6 +164,8 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"new_name": new_project_name,
 		"new_file_name": new_file_name,
 		"remove_dialog": remove_dialog,
+		"instructions_label": instructions_label,
+		"explorer_title_lbl": explorer_title_lbl,
 		"list": project_tools_list,
 		"project_tools_list": project_tools_list,
 		"tabs": projects_tabs,
@@ -163,7 +173,7 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"add_remote_btn": add_remote_button,
 		"remove_tool_btn": remove_tool_button,
 		"add_tool_btn": add_tool_button,
-		"nodes": [add_button, add_remote_button, new_button, open_button, remove_button, seal_button, projects_list, status_label, offline_label, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button]
+		"nodes": [add_button, add_remote_button, new_button, open_button, remove_button, seal_button, projects_list, status_label, offline_label, explorer_title_lbl, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_name, add_tool_button, remove_tool_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_vbox, instructions_label, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button]
 	}
 
 func _cleanup_nodes(nodes: Array, controller: ProjectsController = null) -> void:
@@ -1124,5 +1134,58 @@ func _test_custom_item_list_double_click_activation(results: Dictionary) -> void
 	_expect(activated_indices.size() == 1 and activated_indices[0] == 0, "Double-click should emit item_activated(0)", results)
 
 	list.free()
+
+func _test_project_display_paths_normalized(results: Dictionary) -> void:
+	## Verifies that project item labels, tooltips, Project Explorer header, and dialog instructions
+	## normalize mixed path separators and contain no backslashes.
+	OfflineEnforcer.reset()
+	var storage_path: String = "user://projects_controller_scene_norm_%s.json" % str(Time.get_ticks_msec())
+	var test_dir: String = "user://test_norm_proj_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(test_dir)
+	var abs_dir: String = ProjectSettings.globalize_path(test_dir)
+	DirAccess.make_dir_recursive_absolute(abs_dir)
+
+	var stack_payload: Dictionary = {
+		"schema_version": 1,
+		"stack_name": "Normalized Path Project",
+		"tools": []
+	}
+	var f = FileAccess.open(abs_dir.path_join("stack.json"), FileAccess.WRITE)
+	f.store_string(JSON.stringify(stack_payload))
+	f.close()
+
+	var ctx: Dictionary = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"] as ProjectsController
+	
+	# Pass a path containing Windows backslashes
+	var mixed_path: String = abs_dir.replace("/", "\\")
+	var added: bool = controller.add_project_from_path(mixed_path)
+	_expect(added, "mixed path project should add successfully", results)
+
+	var projects_list: Control = ctx["projects"] as Control
+	_expect(projects_list.item_count == 1, "projects list should have 1 item", results)
+	if projects_list.item_count > 0:
+		var item_text: String = projects_list.get_item_text(0)
+		var item_tooltip: String = projects_list.get_item_tooltip(0)
+		_expect(not item_text.contains("\\"), "project list item text should not contain backslashes: %s" % item_text, results)
+		_expect(not item_tooltip.contains("\\"), "project list item tooltip should not contain backslashes: %s" % item_tooltip, results)
+		var expected_display_path: String = PathUtils.format_for_display(mixed_path)
+		_expect(item_tooltip == expected_display_path, "item tooltip should match format_for_display", results)
+		_expect(item_text.ends_with(expected_display_path), "item text should end with format_for_display", results)
+
+	var explorer_lbl: Label = ctx["explorer_title_lbl"] as Label
+	_expect(not explorer_lbl.text.contains("\\"), "Project Explorer header should not contain backslashes: %s" % explorer_lbl.text, results)
+	_expect(explorer_lbl.text.begins_with("Project Explorer - "), "Project Explorer header should have prefix", results)
+
+	# Test new project dialog instructions label normalization
+	controller._on_new_project_pressed()
+	var instructions_lbl: Label = ctx["instructions_label"] as Label
+	_expect(not instructions_lbl.text.contains("\\"), "New project dialog instructions should not contain backslashes: %s" % instructions_lbl.text, results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(test_dir)
+	_cleanup_registry(storage_path)
+
 
 

@@ -5,6 +5,7 @@ class_name SettingsController
 const MirrorPathResolverScript = preload("res://scripts/mirror/mirror_path_resolver.gd")
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 const OgsConfig = preload("res://scripts/config/ogs_config.gd")
+const PathUtils = preload("res://scripts/utils/path_utils.gd")
 
 ## Emitted when the configured primary projects root path changes.
 signal projects_root_changed(new_root: String)
@@ -84,7 +85,7 @@ func _load_mirror_settings() -> void:
 	if _ui != null:
 		if _ui.projects_root_path != null:
 			_ui.projects_root_path.text = projects_root_override
-			_ui.projects_root_path.placeholder_text = get_primary_projects_folder()
+			_ui.projects_root_path.placeholder_text = PathUtils.format_for_display(get_primary_projects_folder())
 		if _ui.mirror_root_path != null:
 			_ui.mirror_root_path.text = mirror_root_override
 		if _ui.mirror_repo_path != null:
@@ -149,6 +150,7 @@ func on_projects_root_reset_pressed() -> void:
 	projects_root_override = ""
 	if _ui.projects_root_path != null:
 		_ui.projects_root_path.text = ""
+		_ui.projects_root_path.placeholder_text = PathUtils.format_for_display(get_primary_projects_folder())
 	save_mirror_settings()
 	projects_root_changed.emit(projects_root_override)
 	OgsLogger.info("projects_root_changed", {
@@ -225,7 +227,7 @@ func update_mirror_status() -> void:
 
 func on_project_selection_changed(project_dir: String, offline_mode: bool, force_offline: bool) -> void:
 	## Synchronizes offline policy controls when selected project changes.
-	_ui.project_offline_status_label.text = "Selected: %s" % project_dir if not project_dir.is_empty() else "No project selected"
+	_ui.project_offline_status_label.text = "Selected: %s" % PathUtils.format_for_display(project_dir) if not project_dir.is_empty() else "No project selected"
 	_ui.project_offline_mode_check_button.set_pressed_no_signal(offline_mode)
 	_ui.project_force_offline_check_button.set_pressed_no_signal(force_offline)
 	_ui.project_offline_mode_check_button.disabled = project_dir.is_empty()
