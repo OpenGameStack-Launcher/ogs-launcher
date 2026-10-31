@@ -150,6 +150,142 @@ func _apply_global_theme() -> void:
 	global_theme.set_stylebox("hover", "Button", hover_style)
 	global_theme.set_stylebox("pressed", "Button", pressed_style)
 	global_theme.set_stylebox("disabled", "Button", disabled_style)
+
+	# PrimaryButton Theme Variation
+	global_theme.set_type_variation(&"PrimaryButton", &"Button")
+	var primary_normal: StyleBoxFlat = normal_style.duplicate() as StyleBoxFlat
+	primary_normal.bg_color = Color(0.20, 0.48, 0.78)
+
+	var primary_hover: StyleBoxFlat = normal_style.duplicate() as StyleBoxFlat
+	primary_hover.bg_color = Color(0.26, 0.56, 0.88)
+
+	var primary_pressed: StyleBoxFlat = normal_style.duplicate() as StyleBoxFlat
+	primary_pressed.bg_color = Color(0.15, 0.38, 0.65)
+
+	var primary_disabled: StyleBoxFlat = normal_style.duplicate() as StyleBoxFlat
+	primary_disabled.bg_color = Color(0.20, 0.30, 0.40, 0.5)
+
+	var primary_focus: StyleBoxFlat = normal_style.duplicate() as StyleBoxFlat
+	primary_focus.draw_center = false
+	primary_focus.border_width_left = 1
+	primary_focus.border_width_top = 1
+	primary_focus.border_width_right = 1
+	primary_focus.border_width_bottom = 1
+	primary_focus.border_color = Color(0.45, 0.80, 1.0, 0.8)
+
+	global_theme.set_stylebox("normal", &"PrimaryButton", primary_normal)
+	global_theme.set_stylebox("hover", &"PrimaryButton", primary_hover)
+	global_theme.set_stylebox("pressed", &"PrimaryButton", primary_pressed)
+	global_theme.set_stylebox("disabled", &"PrimaryButton", primary_disabled)
+	global_theme.set_stylebox("focus", &"PrimaryButton", primary_focus)
+
+	# SecondaryButton Theme Variation
+	global_theme.set_type_variation(&"SecondaryButton", &"Button")
+	var secondary_normal: StyleBoxFlat = normal_style.duplicate() as StyleBoxFlat
+	secondary_normal.bg_color = Color(0.18, 0.21, 0.26)
+	secondary_normal.border_width_left = 1
+	secondary_normal.border_width_top = 1
+	secondary_normal.border_width_right = 1
+	secondary_normal.border_width_bottom = 1
+	secondary_normal.border_color = Color(0.30, 0.35, 0.42)
+
+	var secondary_hover: StyleBoxFlat = secondary_normal.duplicate() as StyleBoxFlat
+	secondary_hover.bg_color = Color(0.24, 0.28, 0.35)
+	secondary_hover.border_color = Color(0.38, 0.45, 0.54)
+
+	var secondary_pressed: StyleBoxFlat = secondary_normal.duplicate() as StyleBoxFlat
+	secondary_pressed.bg_color = Color(0.14, 0.16, 0.20)
+	secondary_pressed.border_color = Color(0.30, 0.35, 0.42)
+
+	var secondary_disabled: StyleBoxFlat = secondary_normal.duplicate() as StyleBoxFlat
+	secondary_disabled.bg_color = Color(0.15, 0.17, 0.20, 0.5)
+	secondary_disabled.border_color = Color(0.25, 0.28, 0.32, 0.5)
+
+	var secondary_focus: StyleBoxFlat = secondary_normal.duplicate() as StyleBoxFlat
+	secondary_focus.draw_center = false
+	secondary_focus.border_color = Color(0.45, 0.80, 1.0, 0.8)
+
+	global_theme.set_stylebox("normal", &"SecondaryButton", secondary_normal)
+	global_theme.set_stylebox("hover", &"SecondaryButton", secondary_hover)
+	global_theme.set_stylebox("pressed", &"SecondaryButton", secondary_pressed)
+	global_theme.set_stylebox("disabled", &"SecondaryButton", secondary_disabled)
+	global_theme.set_stylebox("focus", &"SecondaryButton", secondary_focus)
+
+	# DangerButton Theme Variation
+	global_theme.set_type_variation(&"DangerButton", &"Button")
+	var danger_normal: StyleBoxFlat = normal_style.duplicate() as StyleBoxFlat
+	danger_normal.bg_color = Color(0.18, 0.14, 0.15)
+	danger_normal.border_width_left = 1
+	danger_normal.border_width_top = 1
+	danger_normal.border_width_right = 1
+	danger_normal.border_width_bottom = 1
+	danger_normal.border_color = Color(0.65, 0.22, 0.25)
+
+	var danger_hover: StyleBoxFlat = danger_normal.duplicate() as StyleBoxFlat
+	danger_hover.bg_color = Color(0.65, 0.22, 0.25)
+	danger_hover.border_color = Color(0.78, 0.28, 0.32)
+
+	var danger_pressed: StyleBoxFlat = danger_normal.duplicate() as StyleBoxFlat
+	danger_pressed.bg_color = Color(0.48, 0.15, 0.18)
+	danger_pressed.border_color = Color(0.65, 0.22, 0.25)
+
+	var danger_disabled: StyleBoxFlat = danger_normal.duplicate() as StyleBoxFlat
+	danger_disabled.bg_color = Color(0.15, 0.14, 0.14, 0.5)
+	danger_disabled.border_color = Color(0.40, 0.20, 0.22, 0.4)
+
+	var danger_focus: StyleBoxFlat = danger_normal.duplicate() as StyleBoxFlat
+	danger_focus.draw_center = false
+	danger_focus.border_color = Color(0.85, 0.35, 0.38, 0.8)
+
+	global_theme.set_stylebox("normal", &"DangerButton", danger_normal)
+	global_theme.set_stylebox("hover", &"DangerButton", danger_hover)
+	global_theme.set_stylebox("pressed", &"DangerButton", danger_pressed)
+	global_theme.set_stylebox("disabled", &"DangerButton", danger_disabled)
+	global_theme.set_stylebox("focus", &"DangerButton", danger_focus)
+
+	# CheckButton Styling
+	var check_normal: StyleBoxEmpty = StyleBoxEmpty.new()
+	check_normal.content_margin_left = 6.0
+	check_normal.content_margin_right = 6.0
+	check_normal.content_margin_top = 4.0
+	check_normal.content_margin_bottom = 4.0
+
+	var check_hover: StyleBoxFlat = StyleBoxFlat.new()
+	check_hover.bg_color = Color(1.0, 1.0, 1.0, 0.04)
+	check_hover.corner_radius_top_left = 4
+	check_hover.corner_radius_top_right = 4
+	check_hover.corner_radius_bottom_left = 4
+	check_hover.corner_radius_bottom_right = 4
+	check_hover.content_margin_left = 6.0
+	check_hover.content_margin_right = 6.0
+	check_hover.content_margin_top = 4.0
+	check_hover.content_margin_bottom = 4.0
+
+	var check_pressed: StyleBoxEmpty = check_normal.duplicate() as StyleBoxEmpty
+	var check_disabled: StyleBoxEmpty = check_normal.duplicate() as StyleBoxEmpty
+
+	var check_focus: StyleBoxFlat = StyleBoxFlat.new()
+	check_focus.draw_center = false
+	check_focus.border_width_left = 1
+	check_focus.border_width_top = 1
+	check_focus.border_width_right = 1
+	check_focus.border_width_bottom = 1
+	check_focus.border_color = Color(0.45, 0.80, 1.0, 0.6)
+	check_focus.corner_radius_top_left = 4
+	check_focus.corner_radius_top_right = 4
+	check_focus.corner_radius_bottom_left = 4
+	check_focus.corner_radius_bottom_right = 4
+	check_focus.content_margin_left = 6.0
+	check_focus.content_margin_right = 6.0
+	check_focus.content_margin_top = 4.0
+	check_focus.content_margin_bottom = 4.0
+
+	global_theme.set_stylebox("normal", "CheckButton", check_normal)
+	global_theme.set_stylebox("hover", "CheckButton", check_hover)
+	global_theme.set_stylebox("pressed", "CheckButton", check_pressed)
+	global_theme.set_stylebox("hover_pressed", "CheckButton", check_hover)
+	global_theme.set_stylebox("disabled", "CheckButton", check_disabled)
+	global_theme.set_stylebox("focus", "CheckButton", check_focus)
 	
 	var tree_panel: StyleBoxFlat = StyleBoxFlat.new()
 	tree_panel.bg_color = Color(0.16, 0.16, 0.16, 1)

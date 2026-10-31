@@ -97,42 +97,72 @@ func _test_connectivity_status_label(results: Dictionary) -> void:
 	instance.free()
 
 func _test_tool_card_style(results: Dictionary) -> void:
-	## Verifies dynamically-created tool cards have explicit visual separation.
-	var instance = _instantiate_main_scene(results)
-	if instance == null:
-		return
-
+	## Verifies dynamically-created tool cards have explicit visual separation and semantic button variations.
+	var page_controller = ToolsPageController.new()
 	var controller = ToolsControllerScript.new(null, "https://example.com/repository.json")
-	instance.tools_controller = controller
-	var card = instance._create_tool_card({"id": "godot", "version": "4.3", "size_bytes": 1}, false, false)
-	var style = card.get_theme_stylebox("panel")
-	_expect(card.custom_minimum_size.y >= 94, "Tool cards should have stable vertical spacing", results)
-	_expect(style is StyleBoxFlat, "Tool cards should use a bordered panel style", results)
-	card.free()
-	instance.free()
+	var deps = ToolsPageController.UIDeps.new()
+	var remove_dialog = ConfirmationDialog.new()
+	deps.remove_tool_dialog = remove_dialog
+	page_controller.setup(deps, controller, null, null, null)
+
+	# 1. Download tool card
+	var download_card = page_controller._create_tool_card({"id": "godot", "version": "4.3", "size_bytes": 1024}, false, false)
+	_expect(download_card != null, "Download tool card should be created", results)
+	if download_card != null:
+		var style = download_card.get_theme_stylebox("panel")
+		_expect(download_card.custom_minimum_size.y >= 94, "Tool cards should have stable vertical spacing", results)
+		_expect(style is StyleBoxFlat, "Tool cards should use a bordered panel style", results)
+		var download_button: Button = _find_button_in_card(download_card)
+		_expect(download_button != null, "Download button should exist in download card", results)
+		if download_button != null:
+			_expect(download_button.text == "Download", "Download button text should be 'Download'", results)
+			_expect(download_button.theme_type_variation == &"PrimaryButton", "Download button should have PrimaryButton variation (was: %s)" % String(download_button.theme_type_variation), results)
+		download_card.free()
+
+	# 2. Installed tool card with remove action
+	var remove_card = page_controller._create_tool_card({"id": "godot", "version": "4.3", "size_bytes": 1024}, true, true)
+	_expect(remove_card != null, "Remove tool card should be created", results)
+	if remove_card != null:
+		var remove_button: Button = _find_button_in_card(remove_card)
+		_expect(remove_button != null, "Remove button should exist in installed tool card with remove action", results)
+		if remove_button != null:
+			_expect(remove_button.text == "Remove", "Remove button text should be 'Remove'", results)
+			_expect(remove_button.theme_type_variation == &"DangerButton", "Remove button should have DangerButton variation (was: %s)" % String(remove_button.theme_type_variation), results)
+		remove_card.free()
+
+	remove_dialog.free()
+
+func _find_button_in_card(node: Node) -> Button:
+	for child in node.get_children():
+		if child is Button:
+			return child as Button
+		var found = _find_button_in_card(child)
+		if found != null:
+			return found
+	return null
 
 func _test_download_button_state(results: Dictionary) -> void:
-	## Verifies download buttons disable while a download is active.
-	var instance = _instantiate_main_scene(results)
-	if instance == null:
-		return
-
+	## Verifies download buttons disable while a download is active and update theme variations.
 	var controller = ToolsControllerScript.new(null, "https://example.com/repository.json")
-	instance.tools_controller = controller
+	var page_controller = ToolsPageController.new()
 	
 	var button_active = Button.new()
 	var button_other = Button.new()
 	
-	instance.tool_cards = {
+	page_controller._tools_controller = controller
+	page_controller.tool_cards = {
 		"godot_4.3": {"button": button_active, "tool_id": "godot", "version": "4.3"},
 		"krita_5.2.15": {"button": button_other, "tool_id": "krita", "version": "5.2.15"}
 	}
 	
 	controller._currently_downloading["godot_4.3"] = true
-	instance._update_download_button_states()
+	page_controller.update_download_button_states()
 	_expect(button_active.disabled == false, "active download button should be enabled", results)
+	_expect(button_active.text == "Cancel", "active download button text should be Cancel", results)
+	_expect(button_active.theme_type_variation == &"SecondaryButton", "Cancel download button should have SecondaryButton theme variation", results)
 	_expect(button_other.disabled == true, "other download buttons should be disabled", results)
+	_expect(button_other.text == "Download", "other download button text should be Download", results)
+	_expect(button_other.theme_type_variation == &"PrimaryButton", "Download button should have PrimaryButton theme variation", results)
 	
 	button_active.free()
 	button_other.free()
-	instance.free()

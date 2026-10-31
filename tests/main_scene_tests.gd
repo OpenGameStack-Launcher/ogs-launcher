@@ -26,6 +26,9 @@ func run() -> Dictionary:
 	_test_network_ui_disabled_offline(results)
 	_test_mirror_root_browse_dialog_frees_on_close(results)
 	_test_projects_root_browse_dialog_frees_on_close(results)
+	_test_button_theme_variations(results)
+	_test_checkbutton_styling(results)
+	_test_main_scene_button_variations(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -407,3 +410,146 @@ func _find_new_file_dialog(parent: Node, exclude_dialog: FileDialog) -> FileDial
 		if child != null and child != exclude_dialog:
 			return child
 	return null
+
+func _test_button_theme_variations(results: Dictionary) -> void:
+	## Verifies global_theme defines PrimaryButton, SecondaryButton, and DangerButton variations.
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for button theme variations test", results)
+	if scene == null:
+		return
+
+	var instance: Node = scene.instantiate()
+	(Engine.get_main_loop() as SceneTree).root.add_child(instance)
+
+	var theme: Theme = instance.theme
+	_expect(theme != null, "Main instance should have a theme assigned", results)
+	if theme != null:
+		# PrimaryButton
+		_expect(theme.get_type_variation_base(&"PrimaryButton") == &"Button", "PrimaryButton should vary from Button", results)
+		var p_normal: StyleBoxFlat = theme.get_stylebox("normal", &"PrimaryButton") as StyleBoxFlat
+		var p_hover: StyleBoxFlat = theme.get_stylebox("hover", &"PrimaryButton") as StyleBoxFlat
+		var p_pressed: StyleBoxFlat = theme.get_stylebox("pressed", &"PrimaryButton") as StyleBoxFlat
+		_expect(p_normal != null, "PrimaryButton normal style should exist as StyleBoxFlat", results)
+		_expect(p_hover != null, "PrimaryButton hover style should exist as StyleBoxFlat", results)
+		_expect(p_pressed != null, "PrimaryButton pressed style should exist as StyleBoxFlat", results)
+		if p_normal != null:
+			_expect(p_normal.bg_color.is_equal_approx(Color(0.20, 0.48, 0.78)), "PrimaryButton normal bg_color should match brand blue", results)
+		if p_hover != null:
+			_expect(p_hover.bg_color.is_equal_approx(Color(0.26, 0.56, 0.88)), "PrimaryButton hover bg_color should match brighter blue", results)
+		if p_pressed != null:
+			_expect(p_pressed.bg_color.is_equal_approx(Color(0.15, 0.38, 0.65)), "PrimaryButton pressed bg_color should match deeper blue", results)
+
+		# SecondaryButton
+		_expect(theme.get_type_variation_base(&"SecondaryButton") == &"Button", "SecondaryButton should vary from Button", results)
+		var s_normal: StyleBoxFlat = theme.get_stylebox("normal", &"SecondaryButton") as StyleBoxFlat
+		var s_hover: StyleBoxFlat = theme.get_stylebox("hover", &"SecondaryButton") as StyleBoxFlat
+		var s_pressed: StyleBoxFlat = theme.get_stylebox("pressed", &"SecondaryButton") as StyleBoxFlat
+		_expect(s_normal != null, "SecondaryButton normal style should exist as StyleBoxFlat", results)
+		_expect(s_hover != null, "SecondaryButton hover style should exist as StyleBoxFlat", results)
+		_expect(s_pressed != null, "SecondaryButton pressed style should exist as StyleBoxFlat", results)
+		if s_normal != null:
+			_expect(s_normal.bg_color.is_equal_approx(Color(0.18, 0.21, 0.26)), "SecondaryButton normal bg_color should match dark slate", results)
+			_expect(s_normal.border_width_left == 1 and s_normal.border_color.is_equal_approx(Color(0.30, 0.35, 0.42)), "SecondaryButton normal should have 1px slate border", results)
+
+		# DangerButton
+		_expect(theme.get_type_variation_base(&"DangerButton") == &"Button", "DangerButton should vary from Button", results)
+		var d_normal: StyleBoxFlat = theme.get_stylebox("normal", &"DangerButton") as StyleBoxFlat
+		var d_hover: StyleBoxFlat = theme.get_stylebox("hover", &"DangerButton") as StyleBoxFlat
+		var d_pressed: StyleBoxFlat = theme.get_stylebox("pressed", &"DangerButton") as StyleBoxFlat
+		_expect(d_normal != null, "DangerButton normal style should exist as StyleBoxFlat", results)
+		_expect(d_hover != null, "DangerButton hover style should exist as StyleBoxFlat", results)
+		_expect(d_pressed != null, "DangerButton pressed style should exist as StyleBoxFlat", results)
+		if d_normal != null:
+			_expect(d_normal.border_width_left == 1 and d_normal.border_color.is_equal_approx(Color(0.65, 0.22, 0.25)), "DangerButton normal should have muted crimson border", results)
+		if d_hover != null:
+			_expect(d_hover.bg_color.is_equal_approx(Color(0.65, 0.22, 0.25)), "DangerButton hover bg_color should match crimson", results)
+
+	instance.free()
+
+func _test_checkbutton_styling(results: Dictionary) -> void:
+	## Verifies global_theme defines CheckButton stylebox overrides preventing solid button inheritance.
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for checkbutton styling test", results)
+	if scene == null:
+		return
+
+	var instance: Node = scene.instantiate()
+	(Engine.get_main_loop() as SceneTree).root.add_child(instance)
+
+	var theme: Theme = instance.theme
+	_expect(theme != null, "Main instance should have a theme assigned", results)
+	if theme != null:
+		var cb_normal: StyleBox = theme.get_stylebox("normal", "CheckButton")
+		var cb_pressed: StyleBox = theme.get_stylebox("pressed", "CheckButton")
+		var cb_hover: StyleBox = theme.get_stylebox("hover", "CheckButton")
+		var cb_disabled: StyleBox = theme.get_stylebox("disabled", "CheckButton")
+		var btn_normal: StyleBox = theme.get_stylebox("normal", "Button")
+
+		_expect(cb_normal != null, "CheckButton normal stylebox should be defined", results)
+		_expect(cb_normal != btn_normal, "CheckButton normal stylebox should override Button normal", results)
+		_expect(cb_normal is StyleBoxEmpty, "CheckButton normal should be StyleBoxEmpty to render as clean toggle row", results)
+		_expect(cb_pressed is StyleBoxEmpty, "CheckButton pressed should be StyleBoxEmpty", results)
+		_expect(cb_disabled is StyleBoxEmpty, "CheckButton disabled should be StyleBoxEmpty", results)
+		_expect(cb_hover != null, "CheckButton hover stylebox should be defined", results)
+
+	# Verify checkbutton controls exist in Settings
+	var offline_mode_cb: CheckButton = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineModeCheckButton") as CheckButton
+	var force_offline_cb: CheckButton = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectForceOfflineCheckButton") as CheckButton
+	_expect(offline_mode_cb != null, "ProjectOfflineModeCheckButton should exist as CheckButton", results)
+	_expect(force_offline_cb != null, "ProjectForceOfflineCheckButton should exist as CheckButton", results)
+
+	instance.free()
+
+func _test_main_scene_button_variations(results: Dictionary) -> void:
+	## Verifies all target buttons in main.tscn have their expected theme_type_variation applied.
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for button variation assignment test", results)
+	if scene == null:
+		return
+
+	var instance: Node = scene.instantiate()
+
+	var expected_primary: Array[String] = [
+		"AppLayout/Content/PageProjects/ProjectsControls/NewProjectButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/LaunchButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/SealButton"
+	]
+	for path in expected_primary:
+		var btn: Button = instance.get_node_or_null(path) as Button
+		_expect(btn != null, "Button at %s should exist" % path, results)
+		if btn != null:
+			_expect(btn.theme_type_variation == &"PrimaryButton", "%s should have PrimaryButton variation (was: %s)" % [path, String(btn.theme_type_variation)], results)
+
+	var expected_secondary: Array[String] = [
+		"AppLayout/Content/PageProjects/ProjectsControls/AddButton",
+		"AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/AddToolButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/ChangeVersionButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/NewFolderBtn",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/NewFileBtn",
+		"AppLayout/Content/PageTools/ToolsToolbar/RefreshButton",
+		"AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootBrowseButton",
+		"AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootResetButton",
+		"AppLayout/Content/PageSettings/CheckUpdatesButton",
+		"AppLayout/Content/PageSettings/MirrorRootContainer/MirrorRootBrowseButton",
+		"AppLayout/Content/PageSettings/MirrorRootContainer/MirrorRootResetButton",
+		"AppLayout/Content/PageSettings/MirrorRepoContainer/MirrorRepoClearButton"
+	]
+	for path in expected_secondary:
+		var btn: Button = instance.get_node_or_null(path) as Button
+		_expect(btn != null, "Button at %s should exist" % path, results)
+		if btn != null:
+			_expect(btn.theme_type_variation == &"SecondaryButton", "%s should have SecondaryButton variation (was: %s)" % [path, String(btn.theme_type_variation)], results)
+
+	var expected_danger: Array[String] = [
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/RemoveButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/RemoveToolButton"
+	]
+	for path in expected_danger:
+		var btn: Button = instance.get_node_or_null(path) as Button
+		_expect(btn != null, "Button at %s should exist" % path, results)
+		if btn != null:
+			_expect(btn.theme_type_variation == &"DangerButton", "%s should have DangerButton variation (was: %s)" % [path, String(btn.theme_type_variation)], results)
+
+	instance.free()
+
