@@ -107,15 +107,15 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var seal_open_folder_button = $SealDialog/VBoxContainer/OpenFolderButton
 
 # Settings nodes
-@onready var projects_root_path = $AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootPath
-@onready var projects_root_browse_button = $AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootBrowseButton
-@onready var projects_root_reset_button = $AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootResetButton
-@onready var mirror_root_path = $AppLayout/Content/PageSettings/MirrorRootContainer/MirrorRootPath
-@onready var mirror_root_browse_button = $AppLayout/Content/PageSettings/MirrorRootContainer/MirrorRootBrowseButton
-@onready var mirror_root_reset_button = $AppLayout/Content/PageSettings/MirrorRootContainer/MirrorRootResetButton
-@onready var mirror_repo_path = $AppLayout/Content/PageSettings/MirrorRepoContainer/MirrorRepoPath
-@onready var mirror_repo_clear_button = $AppLayout/Content/PageSettings/MirrorRepoContainer/MirrorRepoClearButton
-@onready var mirror_status_label = $AppLayout/Content/PageSettings/MirrorStatusLabel
+@onready var projects_root_path = ($AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootPath if has_node("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootPath") else find_child("ProjectsRootPath", true, false)) as LineEdit
+@onready var projects_root_browse_button = ($AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootBrowseButton if has_node("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootBrowseButton") else find_child("ProjectsRootBrowseButton", true, false)) as Button
+@onready var projects_root_reset_button = ($AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootResetButton if has_node("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootResetButton") else find_child("ProjectsRootResetButton", true, false)) as Button
+@onready var mirror_root_path = ($AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer/MirrorRootPath if has_node("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer/MirrorRootPath") else find_child("MirrorRootPath", true, false)) as LineEdit
+@onready var mirror_root_browse_button = ($AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer/MirrorRootBrowseButton if has_node("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer/MirrorRootBrowseButton") else find_child("MirrorRootBrowseButton", true, false)) as Button
+@onready var mirror_root_reset_button = ($AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer/MirrorRootResetButton if has_node("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer/MirrorRootResetButton") else find_child("MirrorRootResetButton", true, false)) as Button
+@onready var mirror_repo_path = ($AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer/MirrorRepoPath if has_node("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer/MirrorRepoPath") else find_child("MirrorRepoPath", true, false)) as LineEdit
+@onready var mirror_repo_clear_button = ($AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer/MirrorRepoClearButton if has_node("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer/MirrorRepoClearButton") else find_child("MirrorRepoClearButton", true, false)) as Button
+@onready var mirror_status_label = ($AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorStatusLabel if has_node("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorStatusLabel") else find_child("MirrorStatusLabel", true, false)) as Label
 @onready var project_offline_section = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection"
 @onready var project_offline_settings_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel"
 @onready var project_offline_status_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel"
@@ -345,9 +345,8 @@ func _apply_global_theme() -> void:
 			title.add_theme_font_size_override("font_size", TITLE_FONT_SIZE)
 	
 	var section_headers: Array[Label] = [
-		get_node_or_null("AppLayout/Content/PageSettings/ProjectsSettingsLabel") as Label,
-		get_node_or_null("AppLayout/Content/PageSettings/NetworkLabel") as Label,
-		get_node_or_null("AppLayout/Content/PageSettings/MirrorSettingsLabel") as Label,
+		(get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsSettingsLabel") as Label if get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsSettingsLabel") != null else find_child("ProjectsSettingsLabel", true, false) as Label),
+		(get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorSettingsLabel") as Label if get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorSettingsLabel") != null else find_child("MirrorSettingsLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel") != null else find_child("ProjectOfflineSettingsLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel") != null else find_child("ToolchainHeaderLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel") != null else find_child("ExplorerLabel", true, false) as Label),
@@ -372,7 +371,9 @@ func _apply_global_theme() -> void:
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel") != null else find_child("ProjectOfflineStatusLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeHelperLabel") != null else find_child("ProjectOfflineModeHelperLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineHelperLabel") != null else find_child("ProjectForceOfflineHelperLabel", true, false) as Label),
-		get_node_or_null("AppLayout/Content/PageSettings/MirrorStatusLabel") as Label,
+		(get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorStatusLabel") as Label if get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorStatusLabel") != null else find_child("MirrorStatusLabel", true, false) as Label),
+		(get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsHelperLabel") != null else find_child("ProjectsHelperLabel", true, false) as Label),
+		(get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorHelperLabel") != null else find_child("MirrorHelperLabel", true, false) as Label),
 		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyMessageLabel") as Label,
 		(get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/InstalledEmptyDescription") as Label if get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/InstalledEmptyDescription") != null else find_child("InstalledEmptyDescription", true, false) as Label)
 	]
