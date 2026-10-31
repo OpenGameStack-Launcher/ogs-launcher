@@ -2,6 +2,16 @@
 
 [ext_resource type="Script" uid="uid://d4ld263wl24he" path="res://main.gd" id="1_vvehl"]
 [ext_resource type="Script" path="res://scripts/projects/custom_item_list.gd" id="2_cui"]
+[ext_resource type="Texture2D" uid="uid://mqwr6wkp68ub" path="res://Images/logo.png" id="3_logo"]
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sidebar"]
+content_margin_left = 12.0
+content_margin_top = 16.0
+content_margin_right = 12.0
+content_margin_bottom = 16.0
+bg_color = Color(0.09, 0.1, 0.13, 1)
+border_width_right = 1
+border_color = Color(0.22, 0.25, 0.3, 1)
 
 [node name="Main" type="Control" unique_id=308260745]
 layout_mode = 3
@@ -27,26 +37,80 @@ anchor_right = 1.0
 anchor_bottom = 1.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 0
 
 [node name="Sidebar" type="PanelContainer" parent="AppLayout" unique_id=336042933]
 custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
 size_flags_horizontal = 0
+theme_override_styles/panel = SubResource("StyleBoxFlat_sidebar")
 
 [node name="VBoxContainer" type="VBoxContainer" parent="AppLayout/Sidebar" unique_id=1831504914]
 layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="BrandHeader" type="HBoxContainer" parent="AppLayout/Sidebar/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="BrandLogo" type="TextureRect" parent="AppLayout/Sidebar/VBoxContainer/BrandHeader"]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("3_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BrandTitle" type="Label" parent="AppLayout/Sidebar/VBoxContainer/BrandHeader"]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.96, 0.98, 1)
+theme_override_font_sizes/font_size = 16
+text = "OGS Launcher"
+vertical_alignment = 1
+
+[node name="BrandSeparator" type="HSeparator" parent="AppLayout/Sidebar/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 12
 
 [node name="BtnProjects" type="Button" parent="AppLayout/Sidebar/VBoxContainer" unique_id=933281809]
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 text = "Projects"
+alignment = 0
 
 [node name="BtnTools" type="Button" parent="AppLayout/Sidebar/VBoxContainer" unique_id=1751515871]
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 text = "Tools"
+alignment = 0
 
 [node name="BtnSettings" type="Button" parent="AppLayout/Sidebar/VBoxContainer" unique_id=415680266]
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 text = "Settings"
+alignment = 0
+
+[node name="SidebarSpacer" type="Control" parent="AppLayout/Sidebar/VBoxContainer"]
+layout_mode = 2
+size_flags_vertical = 3
+
+[node name="SidebarFooter" type="VBoxContainer" parent="AppLayout/Sidebar/VBoxContainer"]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="FooterSeparator" type="HSeparator" parent="AppLayout/Sidebar/VBoxContainer/SidebarFooter"]
+layout_mode = 2
+
+[node name="SidebarStatusLabel" type="Label" parent="AppLayout/Sidebar/VBoxContainer/SidebarFooter"]
+layout_mode = 2
+theme_override_font_sizes/font_size = 12
+text = "● Offline"
+
+[node name="SidebarVersionLabel" type="Label" parent="AppLayout/Sidebar/VBoxContainer/SidebarFooter"]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.55, 0.6, 0.7, 1)
+theme_override_font_sizes/font_size = 11
+text = "v0.1.0"
 
 [node name="Content" type="MarginContainer" parent="AppLayout" unique_id=782060099]
 layout_mode = 2

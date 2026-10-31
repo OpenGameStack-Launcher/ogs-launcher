@@ -15,6 +15,10 @@ func run() -> Dictionary:
 		"failures": []
 	}
 	_test_main_scene_loads(results)
+	_test_sidebar_structure(results)
+	_test_sidebar_brand_header(results)
+	_test_sidebar_footer(results)
+	_test_sidebar_live_interaction(results)
 	_test_content_margins(results)
 	_test_typographic_scale(results)
 	_test_ready_theme_application(results)
@@ -87,6 +91,120 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/AddToolButton") != null, "Add Tool button should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolActionRow/RemoveToolButton") != null, "Remove Tool button should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/LaunchButton") != null, "Launch button should exist", results)
+
+	instance.free()
+
+func _test_sidebar_structure(results: Dictionary) -> void:
+	## Verifies that AppLayout/Sidebar is styled with dark background, 1px right border, and internal margins.
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for sidebar structure test", results)
+	if scene == null:
+		return
+
+	var instance: Node = scene.instantiate()
+	var sidebar: PanelContainer = instance.get_node_or_null("AppLayout/Sidebar") as PanelContainer
+	_expect(sidebar != null, "AppLayout/Sidebar should exist as PanelContainer", results)
+	if sidebar != null:
+		_expect(sidebar.custom_minimum_size.x >= 200, "Sidebar minimum width should be at least 200px", results)
+		var style: StyleBoxFlat = sidebar.get_theme_stylebox("panel") as StyleBoxFlat
+		_expect(style != null, "Sidebar should have a panel StyleBoxFlat", results)
+		if style != null:
+			_expect(style.bg_color.is_equal_approx(Color(0.09, 0.10, 0.13, 1.0)), "Sidebar bg_color should match dark surface", results)
+			_expect(style.border_width_right == 1, "Sidebar right border should be 1px", results)
+			_expect(style.border_color.is_equal_approx(Color(0.22, 0.25, 0.30, 1.0)), "Sidebar right border color should match spec", results)
+			_expect(style.content_margin_left == 12.0, "Sidebar content_margin_left should be 12px", results)
+			_expect(style.content_margin_right == 12.0, "Sidebar content_margin_right should be 12px", results)
+			_expect(style.content_margin_top == 16.0, "Sidebar content_margin_top should be 16px", results)
+			_expect(style.content_margin_bottom == 16.0, "Sidebar content_margin_bottom should be 16px", results)
+
+	instance.free()
+
+func _test_sidebar_brand_header(results: Dictionary) -> void:
+	## Verifies that sidebar brand header contains 32x32 logo, title, and divider.
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for brand header test", results)
+	if scene == null:
+		return
+
+	var instance: Node = scene.instantiate()
+	var brand_header: HBoxContainer = instance.get_node_or_null("AppLayout/Sidebar/VBoxContainer/BrandHeader") as HBoxContainer
+	var brand_logo: TextureRect = instance.get_node_or_null("AppLayout/Sidebar/VBoxContainer/BrandHeader/BrandLogo") as TextureRect
+	var brand_title: Label = instance.get_node_or_null("AppLayout/Sidebar/VBoxContainer/BrandHeader/BrandTitle") as Label
+	var brand_separator: HSeparator = instance.get_node_or_null("AppLayout/Sidebar/VBoxContainer/BrandSeparator") as HSeparator
+
+	_expect(brand_header != null, "BrandHeader HBoxContainer should exist", results)
+	_expect(brand_logo != null, "BrandLogo TextureRect should exist", results)
+	if brand_logo != null:
+		_expect(brand_logo.custom_minimum_size == Vector2(32, 32), "BrandLogo custom_minimum_size should be 32x32", results)
+		_expect(brand_logo.texture != null, "BrandLogo should have assigned texture", results)
+
+	_expect(brand_title != null, "BrandTitle Label should exist", results)
+	if brand_title != null:
+		_expect(brand_title.text == "OGS Launcher", "BrandTitle text should be 'OGS Launcher'", results)
+
+	_expect(brand_separator != null, "BrandSeparator HSeparator should exist", results)
+
+	instance.free()
+
+func _test_sidebar_footer(results: Dictionary) -> void:
+	## Verifies that sidebar footer contains expanding spacer, footer container, status, and version labels.
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for sidebar footer test", results)
+	if scene == null:
+		return
+
+	var instance: Node = scene.instantiate()
+	var spacer: Control = instance.get_node_or_null("AppLayout/Sidebar/VBoxContainer/SidebarSpacer") as Control
+	var footer: VBoxContainer = instance.get_node_or_null("AppLayout/Sidebar/VBoxContainer/SidebarFooter") as VBoxContainer
+	var status_label: Label = instance.get_node_or_null("AppLayout/Sidebar/VBoxContainer/SidebarFooter/SidebarStatusLabel") as Label
+	var version_label: Label = instance.get_node_or_null("AppLayout/Sidebar/VBoxContainer/SidebarFooter/SidebarVersionLabel") as Label
+
+	_expect(spacer != null, "SidebarSpacer Control should exist", results)
+	if spacer != null:
+		_expect(spacer.size_flags_vertical == Control.SIZE_EXPAND_FILL, "SidebarSpacer should have SIZE_EXPAND_FILL", results)
+
+	_expect(footer != null, "SidebarFooter VBoxContainer should exist", results)
+	_expect(status_label != null, "SidebarStatusLabel should exist", results)
+	_expect(version_label != null, "SidebarVersionLabel should exist", results)
+	if version_label != null:
+		_expect(version_label.text.contains("0.1.0"), "SidebarVersionLabel should display launcher version", results)
+
+	instance.free()
+
+func _test_sidebar_live_interaction(results: Dictionary) -> void:
+	## Verifies that runtime main scene initializes active page highlight and handles navigation switching.
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for sidebar live interaction test", results)
+	if scene == null:
+		return
+
+	var instance: Node = scene.instantiate()
+	(Engine.get_main_loop() as SceneTree).root.add_child(instance)
+
+	var btn_projects: Button = instance.get_node_or_null("AppLayout/Sidebar/VBoxContainer/BtnProjects") as Button
+	var btn_tools: Button = instance.get_node_or_null("AppLayout/Sidebar/VBoxContainer/BtnTools") as Button
+	var btn_settings: Button = instance.get_node_or_null("AppLayout/Sidebar/VBoxContainer/BtnSettings") as Button
+
+	_expect(btn_projects != null and btn_tools != null and btn_settings != null, "Navigation buttons should exist", results)
+
+	# On startup, projects button should be highlighted as active
+	var projects_style: StyleBoxFlat = btn_projects.get_theme_stylebox("normal") as StyleBoxFlat
+	_expect(projects_style != null and projects_style.border_width_left == 3, "Projects button should have active 3px border on startup", results)
+
+	var tools_style: StyleBoxFlat = btn_tools.get_theme_stylebox("normal") as StyleBoxFlat
+	_expect(tools_style != null and tools_style.border_width_left == 0, "Tools button should have normal 0px border on startup", results)
+
+	# Navigate to Tools
+	instance.layout_controller.navigate_to("tools")
+	var tools_active_style: StyleBoxFlat = btn_tools.get_theme_stylebox("normal") as StyleBoxFlat
+	_expect(tools_active_style != null and tools_active_style.border_width_left == 3, "Tools button should become active after navigation", results)
+
+	var projects_restored_style: StyleBoxFlat = btn_projects.get_theme_stylebox("normal") as StyleBoxFlat
+	_expect(projects_restored_style != null and projects_restored_style.border_width_left == 0, "Projects button should restore normal style", results)
+
+	# Verify sidebar footer connectivity indicator
+	var status_label: Label = instance.sidebar_status_label
+	_expect(status_label != null, "sidebar_status_label should be wired on main instance", results)
 
 	instance.free()
 
