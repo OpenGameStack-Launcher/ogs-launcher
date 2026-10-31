@@ -185,6 +185,12 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Add Tool dialog refactored from dropdown to list selection
     *   [x] Add Tool candidate fallback sources (catalog + library + tracked projects)
     *   [x] Remove Tool writes `stack.json` and refreshes UI immediately
+*   [x] Project Tools List Selection and Launch - 100% Complete ✅
+    *   [x] Pinned tools in stack.json selectable in ProjectToolsList as launch targets
+    *   [x] Direct launch at project root without requiring explorer tree file selection
+    *   [x] Double-click item activation launches installed tools immediately at project root
+    *   [x] Bidirectional mutual deselection between ProjectToolsList and ProjectExplorerTree
+    *   [x] Clean launch state resets on project switching, list population, and launch disablement
 *   [x] Project Explorer File Tree and Directory Pruning - 100% Complete ✅
     *   [x] Skip all dot-prefixed directories during traversal (.git, .godot, .worktrees, .github, .vscode)
     *   [x] Preserve recognized direct tool folders (gimp, blender, krita, audacity, godot, game) and their ancestor folders even when empty

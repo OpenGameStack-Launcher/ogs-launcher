@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 654
+tests passed: 702
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -274,6 +274,11 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Launch button disabled initially
   - Launch button enabled after valid project selection
   - Launch with no selection -> error message
+  - Tool selection in `project_tools_list` sets active launch tool ID, clears explorer target path, and deselects the project explorer tree
+  - Direct launch from `project_tools_list` runs installed tools at the project root without requiring explorer file selection
+  - Double-click item activation launches the selected tool immediately at the project root
+  - Project switching, list repopulation, and launch button disable handlers reset launch tool ID and launch target path to prevent state leakage
+  - Bidirectional mutual deselection synchronizes selection states between `project_tools_list` and `explorer_tree`
 
 - **[tests/projects_page_indicators_tests.gd](tests/projects_page_indicators_tests.gd)** - Tests tool availability indicators in Projects page.
   - Tool items populated with ID and version
