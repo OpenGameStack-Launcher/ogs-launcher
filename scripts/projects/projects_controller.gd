@@ -66,7 +66,9 @@ var new_file_dialog: ConfirmationDialog
 var new_file_name_edit: LineEdit
 var btn_add_tool: Button
 var btn_remove_tool: Button
+var btn_open_project: Button = null
 var btn_remove_project: Button
+var btn_seal_project: Button = null
 var btn_launch_tool: Button
 var project_dir_dialog: FileDialog
 var remove_project_dialog: ConfirmationDialog
@@ -109,7 +111,10 @@ class UIDeps extends RefCounted:
 	var new_file_name_edit: LineEdit
 	var btn_add_tool: Button
 	var btn_remove_tool: Button
+	var btn_open_project: Button = null
 	var btn_remove_project: Button
+	var btn_seal_project: Button = null
+	var btn_seal_for_delivery: Button = null
 	var btn_launch_tool: Button
 	var project_dir_dialog: FileDialog
 	var remove_project_dialog: ConfirmationDialog
@@ -150,7 +155,12 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	
 	btn_add_tool = deps.btn_add_tool
 	btn_remove_tool = deps.btn_remove_tool
+	btn_open_project = deps.btn_open_project
 	btn_remove_project = deps.btn_remove_project
+	if deps.btn_seal_project != null:
+		btn_seal_project = deps.btn_seal_project
+	elif deps.btn_seal_for_delivery != null:
+		btn_seal_project = deps.btn_seal_for_delivery
 	btn_launch_tool = deps.btn_launch_tool
 	project_dir_dialog = deps.project_dir_dialog
 	remove_project_dialog = deps.remove_project_dialog
@@ -171,7 +181,11 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	btn_remove_tool.pressed.connect(_on_remove_tool_pressed)
 	if btn_change_version != null:
 		btn_change_version.pressed.connect(_on_change_version_pressed)
+	if btn_open_project != null:
+		btn_open_project.pressed.connect(_on_open_project_pressed)
 	projects_list.item_selected.connect(_on_project_selected)
+	if projects_list.has_signal("item_activated"):
+		projects_list.item_activated.connect(_on_project_activated)
 	if project_tools_list != null:
 		project_tools_list.item_selected.connect(_on_tool_item_selected)
 		project_tools_list.item_activated.connect(_on_tool_item_activated)
@@ -676,7 +690,6 @@ func _select_project(index: int) -> void:
 	
 	if projects_tabs != null:
 		projects_tabs.set_tab_title(1, stack_name)
-		projects_tabs.current_tab = 1
 		
 	var project_dir = String(entry.get("path", ""))
 	
@@ -1222,7 +1235,12 @@ func _disable_launch_for_selected_project() -> void:
 		
 	btn_add_tool.disabled = true
 	btn_remove_tool.disabled = true
-	_enable_remove_button()
+	if btn_remove_project != null:
+		btn_remove_project.disabled = false
+	if btn_open_project != null:
+		btn_open_project.disabled = true
+	if btn_seal_project != null:
+		btn_seal_project.disabled = true
 
 func _update_tool_action_buttons() -> void:
 	## Updates Add/Remove Tool button enabled states for current selection context.
@@ -1236,15 +1254,48 @@ func _update_tool_action_buttons() -> void:
 		var can_change = has_project and _selected_tool_index >= 0 and _selected_tool_index < current_manifest.tools.size()
 		btn_change_version.disabled = not can_change
 
-func _enable_remove_button() -> void:
-	## Enables Remove Project button when a project is currently selected.
+func _enable_project_action_buttons() -> void:
+	## Enables library action buttons (Open Project, Remove Project, Seal for Delivery)
+	## when a valid project entry is selected.
+	if btn_open_project != null:
+		btn_open_project.disabled = false
 	if btn_remove_project != null:
 		btn_remove_project.disabled = false
+	if btn_seal_project != null:
+		btn_seal_project.disabled = false
 
-func _disable_remove_button() -> void:
-	## Disables Remove Project button when no removable project is selected.
+func _disable_project_action_buttons() -> void:
+	## Disables library action buttons (Open Project, Remove Project, Seal for Delivery)
+	## when no project is selected or the library is empty.
+	if btn_open_project != null:
+		btn_open_project.disabled = true
 	if btn_remove_project != null:
 		btn_remove_project.disabled = true
+	if btn_seal_project != null:
+		btn_seal_project.disabled = true
+
+func _enable_remove_button() -> void:
+	## Enables Remove Project and action buttons when a project is currently selected.
+	_enable_project_action_buttons()
+
+func _disable_remove_button() -> void:
+	## Disables Remove Project and action buttons when no removable project is selected.
+	_disable_project_action_buttons()
+
+func _on_open_project_pressed() -> void:
+	## Switches to Tab 1 (Project Details) when Open Project button is clicked.
+	_open_selected_project_tab()
+
+func _on_project_activated(index: int) -> void:
+	## Activates a project entry on double-click, ensuring it is selected and switching to Tab 1 (Project Details).
+	_select_project(index)
+	_open_selected_project_tab()
+
+func _open_selected_project_tab() -> void:
+	## Switches the current tab to Tab 1 (Project Details) if a valid project is selected.
+	if _selected_project_index >= 0 and _selected_project_index < registry_manager.tracked_projects.size():
+		if projects_tabs != null:
+			projects_tabs.current_tab = 1
 ## Validates the project environment and signals if tools are missing.
 func _validate_and_report_environment(project_dir: String, use_project_tools: bool = false) -> void:
 	## Checks if all required tools are available in the library.

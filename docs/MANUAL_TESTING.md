@@ -322,6 +322,43 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 3.5: Projects Page - Decoupled Project Library Selection and Navigation
+
+**Objective:** Verify that single-clicking a project in the Project Library selects the project and enables library action buttons without navigating away from Tab 0 (Project Library), while double-clicking or clicking "Open Project" navigates to Tab 1 (Project Details).
+
+**Steps:**
+1. Navigate to the Projects page and ensure at least one project is registered in the Project Library (e.g. `samples/sample_project`).
+2. Verify that Tab 0 ("Project Library") is the active tab.
+3. Single-click a project entry in the project list.
+4. Verify that the project entry is highlighted, the title of Tab 1 updates to the project's stack name, and the active view remains on Tab 0 ("Project Library").
+5. Verify that "Open Project", "Remove Project", and "Seal for Delivery" buttons in the action row are enabled.
+6. Click the "Open Project" button.
+7. Verify that the view navigates to Tab 1 ("Project Details").
+8. Switch back to Tab 0 ("Project Library").
+9. Double-click the project entry in the project list.
+10. Verify that the view navigates directly to Tab 1 ("Project Details").
+11. Switch back to Tab 0 ("Project Library"), click "Remove Project", and confirm removal until all projects are removed from the library.
+12. Verify that "Open Project", "Remove Project", and "Seal for Delivery" buttons are disabled when the library is empty.
+
+**Expected Results:**
+- [x] Single-clicking a project selects it without switching away from Tab 0.
+- [x] Tab 1 header updates to reflect the selected project's stack name.
+- [x] "Open Project", "Remove Project", and "Seal for Delivery" action buttons are enabled upon project selection.
+- [x] Clicking "Open Project" navigates to Tab 1 ("Project Details").
+- [x] Double-clicking a project in the list navigates to Tab 1 ("Project Details").
+- [x] Action row buttons are disabled when no project is selected or when the library is empty.
+
+**Pass Criteria:**
+- Project selection and tab navigation are cleanly decoupled.
+- Users can access Remove Project and Seal for Delivery directly from Tab 0 without premature navigation.
+
+**If test fails:**
+- Verify `ProjectsController._select_project()` does not alter `projects_tabs.current_tab`.
+- Verify `ProjectsController._on_open_project_pressed()` and `_on_project_activated()` call `_open_selected_project_tab()`.
+- Verify `_enable_project_action_buttons()` and `_disable_project_action_buttons()` update button states properly.
+
+---
+
 ### Editor Test 4: Settings Page — Mirror Configuration
 
 **Objective:** Verify mirror root can be configured and status indicator updates correctly.
