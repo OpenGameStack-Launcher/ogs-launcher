@@ -109,33 +109,10 @@ gh issue create --template "feature_request.md" --title "UI - Add Search Filter 
 ```
 
 ### Option B: Scripted / Headless Creation (Recommended for Agents)
-When generating an issue programmatically, format the body string according to the full standard structure. If creating **multiple** issues in a batch, write all `gh issue create` commands into a single temporary `.ps1` script file and execute that script once (then delete the temporary script) so the user is not flooded with separate terminal confirmation prompts:
+When generating an issue programmatically, an `issue_creator` agent is spun up to create **exactly one** issue per run and is shut down immediately afterward (if multiple issues need to be logged, the orchestrator spawns a separate `issue_creator` agent sequentially for each individual issue). Write the formatted markdown body to a temporary file (`issue_body.md`), create the single issue with `--body-file`, and remove the temporary file right after:
 
 ```powershell
-$body = @"
-### 1. Problem & Context
-Short description of the bug or feature and its impact on OGS Launcher users.
-
-### 2. Technical Scope & Affected Files
-- scripts/<domain>/<file>.gd
-- tests/<file>_tests.gd
-
-### 3. Acceptance Criteria
-
-#### [Component / Feature Area]
-- [ ] Action item 1
-- [ ] Action item 2
-
-#### Automated Tests (tests/)
-- [ ] Add unit or scene test cases in tests/<test_file>_tests.gd.
-- [ ] Register any new test suite or class_name in tests/test_runner.gd.
-- [ ] Ensure test suite passes with 0 failures.
-
-#### Documentation Coordination (Mandatory per docs/REVIEWING_AND_MERGING_PRS.md)
-- [ ] Update docs/The_Plan.md or docs/Design_Doc.md if applicable.
-- [ ] Update docs/TESTING.md and/or docs/MANUAL_TESTING.md.
-- [ ] Update README.md if applicable.
-"@
-
-gh issue create --title "<Prefix> - <Short Summary>" --body "$body" --label "<bug|enhancement>"
+# After writing issue_body.md with native file tools:
+gh issue create --title "<Prefix> - <Short Summary>" --body-file issue_body.md --label "<bug|enhancement>"
+Remove-Item -Path issue_body.md -Force -ErrorAction SilentlyContinue
 ```

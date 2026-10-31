@@ -760,4 +760,3 @@ static func _configure_vscodium_git(project_dir: String) -> bool:
 		"project": project_dir.get_file()
 	})
 	return true
-

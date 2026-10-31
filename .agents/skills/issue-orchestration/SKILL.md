@@ -11,7 +11,7 @@ This skill defines the orchestrator workflow for taking a bug or feature request
 ## Rules
 - **Capability Check:** Before starting this pipeline, verify your own capabilities. You must possess the ability to spawn autonomous subagents (`define_subagent`, `invoke_subagent`), execute CLI commands in a local shell (`run_command`), and manage background tasks/schedules (`manage_subagents`, `schedule`). If you are a simpler chat or autocomplete agent without these orchestration tools, halt and inform the user that this pipeline requires an advanced agentic framework to execute.
 - **Sequential Execution Only:** You must ONLY run one subagent at a time. The host machine has resource limits. Never invoke multiple subagents concurrently. Wait for one subagent to finish its task and return control to you before invoking the next one.
-- **Single Task Isolation (Anti-Batching):** You (the orchestrator) must NEVER assign multiple resolution or review tasks to a single subagent in one prompt. Batching overloads the agent's context window. You must spawn a dedicated `issue_creator` for one issue creation request (or one scripted creation batch), a dedicated `issue_resolver` for EXACTLY ONE issue, and a dedicated `pr_reviewer` for EXACTLY ONE pull request. Once an agent completes its single task, you must terminate it.
+- **Single Task Isolation (Anti-Batching):** You (the orchestrator) must NEVER assign multiple issue creations, resolutions, or review tasks to a single subagent in one prompt. Batching overloads the agent's context window. Every `issue_creator` subagent is spun up to log **EXACTLY ONE** issue and is immediately shut down (`kill`ed) once that single issue is created. If multiple issues need to be logged, you must spawn separate `issue_creator` subagents sequentially (one per issue, shutting each down before spawning the next). Likewise, spawn a dedicated `issue_resolver` for EXACTLY ONE issue, and a dedicated `pr_reviewer` for EXACTLY ONE pull request. Once any agent completes its single task, you must terminate it.
 - **Strict Resolve-Then-Review Cycle:** Once an `issue_resolver` finishes an issue and opens a PR, you MUST immediately invoke the `pr_reviewer` to review, synchronize documentation, and merge that PR. You must NEVER allow a new `issue_resolver` to start if there is an open PR waiting for the `pr_reviewer`.
 - **Immediate Agent Teardown:** Because this pipeline spawns a fresh instance for every task, a subagent is permanently obsolete the moment it completes its single assignment. The moment any subagent (`issue_creator`, `issue_resolver`, or `pr_reviewer`) reports back that it has completed its work, you MUST immediately use the `manage_subagents` tool to `kill` that specific subagent's conversation ID to free up resources and prevent background processes from lingering.
 - **Liveness Monitoring:** When waiting for a subagent to finish a task, you must ALWAYS set a 10-minute (600 seconds) one-shot timer using the `schedule` tool (with `TimerCondition: 'any'`). If the subagent sends an update, the timer cancels automatically. If the timer expires, it means the subagent has been silent for 10 minutes. You must then use `manage_subagents` to check its status or use `send_message` to ping it and ask if it is stuck.
@@ -21,12 +21,12 @@ This skill defines the orchestrator workflow for taking a bug or feature request
 ## Pipeline Steps
 
 ### Phase 1: Issue Creation
-When the user asks to log a bug or feature request:
-1. Define and invoke the `issue_creator` subagent (Model: `flash`).
+When the user asks to log one or more bugs or feature requests:
+1. For **each individual issue** (one issue per subagent, sequentially), define and invoke a dedicated `issue_creator` subagent (Model: `flash`) assigned to log that single issue.
 2. Schedule a 10-minute (600s) Liveness timer (`TimerCondition: 'any'`).
-3. Wait for it to create the issue(s) and report back the new GitHub Issue number(s).
-4. Kill the `issue_creator` using `manage_subagents`.
-5. **CRITICAL:** Do NOT automatically proceed to resolve the issue. Instead, STOP and ask the user: "Would you like to log another issue, or should we begin resolving the open issues?" **You must ask this question EVERY TIME you log a new issue, even if the user previously gave you authorization to continuously resolve issues during a past batch. Past authorization does not carry over to newly created issues.**
+3. Wait for that `issue_creator` to create its single issue and report back the new GitHub Issue number and URL.
+4. Immediately kill that `issue_creator` using `manage_subagents`. If additional issues were requested in the same turn, repeat Steps 1 to 4 with a fresh `issue_creator` subagent for the next single issue.
+5. **CRITICAL:** Once the requested issue creation(s) are complete, do NOT automatically proceed to resolve any issues. Instead, STOP and ask the user: "Would you like to log another issue, or should we begin resolving the open issues?" **You must ask this question EVERY TIME you finish logging new issues, even if the user previously gave you authorization to continuously resolve issues during a past batch. Past authorization does not carry over to newly created issues.**
 
 ### Phase 2: Resolution & Review (Dynamic Queueing)
 **CRITICAL AUTHORIZATION GATE:** You must NEVER autonomously invoke the `issue_resolver` simply because an issue exists or was just discussed. You must ALWAYS stop and wait for explicit user instruction (e.g., "go ahead and resolve those", "resolve issue X", "start the resolver") before beginning this phase.
@@ -64,8 +64,7 @@ You are the Issue Creator Agent for the Open Game Stack (OGS) Launcher project (
    - Problem & Context
    - Technical Scope & Affected Files (`scripts/...`, `scenes/...`, `tests/...`, `tests/test_runner.gd`)
    - Acceptance Criteria (grouped by Component, Automated Tests in `tests/` + `tests/test_runner.gd` registration, and Mandatory Documentation Coordination).
-3. **Creation:** Use the GitHub CLI (`gh issue create`) to create the issue.
-   - **CRITICAL:** When creating *multiple* issues in a batch, do NOT execute `gh issue create` individually in separate tool calls. Instead, write all of your `gh issue create` commands into a single temporary `.ps1` PowerShell script file (using `write_file`), execute that script once using `run_command`, and then delete the temporary `.ps1` file. This prevents the user from being flooded with individual terminal permission prompts.
+3. **Single-Issue Creation Only:** You are spun up to create **EXACTLY ONE** GitHub issue and then shut down. Never create more than one issue in a single run. Write your formatted issue body to a temporary markdown file (e.g., `issue_body.md`) using `write_file`, run `gh issue create --title "<Title>" --body-file issue_body.md --label "<labels>"` once, and immediately delete the temporary file (`Remove-Item -Path issue_body.md -Force -ErrorAction SilentlyContinue`) before reporting back.
 4. **Labels & Titles:** Ensure the title uses standard prefixes (`UI - `, `Core - `, `Library - `, `Mirror - `, `Network - `, `Seal - `, `Docs - `) and appropriate repository labels (`bug`, `enhancement`, `documentation`, `severity: *`, `type: *`).
 ```
 
