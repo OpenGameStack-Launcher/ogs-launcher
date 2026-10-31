@@ -167,6 +167,13 @@ Rather than managing project-specific offline toggles inside global launcher set
 *   **Decoupled State Persistence:** Toggling either policy setting immediately persists changes to the project's local `ogs_config.json`, triggers `OfflineEnforcer.apply_config()`, emits `offline_state_changed` to update status indicators and pill badge styling, and re-validates the project environment.
 *   **Global Settings Separation:** The Settings page (`PageSettings`) remains dedicated strictly to machine-wide configurations (Primary Projects Folder, Network update checks, Mirror settings).
 
+### 2.15 Tools Page Card Layout, Scrollbar Margins, and Tab Count Badges (`ToolsPageController`)
+On the Tools page (`PageTools` in `main.tscn`), managed by `ToolsPageController` (`scripts/tools/tools_page_controller.gd`), tool card presentation, action geometry, and tab headers are structured for visual polish and operational clarity:
+*   **Compact Card Geometry & Centering:** Each `ToolCard` (`PanelContainer`) defines a default minimum height of 68px (`custom_minimum_size = Vector2(0, 68)`), eliminating empty vertical dead space while allowing smooth expansion if an error label becomes visible. The inner `HBoxContainer` enforces a 14px horizontal separation override, and child controls (42x42 tool icon, label vertical container, and action buttons) are vertically centered via `Control.SIZE_SHRINK_CENTER`.
+*   **Standardized Button Dimensions:** Action buttons standardize to 115x36 (`custom_minimum_size = Vector2(115, 36)`) across all states ("Download", "Remove", "Installed [check]", and "Cancel"), ensuring uniform button geometry across cards.
+*   **Scrollbar Collision Prevention:** Inside `ToolsTabs/Installed` and `ToolsTabs/Download` (`ScrollContainer` nodes), `InstalledContent` and `DownloadContent` are wrapped in `MarginContainer` elements with `margin_right = 14`. This ensures vertical scrollbars have clear operating margins and do not collide with or overlap the right borders of tool card panels.
+*   **Dynamic Tab Title Count Badges:** `populate_tools_ui()` calculates the total installed tools count (`installed_count`) and total available catalog tools count (`available_count`), dynamically updating the tab headers via `set_tab_title(0, "Installed (%d)" % installed_count)` and `set_tab_title(1, "Download (%d)" % available_count)` upon page load, tool installation, removal, or catalog refresh.
+
 ---
 
 ## 3. Operational Modes & User Stories

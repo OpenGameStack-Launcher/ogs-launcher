@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 1930
+tests passed: 1955
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -264,10 +264,11 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Predelete handler safe when no thread is active
   - Thread start failure clears state and emits failure
 
-- **[tests/tools_page_controller_tests.gd](tests/tools_page_controller_tests.gd)** - Validates ToolsPageController thread lifecycle and cleanup.
+- **[tests/tools_page_controller_tests.gd](tests/tools_page_controller_tests.gd)** - Validates ToolsPageController thread lifecycle, cleanup, and dynamic count badges.
   - Predelete joins active tool removal thread
   - Cleanup safe when removal thread is null
   - Main scene pre-quit cleanup triggers controller cleanup
+  - Dynamic tab title count badge formatting across empty catalog, partially installed, and updated catalog states (`Installed (X)` / `Download (Y)`)
 
 - **[tests/file_type_mapper_tests.gd](tests/file_type_mapper_tests.gd)** - Validates FileTypeMapper extension mapping and exclusions.
   - VSCodium supported extensions recognized (gd, cs, gdshader, shader, txt, md, csv, json, yaml, yml, toml) in lowercase and uppercase
@@ -435,6 +436,10 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
 - **[tests/tools_page_scene_tests.gd](tests/tools_page_scene_tests.gd)** - Scene tests for Tools page UI.
   - Tools/Download tab nodes exist
   - CodeSection and CodeTools containers exist in both Installed and Download tabs
+  - MarginContainer padding (14px right margin) prevents scrollbar overlap on Installed and Download tabs
+  - Tool cards configure compact 68px minimum height and 14px horizontal separation
+  - Vertical centering flags (`Control.SIZE_SHRINK_CENTER`) applied to tool icons, label containers, and action buttons
+  - Action buttons standardize to 115x36 minimum dimensions across all states
   - Online/offline status label updates
   - Download button disablement during active download
   - Tool cards assign dynamic theme variations: `PrimaryButton` for download buttons, `DangerButton` for installed tool removal buttons, and `SecondaryButton` for active download cancel buttons
