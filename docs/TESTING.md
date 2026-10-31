@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (29 total, 35 suites across all categories):**
+**Current unit test suites (30 total, 36 suites across all categories):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -315,6 +315,15 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Missing-Git guided dialog emits tool_view_requested upon "Go to Tools" confirmation
   - OfflineEnforcer active state blocks opening clone dialogs
 
+- **[tests/layout_controller_tests.gd](tests/layout_controller_tests.gd)** - Validates LayoutController active highlight styling, navigation switching, and footer updates (6 tests).
+  - Setup initializes active highlight on Projects button with 3px primary blue border (`Color(0.35, 0.68, 0.95)`) and elevated dark background (`Color(0.18, 0.22, 0.28)`)
+  - Inactive navigation buttons receive flat dark stylebox with 0px left border and muted text color
+  - Page navigation (`navigate_to`) updates active highlight on target button and restores inactive styling on previous button
+  - Stylebox properties verification for active and normal styles via getters
+  - Global connectivity status updates (`update_connectivity_status`): "● Online" in green (`Color(0.3, 0.85, 0.45)`), "● Offline" in amber (`Color(1.0, 0.6, 0.2)`), and enforcement tooltips
+  - Version label updates (`update_version`) reflecting application version
+  - Cleanup routine disconnects button signals and removes theme stylebox and font color overrides
+
 ### Scene Tests (Integration with UI)
 
 Scene tests instantiate UI nodes and verify controller behaviors. These are similar to Unity's "Play Mode tests" but run headlessly in Godot.
@@ -375,6 +384,10 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Uniform content margins (20px horizontal, 16px vertical) on `AppLayout/Content` in both scene definition and runtime
   - Standard typographic hierarchy across page titles (24px), section headers (18px cyan accent Color(0.45, 0.8, 1.0)), form labels/body (16px), and secondary/metadata labels (13px muted Color(0.65, 0.70, 0.78))
   - Runtime theme application in `_apply_global_theme()` persists content margins and font sizes during scene readiness
+  - Sidebar container structure (minimum width >= 200px, 1px right border Color(0.22, 0.25, 0.30), dark background Color(0.09, 0.10, 0.13), 12px horizontal and 16px vertical padding)
+  - Sidebar Brand Header containing 32x32 logo (res://Images/logo.png), "OGS Launcher" title, and HSeparator divider
+  - Sidebar Footer containing expanding vertical spacer, footer container, status indicator, and launcher version label
+  - Sidebar live interaction verifying startup active highlight on Projects, navigation switching to Tools, and footer connectivity sync
 
 - **[tests/tools_page_scene_tests.gd](tests/tools_page_scene_tests.gd)** - Scene tests for Tools page UI.
   - Tools/Download tab nodes exist

@@ -49,6 +49,7 @@ func _run_tests_async() -> void:
 	load("res://scripts/projects/project_environment_validator.gd")
 	load("res://scripts/projects/project_sealer.gd")
 	load("res://scripts/projects/project_tool_manager.gd")
+	load("res://scripts/launcher/layout_controller.gd")
 	load("res://scripts/launcher/tool_launcher.gd")
 	load("res://scripts/launcher/tool_config_injector.gd")
 	load("res://scripts/launcher/seal_controller.gd")
@@ -89,6 +90,7 @@ func _run_tests_async() -> void:
 		"res://tests/projects_controller_scene_tests.gd",
 		"res://tests/projects_page_indicators_tests.gd",
 		"res://tests/main_scene_tests.gd",
+		"res://tests/layout_controller_tests.gd",
 		"res://tests/tools_page_scene_tests.gd",
 		"res://tests/tool_launcher_tests.gd",
 		"res://tests/offline_enforcer_tests.gd",

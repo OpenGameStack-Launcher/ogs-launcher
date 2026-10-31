@@ -297,7 +297,7 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   PortableGit CLI discovery in LibraryManager with semantic version comparison
     *   Air-gap gating, URL validation (HTTP/HTTPS/SSH/SCP), anti-injection flags, and safe path bounds
     *   34 test suites passing (1189 total tests) with zero failures
-*   **Test Suite:** 327 tests passing (~3-5 sec execution), comprehensive coverage across all components
+*   **Test Suite:** 1473 tests passing across 36 test suites (~3-5 sec execution), comprehensive coverage across all components
     *   ToolsController unit tests: download tracking, duplicate suppression, repository validation
     *   Tools page scene tests: node existence, status updates, button state management
     *   ProgressController unit tests: inline tracking, phase transitions, signal emission
@@ -418,6 +418,13 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Coordinated runtime overrides in `_apply_global_theme()` in `main.gd` while preserving custom tool category colors on `PageTools` (Engine, 2D, 3D, Audio, Code).
 - Added comprehensive automated scene tests in `tests/main_scene_tests.gd` covering content margins, typographic scale, and runtime theme persistence.
 - 35 test suites passing (1405 total tests) with zero failures.
+
+**Sidebar Redesign with Brand Header, Active Page Highlight, and Connectivity Footer (Oct 31, 2026):**
+- Redesigned `AppLayout/Sidebar` in `main.tscn` with dedicated dark surface styling (`Color(0.09, 0.10, 0.13)`), 1px right border (`Color(0.22, 0.25, 0.30)`), and 12px horizontal / 16px vertical padding.
+- Added persistent Brand Header featuring 32x32 OGS logo (`res://Images/logo.png`), "OGS Launcher" title (16px), and separator divider.
+- Implemented active page highlight styling in `LayoutController`: elevated dark stylebox (`Color(0.18, 0.22, 0.28)`) with 3px primary blue accent left border (`Color(0.35, 0.68, 0.95)`), 4px rounded right corners, and bright font color on the active page button, while reverting inactive buttons to flat normal styling.
+- Added expanding vertical spacer and compact Sidebar Footer with global online/offline status indicator synchronized with `OfflineEnforcer` / `ToolsController` and launcher version label backed by `ProjectSettings` (`application/config/version`).
+- Added unit tests in `tests/layout_controller_tests.gd` and scene tests in `tests/main_scene_tests.gd` (36 test suites passing, 1473 total tests with zero failures).
 
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management

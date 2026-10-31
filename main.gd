@@ -17,9 +17,18 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var page_tools = $AppLayout/Content/PageTools
 @onready var page_settings = $AppLayout/Content/PageSettings
 
-@onready var btn_projects = $AppLayout/Sidebar/VBoxContainer/BtnProjects
-@onready var btn_tools = $AppLayout/Sidebar/VBoxContainer/BtnTools
-@onready var btn_settings = $AppLayout/Sidebar/VBoxContainer/BtnSettings
+@onready var sidebar_panel: PanelContainer = $AppLayout/Sidebar
+@onready var sidebar_brand_header: HBoxContainer = $AppLayout/Sidebar/VBoxContainer/BrandHeader
+@onready var sidebar_brand_logo: TextureRect = $AppLayout/Sidebar/VBoxContainer/BrandHeader/BrandLogo
+@onready var sidebar_brand_title: Label = $AppLayout/Sidebar/VBoxContainer/BrandHeader/BrandTitle
+@onready var sidebar_brand_separator: HSeparator = $AppLayout/Sidebar/VBoxContainer/BrandSeparator
+@onready var btn_projects: Button = $AppLayout/Sidebar/VBoxContainer/BtnProjects
+@onready var btn_tools: Button = $AppLayout/Sidebar/VBoxContainer/BtnTools
+@onready var btn_settings: Button = $AppLayout/Sidebar/VBoxContainer/BtnSettings
+@onready var sidebar_spacer: Control = $AppLayout/Sidebar/VBoxContainer/SidebarSpacer
+@onready var sidebar_footer: VBoxContainer = $AppLayout/Sidebar/VBoxContainer/SidebarFooter
+@onready var sidebar_status_label: Label = $AppLayout/Sidebar/VBoxContainer/SidebarFooter/SidebarStatusLabel
+@onready var sidebar_version_label: Label = $AppLayout/Sidebar/VBoxContainer/SidebarFooter/SidebarVersionLabel
 
 # Tools page UI nodes
 @onready var tools_toolbar = $AppLayout/Content/PageTools/ToolsToolbar
@@ -205,6 +214,32 @@ func _apply_global_theme() -> void:
 			sec_label.add_theme_font_size_override("font_size", SECONDARY_FONT_SIZE)
 			sec_label.add_theme_color_override("font_color", MUTED_LABEL_COLOR)
 	
+	var sidebar: PanelContainer = get_node_or_null("AppLayout/Sidebar") as PanelContainer
+	if sidebar != null:
+		var sidebar_style: StyleBoxFlat = StyleBoxFlat.new()
+		sidebar_style.bg_color = Color(0.09, 0.10, 0.13, 1.0)
+		sidebar_style.border_width_right = 1
+		sidebar_style.border_color = Color(0.22, 0.25, 0.30, 1.0)
+		sidebar_style.content_margin_left = 12.0
+		sidebar_style.content_margin_right = 12.0
+		sidebar_style.content_margin_top = 16.0
+		sidebar_style.content_margin_bottom = 16.0
+		sidebar.add_theme_stylebox_override("panel", sidebar_style)
+
+	var brand_title: Label = get_node_or_null("AppLayout/Sidebar/VBoxContainer/BrandHeader/BrandTitle") as Label
+	if brand_title != null:
+		brand_title.add_theme_font_size_override("font_size", 16)
+		brand_title.add_theme_color_override("font_color", Color(0.95, 0.96, 0.98, 1.0))
+
+	var side_status: Label = get_node_or_null("AppLayout/Sidebar/VBoxContainer/SidebarFooter/SidebarStatusLabel") as Label
+	if side_status != null:
+		side_status.add_theme_font_size_override("font_size", 12)
+
+	var side_ver: Label = get_node_or_null("AppLayout/Sidebar/VBoxContainer/SidebarFooter/SidebarVersionLabel") as Label
+	if side_ver != null:
+		side_ver.add_theme_font_size_override("font_size", 11)
+		side_ver.add_theme_color_override("font_color", Color(0.55, 0.60, 0.70, 1.0))
+	
 	self.theme = global_theme
 
 func _notification(what: int) -> void:
@@ -238,8 +273,13 @@ func _ready() -> void:
 	layout_controller = LayoutControllerScript.new()
 	layout_controller.setup(
 		btn_projects, btn_tools, btn_settings,
-		page_projects, page_tools, page_settings
+		page_projects, page_tools, page_settings,
+		sidebar_status_label, sidebar_version_label
 	)
+	var app_ver: String = String(ProjectSettings.get_setting("application/config/version", "0.1.0"))
+	var formatted_ver: String = "v%s" % app_ver if not app_ver.begins_with("v") else app_ver
+	layout_controller.update_version(formatted_ver)
+	_update_sidebar_connectivity_status(false)
 
 	projects_controller = ProjectsControllerScript.new()
 	settings_controller = SettingsControllerScript.new()
@@ -289,11 +329,13 @@ func _ready() -> void:
 
 	tools_controller.tool_list_updated.connect(func():
 		tools_page_controller.update_connectivity_status(tools_controller.is_online())
+		_update_sidebar_connectivity_status(tools_controller.is_online())
 		tools_page_controller.populate_tools_ui()
 		projects_controller.refresh_project_tools_state()
 	)
 	tools_controller.tool_list_refresh_failed.connect(func(_err):
 		tools_page_controller.update_connectivity_status(tools_controller.is_online())
+		_update_sidebar_connectivity_status(tools_controller.is_online())
 	)
 	tools_controller.tool_install_started.connect(func(tid, ver):
 		if progress_controller: progress_controller.set_install_phase(tid, ver)
@@ -311,12 +353,16 @@ func _ready() -> void:
 			if progress_controller: progress_controller.cancel_progress(tid, ver)
 			tools_page_controller.show_tool_download_error(tid, ver, msg)
 		tools_page_controller.update_connectivity_status(tools_controller.is_online())
+		_update_sidebar_connectivity_status(tools_controller.is_online())
 		tools_page_controller.update_download_button_states()
 	)
 	tools_controller.tool_download_progress.connect(func(tid, ver, d, t):
 		if progress_controller: progress_controller.update_progress(tid, ver, d, t)
 	)
-	tools_controller.connectivity_checked.connect(func(is_on): tools_page_controller.update_connectivity_status(is_on))
+	tools_controller.connectivity_checked.connect(func(is_on):
+		tools_page_controller.update_connectivity_status(is_on)
+		_update_sidebar_connectivity_status(is_on)
+	)
 	tools_refresh_button.pressed.connect(func(): tools_controller.refresh_tool_list())
 
 	var deps = ProjectsControllerScript.UIDeps.new()
@@ -410,6 +456,7 @@ func _collect_network_ui_nodes_from(root: Node) -> Array:
 
 func _on_offline_state_changed(active: bool, _reason: String) -> void:
 	_apply_offline_ui(active)
+	_update_sidebar_connectivity_status(not active and (tools_controller.is_online() if tools_controller else false))
 
 func _apply_offline_ui(active: bool) -> void:
 	for node in network_ui_nodes:
@@ -435,6 +482,25 @@ func _update_tools_connectivity_status(is_online: bool) -> void:
 			tools_status_label.text = "Status: Offline ⚠️"
 			tools_status_label.modulate = Color(1, 0.6, 0.2, 1)
 			tools_offline_message.visible = true
+	_update_sidebar_connectivity_status(is_online)
+
+func _update_sidebar_connectivity_status(is_online: bool) -> void:
+	## Helper updating the sidebar footer connectivity indicator.
+	if layout_controller != null:
+		layout_controller.update_connectivity_status(is_online)
+	elif sidebar_status_label != null:
+		if OfflineEnforcer.is_offline():
+			sidebar_status_label.text = "● Offline"
+			sidebar_status_label.modulate = Color(1.0, 0.6, 0.2, 1.0)
+			sidebar_status_label.tooltip_text = "Offline Mode (enforced: %s)" % OfflineEnforcer.get_reason()
+		elif is_online:
+			sidebar_status_label.text = "● Online"
+			sidebar_status_label.modulate = Color(0.3, 0.85, 0.45, 1.0)
+			sidebar_status_label.tooltip_text = "Online: Connected to repository"
+		else:
+			sidebar_status_label.text = "● Offline"
+			sidebar_status_label.modulate = Color(1.0, 0.6, 0.2, 1.0)
+			sidebar_status_label.tooltip_text = "Offline: Cannot reach repository"
 
 func _on_mirror_root_browse_pressed() -> void:
 	## Helper forwarding mirror root browse action to SettingsController.
