@@ -72,6 +72,16 @@ The launcher manages projects through a local project registry (`ogs_projects_in
 *   **Primary Projects Folder:** Scaffolding new projects creates project directories inside a configurable Primary Projects Folder. By default, this resolves to `%USERPROFILE%/OGS_Projects` on Windows or `$HOME/OGS_Projects` on Unix. Users can customize this location on the Settings page or reset it back to default at any time. Settings are persisted in `ogs_launcher_settings.json`.
 *   **Add Local Project:** Adding an existing project folder requires only `stack.json`. If `ogs_config.json` is missing (as when cloning repositories that omit local environment configuration), the launcher automatically creates a default `ogs_config.json` with standard offline policies (`offline_mode: false`, `force_offline: false`).
 
+### 2.5 Remote Project Git Cloner Service
+To enable seamless collaboration and distribution of frozen stacks across development teams without compromising air-gap safety, the launcher includes an asynchronous headless cloner service (`RemoteProjectCloner`):
+*   **Zero Dependency PortableGit Discovery:** Locates PortableGit within the Central Library (`cmd/git.exe` on Windows, `bin/git` on Unix/macOS) via `LibraryManager`, selecting the highest installed semantic version without requiring system-level Git installations.
+*   **Air-Gap and Security Gating:** Verifies `OfflineEnforcer.is_offline()` before initiating any network operation; immediately rejects clone requests when offline mode is active.
+*   **Remote URL Security Validation:** Validates URLs against argument injection (rejecting leading dashes or hyphens), disallowed protocols (`file://`, `ext::`), local filesystem paths, traversal sequences, and shell metacharacters, while supporting `https://`, `http://` (for local LAN mirrors), `ssh://`, and SCP-style syntax (`git@host:repo.git`).
+*   **Two-Phase Manifest Verification:**
+    1.  *Phase A (Blobless Pre-Checkout):* Executes `git clone --filter=blob:none --no-checkout` (with fallback to `--no-checkout`) and queries `git show HEAD:stack.json` to validate the root manifest before checking out heavy game assets. If the manifest is missing or invalid, the partial clone is immediately purged.
+    2.  *Phase B (Checkout & Auto-Config):* Populates the working tree with `git checkout --progress HEAD` and automatically generates a default `ogs_config.json` if missing.
+*   **Defensive Process and Path Management:** Hardens all Git executions with `-c protocol.ext.allow=never -c protocol.file.allow=never -c core.symlinks=false -c core.fsmonitor=false`. Streams progress via non-blocking pipes, supports thread-safe cancellation killing child PIDs, and bounds all directory deletions strictly within destination roots via `PathUtils.is_path_under_root`.
+
 ---
 
 ## 3. Operational Modes & User Stories

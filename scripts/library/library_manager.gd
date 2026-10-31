@@ -322,3 +322,79 @@ func _calculate_dir_size(dir_path: String) -> int:
 		
 	dir.list_dir_end()
 	return total_size
+
+## Resolves the executable path for PortableGit in the Central Library.
+## Discovers available versions and selects the highest installed version when multiple exist.
+## Locates cmd/git.exe on Windows (standard PortableGit structure) or bin/git on Unix/macOS.
+## Returns the absolute path to git executable, or empty string if not installed.
+func resolve_git_executable(version: String = "") -> String:
+	if not version.is_empty():
+		return _find_git_binary_in_version(version)
+	
+	var versions: Array[String] = get_available_versions("git")
+	if versions.is_empty():
+		return ""
+	
+	var sorted_versions: Array[String] = versions.duplicate()
+	sorted_versions.sort_custom(Callable(self, "_compare_versions_descending"))
+	
+	for v in sorted_versions:
+		var exe: String = _find_git_binary_in_version(v)
+		if not exe.is_empty():
+			return exe
+	
+	return ""
+
+## Alias for resolve_git_executable.
+func get_git_executable(version: String = "") -> String:
+	return resolve_git_executable(version)
+
+func _find_git_binary_in_version(version: String) -> String:
+	var tool_dir: String = get_tool_path("git", version)
+	if tool_dir.is_empty() or not DirAccess.dir_exists_absolute(tool_dir):
+		return ""
+	
+	if OS.get_name() == "Windows":
+		var cmd_exe: String = tool_dir.path_join("cmd").path_join("git.exe")
+		if FileAccess.file_exists(cmd_exe):
+			return cmd_exe
+		var bin_exe: String = tool_dir.path_join("bin").path_join("git.exe")
+		if FileAccess.file_exists(bin_exe):
+			return bin_exe
+		var root_exe: String = tool_dir.path_join("git.exe")
+		if FileAccess.file_exists(root_exe):
+			return root_exe
+	else:
+		var bin_git: String = tool_dir.path_join("bin").path_join("git")
+		if FileAccess.file_exists(bin_git):
+			return bin_git
+		var cmd_git: String = tool_dir.path_join("cmd").path_join("git")
+		if FileAccess.file_exists(cmd_git):
+			return cmd_git
+		var root_git: String = tool_dir.path_join("git")
+		if FileAccess.file_exists(root_git):
+			return root_git
+	
+	return ""
+
+func _compare_versions_descending(v1: String, v2: String) -> bool:
+	return compare_versions(v1, v2) > 0
+
+## Compares two version strings numerically where possible.
+## Returns > 0 if v1 > v2, < 0 if v1 < v2, 0 if equal.
+static func compare_versions(v1: String, v2: String) -> int:
+	var parts1: PackedStringArray = v1.replace("-", ".").replace("_", ".").split(".")
+	var parts2: PackedStringArray = v2.replace("-", ".").replace("_", ".").split(".")
+	var max_len: int = maxi(parts1.size(), parts2.size())
+	for i in range(max_len):
+		var p1: String = parts1[i] if i < parts1.size() else ""
+		var p2: String = parts2[i] if i < parts2.size() else ""
+		if p1.is_valid_int() and p2.is_valid_int():
+			var num1: int = p1.to_int()
+			var num2: int = p2.to_int()
+			if num1 != num2:
+				return 1 if num1 > num2 else -1
+		elif p1 != p2:
+			return 1 if p1 > p2 else -1
+	return 0
+

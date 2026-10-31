@@ -280,6 +280,11 @@ Granular, actionable items for the Tools/Projects page redesign:
 *   **Projects Page UX Expansion (Phase 2.5):** Complete Mar 4, 2026
     *   Project Library persistence, Add/Remove/New Project workflows, and tool-management controls
     *   Add Tool dialog switched to list UI with offline-safe candidate fallback logic
+*   **Remote Project Cloner Backend (Phase 2.5):** Complete Oct 31, 2026
+    *   Hardened RemoteProjectCloner headless service with two-phase clone verification (Issue #117)
+    *   PortableGit CLI discovery in LibraryManager with semantic version comparison
+    *   Air-gap gating, URL validation (HTTP/HTTPS/SSH/SCP), anti-injection flags, and safe path bounds
+    *   34 test suites passing (1189 total tests) with zero failures
 *   **Test Suite:** 327 tests passing (~3-5 sec execution), comprehensive coverage across all components
     *   ToolsController unit tests: download tracking, duplicate suppression, repository validation
     *   Tools page scene tests: node existence, status updates, button state management
@@ -385,6 +390,15 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Created zero-dependency Python CLI helper (`mcp_client.py`) for scene tree inspection, UI control bounding rect queries, input simulation, and viewport screenshot capture (`screenshot.png`).
 - Added autonomous visual QA skill (`.agents/skills/mcp-visual-qa/SKILL.md`) and updated agent workflows across issues, PR review, and code review.
 - Added startup test suite coverage in `tests/startup_tests.gd` (33 test suites passing, 975 total tests with zero failures).
+
+**Remote Project Cloner Backend and PortableGit Resolver (Oct 31, 2026):**
+- Headless `RemoteProjectCloner` service (`scripts/projects/remote_project_cloner.gd`) managing asynchronous Git cloning and validation.
+- PortableGit executable resolution in `LibraryManager` (`resolve_git_executable`): locates `cmd/git.exe` on Windows and `bin/git` on Unix/macOS, selecting the highest installed version.
+- Strict URL validation rejecting empty strings, argument injection (`-` prefix), disallowed protocols (`file://`, `ext::`), directory traversal, and shell metacharacters while supporting `https://`, `http://` (local LAN mirrors), `ssh://`, and SCP-style syntax (`git@host:repo.git`).
+- Two-phase clone verification: blobless clone (`--filter=blob:none --no-checkout`) with fallback to standard `--no-checkout`, followed by `HEAD:stack.json` inspection prior to checking out heavy game assets.
+- Hardened Git security flags (`protocol.ext.allow=never`, `protocol.file.allow=never`, `core.symlinks=false`, `core.fsmonitor=false`).
+- Threaded execution with non-blocking pipe streaming, live percentage/phase signals, thread-safe cancellation, and safe cleanup bounded by destination root (`PathUtils.is_path_under_root`).
+- 34 test suites passing (1189 total tests) with zero failures.
 
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
