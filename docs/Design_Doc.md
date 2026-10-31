@@ -174,6 +174,16 @@ On the Tools page (`PageTools` in `main.tscn`), managed by `ToolsPageController`
 *   **Scrollbar Collision Prevention:** Inside `ToolsTabs/Installed` and `ToolsTabs/Download` (`ScrollContainer` nodes), `InstalledContent` and `DownloadContent` are wrapped in `MarginContainer` elements with `margin_right = 14`. This ensures vertical scrollbars have clear operating margins and do not collide with or overlap the right borders of tool card panels.
 *   **Dynamic Tab Title Count Badges:** `populate_tools_ui()` calculates the total installed tools count (`installed_count`) and total available catalog tools count (`available_count`), dynamically updating the tab headers via `set_tab_title(0, "Installed (%d)" % installed_count)` and `set_tab_title(1, "Download (%d)" % available_count)` upon page load, tool installation, removal, or catalog refresh.
 
+### 2.16 Dynamic Category Collapse and Installed Empty-State View (`ToolsPageController`)
+To prevent visual clutter on the Tools page (`PageTools`), `ToolsPageController` dynamically manages section visibility and empty-state guidance across both `Installed` and `Download` tabs:
+*   **Dynamic Category Collapse:** Rather than rendering all five category sections (`Engine`, `2D Tools`, `3D Tools`, `Audio Tools`, `Code Tools`) unconditionally, `_update_category_sections_and_dividers()` inspects each category container and hides any section containing zero tool cards.
+*   **Divider Normalization:** Category divider lines (`HSeparator`) are dynamically updated to render strictly between visible category sections. Leading, trailing, and consecutive dividers are suppressed, preventing unsightly stacked lines when multiple consecutive categories contain no tools.
+*   **Installed Tab Empty-State View (`InstalledEmptyState`):** When zero tools are installed in the Central Library, collapsing empty category sections leaves the Installed tab empty. An `InstalledEmptyState` container (`VBoxContainer`) is displayed in place of `InstalledContent`:
+    *   *Accent Header:* Prominent title (`InstalledEmptyTitle`: `"No Tools Installed Yet"`) styled with global theme accent coloring.
+    *   *Descriptive Guidance:* Secondary label (`InstalledEmptyDescription`: `"Downloaded tools are stored in the Central Library for offline use across projects."`) styled with secondary neutral coloring and centered autowrapping.
+    *   *Call-to-Action Button:* A `"Browse Available Tools"` button (`PrimaryButton` variation) wired via `_on_browse_available_tools_pressed()` to switch directly to the Download tab (`current_tab = 1`).
+    *   *State Transition:* Upon installing a tool or populating tools where `installed_count > 0`, `InstalledEmptyState` is automatically hidden and `InstalledContent` is displayed with only the populated category sections and dividers.
+
 ---
 
 ## 3. Operational Modes & User Stories

@@ -1375,9 +1375,54 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 24: Tools Page - Dynamic Category Collapse and Installed Tab Empty-State View
+
+**Objective:** Verify that empty tool category sections (Engine, 2D Tools, 3D Tools, Audio Tools, Code Tools) are dynamically hidden across Installed and Download tabs, category dividers appear strictly between visible sections without leading, trailing, or consecutive lines, and the Installed tab displays the dedicated empty-state view with direct Download navigation when zero tools are installed.
+
+**Steps:**
+1. Launch OGS Launcher with an empty Central Library (or fresh state).
+2. Navigate to the **Tools** page (click "Tools" in the sidebar).
+3. Confirm the **Installed** tab (`ToolsTabs/Installed`) is active:
+   - Verify that all empty category section headers ("Engine", "2D Tools", "3D Tools", "Audio Tools", "Code Tools") and horizontal dividers are completely hidden.
+   - Verify that `InstalledEmptyState` is visible, displaying:
+     - Prominent accent title: `"No Tools Installed Yet"`.
+     - Descriptive secondary text: `"Downloaded tools are stored in the Central Library for offline use across projects."`.
+     - Primary action button: `"Browse Available Tools"`.
+4. Click the **"Browse Available Tools"** button:
+   - Verify that the active tab immediately switches to the **Download** tab (`ToolsTabs/Download`, tab index 1).
+   - Verify that the tab bar highlight updates to the Download tab.
+5. In the **Download** tab:
+   - Verify that only category sections containing discoverable tools are displayed.
+   - Verify that any category sections with zero tools remain hidden.
+   - Verify that dividers (`HSeparator`) render strictly between visible category sections, with no leading, trailing, or consecutive stacked dividers.
+6. Install a tool from the Download tab (e.g., Godot or Blender):
+   - Switch back to the **Installed** tab.
+   - Verify that `InstalledEmptyState` is now hidden.
+   - Verify that `InstalledContent` is visible, displaying only the category section of the installed tool (e.g. "Engine" or "3D Tools").
+   - Verify that empty category sections remain hidden and no unnecessary dividers appear.
+
+**Expected Results:**
+- [x] Installed tab displays the "No Tools Installed Yet" empty state view when Central Library has zero installed tools.
+- [x] "Browse Available Tools" button navigates directly to the Download tab.
+- [x] Empty category sections are dynamically hidden across both Installed and Download tabs.
+- [x] Category dividers render strictly between visible sections (no leading, trailing, or stacked dividers).
+- [x] Installing a tool automatically replaces the empty state with the populated category view.
+
+**Pass Criteria:**
+- Empty categories and redundant dividers are hidden cleanly without visual artifacts.
+- Empty state view renders with proper typography and functional call to action.
+- Tab navigation via the empty-state button works reliably.
+
+**If test fails:**
+- Check `scripts/tools/tools_page_controller.gd` helper methods `_update_category_sections_and_dividers()` and `_update_installed_empty_state()`.
+- Verify `InstalledEmptyState` node structure and bindings in `main.tscn` and `main.gd`.
+- Verify `_on_browse_available_tools_pressed()` signal connection.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-23, fill in this table:
+After completing Editor Tests 1-24, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -1406,6 +1451,7 @@ After completing Editor Tests 1-23, fill in this table:
 | 21: Contextual Launch & Split Layout | ✅/⚠️/❌ | | |
 | 22: Project Details Offline Policy | ✅/⚠️/❌ | | |
 | 23: Tools Page Cards & Badges | ✅/⚠️/❌ | | |
+| 24: Tools Page Empty Categories & State | ✅/⚠️/❌ | | |
 
 ---
 
