@@ -544,7 +544,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 **Steps:**
 1. Click "Settings" button in sidebar to navigate to Settings page
-2. In "Mirror Settings" section, observe the "Mirror Root:" field
+2. In the "Mirror & Offline Repository" card, observe the "Mirror Root:" field
 3. Note current status in "Mirror status:" label (should say "Remote repository configured" unless the remote URL was cleared)
 4. Click "Reset to Default" button
 5. Observe status changes; field should clear or show default path
@@ -1092,8 +1092,8 @@ dir "$env:LOCALAPPDATA\OGS\"
 4. Settings page inspection:
    - Click **"Settings"** in the sidebar.
    - Verify "Settings" page title renders at 24px.
-   - Verify section headers ("Projects", "Network", "Mirror Settings") render at 18px with cyan accent color, and verify that no project-specific offline controls appear in Settings.
-   - Verify form row labels ("Primary Projects Folder:", "Mirror Root:", "Remote Repo URL:") render at standard 16px body font size.
+   - Verify section headers ("Projects Directory", "Mirror & Offline Repository") render at 18px with cyan accent color inside dedicated section cards, with 13px muted helper descriptions beneath each header, and verify that no project-specific offline controls appear in Settings.
+   - Verify form row labels ("Primary Projects Folder:", "Mirror Root:", "Remote Repo URL:") render at standard 16px body font size with a uniform minimum width of 195px ensuring aligned text inputs.
    - Verify secondary metadata labels ("Mirror status: ...") render at 13px muted color.
 
 **Expected Results:**
@@ -1185,7 +1185,7 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Inspect "Offline mode" and "Force offline" toggle controls under Project Offline Policy.
    - Verify they render as clean, lightweight toggle switch rows with adjacent explanatory helper descriptions using empty background styleboxes (`StyleBoxEmpty`) without solid rectangular action button backgrounds.
    - Hover over the switches and verify a subtle translucent hover highlight (`Color(1.0, 1.0, 1.0, 0.04)`) with 4px rounded corners.
-   - Navigate to Settings: verify directory "Browse", "Reset to Default", and "Check for Updates" buttons render as secondary buttons with slate background and subtle borders (`SecondaryButton`).
+   - Navigate to Settings: verify directory "Browse" and "Reset to Default" buttons render as secondary buttons with slate background and subtle borders (`SecondaryButton`), and confirm no dead "Check for Updates" button is present.
 
 **Expected Results:**
 - [x] Primary calls to action ("New Project", "Launch Selected Tool", "Seal for Delivery", "Download") prominently stand out in vibrant brand blue.
@@ -1311,7 +1311,7 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Switch back to Project Details: verify both CheckButtons are disabled and unpressed, and status label displays `"No project selected"`.
 8. Navigate to the **Settings** page:
    - Verify that no project-specific offline controls, labels, or toggles appear in Settings.
-   - Confirm only global settings ("Projects", "Network", "Mirror Settings") are present.
+   - Confirm only global settings ("Projects Directory", "Mirror & Offline Repository") cards are present.
 
 **Expected Results:**
 - [x] Per-project offline policy controls reside directly under Project Details in PageProjects.
@@ -1420,9 +1420,52 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 25: Settings Page - Section Cards, Aligned Form Labels, and Clear Buttons
+
+**Objective:** Verify that the global Settings page organizes settings into two styled PanelContainer section cards ("Projects Directory" and "Mirror & Offline Repository"), form labels enforce a uniform 195px minimum width ensuring aligned text inputs, LineEdit fields include functional clear buttons, and dead controls are removed.
+
+**Steps:**
+1. Launch OGS Launcher and navigate to the **Settings** page (click "Settings" in the sidebar).
+2. Inspect the **Projects Directory Card**:
+   - Verify the card renders with dark background styling, subtle 1px border, 6px rounded corners, and 16px internal padding.
+   - Verify the 18px cyan accent header reads "Projects Directory".
+   - Verify the 13px muted helper text reads: "New and cloned projects default to this directory.".
+   - Verify "Primary Projects Folder:" label aligns properly and the LineEdit input includes an embedded clear button.
+3. Inspect the **Mirror & Offline Repository Card**:
+   - Verify the card renders with matching dark background styling, subtle border, rounded corners, and padding.
+   - Verify the 18px cyan accent header reads "Mirror & Offline Repository".
+   - Verify the 13px muted helper text reads: "Configure local mirror archives and remote repository manifests used for offline tool installation.".
+   - Verify "Mirror Root:" and "Remote Repo URL:" labels have identical 195px width alignment with "Primary Projects Folder:".
+   - Verify all three LineEdit input fields begin at the exact same horizontal position without ragged offsets.
+4. Test LineEdit clear buttons:
+   - Type custom text into "Primary Projects Folder:", "Mirror Root:", or "Remote Repo URL:".
+   - Notice the 'X' clear icon appears inside the right side of the text box.
+   - Click the 'X' clear button and verify the input text clears immediately.
+5. Verify dead controls are removed:
+   - Verify that no "Check for Updates" button or "Network" label appears on the Settings page.
+
+**Expected Results:**
+- [x] Settings page displays two distinct PanelContainer section cards with rounded borders and padding.
+- [x] All three form labels ("Primary Projects Folder:", "Mirror Root:", "Remote Repo URL:") align to 195px minimum width.
+- [x] All three text input fields align to the exact same horizontal coordinate.
+- [x] Embedded clear buttons function on all three LineEdit inputs.
+- [x] Dead "Check for Updates" button and "Network" label are completely removed.
+
+**Pass Criteria:**
+- Section cards render cleanly without layout clipping or text overlap.
+- Inputs align on a straight vertical axis.
+- Clear buttons and browse/reset actions operate as expected.
+
+**If test fails:**
+- Verify `ProjectsCard`, `MirrorCard`, and `StyleBoxFlat_settings_card` in `main.tscn`.
+- Check label `custom_minimum_size` properties in `main.tscn`.
+- Confirm `clear_button_enabled = true` on `ProjectsRootPath`, `MirrorRootPath`, and `MirrorRepoPath`.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-24, fill in this table:
+After completing Editor Tests 1-25, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -1452,6 +1495,7 @@ After completing Editor Tests 1-24, fill in this table:
 | 22: Project Details Offline Policy | ✅/⚠️/❌ | | |
 | 23: Tools Page Cards & Badges | ✅/⚠️/❌ | | |
 | 24: Tools Page Empty Categories & State | ✅/⚠️/❌ | | |
+| 25: Settings Cards & Inputs | ✅/⚠️/❌ | | |
 
 ---
 

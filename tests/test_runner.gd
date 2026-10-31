@@ -53,6 +53,7 @@ func _run_tests_async() -> void:
 	load("res://scripts/launcher/tool_launcher.gd")
 	load("res://scripts/launcher/tool_config_injector.gd")
 	load("res://scripts/launcher/seal_controller.gd")
+	load("res://scripts/launcher/settings_controller.gd")
 	load("res://scripts/logging/logger.gd")
 	load("res://scripts/network/offline_enforcer.gd")
 	load("res://scripts/network/socket_blocker.gd")

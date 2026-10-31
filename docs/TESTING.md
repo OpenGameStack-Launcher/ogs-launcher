@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 2010
+tests passed: 2027
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -435,6 +435,11 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Target buttons across Projects, Tools, and Settings pages in `main.tscn` configured with appropriate `PrimaryButton`, `SecondaryButton`, and `DangerButton` theme variations
   - Normalized path separators verified in Settings page Primary Projects Folder placeholder text and Project Details Project Offline Policy status label
   - Project offline policy controls verified under Project Details (`ProjectOfflineSection`, `ProjectOfflineModeCheckButton`, `ProjectForceOfflineCheckButton`, helper labels, and normalized path status label) and verified absent from PageSettings
+  - Redesigned `PageSettings` section cards: `ProjectsCard` and `MirrorCard` `PanelContainer` elements with `StyleBoxFlat_settings_card`, 6px corner radii, and 16px internal padding
+  - Unwired `CheckUpdatesButton` and orphaned `NetworkLabel` verified removed from `PageSettings`
+  - Form label uniform minimum widths: `ProjectsRootLabel`, `MirrorRootLabel`, and `MirrorRepoLabel` verified with `custom_minimum_size.x >= 195.0` to eliminate ragged offsets and ensure aligned inputs
+  - Clear buttons enabled (`clear_button_enabled = true`) across `ProjectsRootPath`, `MirrorRootPath`, and `MirrorRepoPath` LineEdit controls
+  - Network UI offline state test updated to verify `MirrorRepoClearButton` (and `AddRemoteProjectButton`) disabled state and descriptive tooltip when offline mode is active
 
 - **[tests/tools_page_scene_tests.gd](tests/tools_page_scene_tests.gd)** - Scene tests for Tools page UI.
   - Tools/Download tab nodes exist

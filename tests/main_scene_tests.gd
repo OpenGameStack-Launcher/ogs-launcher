@@ -71,15 +71,42 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 		_expect(add_remote_button.text == "Add Remote Project", "Add Remote Project button text should be 'Add Remote Project'", results)
 		_expect(add_remote_button.size_flags_horizontal == 3, "Add Remote Project button size_flags_horizontal should be 3", results)
 
-	var projects_root_path = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootPath") as LineEdit
-	var projects_root_browse = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootBrowseButton") as Button
-	var projects_root_reset = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootResetButton") as Button
+	var projects_card = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard") as PanelContainer
+	_expect(projects_card != null, "ProjectsCard PanelContainer should exist in PageSettings", results)
+	var mirror_card = instance.get_node_or_null("AppLayout/Content/PageSettings/MirrorCard") as PanelContainer
+	_expect(mirror_card != null, "MirrorCard PanelContainer should exist in PageSettings", results)
+
+	var projects_root_path = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootPath") as LineEdit
+	var projects_root_browse = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootBrowseButton") as Button
+	var projects_root_reset = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootResetButton") as Button
 	_expect(projects_root_path != null, "Projects root path line edit should exist", results)
 	_expect(projects_root_browse != null, "Projects root browse button should exist", results)
 	_expect(projects_root_reset != null, "Projects root reset button should exist", results)
 	if projects_root_path != null:
 		_expect(not projects_root_path.placeholder_text.is_empty(), "Projects root path placeholder_text should not be empty", results)
 		_expect(not projects_root_path.placeholder_text.contains("\\"), "Projects root path placeholder_text should not contain backslashes: %s" % projects_root_path.placeholder_text, results)
+		_expect(projects_root_path.clear_button_enabled, "ProjectsRootPath clear_button_enabled should be true", results)
+
+	var mirror_root_path = instance.get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer/MirrorRootPath") as LineEdit
+	_expect(mirror_root_path != null, "Mirror root path line edit should exist", results)
+	if mirror_root_path != null:
+		_expect(mirror_root_path.clear_button_enabled, "MirrorRootPath clear_button_enabled should be true", results)
+
+	var mirror_repo_path = instance.get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer/MirrorRepoPath") as LineEdit
+	_expect(mirror_repo_path != null, "Mirror repo path line edit should exist", results)
+	if mirror_repo_path != null:
+		_expect(mirror_repo_path.clear_button_enabled, "MirrorRepoPath clear_button_enabled should be true", results)
+
+	var projects_root_label = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootLabel") as Label
+	var mirror_root_label = instance.get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer/MirrorRootLabel") as Label
+	var mirror_repo_label = instance.get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer/MirrorRepoLabel") as Label
+	_expect(projects_root_label != null and projects_root_label.custom_minimum_size.x >= 195.0, "ProjectsRootLabel custom_minimum_size.x should be >= 195", results)
+	_expect(mirror_root_label != null and mirror_root_label.custom_minimum_size.x >= 195.0, "MirrorRootLabel custom_minimum_size.x should be >= 195", results)
+	_expect(mirror_repo_label != null and mirror_repo_label.custom_minimum_size.x >= 195.0, "MirrorRepoLabel custom_minimum_size.x should be >= 195", results)
+
+	# Verify PageSettings no longer contains unwired dead controls
+	_expect(instance.get_node_or_null("AppLayout/Content/PageSettings/CheckUpdatesButton") == null, "PageSettings should not contain CheckUpdatesButton", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageSettings/NetworkLabel") == null, "PageSettings should not contain NetworkLabel", results)
 
 	# Verify PageSettings no longer contains project-specific offline nodes
 	_expect(instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineSettingsLabel") == null, "PageSettings should not contain ProjectOfflineSettingsLabel", results)
@@ -289,9 +316,8 @@ func _test_typographic_scale(results: Dictionary) -> void:
 
 	# Section Headers (font_size = 18)
 	var section_header_paths: Array[String] = [
-		"AppLayout/Content/PageSettings/ProjectsSettingsLabel",
-		"AppLayout/Content/PageSettings/NetworkLabel",
-		"AppLayout/Content/PageSettings/MirrorSettingsLabel",
+		"AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsSettingsLabel",
+		"AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorSettingsLabel",
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel",
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel"
 	]
@@ -309,7 +335,9 @@ func _test_typographic_scale(results: Dictionary) -> void:
 		"AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel",
 		"AppLayout/Content/PageTools/ToolsStatusLabel",
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel",
-		"AppLayout/Content/PageSettings/MirrorStatusLabel"
+		"AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorStatusLabel",
+		"AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsHelperLabel",
+		"AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorHelperLabel"
 	]
 	for path: String in secondary_label_paths:
 		var sec_label: Label = instance.get_node_or_null(path) as Label
@@ -374,17 +402,23 @@ func _test_network_ui_disabled_offline(results: Dictionary) -> void:
 		_expect(false, "main.tscn should load for offline UI test", results)
 		return
 	var instance = scene.instantiate()
-	var check_updates = instance.get_node_or_null("AppLayout/Content/PageSettings/CheckUpdatesButton")
-	_expect(check_updates != null, "Check Updates button should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageSettings/CheckUpdatesButton") == null, "CheckUpdatesButton should be removed from PageSettings", results)
+	var mirror_repo_clear = instance.get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer/MirrorRepoClearButton") as Button
+	if mirror_repo_clear == null:
+		mirror_repo_clear = instance.find_child("MirrorRepoClearButton", true, false) as Button
+	_expect(mirror_repo_clear != null, "MirrorRepoClearButton should exist", results)
 	var add_remote = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton") as Button
 	_expect(add_remote != null, "Add Remote Project button should exist for offline UI test", results)
-	if check_updates != null and add_remote != null:
+	if mirror_repo_clear != null and add_remote != null:
 		instance._collect_network_ui_nodes()
 		instance._on_offline_state_changed(true, "offline_mode")
-		_expect(check_updates.disabled == true, "network UI should be disabled when offline", results)
+		_expect(mirror_repo_clear.disabled == true, "MirrorRepoClearButton should be disabled when offline", results)
+		_expect(mirror_repo_clear.tooltip_text == "Disabled because OGS Launcher is currently in offline mode.", "MirrorRepoClearButton should show descriptive offline tooltip", results)
 		_expect(add_remote.disabled == true, "Add Remote Project button should be disabled when offline", results)
 		_expect(add_remote.tooltip_text == "Disabled because OGS Launcher is currently in offline mode.", "Add Remote Project button should show descriptive offline tooltip", results)
 		instance._on_offline_state_changed(false, "online_mode")
+		_expect(mirror_repo_clear.disabled == false, "MirrorRepoClearButton should be enabled when online", results)
+		_expect(mirror_repo_clear.tooltip_text == "", "MirrorRepoClearButton tooltip should be empty when online", results)
 		_expect(add_remote.disabled == false, "Add Remote Project button should be enabled when online", results)
 		_expect(add_remote.tooltip_text == "", "Add Remote Project button tooltip should be empty when online", results)
 	instance.free()
@@ -565,12 +599,11 @@ func _test_main_scene_button_variations(results: Dictionary) -> void:
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/NewFolderBtn",
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/NewFileBtn",
 		"AppLayout/Content/PageTools/ToolsToolbar/RefreshButton",
-		"AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootBrowseButton",
-		"AppLayout/Content/PageSettings/ProjectsRootContainer/ProjectsRootResetButton",
-		"AppLayout/Content/PageSettings/CheckUpdatesButton",
-		"AppLayout/Content/PageSettings/MirrorRootContainer/MirrorRootBrowseButton",
-		"AppLayout/Content/PageSettings/MirrorRootContainer/MirrorRootResetButton",
-		"AppLayout/Content/PageSettings/MirrorRepoContainer/MirrorRepoClearButton"
+		"AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootBrowseButton",
+		"AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootResetButton",
+		"AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer/MirrorRootBrowseButton",
+		"AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer/MirrorRootResetButton",
+		"AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer/MirrorRepoClearButton"
 	]
 	for path in expected_secondary:
 		var btn: Button = instance.get_node_or_null(path) as Button

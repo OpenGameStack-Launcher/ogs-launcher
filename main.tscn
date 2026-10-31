@@ -45,6 +45,22 @@ corner_radius_top_right = 10
 corner_radius_bottom_left = 10
 corner_radius_bottom_right = 10
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_settings_card"]
+content_margin_left = 16.0
+content_margin_top = 16.0
+content_margin_right = 16.0
+content_margin_bottom = 16.0
+bg_color = Color(0.12, 0.14, 0.18, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.24, 0.3, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+
 [node name="Main" type="Control" unique_id=308260745]
 layout_mode = 3
 anchors_preset = 15
@@ -751,107 +767,131 @@ theme_override_constants/separation = 8
 [node name="PageSettings" type="VBoxContainer" parent="AppLayout/Content" unique_id=1673014235]
 visible = false
 layout_mode = 2
-theme_override_constants/separation = 8
+theme_override_constants/separation = 16
 
 [node name="Label" type="Label" parent="AppLayout/Content/PageSettings" unique_id=91038207]
 layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Settings"
 
-[node name="ProjectsSettingsLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=2081194210]
+[node name="ProjectsCard" type="PanelContainer" parent="AppLayout/Content/PageSettings" unique_id=141010101]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_settings_card")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="AppLayout/Content/PageSettings/ProjectsCard" unique_id=141010102]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="ProjectsSettingsLabel" type="Label" parent="AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer" unique_id=2081194210]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 18
-text = "Projects"
+text = "Projects Directory"
 
-[node name="ProjectsRootContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings" unique_id=1482093121]
+[node name="ProjectsHelperLabel" type="Label" parent="AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer" unique_id=141010103]
 layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 13
+text = "New and cloned projects default to this directory."
+autowrap_mode = 2
 
-[node name="ProjectsRootLabel" type="Label" parent="AppLayout/Content/PageSettings/ProjectsRootContainer" unique_id=1748291032]
-custom_minimum_size = Vector2(100, 0)
+[node name="ProjectsRootContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer" unique_id=1482093121]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ProjectsRootLabel" type="Label" parent="AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer" unique_id=1748291032]
+custom_minimum_size = Vector2(195, 0)
 layout_mode = 2
 text = "Primary Projects Folder:"
 vertical_alignment = 1
 
-[node name="ProjectsRootPath" type="LineEdit" parent="AppLayout/Content/PageSettings/ProjectsRootContainer" unique_id=1938201948]
+[node name="ProjectsRootPath" type="LineEdit" parent="AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer" unique_id=1938201948]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "Default (e.g. %USERPROFILE%/OGS_Projects)"
+clear_button_enabled = true
 
-[node name="ProjectsRootBrowseButton" type="Button" parent="AppLayout/Content/PageSettings/ProjectsRootContainer" unique_id=1392810481]
+[node name="ProjectsRootBrowseButton" type="Button" parent="AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer" unique_id=1392810481]
 theme_type_variation = &"SecondaryButton"
 layout_mode = 2
 text = "Browse"
 
-[node name="ProjectsRootResetButton" type="Button" parent="AppLayout/Content/PageSettings/ProjectsRootContainer" unique_id=1582910492]
+[node name="ProjectsRootResetButton" type="Button" parent="AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer" unique_id=1582910492]
 theme_type_variation = &"SecondaryButton"
 layout_mode = 2
 text = "Reset to Default"
 
-[node name="NetworkLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=486317142]
+[node name="MirrorCard" type="PanelContainer" parent="AppLayout/Content/PageSettings" unique_id=142020201]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_settings_card")
+
+[node name="VBoxContainer" type="VBoxContainer" parent="AppLayout/Content/PageSettings/MirrorCard" unique_id=142020202]
+layout_mode = 2
+theme_override_constants/separation = 10
+
+[node name="MirrorSettingsLabel" type="Label" parent="AppLayout/Content/PageSettings/MirrorCard/VBoxContainer" unique_id=646124025]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 18
-text = "Network"
+text = "Mirror & Offline Repository"
 
-[node name="CheckUpdatesButton" type="Button" parent="AppLayout/Content/PageSettings" unique_id=1946003724]
-theme_type_variation = &"SecondaryButton"
+[node name="MirrorHelperLabel" type="Label" parent="AppLayout/Content/PageSettings/MirrorCard/VBoxContainer" unique_id=142020203]
 layout_mode = 2
-text = "Check for Updates"
-metadata/network_ui = true
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 13
+text = "Configure local mirror archives and remote repository manifests used for offline tool installation."
+autowrap_mode = 2
 
-[node name="MirrorSettingsLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=646124025]
+[node name="MirrorRootContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings/MirrorCard/VBoxContainer" unique_id=854921524]
 layout_mode = 2
-theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
-theme_override_font_sizes/font_size = 18
-text = "Mirror Settings"
+theme_override_constants/separation = 8
 
-[node name="MirrorRootContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings" unique_id=854921524]
-layout_mode = 2
-
-[node name="MirrorRootLabel" type="Label" parent="AppLayout/Content/PageSettings/MirrorRootContainer" unique_id=417527318]
-custom_minimum_size = Vector2(100, 0)
+[node name="MirrorRootLabel" type="Label" parent="AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer" unique_id=417527318]
+custom_minimum_size = Vector2(195, 0)
 layout_mode = 2
 text = "Mirror Root:"
 vertical_alignment = 1
 
-[node name="MirrorRootPath" type="LineEdit" parent="AppLayout/Content/PageSettings/MirrorRootContainer" unique_id=350638828]
+[node name="MirrorRootPath" type="LineEdit" parent="AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer" unique_id=350638828]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "C:\\tools or ~/.config/ogs-launcher/mirror"
+clear_button_enabled = true
 
-[node name="MirrorRootBrowseButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorRootContainer" unique_id=828726662]
+[node name="MirrorRootBrowseButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer" unique_id=828726662]
 theme_type_variation = &"SecondaryButton"
 layout_mode = 2
 text = "Browse"
 
-[node name="MirrorRootResetButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorRootContainer" unique_id=610220166]
+[node name="MirrorRootResetButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRootContainer" unique_id=610220166]
 theme_type_variation = &"SecondaryButton"
 layout_mode = 2
 text = "Reset to Default"
 
-[node name="MirrorRepoContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings" unique_id=1852643269]
+[node name="MirrorRepoContainer" type="HBoxContainer" parent="AppLayout/Content/PageSettings/MirrorCard/VBoxContainer" unique_id=1852643269]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="MirrorRepoLabel" type="Label" parent="AppLayout/Content/PageSettings/MirrorRepoContainer" unique_id=431691777]
-custom_minimum_size = Vector2(100, 0)
+[node name="MirrorRepoLabel" type="Label" parent="AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer" unique_id=431691777]
+custom_minimum_size = Vector2(195, 0)
 layout_mode = 2
 text = "Remote Repo URL:"
 vertical_alignment = 1
 
-[node name="MirrorRepoPath" type="LineEdit" parent="AppLayout/Content/PageSettings/MirrorRepoContainer" unique_id=825774933]
+[node name="MirrorRepoPath" type="LineEdit" parent="AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer" unique_id=825774933]
 layout_mode = 2
 size_flags_horizontal = 3
 placeholder_text = "https://raw.githubusercontent.com/.../repository.json"
+clear_button_enabled = true
 metadata/network_ui = true
 
-[node name="MirrorRepoClearButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorRepoContainer" unique_id=1754813744]
+[node name="MirrorRepoClearButton" type="Button" parent="AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer" unique_id=1754813744]
 theme_type_variation = &"SecondaryButton"
 layout_mode = 2
 text = "Reset to Default"
 metadata/network_ui = true
 
-[node name="MirrorStatusLabel" type="Label" parent="AppLayout/Content/PageSettings" unique_id=328179951]
+[node name="MirrorStatusLabel" type="Label" parent="AppLayout/Content/PageSettings/MirrorCard/VBoxContainer" unique_id=328179951]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
 theme_override_font_sizes/font_size = 13
