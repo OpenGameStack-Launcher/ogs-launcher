@@ -81,11 +81,22 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 		_expect(not projects_root_path.placeholder_text.is_empty(), "Projects root path placeholder_text should not be empty", results)
 		_expect(not projects_root_path.placeholder_text.contains("\\"), "Projects root path placeholder_text should not contain backslashes: %s" % projects_root_path.placeholder_text, results)
 
-	var project_offline_status_lbl = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineStatusLabel") as Label
-	_expect(project_offline_status_lbl != null, "ProjectOfflineStatusLabel should exist", results)
-	if project_offline_status_lbl != null and instance.get("settings_controller") != null:
-		var sc = instance.get("settings_controller")
-		sc.on_project_selection_changed("C:\\Users\\test_dev/OGS/MyProject", false, false)
+	# Verify PageSettings no longer contains project-specific offline nodes
+	_expect(instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineSettingsLabel") == null, "PageSettings should not contain ProjectOfflineSettingsLabel", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineStatusLabel") == null, "PageSettings should not contain ProjectOfflineStatusLabel", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineModeCheckButton") == null, "PageSettings should not contain ProjectOfflineModeCheckButton", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectForceOfflineCheckButton") == null, "PageSettings should not contain ProjectForceOfflineCheckButton", results)
+
+	# Verify project offline controls exist under Project Details
+	var project_offline_section = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection")
+	_expect(project_offline_section != null, "ProjectOfflineSection should exist under Project Details", results)
+	var project_offline_status_lbl = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel") as Label
+	_expect(project_offline_status_lbl != null, "ProjectOfflineStatusLabel should exist under Project Details", results)
+	if project_offline_status_lbl != null and instance.get("projects_controller") != null:
+		var pc = instance.get("projects_controller")
+		pc.current_project_dir = "C:\\Users\\test_dev/OGS/MyProject"
+		var test_cfg = preload("res://scripts/config/ogs_config.gd").new()
+		pc._sync_project_offline_toggles(test_cfg)
 		_expect(not project_offline_status_lbl.text.contains("\\"), "ProjectOfflineStatusLabel should not contain backslashes: %s" % project_offline_status_lbl.text, results)
 		_expect(project_offline_status_lbl.text == "Selected: C:/Users/test_dev/OGS/MyProject", "ProjectOfflineStatusLabel should display normalized path: %s" % project_offline_status_lbl.text, results)
 
@@ -281,7 +292,7 @@ func _test_typographic_scale(results: Dictionary) -> void:
 		"AppLayout/Content/PageSettings/ProjectsSettingsLabel",
 		"AppLayout/Content/PageSettings/NetworkLabel",
 		"AppLayout/Content/PageSettings/MirrorSettingsLabel",
-		"AppLayout/Content/PageSettings/ProjectOfflineSettingsLabel",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel",
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel"
 	]
 	for path: String in section_header_paths:
@@ -297,7 +308,7 @@ func _test_typographic_scale(results: Dictionary) -> void:
 		"AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel",
 		"AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel",
 		"AppLayout/Content/PageTools/ToolsStatusLabel",
-		"AppLayout/Content/PageSettings/ProjectOfflineStatusLabel",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel",
 		"AppLayout/Content/PageSettings/MirrorStatusLabel"
 	]
 	for path: String in secondary_label_paths:
@@ -513,11 +524,16 @@ func _test_checkbutton_styling(results: Dictionary) -> void:
 		_expect(cb_disabled is StyleBoxEmpty, "CheckButton disabled should be StyleBoxEmpty", results)
 		_expect(cb_hover != null, "CheckButton hover stylebox should be defined", results)
 
-	# Verify checkbutton controls exist in Settings
-	var offline_mode_cb: CheckButton = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineModeCheckButton") as CheckButton
-	var force_offline_cb: CheckButton = instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectForceOfflineCheckButton") as CheckButton
-	_expect(offline_mode_cb != null, "ProjectOfflineModeCheckButton should exist as CheckButton", results)
-	_expect(force_offline_cb != null, "ProjectForceOfflineCheckButton should exist as CheckButton", results)
+	# Verify checkbutton controls and helper labels exist in Project Details
+	var offline_mode_cb: CheckButton = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeCheckButton") as CheckButton
+	var force_offline_cb: CheckButton = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineCheckButton") as CheckButton
+	_expect(offline_mode_cb != null, "ProjectOfflineModeCheckButton should exist as CheckButton under Project Details", results)
+	_expect(force_offline_cb != null, "ProjectForceOfflineCheckButton should exist as CheckButton under Project Details", results)
+
+	var offline_mode_helper: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeHelperLabel") as Label
+	var force_offline_helper: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineHelperLabel") as Label
+	_expect(offline_mode_helper != null, "ProjectOfflineModeHelperLabel should exist under Project Details", results)
+	_expect(force_offline_helper != null, "ProjectForceOfflineHelperLabel should exist under Project Details", results)
 
 	instance.free()
 

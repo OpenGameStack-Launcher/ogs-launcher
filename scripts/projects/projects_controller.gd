@@ -130,6 +130,11 @@ var projects_tabs: TabContainer
 var toolchain_header_label: Label = null
 var project_tools_list: ItemList
 var btn_change_version: Button
+var project_offline_mode_check_button: CheckButton = null
+var project_force_offline_check_button: CheckButton = null
+var project_offline_status_label: Label = null
+var project_offline_mode_helper_label: Label = null
+var project_force_offline_helper_label: Label = null
 var _tool_availability: Dictionary = {}  # Maps {tool_id: {version: {available: bool}}}
 var _icon_cache: Dictionary = {}
 var _library_manager: LibraryManager = null
@@ -183,6 +188,11 @@ class UIDeps extends RefCounted:
 	var toolchain_header_label: Label = null
 	var project_tools_list: ItemList
 	var btn_change_version: Button
+	var project_offline_mode_check_button: CheckButton = null
+	var project_force_offline_check_button: CheckButton = null
+	var project_offline_status_label: Label = null
+	var project_offline_mode_helper_label: Label = null
+	var project_force_offline_helper_label: Label = null
 	var app_node: Node = null
 
 func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
@@ -230,6 +240,16 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	toolchain_header_label = deps.toolchain_header_label
 	project_tools_list = deps.project_tools_list
 	btn_change_version = deps.btn_change_version
+	project_offline_mode_check_button = deps.project_offline_mode_check_button
+	project_force_offline_check_button = deps.project_force_offline_check_button
+	project_offline_status_label = deps.project_offline_status_label
+	project_offline_mode_helper_label = deps.project_offline_mode_helper_label
+	project_force_offline_helper_label = deps.project_force_offline_helper_label
+	
+	if project_offline_mode_check_button != null:
+		project_offline_mode_check_button.toggled.connect(_on_project_offline_setting_toggled)
+	if project_force_offline_check_button != null:
+		project_force_offline_check_button.toggled.connect(_on_project_offline_setting_toggled)
 	
 	project_search_line_edit = deps.project_search_line_edit
 	empty_library_state = deps.empty_library_state
@@ -346,6 +366,7 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	
 	_apply_offline_config(null)
 	_update_offline_status(null)
+	_sync_project_offline_toggles(null)
 
 	# Initially disable launch button until a project is selected
 	btn_launch_tool.disabled = true
@@ -948,6 +969,7 @@ func _select_project(index: int) -> void:
 		_update_status("Status: Selected project is missing stack.json.")
 		_apply_offline_config(null)
 		_update_offline_status(null)
+		_sync_project_offline_toggles(null)
 		_disable_launch_for_selected_project()
 		OgsLogger.warn("project_select_failed", {
 			"component": "projects",
@@ -961,6 +983,7 @@ func _select_project(index: int) -> void:
 		project_selection_changed.emit("", false, false)
 		_apply_offline_config(null)
 		_update_offline_status(null)
+		_sync_project_offline_toggles(null)
 		_disable_launch_for_selected_project()
 		return
 
@@ -991,6 +1014,7 @@ func _select_project(index: int) -> void:
 	current_project_config = config
 	_apply_offline_config(config)
 	_update_offline_status(config)
+	_sync_project_offline_toggles(config)
 	project_selection_changed.emit(project_dir, config.offline_mode, config.force_offline)
 
 	var use_project_tools = config != null and config.force_offline
@@ -1020,6 +1044,9 @@ func update_current_project_offline_settings(offline_mode: bool, force_offline: 
 	current_project_config = config
 	_apply_offline_config(config)
 	_update_offline_status(config)
+	_sync_project_offline_toggles(config)
+	var use_project_tools = config != null and config.force_offline
+	_validate_and_report_environment(current_project_dir, use_project_tools)
 	project_selection_changed.emit(current_project_dir, config.offline_mode, config.force_offline)
 	OgsLogger.info("project_offline_settings_updated", {
 		"component": "projects",
@@ -1027,6 +1054,29 @@ func update_current_project_offline_settings(offline_mode: bool, force_offline: 
 		"force_offline": force_offline
 	})
 	return true
+
+func _on_project_offline_setting_toggled(_enabled: bool) -> void:
+	## Handles user toggling either project offline policy CheckButton.
+	if current_project_dir.is_empty():
+		return
+	var offline_val: bool = project_offline_mode_check_button.button_pressed if project_offline_mode_check_button != null else false
+	var force_val: bool = project_force_offline_check_button.button_pressed if project_force_offline_check_button != null else false
+	update_current_project_offline_settings(offline_val, force_val)
+
+func _sync_project_offline_toggles(config: OgsConfig) -> void:
+	## Updates the offline policy check buttons and status label from the active project config.
+	var has_project: bool = not current_project_dir.is_empty() and config != null
+	if project_offline_mode_check_button != null:
+		project_offline_mode_check_button.disabled = not has_project
+		project_offline_mode_check_button.set_pressed_no_signal(config.offline_mode if has_project else false)
+	if project_force_offline_check_button != null:
+		project_force_offline_check_button.disabled = not has_project
+		project_force_offline_check_button.set_pressed_no_signal(config.force_offline if has_project else false)
+	if project_offline_status_label != null:
+		if has_project:
+			project_offline_status_label.text = "Selected: %s" % PathUtils.format_for_display(current_project_dir)
+		else:
+			project_offline_status_label.text = "No project selected"
 
 func _load_project_registry():
 	registry_manager.load_project_registry()
@@ -1590,6 +1640,7 @@ func _disable_launch_button() -> void:
 	btn_add_tool.disabled = true
 	btn_remove_tool.disabled = true
 	_disable_remove_button()
+	_sync_project_offline_toggles(null)
 
 func _disable_launch_for_selected_project() -> void:
 	## Disables launch state while preserving selected project for safe removal.
@@ -1606,6 +1657,7 @@ func _disable_launch_for_selected_project() -> void:
 		
 	btn_add_tool.disabled = true
 	btn_remove_tool.disabled = true
+	_sync_project_offline_toggles(null)
 	if btn_remove_project != null:
 		btn_remove_project.disabled = false
 	if btn_open_project != null:

@@ -4,7 +4,6 @@ class_name SettingsController
 
 const MirrorPathResolverScript = preload("res://scripts/mirror/mirror_path_resolver.gd")
 const OgsLogger = preload("res://scripts/logging/logger.gd")
-const OgsConfig = preload("res://scripts/config/ogs_config.gd")
 const PathUtils = preload("res://scripts/utils/path_utils.gd")
 
 ## Emitted when the configured primary projects root path changes.
@@ -17,9 +16,6 @@ class UIDeps extends RefCounted:
 	var mirror_root_path: LineEdit
 	var mirror_repo_path: LineEdit
 	var mirror_status_label: Label
-	var project_offline_status_label: Label
-	var project_offline_mode_check_button: CheckButton
-	var project_force_offline_check_button: CheckButton
 	var app_node: Node # used to add file dialog to tree
 
 var _ui: UIDeps
@@ -224,23 +220,3 @@ func update_mirror_status() -> void:
 	else:
 		_ui.mirror_status_label.text = "Mirror status: Directory does not exist"
 		_ui.mirror_status_label.modulate = Color.RED
-
-func on_project_selection_changed(project_dir: String, offline_mode: bool, force_offline: bool) -> void:
-	## Synchronizes offline policy controls when selected project changes.
-	_ui.project_offline_status_label.text = "Selected: %s" % PathUtils.format_for_display(project_dir) if not project_dir.is_empty() else "No project selected"
-	_ui.project_offline_mode_check_button.set_pressed_no_signal(offline_mode)
-	_ui.project_force_offline_check_button.set_pressed_no_signal(force_offline)
-	_ui.project_offline_mode_check_button.disabled = project_dir.is_empty()
-	_ui.project_force_offline_check_button.disabled = project_dir.is_empty()
-
-func sync_project_offline_settings(project_dir: String, config: OgsConfig) -> void:
-	## Updates offline controls from currently active project config.
-	on_project_selection_changed(project_dir, config.offline_mode if config != null else false, config.force_offline if config != null else false)
-
-func on_project_offline_setting_toggled(_enabled: bool) -> void:
-	## Persists modified offline policy to the active project's ogs_config.json.
-	if _projects_controller == null or _projects_controller.current_project_dir.is_empty(): return
-	_projects_controller.update_current_project_offline_settings(
-		_ui.project_offline_mode_check_button.button_pressed,
-		_ui.project_force_offline_check_button.button_pressed
-	)
