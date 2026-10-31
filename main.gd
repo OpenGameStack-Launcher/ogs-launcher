@@ -67,6 +67,7 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var projects_status_bar = $AppLayout/Content/PageProjects/ProjectsStatusBar
 @onready var lbl_project_status = $AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel
 @onready var lbl_offline_status = $AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel
+@onready var toolchain_header_label: Label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolchainHeaderLabel"
 @onready var project_tools_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectToolsList"
 @onready var lbl_tools_list_title = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/ExplorerLabel"
 @onready var project_explorer_tree = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectExplorerTree"
@@ -340,6 +341,7 @@ func _apply_global_theme() -> void:
 		get_node_or_null("AppLayout/Content/PageSettings/NetworkLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageSettings/MirrorSettingsLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageSettings/ProjectOfflineSettingsLabel") as Label,
+		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ToolchainHeaderLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ExplorerToolbar/ExplorerLabel") as Label,
 		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyTitleLabel") as Label
 	]
@@ -553,6 +555,7 @@ func _ready() -> void:
 	deps.add_tool_dialog = add_tool_dialog
 	deps.add_tool_option_list = add_tool_option_list
 	deps.projects_tabs = projects_tabs
+	deps.toolchain_header_label = toolchain_header_label
 	deps.project_tools_list = project_tools_list
 	deps.btn_change_version = btn_change_version
 	
