@@ -1022,9 +1022,48 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 20: Normalized Path Separators in User-Facing Labels and Placeholders
+
+**Objective:** Verify that filesystem and project paths displayed in UI labels, list items, tooltips, placeholders, and dialogs consistently display uniform forward slashes without mixed Windows backslashes.
+
+**Steps:**
+1. Launch OGS Launcher in editor mode or standalone on Windows.
+2. Projects Page - Project Library Path Normalization:
+   - Check the project list entries in the Project Library list.
+   - Verify that the path line beneath each project title displays forward slashes (e.g., `C:/Users/.../OGS_Projects/...` or `C:/Users/.../AppData/Local/OGS/Projects/...`) without mixed backslashes (`\`).
+   - Hover over each project list item to display its tooltip.
+   - Verify that the tooltip path string matches the normalized forward-slash display path without backslashes.
+3. Projects Page - Project Explorer Header Normalization:
+   - Select or open a project in the Project Library.
+   - Inspect the Project Explorer title label above the file tree.
+   - Verify that the header reads `Project Explorer - C:/Users/...` using clean forward slashes.
+4. Projects Page - New Project Dialog Target Path:
+   - Click "New Project" in the Projects page toolbar.
+   - Inspect the instructions label inside the New Project modal dialog.
+   - Verify the target creation folder path preview displays forward slashes without mixed backslashes.
+   - Close or cancel the New Project dialog.
+5. Settings Page - Primary Projects Folder and Offline Status:
+   - Navigate to the Settings page (click "Settings" in the sidebar).
+   - Inspect the "Primary Projects Folder" LineEdit placeholder text.
+   - Verify that the default placeholder path displays forward slashes (e.g., `C:/Users/.../OGS_Projects`).
+   - Inspect the "Selected Project Offline Policy" section label ("Selected: ...").
+   - Verify that the selected project path displays uniform forward slashes without backslashes.
+
+**Expected Results:**
+- [x] Project list item paths and item tooltips render with uniform forward slashes.
+- [x] Project Explorer title label displays clean forward-slash path formatting.
+- [x] New Project dialog instruction label path preview displays forward slashes.
+- [x] Settings page Primary Projects Folder placeholder text and Selected Project path label display forward slashes.
+
+**Pass Criteria:**
+- No mixed Windows backslashes and Unix forward slashes appear in any user-facing path labels, tooltips, or placeholders.
+- Path presentation is consistent across Projects and Settings pages.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-19, fill in this table:
+After completing Editor Tests 1-20, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -1049,6 +1088,7 @@ After completing Editor Tests 1-19, fill in this table:
 | 17: Shell Margins & Typography Scale | ✅/⚠️/❌ | | |
 | 18: Sidebar Redesign & Footer Sync | ✅/⚠️/❌ | | |
 | 19: Semantic Buttons & CheckButton | ✅/⚠️/❌ | | |
+| 20: Normalized Path Display | ✅/⚠️/❌ | | |
 
 ---
 

@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 1555
+tests passed: 1591
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (30 total, 36 suites across all categories):**
+**Current unit test suites (31 total, 37 suites across all categories):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -277,6 +277,16 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Stack-aware tool queries require vscodium presence in active tools for text/script mapping while Godot-only stacks return empty string
   - Tool to extension mapping returns txt for vscodium (case-insensitive) and empty string for godot
 
+- **[tests/path_utils_tests.gd](tests/path_utils_tests.gd)** - Validates cross-platform path normalization and root containment validation (8 tests).
+  - Normalizes mixed Windows backslashes and Unix forward slashes to uniform forward slashes
+  - Converts pure Windows backslash paths to forward slashes (including root drives like `C:\` to `C:/`)
+  - Preserves pure forward slash paths and Unix root paths
+  - Collapses repeated slashes and removes non-root trailing slashes
+  - Safely handles empty strings and trims leading/trailing whitespace
+  - Normalizes relative paths and simplifies parent traversals
+  - Preserves Godot URI schemes (`res://`, `user://`) while normalizing path components
+  - Validates root directory containment via `is_path_under_root()`
+
 - **[tests/release_packaging_tests.gd](tests/release_packaging_tests.gd)** - Validates release packaging contract, export presets, semantic version rules, and workflow files.
   - Windows Desktop preset defined in `export_presets.cfg` without hardcoded machine paths or private keys
   - Strict semantic version validation (`X.Y.Z`) accepting clean numbers and rejecting `v` prefix or `-alpha` suffix
@@ -363,6 +373,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Clicking "Open Project" button switches `current_tab` to 1 (Project Details)
   - Open Project, Remove Project, and Seal buttons are disabled initially when library is empty, enabled on project addition, and disabled when library becomes empty
   - `CustomItemList` emits `item_selected` on single-click and `item_activated` on double-click
+  - Path normalization across project list items, item tooltips, Project Explorer title header, and New Project dialog instructions
 
 - **[tests/projects_page_indicators_tests.gd](tests/projects_page_indicators_tests.gd)** - Tests tool availability indicators in Projects page.
   - Tool items populated with ID and version
@@ -391,6 +402,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Semantic Button theme variations (`PrimaryButton`, `SecondaryButton`, `DangerButton`) defined on `global_theme` with matching background colors, borders, and focus rings
   - CheckButton stylebox overrides defined on `global_theme` using `StyleBoxEmpty` and hover styling, replacing solid Button stylebox inheritance
   - Target buttons across Projects, Tools, and Settings pages in `main.tscn` configured with appropriate `PrimaryButton`, `SecondaryButton`, and `DangerButton` theme variations
+  - Normalized path separators verified in Settings page Primary Projects Folder placeholder text and Selected Project Offline Policy status label
 
 - **[tests/tools_page_scene_tests.gd](tests/tools_page_scene_tests.gd)** - Scene tests for Tools page UI.
   - Tools/Download tab nodes exist

@@ -435,6 +435,11 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Added expanding vertical spacer and compact Sidebar Footer with global online/offline status indicator synchronized with `OfflineEnforcer` / `ToolsController` and launcher version label backed by `ProjectSettings` (`application/config/version`).
 - Added unit tests in `tests/layout_controller_tests.gd` and scene tests in `tests/main_scene_tests.gd` (36 test suites passing, 1473 total tests with zero failures).
 
+**Path Separator Normalization for User-Facing Labels and Placeholders (Oct 31, 2026):**
+- Implemented static helper `PathUtils.format_for_display(path: String) -> String` (`scripts/utils/path_utils.gd`) to unify mixed Windows backslashes and Unix forward slashes into consistent forward-slash presentation, strip whitespace, and simplify redundant slashes.
+- Applied display normalization across user-facing surfaces: Project Library list items and tooltips, Project Explorer title header, New Project creation dialog target path instructions, Settings Primary Projects Folder placeholder text, and Settings project offline status label.
+- Added comprehensive unit test suite in `tests/path_utils_tests.gd` and scene assertions in `tests/projects_controller_scene_tests.gd` and `tests/main_scene_tests.gd` (37 test suites passing, 1591 total tests with zero failures).
+
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
 - Collapsible UI sections for scalability
