@@ -69,6 +69,8 @@ func _run_tests_async() -> void:
 	load("res://scripts/tools/tool_category_mapper.gd")
 	load("res://scripts/tools/file_type_mapper.gd")
 	load("res://scripts/tools/tools_controller.gd")
+	load("res://scripts/tools/tools_page_controller.gd")
+	load("res://scripts/tools/download_dialog_controller.gd")
 	load("res://scripts/tools/progress_controller.gd")
 	load("res://scripts/utils/path_utils.gd")
 	load("res://scripts/projects/project_explorer.gd")

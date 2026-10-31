@@ -74,7 +74,10 @@ func setup(deps: UIDeps, tools_controller: ToolsController, progress_controller:
 	_projects_controller = projects_controller
 	_download_dialog_controller = download_dialog_controller
 	
-	_ui.remove_tool_dialog.confirmed.connect(_on_remove_tool_confirmed)
+	if _ui != null and _ui.remove_tool_dialog != null:
+		_ui.remove_tool_dialog.confirmed.connect(_on_remove_tool_confirmed)
+	
+	populate_tools_ui()
 
 func navigate_to_tool(tool_id: String, tool_version: String) -> void:
 	requested_tool_key = "%s_%s" % [tool_id, tool_version]
@@ -103,15 +106,23 @@ func populate_tools_ui() -> void:
 	tool_cards.clear()
 	_clear_tool_containers()
 	
+	var installed_count: int = 0
+	var available_count: int = 0
 	var categorized_tools = _tools_controller.get_categorized_tools()
 	for category in categorized_tools.keys():
 		var tools = categorized_tools[category]
 		if tools.is_empty(): continue
 		for tool in tools:
+			available_count += 1
 			var is_installed = tool["installed"]
 			if is_installed:
+				installed_count += 1
 				_add_tool_card_to_category(category, tool, true)
 			_add_tool_card_to_category(category, tool, is_installed, false)
+
+	if _ui != null and _ui.tools_tabs != null:
+		_ui.tools_tabs.set_tab_title(0, "Installed (%d)" % installed_count)
+		_ui.tools_tabs.set_tab_title(1, "Download (%d)" % available_count)
 
 	update_download_button_states()
 	_focus_requested_tool_card()
@@ -149,7 +160,7 @@ func _add_tool_card_to_category(category: String, tool: Dictionary, is_installed
 
 func _create_tool_card(tool: Dictionary, is_installed: bool, show_remove_action: bool) -> PanelContainer:
 	var card = PanelContainer.new()
-	card.custom_minimum_size = Vector2(0, 94)
+	card.custom_minimum_size = Vector2(0, 68)
 	card.add_theme_stylebox_override("panel", _create_tool_card_style(is_installed))
 	
 	var main_vbox = VBoxContainer.new()
@@ -158,13 +169,17 @@ func _create_tool_card(tool: Dictionary, is_installed: bool, show_remove_action:
 	
 	var hbox = HBoxContainer.new()
 	hbox.custom_minimum_size = Vector2(0, 42)
+	hbox.add_theme_constant_override("separation", 14)
 	main_vbox.add_child(hbox)
 
 	var icon = _create_tool_icon(tool)
-	if icon != null: hbox.add_child(icon)
+	if icon != null:
+		icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
+		hbox.add_child(icon)
 	
 	var vbox = VBoxContainer.new()
 	vbox.size_flags_horizontal = Control.SIZE_EXPAND_FILL
+	vbox.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	hbox.add_child(vbox)
 	
 	var name_label = Label.new()
@@ -179,6 +194,8 @@ func _create_tool_card(tool: Dictionary, is_installed: bool, show_remove_action:
 	vbox.add_child(size_label)
 	
 	var button = Button.new()
+	button.custom_minimum_size = Vector2(115, 36)
+	button.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	if is_installed and show_remove_action:
 		button.text = "Remove"
 		button.tooltip_text = "Remove this installed tool from the OGS library."
@@ -223,6 +240,7 @@ func _create_tool_icon(tool: Dictionary) -> TextureRect:
 	if icon_path.is_empty() or not ResourceLoader.exists(icon_path): return null
 	var icon = TextureRect.new()
 	icon.custom_minimum_size = Vector2(42, 42)
+	icon.size_flags_vertical = Control.SIZE_SHRINK_CENTER
 	icon.texture = load(icon_path)
 	icon.expand_mode = TextureRect.EXPAND_IGNORE_SIZE
 	icon.stretch_mode = TextureRect.STRETCH_KEEP_ASPECT_CENTERED

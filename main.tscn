@@ -514,96 +514,102 @@ current_tab = 0
 layout_mode = 2
 metadata/_tab_index = 0
 
-[node name="InstalledContent" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed" unique_id=1471721297]
+[node name="MarginContainer" type="MarginContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_right = 14
+
+[node name="InstalledContent" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer" unique_id=1471721297]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 20
 
-[node name="EngineSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=524823504]
+[node name="EngineSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=524823504]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="EngineHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/EngineSection" unique_id=1404457622]
+[node name="EngineHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/EngineSection" unique_id=1404457622]
 modulate = Color(0.45, 0.8, 1, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Engine"
 
-[node name="EngineTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/EngineSection" unique_id=1572554511]
+[node name="EngineTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/EngineSection" unique_id=1572554511]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CategoryDivider" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=2062689336]
+[node name="CategoryDivider" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=2062689336]
 layout_mode = 2
 
-[node name="2DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=574834040]
+[node name="2DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=574834040]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="2DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/2DSection" unique_id=1410285366]
+[node name="2DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/2DSection" unique_id=1410285366]
 modulate = Color(0.55, 0.9, 0.65, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "2D Tools"
 
-[node name="2DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/2DSection" unique_id=739796838]
+[node name="2DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/2DSection" unique_id=739796838]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CategoryDivider2" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=1161450709]
+[node name="CategoryDivider2" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=1161450709]
 layout_mode = 2
 
-[node name="3DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=2132407013]
+[node name="3DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=2132407013]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="3DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/3DSection" unique_id=1477040708]
+[node name="3DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/3DSection" unique_id=1477040708]
 modulate = Color(1, 0.72, 0.35, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "3D Tools"
 
-[node name="3DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/3DSection" unique_id=798722386]
+[node name="3DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/3DSection" unique_id=798722386]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CategoryDivider3" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=271342658]
+[node name="CategoryDivider3" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=271342658]
 layout_mode = 2
 
-[node name="AudioSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=583224698]
+[node name="AudioSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=583224698]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="AudioHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/AudioSection" unique_id=1080829129]
+[node name="AudioHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/AudioSection" unique_id=1080829129]
 modulate = Color(0.85, 0.65, 1, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Audio Tools"
 
-[node name="AudioTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/AudioSection" unique_id=1576073845]
+[node name="AudioTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/AudioSection" unique_id=1576073845]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CategoryDivider4" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=271342659]
+[node name="CategoryDivider4" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=271342659]
 layout_mode = 2
 
-[node name="CodeSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent" unique_id=583224699]
+[node name="CodeSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=583224699]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CodeHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/CodeSection" unique_id=1080829130]
+[node name="CodeHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/CodeSection" unique_id=1080829130]
 modulate = Color(0.95, 0.8, 0.4, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Code Tools"
 
-[node name="CodeTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledContent/CodeSection" unique_id=1576073846]
+[node name="CodeTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/CodeSection" unique_id=1576073846]
 layout_mode = 2
 theme_override_constants/separation = 8
 
@@ -612,96 +618,102 @@ visible = false
 layout_mode = 2
 metadata/_tab_index = 1
 
-[node name="DownloadContent" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download" unique_id=1766538652]
+[node name="MarginContainer" type="MarginContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download"]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+theme_override_constants/margin_right = 14
+
+[node name="DownloadContent" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer" unique_id=1766538652]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 20
 
-[node name="EngineSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1977543610]
+[node name="EngineSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent" unique_id=1977543610]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="EngineHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/EngineSection" unique_id=890703930]
+[node name="EngineHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/EngineSection" unique_id=890703930]
 modulate = Color(0.45, 0.8, 1, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Engine"
 
-[node name="EngineTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/EngineSection" unique_id=884121086]
+[node name="EngineTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/EngineSection" unique_id=884121086]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CategoryDivider" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1800157661]
+[node name="CategoryDivider" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent" unique_id=1800157661]
 layout_mode = 2
 
-[node name="2DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=240034114]
+[node name="2DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent" unique_id=240034114]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="2DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/2DSection" unique_id=1757466312]
+[node name="2DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/2DSection" unique_id=1757466312]
 modulate = Color(0.55, 0.9, 0.65, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "2D Tools"
 
-[node name="2DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/2DSection" unique_id=785609022]
+[node name="2DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/2DSection" unique_id=785609022]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CategoryDivider2" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1475223502]
+[node name="CategoryDivider2" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent" unique_id=1475223502]
 layout_mode = 2
 
-[node name="3DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1074513919]
+[node name="3DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent" unique_id=1074513919]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="3DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/3DSection" unique_id=1901182147]
+[node name="3DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/3DSection" unique_id=1901182147]
 modulate = Color(1, 0.72, 0.35, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "3D Tools"
 
-[node name="3DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/3DSection" unique_id=1853629794]
+[node name="3DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/3DSection" unique_id=1853629794]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CategoryDivider3" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1331531843]
+[node name="CategoryDivider3" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent" unique_id=1331531843]
 layout_mode = 2
 
-[node name="AudioSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1916090933]
+[node name="AudioSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent" unique_id=1916090933]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="AudioHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/AudioSection" unique_id=1177173031]
+[node name="AudioHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/AudioSection" unique_id=1177173031]
 modulate = Color(0.85, 0.65, 1, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Audio Tools"
 
-[node name="AudioTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/AudioSection" unique_id=1750307220]
+[node name="AudioTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/AudioSection" unique_id=1750307220]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CategoryDivider4" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1331531844]
+[node name="CategoryDivider4" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent" unique_id=1331531844]
 layout_mode = 2
 
-[node name="CodeSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent" unique_id=1916090934]
+[node name="CodeSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent" unique_id=1916090934]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CodeHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/CodeSection" unique_id=1177173032]
+[node name="CodeHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/CodeSection" unique_id=1177173032]
 modulate = Color(0.95, 0.8, 0.4, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Code Tools"
 
-[node name="CodeTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/DownloadContent/CodeSection" unique_id=1750307221]
+[node name="CodeTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/CodeSection" unique_id=1750307221]
 layout_mode = 2
 theme_override_constants/separation = 8
 
