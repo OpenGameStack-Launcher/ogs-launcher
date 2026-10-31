@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 975
+tests passed: 1001
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -293,9 +293,11 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
 **Current scene test suites:**
 
 - **[tests/projects_controller_scene_tests.gd](tests/projects_controller_scene_tests.gd)** - Validates Projects page controller logic.
-  - Add Project requires both `stack.json` and `ogs_config.json`
+  - Add Local Project requires stack.json (auto-generates missing ogs_config.json on disk with default offline policies)
+  - Missing stack.json or empty folder rejected with appropriate status
   - Valid sample project adds to persistent Projects list and auto-selects
-  - New Project creates scaffold under OGS/Projects and auto-adds to library
+  - New Project creates scaffold under resolved Primary Projects Folder and auto-adds to library
+  - Creating a new project honors configured Primary Projects Folder while test root override takes precedence
   - Persisted project index reloads on next setup
   - Remove Project updates list and persisted index immediately
   - Add Tool and Remove Tool update project `stack.json` and refresh the tools list
@@ -323,7 +325,9 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
 - **[tests/main_scene_tests.gd](tests/main_scene_tests.gd)** - Smoke tests for the main launcher scene.
   - main.tscn loads without errors
   - All page nodes exist (Projects, Engine, Tools, Settings)
-  - Add Project / New Project buttons and Projects list exist
+  - Add Local Project / New Project buttons and Projects list exist
+  - Settings page Projects folder controls (label, path line edit, browse button, reset button) exist and wire properly
+  - Primary projects root browse dialog is queued for free when closed or canceled without selection
   - Tool action rows include Add Tool, Remove Tool, Launch Selected Tool, Remove Project, and Seal for Delivery
   - `installed_code_tools` and `download_code_tools` node bindings are wired
 
@@ -354,7 +358,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
 
 - **[tests/startup_tests.gd](tests/startup_tests.gd)** - Verifies launcher initialization without errors (5 tests).
   - Main scene loads and instantiates successfully
-  - All required UI nodes exist and are accessible (17 critical nodes)
+  - All required UI nodes exist and are accessible (22 critical nodes including Settings page Projects folder controls)
   - Controller classes (`ProjectsController`, `SealController`, `LayoutController`, `OnboardingWizard`) instantiate cleanly
   - Script validation: `main.gd` is properly formed and instantiable
   - `McpInteractionServer` autoload registration in `project.godot`, `autoloads/mcp_interaction_server.gd` instantiation, and `mcp_client.py` presence

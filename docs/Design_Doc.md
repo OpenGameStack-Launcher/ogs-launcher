@@ -67,6 +67,11 @@ My_Simulation_Project/
     └── ...
 ```
 
+### 2.4 Project Discovery & Workspace Management
+The launcher manages projects through a local project registry (`ogs_projects_index.json`):
+*   **Primary Projects Folder:** Scaffolding new projects creates project directories inside a configurable Primary Projects Folder. By default, this resolves to `%USERPROFILE%/OGS_Projects` on Windows or `$HOME/OGS_Projects` on Unix. Users can customize this location on the Settings page or reset it back to default at any time. Settings are persisted in `ogs_launcher_settings.json`.
+*   **Add Local Project:** Adding an existing project folder requires only `stack.json`. If `ogs_config.json` is missing (as when cloning repositories that omit local environment configuration), the launcher automatically creates a default `ogs_config.json` with standard offline policies (`offline_mode: false`, `force_offline: false`).
+
 ---
 
 ## 3. Operational Modes & User Stories

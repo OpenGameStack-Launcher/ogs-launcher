@@ -175,11 +175,12 @@ Granular, actionable items for the Tools/Projects page redesign:
 *   [x] Remove "Repair Environment" button from Projects page — 100% Complete ✅ (hidden by default)
 *   [x] Remove LibraryHydrationController integration from Projects page — Partial ✅ (wiring still in place for backward compat)
 *   [x] Add tests for tool availability indicators — 3 scene tests + 9 total tests passing ✅
-*   [x] Unity-Hub-style Project Library workflow — 100% Complete ✅
+*   [x] Unity-Hub-style Project Library workflow - 100% Complete ✅
     *   [x] Persistent project registry (`user://ogs_projects_index.json`)
-    *   [x] Add Project requires both `stack.json` and `ogs_config.json`
+    *   [x] Add Local Project requires only `stack.json` (auto-generates missing `ogs_config.json` with default offline policy)
     *   [x] Remove Project with confirmation dialog
-    *   [x] New Project scaffolding under `%LOCALAPPDATA%/OGS/Projects`
+    *   [x] New Project scaffolding under configurable Primary Projects Folder (defaults to `%USERPROFILE%/OGS_Projects` or `$HOME/OGS_Projects`)
+    *   [x] Primary Projects Folder setting in PageSettings with Browse and Reset to Default buttons, persisted in `ogs_launcher_settings.json`
 *   [x] Project Tool Management controls — 100% Complete ✅
     *   [x] Two-row action layout (Add/Remove/Launch tool + Remove/Seal project)
     *   [x] Add Tool dialog refactored from dropdown to list selection
