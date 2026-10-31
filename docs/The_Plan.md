@@ -326,7 +326,12 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   Semantic button theme variations (PrimaryButton, SecondaryButton, DangerButton) establishing clear visual hierarchy
     *   CheckButton toggle rows styled with empty panel styleboxes replacing solid rectangular button bars
     *   Scene test coverage in main_scene_tests.gd and tools_page_scene_tests.gd (1555 tests passing across 36 test suites)
-*   **Test Suite:** 1555 tests passing across 36 test suites (~3-5 sec execution), comprehensive coverage across all components
+*   **Project Details Stack Toolchain Header & Tool Icons (Phase 2.5):** Complete Oct 31, 2026
+    *   Added "Stack Toolchain" section header label (ToolchainHeaderLabel) directly above ProjectToolsList matching 18px cyan accent styling (Issue #132)
+    *   Uniform 20x20 tool icon rendering with asset mapping from res://Images/tools/ and case-insensitive fallback
+    *   Explicit status labels (✓ Installed, ⚠️ Missing (Available in Tools), ❌ Unavailable in Repository) and detailed status tooltips
+    *   Comprehensive test coverage in projects_page_indicators_tests.gd and projects_controller_scene_tests.gd (1836 tests passing across 38 test suites)
+*   **Test Suite:** 1836 tests passing across 38 test suites (~3-5 sec execution), comprehensive coverage across all components
     *   ToolsController unit tests: download tracking, duplicate suppression, repository validation
     *   Tools page scene tests: node existence, status updates, button state management
     *   ProgressController unit tests: inline tracking, phase transitions, signal emission

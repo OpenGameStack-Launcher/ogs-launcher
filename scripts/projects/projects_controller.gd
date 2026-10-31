@@ -37,6 +37,17 @@ signal project_selection_changed(project_dir: String, offline_mode: bool, force_
 const DEFAULT_PROJECTS_INDEX_PATH := "user://ogs_projects_index.json"
 const PICKER_ACTION_ADD_PROJECT := "add_project"
 
+const TOOL_ICON_PATHS := {
+	"audacity": "res://Images/tools/Audacity.png",
+	"blender": "res://Images/tools/Blender.png",
+	"gimp": "res://Images/tools/GIMP.png",
+	"git": "res://Images/tools/Git.png",
+	"godot": "res://Images/tools/Godot.png",
+	"krita": "res://Images/tools/Krita.png",
+	"vscodium": "res://Images/tools/VSCodium.png"
+}
+const TOOL_ICON_SIZE := Vector2i(20, 20)
+
 # Semantic status colors
 const COLOR_STATUS_READY := Color(0.35, 0.85, 0.55, 1.0)
 const COLOR_STATUS_WARNING := Color(0.95, 0.75, 0.25, 1.0)
@@ -116,9 +127,11 @@ var current_project_config: OgsConfig = null
 var environment_validator: ProjectEnvironmentValidator
 var tools_controller: ToolsController
 var projects_tabs: TabContainer
+var toolchain_header_label: Label = null
 var project_tools_list: ItemList
 var btn_change_version: Button
 var _tool_availability: Dictionary = {}  # Maps {tool_id: {version: {available: bool}}}
+var _icon_cache: Dictionary = {}
 var _library_manager: LibraryManager = null
 var _last_selected_project_path: String = ""
 var _selected_project_index: int = -1
@@ -167,6 +180,7 @@ class UIDeps extends RefCounted:
 	var add_tool_dialog: ConfirmationDialog
 	var add_tool_option_list: ItemList
 	var projects_tabs: TabContainer
+	var toolchain_header_label: Label = null
 	var project_tools_list: ItemList
 	var btn_change_version: Button
 	var app_node: Node = null
@@ -213,6 +227,7 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	add_tool_dialog = deps.add_tool_dialog
 	add_tool_option_list = deps.add_tool_option_list
 	projects_tabs = deps.projects_tabs
+	toolchain_header_label = deps.toolchain_header_label
 	project_tools_list = deps.project_tools_list
 	btn_change_version = deps.btn_change_version
 	
@@ -1015,20 +1030,40 @@ func _load_config_if_present(config_path: String) -> OgsConfig:
 		return OgsConfig.new()
 	return OgsConfig.load_from_file(config_path)
 
+## Returns the cached Texture2D icon for a tool ID, or null if not found.
+func get_tool_icon(tool_id: String) -> Texture2D:
+	return _get_tool_icon(tool_id)
+
+func _get_tool_icon(tool_id: String) -> Texture2D:
+	if tool_id.is_empty():
+		return null
+	var lower_id: String = tool_id.to_lower()
+	if _icon_cache.has(lower_id):
+		return _icon_cache[lower_id] as Texture2D
+	if TOOL_ICON_PATHS.has(lower_id):
+		var icon_path: String = TOOL_ICON_PATHS[lower_id]
+		if ResourceLoader.exists(icon_path):
+			var res: Resource = load(icon_path)
+			if res is Texture2D:
+				var tex: Texture2D = res as Texture2D
+				_icon_cache[lower_id] = tex
+				return tex
+	_icon_cache[lower_id] = null
+	return null
+
 func _populate_tools_list(tools: Array) -> void:
 	## Populates the tools list UI from the manifest tool entries.
-## 
-## Adds visual indicators to show tool availability status:
-## - ⚠️ Yellow indicator: tool not installed but available in remote repository
-## - ❌ Red indicator: tool not installed and not available anywhere
-## - No indicator: tool is already installed in the library
-## 
-## Updates the _tool_availability dictionary with status for each tool,
-## enabling double-click or launch navigation to download missing tools.
-## 
-## Parameters:
-## tools (Array): Array of tool entries from stack.json
-## 
+	##
+	## Adds visual icons, tooltips, and explicit status indicators:
+	## - ✓ Installed: tool is installed in the local library
+	## - ⚠️ Missing (Available in Tools): tool not installed but downloadable
+	## - ❌ Unavailable in Repository: tool not installed and not in repository
+	##
+	## Updates the _tool_availability dictionary with status for each tool,
+	## enabling double-click or launch navigation to download missing tools.
+	##
+	## Parameters:
+	## tools (Array): Array of tool entries from stack.json
 	_tool_availability.clear()
 	_selected_tool_index = -1
 	_selected_launch_tool_id = ""
@@ -1055,49 +1090,63 @@ func _populate_tools_list(tools: Array) -> void:
 	
 	if project_tools_list != null:
 		project_tools_list.clear()
+		if project_tools_list.fixed_icon_size == Vector2i.ZERO:
+			project_tools_list.fixed_icon_size = TOOL_ICON_SIZE
 
 	for tool_entry in tools:
 		var tool_id = String(tool_entry.get("id", "unknown"))
 		var tool_version = String(tool_entry.get("version", "?"))
 		var tool_path = String(tool_entry.get("path", ""))
+		var display_name: String = ToolCategoryMapper.get_display_name(tool_id)
 		
 		# Check if tool is installed in library
-		var is_installed = _library_manager.tool_exists(tool_id, tool_version)
+		var is_installed: bool = _library_manager != null and _library_manager.tool_exists(tool_id, tool_version)
 		
 		var availability = {"available": false, "installed": is_installed}
 		
-		# Build label with indicator
-		var label = "%s v%s" % [ToolCategoryMapper.get_display_name(tool_id), tool_version]
-		var indicator = ""
+		var status_text := ""
+		var tooltip_text := ""
 		
 		if not is_installed:
 			missing_count += 1
 			# Check if available in repository (only when repository data is loaded)
 			if repository_known and available_tools.has(tool_id) and available_tools[tool_id].has(tool_version):
-				indicator = " ⚠️"
+				status_text = "⚠️ Missing (Available in Tools)"
+				tooltip_text = "%s v%s is not installed. This tool can be downloaded from the Tools page." % [display_name, tool_version]
 				availability["available"] = true
 				available_count += 1
 			elif repository_known:
-				indicator = " ❌"
+				status_text = "❌ Unavailable in Repository"
+				tooltip_text = "%s v%s is not installed and is not available in the active repository." % [display_name, tool_version]
 				availability["available"] = false
 			else:
 				# Repository availability unknown yet; do not show false unavailability.
-				indicator = " ⚠️"
+				status_text = "⚠️ Missing (Available in Tools)"
+				tooltip_text = "%s v%s is not installed. This tool can be downloaded from the Tools page." % [display_name, tool_version]
 				availability["available"] = true
 				unknown_count += 1
 		else:
 			installed_count += 1
+			status_text = "✓ Installed"
+			if not tool_path.is_empty():
+				tooltip_text = "%s v%s is installed and ready to launch.\nPath: %s" % [display_name, tool_version, tool_path]
+			else:
+				tooltip_text = "%s v%s is installed and ready to launch." % [display_name, tool_version]
 		
 		_tool_availability["%s_%s" % [tool_id, tool_version]] = availability
 		
-		# Add tool path info if present
+		# Build label with status indicator
+		var label = "%s v%s" % [display_name, tool_version]
 		if not tool_path.is_empty():
-			label = "%s - %s%s" % [label, tool_path, indicator]
+			label = "%s - %s - %s" % [label, tool_path, status_text]
 		else:
-			label = label + indicator
+			label = "%s - %s" % [label, status_text]
 			
+		var icon: Texture2D = _get_tool_icon(tool_id)
 		if project_tools_list != null:
-			project_tools_list.add_item(label)
+			var item_idx: int = project_tools_list.add_item(label, icon)
+			if not tooltip_text.is_empty():
+				project_tools_list.set_item_tooltip(item_idx, tooltip_text)
 	
 	OgsLogger.info("project_tools_list_populated", {
 		"component": "projects",

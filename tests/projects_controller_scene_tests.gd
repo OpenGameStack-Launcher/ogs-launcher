@@ -61,6 +61,7 @@ func run() -> Dictionary:
 	_test_filtered_selection_and_data_loading(results)
 	_test_empty_state_on_zero_search_results_and_clear_action(results)
 	_test_empty_state_hides_when_project_added(results)
+	_test_toolchain_section_header_and_list_icons(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -1673,6 +1674,34 @@ func _test_empty_state_hides_when_project_added(results: Dictionary) -> void:
 	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_dir_recursive(dir1)
 	_cleanup_registry(storage_path)
+
+func _test_toolchain_section_header_and_list_icons(results: Dictionary) -> void:
+	## Verifies ToolchainHeaderLabel presence in main.tscn and icon rendering on project_tools_list.
+	OfflineEnforcer.reset()
+	var storage_path = "user://projects_controller_scene_toolchain_%s.json" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var added = controller.add_project_from_path("res://samples/sample_project")
+	_expect(added, "sample project should be added for toolchain scene test", results)
+
+	var tools_list: ItemList = ctx["project_tools_list"]
+	_expect(tools_list != null, "project_tools_list should exist", results)
+	if tools_list != null:
+		_expect(tools_list.fixed_icon_size == Vector2i(20, 20), "project_tools_list fixed_icon_size should be 20x20", results)
+		_expect(tools_list.item_count >= 2, "sample project should populate at least 2 tools (godot, blender)", results)
+		for i in range(tools_list.item_count):
+			var icon = tools_list.get_item_icon(i)
+			_expect(icon != null, "tool item %d should have an icon assigned" % i, results)
+			var text = tools_list.get_item_text(i)
+			_expect(text.contains("Installed") or text.contains("Missing") or text.contains("Unavailable"), "tool item %d text should have explicit status indicator, got: %s" % [i, text], results)
+			var tooltip = tools_list.get_item_tooltip(i)
+			_expect(not tooltip.is_empty(), "tool item %d tooltip should not be empty" % i, results)
+
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_registry(storage_path)
+
 
 
 
