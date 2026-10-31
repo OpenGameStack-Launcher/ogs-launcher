@@ -22,6 +22,10 @@ boot_splash/image="res://Images/logo.png"
 config/icon="res://Images/logo.png"
 config/windows_native_icon="res://Images/logo.ico"
 
+[autoload]
+
+McpInteractionServer="*res://autoloads/mcp_interaction_server.gd"
+
 [display]
 
 window/size/viewport_width=1024

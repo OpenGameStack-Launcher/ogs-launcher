@@ -12,7 +12,7 @@ The **PR Reviewer & Documentation Agent** acts as the quality gatekeeper and doc
 1. **Review Diff & Context:** Inspect the Pull Request description, code diff, and automated test results provided by the Issue Resolver.
 2. **Verify Acceptance Criteria:** Confirm that all criteria in the linked issue are satisfied.
 3. **Verify Architecture, Security & Code Standards:** Audit the diff against Godot 4.7.2 syntax, static typing, `OgsLogger` usage, air-gap/offline safety, and path traversal protections (see `.agents/skills/code-review/SKILL.md`).
-4. **Independent Test Execution:** Run the headless test suite inside the worktree and confirm zero failures (`tests failed: 0`).
+4. **Independent Test Execution & Visual QA:** Run the headless test suite inside the worktree and confirm zero failures (`tests failed: 0`), and verify UI changes using MCP visual QA (`python mcp_client.py screenshot` / `get_ui_elements`; see `.agents/skills/mcp-visual-qa/SKILL.md`).
 5. **Synchronize Documentation:** Update `docs/TESTING.md`, `docs/MANUAL_TESTING.md`, `docs/The_Plan.md`, `docs/*_SCHEMA.md`, and `README.md` as appropriate on the feature branch prior to merge.
 6. **Merge to Main & Clean Up:** Perform a standard Git merge commit (`--merge --delete-branch`), release Windows file locks, remove all local worktrees for the issue/PR, prune worktrees, and synchronize local `main`.
 
@@ -38,6 +38,7 @@ Before approving or merging any Pull Request, verify the following:
 * [ ] **Test Runner Registration:** Any new test suite in `tests/*_tests.gd` is added to `test_files` in `tests/test_runner.gd`, and any new `class_name` script is preloaded in `tests/test_runner.gd`.
 * [ ] **Node Cleanup:** Scene tests call `.free()` on all instantiated UI nodes.
 * [ ] **Independent Test Execution:** Reviewer independently runs `godot --headless -s res://tests/test_runner.gd` on the branch and confirms 0 failures.
+* [ ] **Visual QA (MCP Bridge):** If the PR modifies UI scenes, layouts, dialogs, icons, or visual behavior, launch the worktree app locally (`godot --path <worktree_path>`), capture a screenshot via `python mcp_client.py screenshot` (and inspect UI controls via `python mcp_client.py get_ui_elements`), view `screenshot.png` with `read_file` to verify the application is visually working right, and stop the Godot process (`Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue`).
 
 ---
 
@@ -67,11 +68,21 @@ Determine whether a local worktree for this feature branch already exists (creat
   git worktree add .worktrees/review-pr-<pr_number> <headRefName>
   ```
 
-### 3. Run Automated Tests Locally
+### 3. Run Automated Tests & Visual QA Locally
 Inside the worktree, run a headless import pass followed by the test suite:
 ```powershell
 godot --headless --editor --quit
 godot --headless -s res://tests/test_runner.gd
+```
+If the PR touches UI layout, scenes, dialogs, or icons, also run visual QA via the MCP bridge (see [`.agents/skills/mcp-visual-qa/SKILL.md`](../.agents/skills/mcp-visual-qa/SKILL.md)):
+```powershell
+Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue
+# Start the launcher in the background from the worktree, then run:
+python mcp_client.py ping
+python mcp_client.py screenshot
+python mcp_client.py get_ui_elements
+# View screenshot.png with read_file, then stop Godot:
+Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue
 ```
 
 ---

@@ -33,7 +33,7 @@ When tasked with resolving GitHub issues, follow the canonical specifications in
 - Preserve OGS architectural rules: air-gap first (`OfflineEnforcer`, `SocketBlocker`), portable paths (`PathResolver`), and path traversal protection.
 - Add `##` docstrings to new functions and log operational events using `const OgsLogger = preload("res://scripts/logging/logger.gd")` (never alias as `Logger` and never log sensitive user paths).
 
-## 4. Automated Testing
+## 4. Automated Testing & Agentic Visual QA (MCP Bridge)
 - Add or update unit or scene tests in `tests/*_tests.gd` (`extends RefCounted`, `class_name`, `func run() -> Dictionary`). Ensure scene tests `.free()` all created UI nodes.
 - **CRITICAL:** Register any new `class_name` script and any new `tests/*_tests.gd` suite inside `tests/test_runner.gd`.
 - Run the headless import pass and test suite inside the worktree:
@@ -42,6 +42,7 @@ When tasked with resolving GitHub issues, follow the canonical specifications in
   godot --headless -s res://tests/test_runner.gd
   ```
 - All tests **MUST** pass (`tests failed: 0`, exit code `0`) before proceeding.
+- **Agentic Visual QA (MCP Bridge):** When the issue touches UI layout, scenes (`main.tscn`, `scenes/*.tscn`), dialogs, icons, or visual elements, launch the worktree app in the background (`godot --path .worktrees/issue-<number>`) and use the MCP bridge (`python mcp_client.py ping`, `python mcp_client.py screenshot`, `python mcp_client.py get_ui_elements`, `python mcp_client.py get_scene_tree`, or `godot-bridge` MCP tools; see `.agents/skills/mcp-visual-qa/SKILL.md`) to inspect `screenshot.png` with `read_file` and verify the app is visually working right. Always terminate the background Godot instance (`Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue`) immediately after visual QA.
 
 ## 5. Commit & Open Pull Request
 - Run `git status` inside the worktree and ensure all modified files and generated `.uid` files are staged and committed.

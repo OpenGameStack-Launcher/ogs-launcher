@@ -19,7 +19,7 @@ The **Issue Resolver** is responsible for taking an open issue from conception t
 1. **Triage & Select:** Identify the next unblocked issue based on dependencies, priority, and issue number.
 2. **Worktree Isolation:** Create and work within an isolated Git worktree under `.worktrees/`.
 3. **Implement:** Write clean, modular, air-gap-safe, and statically typed GDScript code meeting all acceptance criteria.
-4. **Test:** Run the automated test suite (`tests/test_runner.gd`), add new unit or scene tests in `tests/`, register new suites in `tests/test_runner.gd`, and perform visual QA if UI changes are involved.
+4. **Test:** Run the automated test suite (`tests/test_runner.gd`), add new unit or scene tests in `tests/`, register new suites in `tests/test_runner.gd`, and perform visual QA via the MCP bridge (`McpInteractionServer` and `mcp_client.py`) if UI changes are involved.
 5. **Detailed Pull Request:** Push the branch and submit a detailed PR against `main`.
 
 ### Explicit Boundaries (What the Issue Resolver Does NOT Do)
@@ -175,6 +175,15 @@ godot --headless -s res://tests/test_runner.gd
 ### Verification Gate
 * **Zero Failures:** All existing and newly added tests must pass (`tests passed: X`, `tests failed: 0`, exit code `0`).
 * Note: `ERROR: Parse JSON failed` lines printed during negative JSON validation tests are expected; pass/fail is determined by `tests failed: 0` and `exiting with code 0`.
+
+### Agentic Visual QA (MCP Bridge)
+If your issue involves UI layout, scenes (`main.tscn`, `scenes/*.tscn`), dialogs, icons, or visual polish, you must visually verify your changes using the MCP bridge before submitting the PR (see [`.agents/skills/mcp-visual-qa/SKILL.md`](../.agents/skills/mcp-visual-qa/SKILL.md)):
+1. Stop any lingering Godot instances: `Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue`.
+2. Start a fresh instance of the worktree application in the background: `godot --path .worktrees/issue-<number>`.
+3. In debug mode, this automatically starts the `McpInteractionServer` AutoLoad (`res://autoloads/mcp_interaction_server.gd`) on `127.0.0.1:9090`.
+4. Run `python mcp_client.py ping`, `python mcp_client.py screenshot`, and `python mcp_client.py get_ui_elements` (or use the `godot-bridge` MCP server tools) to capture `screenshot.png` and inspect the live SceneTree and Control bounds.
+5. View `screenshot.png` with `read_file` to verify that the application is visually working right and has no clipping, overlap, or broken layout.
+6. **CRITICAL:** Once visual QA is complete, terminate the background Godot process (`Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue`) to close the window and release Windows file locks and port `9090`.
 
 ---
 

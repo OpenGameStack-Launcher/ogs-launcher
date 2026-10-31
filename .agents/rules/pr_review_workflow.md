@@ -29,13 +29,14 @@ When reviewing and merging Pull Requests, adhere to the canonical standards in [
     git worktree add .worktrees/review-pr-<PR_ID> <headRefName>
     ```
 
-## 3. Independent Test Execution
+## 3. Independent Test Execution & Visual QA (MCP Bridge)
 - Inside the worktree, run the headless import pass and test suite:
   ```powershell
   godot --headless --editor --quit
   godot --headless -s res://tests/test_runner.gd
   ```
 - Confirm 0 failures (`tests failed: 0`, exit code `0`).
+- **Visual QA (MCP Bridge):** If the PR modifies UI scenes, layouts, dialogs, icons, or visual behavior, launch the worktree app in the background (`godot --path <worktree_path>`), run `python mcp_client.py ping`, `python mcp_client.py screenshot`, and `python mcp_client.py get_ui_elements` (or `godot-bridge` MCP tools; see `.agents/skills/mcp-visual-qa/SKILL.md`), inspect `screenshot.png` with `read_file` to ensure the application is visually working right, and immediately stop the background Godot process (`Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue`).
 
 ## 4. Documentation Coordination & Fixes (Prior to Merge)
 - As the **Documentation Steward**, review the PR's "Handoff for PR Reviewer & Documentation Agent" section and synchronize `docs/TESTING.md`, `docs/MANUAL_TESTING.md`, `docs/The_Plan.md`, `docs/*_SCHEMA.md`, and `README.md` as needed.

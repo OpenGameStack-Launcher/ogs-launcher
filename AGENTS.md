@@ -47,6 +47,10 @@ All code changes must strictly preserve these four architectural pillars:
     godot --headless --editor --quit
     godot --headless -s res://tests/test_runner.gd
     ```
+- **Runtime Visual QA via MCP Bridge (`McpInteractionServer` & `mcp_client.py`):**
+  - [`McpInteractionServer`](autoloads/mcp_interaction_server.gd) runs as an AutoLoad in debug builds on `127.0.0.1:9090` (configurable via `GODOT_MCP_PORT`), paired with the zero-dependency [`mcp_client.py`](mcp_client.py) CLI and the `godot-bridge` MCP server.
+  - Whenever modifying scenes (`main.tscn`, `scenes/*.tscn`), UI layouts, dialogs, icons, or UI controllers, launch the application in the background and use MCP (`python mcp_client.py ping`, `screenshot`, `get_ui_elements`, `get_scene_tree`, `click`, or `godot-bridge` MCP tools) to visually inspect `screenshot.png` with `read_file` and verify the application is visually working right (see [`.agents/skills/mcp-visual-qa/SKILL.md`](.agents/skills/mcp-visual-qa/SKILL.md)).
+  - Always terminate the background Godot instance (`Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue`) immediately after visual QA to release port `9090` and Windows file locks.
 - **Godot `.uid` Files:** Always stage and commit generated `.uid` metadata files alongside any new or moved `.gd` scripts or resources.
 
 ---
@@ -57,6 +61,7 @@ This project uses a structured multi-agent workflow for issue creation, resoluti
 
 ### Agent Skills (`.agents/skills/`)
 - **Issue Orchestration (`.agents/skills/issue-orchestration/SKILL.md`):** Defines how the primary orchestrator spawns and manages single-task `issue_creator`, `issue_resolver`, and `pr_reviewer` subagents sequentially with 10-minute liveness timers and strict user authorization gates.
+- **MCP Visual QA (`.agents/skills/mcp-visual-qa/SKILL.md`):** Defines the step-by-step procedure for interactive runtime inspection, UI verification, and screenshot QA using `McpInteractionServer` and `mcp_client.py`.
 - **Release Management (`.agents/skills/release-management/SKILL.md`):** Defines the `release_manager` subagent pipeline for dispatching, monitoring, verifying, and publishing Windows release packages via GitHub Actions and `scripts/release/build_release_package.ps1`.
 - **Code Review (`.agents/skills/code-review/SKILL.md`):** Structured checklist for reviewing GDScript, `.tscn`, `.tres`, and `project.godot` diffs against Godot 4.7.2 and OGS standards.
 

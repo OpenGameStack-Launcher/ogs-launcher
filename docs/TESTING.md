@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 969
+tests passed: 975
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -352,10 +352,37 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
 
 ### Startup Tests (Initialization Verification)
 
-- **[tests/startup_tests.gd](tests/startup_tests.gd)** — Verifies launcher initialization without errors (3 tests).
+- **[tests/startup_tests.gd](tests/startup_tests.gd)** - Verifies launcher initialization without errors (5 tests).
   - Main scene loads and instantiates successfully
-  - All required UI nodes exist and are accessible (13 critical nodes)
-  - Script validation: main.gd is properly formed and instantiable
+  - All required UI nodes exist and are accessible (17 critical nodes)
+  - Controller classes (`ProjectsController`, `SealController`, `LayoutController`, `OnboardingWizard`) instantiate cleanly
+  - Script validation: `main.gd` is properly formed and instantiable
+  - `McpInteractionServer` autoload registration in `project.godot`, `autoloads/mcp_interaction_server.gd` instantiation, and `mcp_client.py` presence
+
+### Agentic Visual QA (MCP Bridge)
+
+In addition to headless unit and scene tests, OGS Launcher includes a debug-only runtime inspection bridge (`McpInteractionServer` at [`autoloads/mcp_interaction_server.gd`](../autoloads/mcp_interaction_server.gd) and [`mcp_client.py`](../mcp_client.py)) listening on `127.0.0.1:9090` (configurable via `GODOT_MCP_PORT`). It is automatically disabled in non-debug release exports and headless test runs.
+
+Whenever modifying UI scenes (`main.tscn`, `scenes/*.tscn`), layouts, dialogs, icons, or visual controllers, use the MCP bridge (via `mcp_client.py` or the `godot-bridge` MCP server tools; see [`.agents/skills/mcp-visual-qa/SKILL.md`](../.agents/skills/mcp-visual-qa/SKILL.md)) to verify the application is visually working right:
+
+```powershell
+# 1. Stop any stale Godot processes holding port 9090
+Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue
+
+# 2. Launch OGS Launcher in the background (e.g. godot or godot --path .worktrees/issue-<number>)
+
+# 3. Query and capture screenshots via mcp_client.py
+python mcp_client.py ping
+python mcp_client.py screenshot
+python mcp_client.py get_ui_elements
+python mcp_client.py get_scene_tree
+
+# 4. Inspect screenshot.png to confirm clean layout without clipping or overlap
+
+# 5. Terminate the background Godot process to release port 9090 and Windows file locks, and clean up temporary screenshots
+Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue
+Get-ChildItem -Path screenshot*, agent_screenshot* -ErrorAction SilentlyContinue | Remove-Item -Force
+```
 
 ## Test Structure
 

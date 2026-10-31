@@ -15,6 +15,7 @@ Resolves #<issue_number>
 - [ ] Ran automated test suite via Godot headless runner (`godot --headless -s res://tests/test_runner.gd`).
 - [ ] Added or updated test cases in `tests/<test_file>_tests.gd` covering these changes.
 - [ ] Registered any new `class_name` or test suite in `tests/test_runner.gd`.
+- [ ] Performed visual QA via MCP bridge (`python mcp_client.py screenshot` / `get_ui_elements`) if UI scenes, layouts, or dialogs were modified.
 - **Results:** `tests passed: <Passed>, tests failed: 0`
 
 ```text

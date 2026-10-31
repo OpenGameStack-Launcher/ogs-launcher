@@ -30,8 +30,13 @@ godot_run_output.txt
 
 # Screenshots & Agent Visual QA
 screenshot.png
+screenshot.png.import
+screenshot.png.uid
 agent_screenshot.png
 agent_screenshot.png.import
+agent_screenshot.png.uid
+__pycache__/
+*.py[cod]
 
 # Agent Scratch Files
 pr_body.md

@@ -628,9 +628,51 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 13: Debug MCP Visual QA Bridge Verification
+
+**Objective:** Verify that `McpInteractionServer` runs during debug execution, binds to `127.0.0.1:9090`, allows scene tree and UI element inspection, captures viewport screenshots via `mcp_client.py`, and cleans up properly.
+
+**Steps:**
+1. Start OGS Launcher in debug mode (press F5 in Godot or run `godot` in terminal).
+2. Open PowerShell and run:
+   ```powershell
+   python mcp_client.py ping
+   ```
+3. Capture a viewport screenshot:
+   ```powershell
+   python mcp_client.py screenshot
+   ```
+4. Query UI elements:
+   ```powershell
+   python mcp_client.py get_ui_elements
+   ```
+5. Terminate the debug launcher and clean up screenshots:
+   ```powershell
+   Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue
+   Get-ChildItem -Path screenshot*, agent_screenshot* -ErrorAction SilentlyContinue | Remove-Item -Force
+   ```
+
+**Expected Results:**
+- ✅ `python mcp_client.py ping` returns JSON with `status: ok` and OS details.
+- ✅ `python mcp_client.py screenshot` generates `screenshot.png` matching launcher window dimensions (1024x700).
+- ✅ `python mcp_client.py get_ui_elements` returns JSON list of all active Control nodes with positions and sizes.
+- ✅ Background process terminates cleanly and releases port `9090`.
+
+**Pass Criteria:**
+- Bridge responds reliably on localhost port 9090 in debug mode.
+- Screenshot captures rendered viewport.
+- Cleanup releases file locks and network port.
+
+**If test fails:**
+- Confirm `project.godot` registers `McpInteractionServer` under `[autoload]`.
+- Check if port 9090 is in use (`Get-NetTCPConnection -LocalPort 9090`).
+- Ensure launcher is running in debug mode (`OS.is_debug_build() == true`).
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-12, fill in this table:
+After completing Editor Tests 1-13, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -648,6 +690,7 @@ After completing Editor Tests 1-12, fill in this table:
 | 10: Code Tooling & Launch | ✅/⚠️/❌ | | |
 | 11: Project Tools List Launch | ✅/⚠️/❌ | | |
 | 12: Stack-Aware Explorer & Double-Click | ✅/⚠️/❌ | | |
+| 13: Debug MCP Visual QA Bridge | ✅/⚠️/❌ | | |
 
 ---
 
