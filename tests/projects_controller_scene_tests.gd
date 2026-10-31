@@ -68,6 +68,7 @@ func run() -> Dictionary:
 	_test_project_dialogs_compact_dimensions_and_margins(results)
 	_test_dialog_input_validation_empty_guards(results)
 	_test_new_file_dialog_instruction_preview(results)
+	_test_add_tool_dialog_presentation_icons_and_button_sizing(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -2041,6 +2042,15 @@ func _test_project_dialogs_compact_dimensions_and_margins(results: Dictionary) -
 			_expect(vbox.offset_top == 12.0, "NewFileDialog VBoxContainer offset_top should be 12px, got %f" % vbox.offset_top, results)
 			_expect(vbox.offset_right == -16.0, "NewFileDialog VBoxContainer offset_right should be -16px, got %f" % vbox.offset_right, results)
 
+	# 4. AddToolDialog ToolOptionList fixed_icon_size
+	var add_tool_dialog: ConfirmationDialog = instance.get_node_or_null("AddToolDialog") as ConfirmationDialog
+	_expect(add_tool_dialog != null, "AddToolDialog should exist in main.tscn", results)
+	if add_tool_dialog != null:
+		var option_list: ItemList = add_tool_dialog.get_node_or_null("VBoxContainer/ToolOptionList") as ItemList
+		_expect(option_list != null, "AddToolDialog ToolOptionList should exist in main.tscn", results)
+		if option_list != null:
+			_expect(option_list.fixed_icon_size == Vector2i(20, 20), "ToolOptionList fixed_icon_size should be 20x20 in main.tscn, got %s" % str(option_list.fixed_icon_size), results)
+
 	instance.free()
 
 func _test_dialog_input_validation_empty_guards(results: Dictionary) -> void:
@@ -2143,6 +2153,127 @@ func _test_new_file_dialog_instruction_preview(results: Dictionary) -> void:
 		_expect(instructions_label.text.find(".blend") != -1, "InstructionsLabel should hint .blend extension (got: %s)" % instructions_label.text, results)
 		_expect(instructions_label.text.find("assets/models/") != -1, "InstructionsLabel should hint target subdirectory assets/models/ (got: %s)" % instructions_label.text, results)
 		
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(projects_root)
+	_cleanup_registry(storage_path)
+
+func _test_add_tool_dialog_presentation_icons_and_button_sizing(results: Dictionary) -> void:
+	## Verifies AddToolDialog populates icons, status tags, tooltips, and balanced button sizes.
+	var storage_path := "user://test_add_tool_dialog_presentation_%s.json" % str(Time.get_ticks_msec())
+	var projects_root := "user://test_add_tool_dialog_root_%s" % str(Time.get_ticks_msec())
+	_cleanup_registry(storage_path)
+	_cleanup_dir_recursive(projects_root)
+
+	var ctx := _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	controller.set_projects_root_path_for_tests(projects_root)
+	
+	var add_tool_dialog: ConfirmationDialog = ctx["add_tool_dialog"]
+	var add_tool_option_list: ItemList = ctx["add_tool_option"]
+	var ok_button: Button = add_tool_dialog.get_ok_button()
+	var cancel_button: Button = add_tool_dialog.get_cancel_button()
+	
+	# 1. Verify initial setup sizes
+	_expect(ok_button.custom_minimum_size == Vector2(180, 36), "AddToolDialog OK button should have custom_minimum_size (180, 36) after setup (got: %s)" % str(ok_button.custom_minimum_size), results)
+	_expect(cancel_button.custom_minimum_size == Vector2(100, 36), "AddToolDialog Cancel button should have custom_minimum_size (100, 36) after setup (got: %s)" % str(cancel_button.custom_minimum_size), results)
+	_expect(add_tool_option_list.fixed_icon_size == Vector2i(20, 20), "ToolOptionList should have fixed_icon_size (20, 20) after setup (got: %s)" % str(add_tool_option_list.fixed_icon_size), results)
+
+	# Create a project
+	controller._create_new_project_from_name("AddToolPresentationProject")
+	_expect(controller.current_manifest != null, "Current project manifest should be active", results)
+
+	# Setup mock tool availability in library root:
+	# Create local folder for blender 4.2 to simulate an installed tool
+	var lib_root: String = controller._library_manager.path_resolver.get_library_root()
+	var installed_tool_dir: String = lib_root.path_join("blender").path_join("4.2")
+	DirAccess.make_dir_recursive_absolute(installed_tool_dir)
+
+	# Inject candidate tools via registry tracked_projects so they appear as candidates
+	controller.registry_manager.tracked_projects.append({
+		"name": "DummyCandidateProject",
+		"path": "user://dummy_candidate_path",
+		"tools": [
+			{"id": "blender", "version": "4.2"},
+			{"id": "audacity", "version": "3.7.7"},
+			{"id": "unknown_tool", "version": "1.0"}
+		]
+	})
+
+	# Open dialog
+	controller.tool_manager._on_add_tool_pressed()
+
+	# 2. Verify button sizing after dialog population
+	_expect(ok_button.custom_minimum_size == Vector2(180, 36), "AddToolDialog OK button should retain custom_minimum_size (180, 36) after populate (got: %s)" % str(ok_button.custom_minimum_size), results)
+	_expect(cancel_button.custom_minimum_size == Vector2(100, 36), "AddToolDialog Cancel button should retain custom_minimum_size (100, 36) after populate (got: %s)" % str(cancel_button.custom_minimum_size), results)
+	_expect(add_tool_option_list.item_count >= 2, "AddToolDialog should have candidate items populated (got: %d)" % add_tool_option_list.item_count, results)
+
+	# 3. Check installed tool item (blender 4.2)
+	var found_installed := false
+	var found_uninstalled := false
+	var found_unknown := false
+
+	for i in range(add_tool_option_list.item_count):
+		var text: String = add_tool_option_list.get_item_text(i)
+		var icon: Texture2D = add_tool_option_list.get_item_icon(i)
+		var tooltip: String = add_tool_option_list.get_item_tooltip(i)
+
+		if text.begins_with("Blender v4.2"):
+			found_installed = true
+			_expect(text.ends_with(" ✓ Installed"), "Installed tool should have ' ✓ Installed' tag (got: %s)" % text, results)
+			_expect(icon != null, "Installed tool (blender) should have an icon attached", results)
+			_expect(tooltip.to_lower().find("installed") != -1 or tooltip.to_lower().find("central library") != -1, "Installed tool tooltip should indicate presence in library (got: %s)" % tooltip, results)
+		elif text.begins_with("Audacity v3.7.7"):
+			found_uninstalled = true
+			_expect(text.ends_with(" ⬇ Available for Download"), "Uninstalled tool should have ' ⬇ Available for Download' tag (got: %s)" % text, results)
+			_expect(icon != null, "Uninstalled known tool (audacity) should have an icon attached", results)
+			_expect(tooltip.to_lower().find("download") != -1, "Uninstalled tool tooltip should indicate download required (got: %s)" % tooltip, results)
+		elif text.find("unknown_tool") != -1:
+			found_unknown = true
+			_expect(icon == null, "Unknown tool should fall back gracefully with null icon", results)
+
+	_expect(found_installed, "Should find installed Blender candidate in option list", results)
+	_expect(found_uninstalled, "Should find uninstalled Audacity candidate in option list", results)
+	_expect(found_unknown, "Should find unknown tool candidate in option list", results)
+
+	# 4. Verify selection handler compatibility
+	for i in range(add_tool_option_list.item_count):
+		var text: String = add_tool_option_list.get_item_text(i)
+		if text.begins_with("Audacity v3.7.7"):
+			add_tool_option_list.select(i)
+			controller.tool_manager._on_add_tool_item_selected(i)
+			_expect(not ok_button.disabled, "OK button should be enabled on valid selection", results)
+			_expect(ok_button.text == "Add Audacity version 3.7.7", "OK button text should be formatted properly (got: %s)" % ok_button.text, results)
+			break
+
+	# 5. Verify confirmation handler adds tool properly
+	controller.tool_manager._on_add_tool_confirmed()
+	var has_audacity := false
+	for tool_entry in controller.current_manifest.tools:
+		if String(tool_entry.get("id", "")) == "audacity" and String(tool_entry.get("version", "")) == "3.7.7":
+			has_audacity = true
+			break
+	_expect(has_audacity, "Confirmed tool should be added to project manifest", results)
+
+	# 6. Verify Change Version flow maintains compatibility with status tags
+	controller._selected_tool_index = -1
+	for idx in range(controller.current_manifest.tools.size()):
+		if String(controller.current_manifest.tools[idx].get("id", "")) == "audacity":
+			controller._selected_tool_index = idx
+			break
+	controller.registry_manager.tracked_projects.append({
+		"name": "ChangeVersionCandidateProject",
+		"path": "user://change_version_path",
+		"tools": [
+			{"id": "audacity", "version": "3.8.0"}
+		]
+	})
+	controller.tool_manager._on_change_version_pressed()
+	_expect(add_tool_dialog.title == "Change Version for audacity", "Dialog title should be set for version change", results)
+	_expect(ok_button.custom_minimum_size == Vector2(180, 36), "OK button size should remain (180, 36) in Change Version mode", results)
+	_expect(cancel_button.custom_minimum_size == Vector2(100, 36), "Cancel button size should remain (100, 36) in Change Version mode", results)
+
+	# Cleanup
+	_cleanup_dir_recursive(lib_root.path_join("blender"))
 	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_dir_recursive(projects_root)
 	_cleanup_registry(storage_path)
