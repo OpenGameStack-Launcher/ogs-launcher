@@ -630,6 +630,15 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Part 1 of 3 migration (Issue #179 complete; Part 2 covers Sealing, Export, and Remote Clone in Issue #180, and Part 3 covers Documentation Schemas in Issue #181).
 - 38 test suites passing (2403 total tests) with zero failures.
 
+**Update Tool Launcher, Seal Pipeline, and Remote Cloner for ogs_stack.json (Issue #180, Nov 1, 2026):**
+- Migrated manifest lookups and references to canonical `ogs_stack.json` across Tool Launcher, Seal for Delivery pipeline, Remote Project Cloner, and Release Packaging script.
+- Updated error codes in Remote Project Cloner to `missing_ogs_stack_json` and `invalid_ogs_stack_json` with descriptive messages.
+- Updated Remote Project Dialog header and status indicators for `ogs_stack.json` verification.
+- Enforced strict cutover: all tool launch lookups, seal validations, archive inspections, remote Git clone checks, and release packaging notes consistently use `ogs_stack.json`.
+- Updated test suites across `tests/tool_launcher_tests.gd`, `tests/seal_controller_tests.gd`, `tests/project_sealer_tests.gd`, `tests/project_sealer_test_helpers.gd`, `tests/remote_project_cloner_tests.gd`, and `tests/remote_project_dialog_tests.gd`.
+- Part 2 of 3 migration (Issue #180 complete; Part 3 covers remaining Documentation and Schema sweeps in Issue #181).
+- 38 test suites passing (2403 total tests) with zero failures.
+
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
 - Collapsible UI sections for scalability
