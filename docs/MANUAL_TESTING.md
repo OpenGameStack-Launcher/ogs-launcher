@@ -97,15 +97,26 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ### Editor Test 1: Launcher Startup & Onboarding
 
-**Objective:** Verify that the launcher starts without errors and displays the onboarding wizard on first run.
+**Objective:** Verify that the launcher starts without errors and displays the onboarding wizard with brand visuals, starter stack preview card, and unified action buttons on first run.
 
 **Steps:**
-1. Delete `%LOCALAPPDATA%\OGS` (to simulate first run)
+1. Delete `%LOCALAPPDATA%\OGS` (or delete `%LOCALAPPDATA%\OGS\ogs_wizard_complete.txt`) to simulate first run
 2. Press F5 or click Run Scene on main.tscn
-3. Observe the launcher window and any dialogs
-4. In the onboarding wizard, click **Start**
-5. Wait for the wizard to close and the main window to remain open
-6. Verify `%LOCALAPPDATA%\OGS` exists and contains `Library` and `ogs_wizard_complete.txt`
+3. Observe the launcher window and the `OnboardingWizardDialog`:
+   - Confirm dialog dimensions are spacious (560x420, min 540x380) without text clipping or scrollbars
+   - Verify BrandHeader row displays the 48x48 OGS logo (`res://Images/logo.png`) alongside "Welcome to Open Game Stack" (18px typography)
+   - Verify "Default Starter Stack" card displays subtitle and 6 tool preview items with icons and labels (Godot, Blender, GIMP, Audacity, Krita, VSCodium)
+   - Verify action buttons are unified on a single horizontal footer row: "Skip for Now" (SecondaryButton style, 130x36) and "Start" (PrimaryButton style, 130x36)
+   - Confirm default AcceptDialog OK button is hidden
+4. Test "Start" initialization:
+   - In the onboarding wizard, click **Start**
+   - Wait for the wizard to close and the main window to remain open
+   - Verify `%LOCALAPPDATA%\OGS` exists and contains `Library\godot\4.7.2`, `Library\blender\4.2`, and `ogs_wizard_complete.txt`
+5. Test "Skip for Now" workflow (Optional verification):
+   - Delete `%LOCALAPPDATA%\OGS\ogs_wizard_complete.txt`
+   - Run the launcher scene again
+   - When the onboarding wizard appears, click **Skip for Now**
+   - Confirm wizard closes immediately, `%LOCALAPPDATA%\OGS\ogs_wizard_complete.txt` is recreated, and no errors occur
 
 **Expected Results:**
 - ✅ Launcher window appears without errors
@@ -115,16 +126,17 @@ dir "$env:LOCALAPPDATA\OGS\"
 - ✅ Navigation buttons (Projects, Tools, Settings) visible with Projects highlighted as active (elevated background with 3px primary blue accent border)
 - ✅ Projects page is default/active
 - ✅ Sidebar footer displays global connectivity status indicator ("● Online" / "● Offline") and launcher version label ("v0.1.0")
-- ✅ Onboarding wizard appears (welcome dialog with default stack info)
-- ✅ Clicking **Start** completes onboarding and closes the dialog
-- ✅ `%LOCALAPPDATA%\OGS\Library` exists after onboarding completes
-- ✅ `%LOCALAPPDATA%\OGS\ogs_wizard_complete.txt` exists after onboarding completes
+- ✅ Onboarding wizard appears with brand logo, starter stack preview card (6 tools), and unified footer buttons
+- ✅ Default AcceptDialog OK button and container are hidden
+- ✅ Clicking **Start** initializes default stack directories (`godot\4.7.2`, `blender\4.2`), writes `ogs_wizard_complete.txt`, and closes dialog
+- ✅ Clicking **Skip for Now** marks wizard complete, writes `ogs_wizard_complete.txt`, and closes dialog without creating tool directories
 - ✅ Output console shows no SCRIPT ERROR messages
 
 **Pass Criteria:**
 - Launcher starts cleanly
 - UI is responsive and no error dialogs block the main window
-- Onboarding wizard appears and completes when **Start** is clicked
+- Onboarding wizard visuals, preview card, and unified buttons render cleanly without clipping
+- Onboarding wizard completes and creates expected files when **Start** or **Skip for Now** is clicked
 - OGS data folder is created with expected files
 
 **If test fails:**

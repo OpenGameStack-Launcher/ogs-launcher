@@ -192,6 +192,13 @@ To prevent visual clutter on the Tools page (`PageTools`), `ToolsPageController`
     *   *Call-to-Action Button:* A `"Browse Available Tools"` button (`PrimaryButton` variation) wired via `_on_browse_available_tools_pressed()` to switch directly to the Download tab (`current_tab = 1`).
     *   *State Transition:* Upon installing a tool or populating tools where `installed_count > 0`, `InstalledEmptyState` is automatically hidden and `InstalledContent` is displayed with only the populated category sections and dividers.
 
+### 2.18 Unified Onboarding Wizard Dialog Layout and Brand Visuals (OnboardingWizard)
+On first launch, `OnboardingWizard` (`scripts/onboarding/onboarding_wizard.gd`) manages `OnboardingWizardDialog` in `main.tscn` to introduce users to Open Game Stack:
+*   **Window Geometry & Proportions:** Configures `size = Vector2i(560, 420)` with `min_size = Vector2i(540, 380)` and centered positioning (`initial_position = 1`), providing ample layout room without text truncation or scrollbar clipping.
+*   **Brand Header:** Prominent brand header row (`BrandHeader`) featuring the OGS shield logo (`res://Images/logo.png`, 48x48, centered aspect ratio) paired with the title header ("Welcome to Open Game Stack" in 18px typography).
+*   **Starter Stack Preview Card:** Displays a dedicated preview card (`StarterStackCard`, `PanelContainer`) styled with `StyleBoxFlat_starter_stack_card` showcasing the 6 starter tools managed by the launcher (Godot, Blender, GIMP, Audacity, Krita, and VSCodium) with tool icons and names, plus descriptive text explaining portable, offline-first toolchain management.
+*   **Unified Footer Action Buttons:** Consolidates action buttons into a single horizontal footer row within `ButtonContainer` at the bottom of the dialog (separated by `DialogSpacer` with `size_flags_vertical = 3`). Hides the default `AcceptDialog` OK button and its container when custom footer buttons exist, styling "Start" as `PrimaryButton` and "Skip for Now" as `SecondaryButton` with consistent minimum dimensions (`Vector2(130, 36)`). Retains fallback support for `AcceptDialog.custom_action("skip")`.
+
 ---
 
 ## 3. Operational Modes & User Stories
