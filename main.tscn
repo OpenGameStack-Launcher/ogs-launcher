@@ -927,15 +927,40 @@ text = "Mirror status: Not configured"
 [node name="SealDialog" type="AcceptDialog" parent="." unique_id=939076631]
 title = "Seal for Delivery"
 initial_position = 1
-size = Vector2i(550, 350)
+size = Vector2i(560, 420)
+min_size = Vector2i(560, 400)
+borderless = true
+unresizable = true
+dialog_hide_on_ok = false
+dialog_close_on_escape = false
 ok_button_text = "Close"
 
 [node name="VBoxContainer" type="VBoxContainer" parent="SealDialog" unique_id=838987614]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
+offset_left = 16.0
+offset_top = 16.0
+offset_right = -16.0
+offset_bottom = -54.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 10
+
+[node name="HeaderBar" type="HBoxContainer" parent="SealDialog/VBoxContainer" unique_id=939076632]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="HeaderTitle" type="Label" parent="SealDialog/VBoxContainer/HeaderBar" unique_id=939076633]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.96, 0.98, 1)
+theme_override_font_sizes/font_size = 18
+text = "Seal for Delivery"
+vertical_alignment = 1
+
+[node name="HeaderSeparator" type="HSeparator" parent="SealDialog/VBoxContainer" unique_id=939076634]
+layout_mode = 2
 
 [node name="StatusLabel" type="Label" parent="SealDialog/VBoxContainer" unique_id=713948544]
 layout_mode = 2

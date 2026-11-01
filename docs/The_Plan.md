@@ -569,6 +569,13 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Created a horizontal action row (`ProjectDetailsActionRow`, separation 12) at the bottom of `Project Details` housing `LaunchButton` and `SealButton` side-by-side with `Control.SIZE_EXPAND_FILL` sizing on both buttons.
 - Updated node paths in `main.gd` and added comprehensive hierarchy and separation assertions in `tests/main_scene_tests.gd`, `tests/projects_controller_scene_tests.gd`, and `tests/startup_tests.gd` (38 test suites passing, 2190 total tests with zero failures).
 
+**Pre-Seal Confirmation State and Borderless Chrome on SealDialog (Issue #166, Oct 31, 2026):**
+- Introduced pre-seal Confirmation state in `SealController` and `SealDialog` displaying target project name, canonically formatted tool list (`ToolCategoryMapper`), and a multi-minute packaging advisory notice.
+- Added explicit Confirm (PrimaryButton) and Cancel (SecondaryButton) action buttons: Cancel aborts without file mutations or background threads; Confirm triggers in-place transition to progress and launches background packaging.
+- Removed top-right window close button from `SealDialog` by configuring `borderless = true`, unresizable window flags, clearing close theme icons, adding a styled in-dialog `HeaderBar` with 18px `HeaderTitle`, and intercepting `close_requested` to prevent modal dismissal while background worker threads are active.
+- Preserved seamless in-place state transitions across Confirmation, Sealing Progress, and Completion (Success or Error), ensuring progress indicators activate only post-confirmation and action buttons adapt dynamically per phase.
+- Added comprehensive unit and scene tests in `tests/seal_controller_tests.gd` and updated `tests/startup_tests.gd` (38 test suites passing, 2279 total tests with zero failures).
+
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
 - Collapsible UI sections for scalability
