@@ -117,6 +117,7 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - VSCodium launch arguments include workspace project path and optional target file
   - Fallback executable discovery for Git (`git-bash.exe`, `cmd/git.exe`, `bin/git.exe`) and VSCodium (`VSCodium.exe`, `codium`, `bin/codium`)
   - Automatic detection and injection of portable Git (`git.path` and `git.enabled`) into `.vscode/settings.json` when Git is pinned in `ogs_stack.json`
+  - Recursive Godot project discovery (`_find_first_project_godot`) skips `ogs_tools/` directory while discovering `project.godot` files in developer directories (including `tools/`)
   - Absolute paths used as-is (no project directory joining)
   - Relative paths joined with project directory
 
@@ -207,9 +208,10 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Zero-file edge case handling reporting 100% cleanly without division by zero
   - Cooperative thread cancellation during Step 1 tool copying aborting prompt file copying and cleaning up partial tool folders
   - Cooperative thread cancellation during Step 2 zip archiving deleting partial ZIP archives and restoring pre-seal project state
-  - Pre-seal filesystem snapshot capturing pre-existing tools and ogs_config.json
+  - Pre-seal filesystem snapshot capturing pre-existing ogs_tools/ subdirectories and ogs_config.json
   - Full disk state rollback upon user cancellation or mid-seal failure restoring pre-seal project snapshot
-  - Preservation of pre-existing tool subdirectories and user notes during rollback
+  - Preservation of pre-existing ogs_tools subdirectories and user notes during rollback
+  - Preservation of developer-authored tools/ directories and custom automation scripts (e.g. tools/build_helper.py) untouched during rollback
   - Clean deletion of newly copied tool directories, partial zip archives, and transient offline configurations
 
 - **[tests/mirror_repository_tests.gd](tests/mirror_repository_tests.gd)** — Validates local mirror repository.json loading and schema.
@@ -483,7 +485,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - CheckButton stylebox overrides defined on `global_theme` using `StyleBoxEmpty` and hover styling, replacing solid Button stylebox inheritance
   - Target buttons across Projects, Tools, and Settings pages in `main.tscn` configured with appropriate `PrimaryButton`, `SecondaryButton`, and `DangerButton` theme variations (including `ExplorerLaunchButton`)
   - Normalized path separators verified in Settings page Primary Projects Folder placeholder text and Project Details Project Offline Policy status label
-  - Project offline policy controls verified under Project Details `Policy` sub-tab (`ProjectDetailsTabs/Policy`, `ProjectOfflineModeCheckButton`, `ProjectForceOfflineCheckButton`, helper labels, and normalized path status label) and verified absent from PageSettings
+  - Project offline policy controls verified under Project Details `Policy` sub-tab (`ProjectDetailsTabs/Policy`, `ProjectOfflineModeCheckButton`, `ProjectForceOfflineCheckButton`, helper labels referencing `ogs_tools/`, and normalized path status label) and verified absent from PageSettings
   - Redesigned `PageSettings` section cards: `ProjectsCard` and `MirrorCard` `PanelContainer` elements with `StyleBoxFlat_settings_card`, 6px corner radii, and 16px internal padding
   - Unwired `CheckUpdatesButton` and orphaned `NetworkLabel` verified removed from `PageSettings`
   - Form label uniform minimum widths: `ProjectsRootLabel`, `MirrorRootLabel`, and `MirrorRepoLabel` verified with `custom_minimum_size.x >= 195.0` to eliminate ragged offsets and ensure aligned inputs
@@ -518,7 +520,8 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Direct tool folders (gimp, blender, krita, audacity, godot, game) receive corresponding tool icons with max width 20px
   - Container folders (project root, intermediate folders like assets, 2D, 3D, Audio, and nested subfolders) maintain null icons
   - Icon caching in ProjectExplorer verifies texture instance reuse and missing tool handling
-  - Stack-aware text and script file display: when VSCodium is in the stack, all mapped extensions (gd, cs, gdshader, shader, txt, md, csv, json, yaml, yml, toml) appear with the VSCodium icon and emit vscodium on selection
+  - Stack-aware text and script file display: when VSCodium is in the stack, all mapped extensions (gd, cs, gdshader, shader, txt, md, csv, json, yaml, yml, toml, py) appear with the VSCodium icon and emit vscodium on selection
+  - Exclusion of project-local ogs_tools/ directory while displaying user-authored tools/ folder (and script.py) when VSCodium is in stack
   - Strict metadata exclusion: internal launcher and engine metadata files (ogs_stack.json, ogs_config.json, ogs_metadata.json, .import, .uid, .cfg, .tres, .tscn) remain hidden even when .json is supported
   - Godot-only pruning: text and script files are pruned when VSCodium is not in the project stack
   - Double-click activation: double-clicking a file emits file_activated signal while double-clicking a folder toggles collapse
