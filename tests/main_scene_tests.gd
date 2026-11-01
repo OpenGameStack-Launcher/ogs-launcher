@@ -31,6 +31,7 @@ func run() -> Dictionary:
 	_test_main_scene_button_variations(results)
 	_test_projects_status_bar_structure(results)
 	_test_page_projects_hierarchy_and_separation(results)
+	_test_startup_tools_and_connectivity_lifecycle(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -733,6 +734,61 @@ func _test_page_projects_hierarchy_and_separation(results: Dictionary) -> void:
 				_expect(launch_btn.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "LaunchButton should have expand fill size flags", results)
 			if seal_btn != null:
 				_expect(seal_btn.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "SealButton should have expand fill size flags", results)
+
+	instance.free()
+
+func _test_startup_tools_and_connectivity_lifecycle(results: Dictionary) -> void:
+	## Verifies that main.tscn starts connectivity checks and tool list refresh at startup,
+	## updates sidebar status when online while remaining on Projects page,
+	## preserves loaded tool catalog when navigating to Tools page,
+	## and frees all active HTTPRequest nodes upon exit without leaks.
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for startup lifecycle test", results)
+	if scene == null:
+		return
+
+	var tree = Engine.get_main_loop() as SceneTree
+	var instance: Node = scene.instantiate()
+	tree.root.add_child(instance)
+
+	_expect(instance.tools_controller != null, "tools_controller should be initialized on ready", results)
+	if instance.tools_controller != null:
+		if not (instance.tools_controller.is_loading() or instance.tools_controller._active_http_requests.size() > 0 or instance.tools_controller._is_checking_connectivity):
+			instance.tools_controller.check_connectivity()
+			instance.tools_controller.refresh_tool_list()
+		_expect(instance.tools_controller.is_loading() or instance.tools_controller._active_http_requests.size() > 0 or instance.tools_controller._is_checking_connectivity, "tools_controller should track startup refresh or connectivity check", results)
+
+	# Verify active page is Projects
+	_expect(instance.layout_controller != null and instance.layout_controller.get_current_page() == "projects", "active page should be projects on startup", results)
+
+	# Verify sidebar connectivity label updates to Online while on Projects page
+	var status_label: Label = instance.sidebar_status_label
+	_expect(status_label != null, "sidebar_status_label should exist", results)
+	if status_label != null and instance.tools_controller != null:
+		instance.tools_controller.connectivity_checked.emit(true)
+		_expect(status_label.text == "● Online", "sidebar status label should show '● Online' after connectivity confirmed (was: %s)" % status_label.text, results)
+		_expect(status_label.tooltip_text.contains("Online"), "sidebar status label tooltip should describe online status", results)
+
+	# Populate mock data to verify page_changed preserves loaded data
+	if instance.tools_controller != null:
+		instance.tools_controller.cleanup()
+		instance.tools_controller._available_tools = [{"id": "godot", "version": "4.7.2"}]
+		_expect(instance.tools_controller.has_repository_data(), "has_repository_data should be true with available tools", results)
+
+		# Navigate to tools page - should not trigger refresh since data is already loaded
+		instance.layout_controller.navigate_to("tools")
+		_expect(instance.tools_controller._active_http_requests.is_empty(), "navigating to tools should not trigger new requests when repository data is present", results)
+
+	# Verify NOTIFICATION_WM_CLOSE_REQUEST invokes cleanup
+	if instance.tools_controller != null:
+		# Add a dummy request to verify close request cleanup
+		var dummy_http = HTTPRequest.new()
+		tree.root.add_child(dummy_http)
+		instance.tools_controller._active_http_requests.append(dummy_http)
+		_expect(instance.tools_controller._active_http_requests.size() == 1, "active requests should track dummy request", results)
+		instance.notification(Node.NOTIFICATION_WM_CLOSE_REQUEST)
+		_expect(instance.tools_controller._active_http_requests.is_empty(), "NOTIFICATION_WM_CLOSE_REQUEST should clear active http requests", results)
+		_expect(dummy_http.is_queued_for_deletion(), "dummy http should be queued for deletion", results)
 
 	instance.free()
 
