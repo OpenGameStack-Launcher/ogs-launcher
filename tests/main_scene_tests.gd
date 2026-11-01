@@ -30,6 +30,7 @@ func run() -> Dictionary:
 	_test_checkbutton_styling(results)
 	_test_main_scene_button_variations(results)
 	_test_projects_status_bar_structure(results)
+	_test_page_projects_hierarchy_and_separation(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -60,12 +61,12 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 	_expect(page_tools != null, "Tools page should exist", results)
 	_expect(page_settings != null, "Settings page should exist", results)
 
-	var add_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/AddButton") as Button
+	var add_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/AddButton") as Button
 	_expect(add_button != null, "Add button should exist", results)
 	if add_button != null:
 		_expect(add_button.text == "Add Local Project", "Add button text should be 'Add Local Project'", results)
 
-	var add_remote_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton") as Button
+	var add_remote_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/AddRemoteProjectButton") as Button
 	_expect(add_remote_button != null, "Add Remote Project button should exist", results)
 	if add_remote_button != null:
 		_expect(add_remote_button.text == "Add Remote Project", "Add Remote Project button text should be 'Add Remote Project'", results)
@@ -127,7 +128,7 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 		_expect(not project_offline_status_lbl.text.contains("\\"), "ProjectOfflineStatusLabel should not contain backslashes: %s" % project_offline_status_lbl.text, results)
 		_expect(project_offline_status_lbl.text == "Selected: C:/Users/test_dev/OGS/MyProject", "ProjectOfflineStatusLabel should display normalized path: %s" % project_offline_status_lbl.text, results)
 
-	var new_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/NewProjectButton")
+	var new_button = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/NewProjectButton")
 	_expect(new_button != null, "New Project button should exist", results)
 
 	var projects_list = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsList")
@@ -152,7 +153,8 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 
 	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/AddToolButton") != null, "Add Tool button should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/RemoveToolButton") != null, "Remove Tool button should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/LaunchButton") != null, "Launch button should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow/LaunchButton") != null, "Launch button should exist under ProjectDetailsActionRow", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow/SealButton") != null, "Seal button should exist under ProjectDetailsActionRow", results)
 
 	instance.free()
 
@@ -331,8 +333,8 @@ func _test_typographic_scale(results: Dictionary) -> void:
 
 	# Secondary & Metadata Labels (font_size = 13)
 	var secondary_label_paths: Array[String] = [
-		"AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel",
-		"AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel",
 		"AppLayout/Content/PageTools/ToolsStatusLabel",
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel",
 		"AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorStatusLabel",
@@ -407,7 +409,7 @@ func _test_network_ui_disabled_offline(results: Dictionary) -> void:
 	if mirror_repo_clear == null:
 		mirror_repo_clear = instance.find_child("MirrorRepoClearButton", true, false) as Button
 	_expect(mirror_repo_clear != null, "MirrorRepoClearButton should exist", results)
-	var add_remote = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton") as Button
+	var add_remote = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/AddRemoteProjectButton") as Button
 	_expect(add_remote != null, "Add Remote Project button should exist for offline UI test", results)
 	if mirror_repo_clear != null and add_remote != null:
 		instance._collect_network_ui_nodes()
@@ -581,9 +583,9 @@ func _test_main_scene_button_variations(results: Dictionary) -> void:
 	var instance: Node = scene.instantiate()
 
 	var expected_primary: Array[String] = [
-		"AppLayout/Content/PageProjects/ProjectsControls/NewProjectButton",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/LaunchButton",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/SealButton"
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/NewProjectButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow/LaunchButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow/SealButton"
 	]
 	for path in expected_primary:
 		var btn: Button = instance.get_node_or_null(path) as Button
@@ -592,8 +594,8 @@ func _test_main_scene_button_variations(results: Dictionary) -> void:
 			_expect(btn.theme_type_variation == &"PrimaryButton", "%s should have PrimaryButton variation (was: %s)" % [path, String(btn.theme_type_variation)], results)
 
 	var expected_secondary: Array[String] = [
-		"AppLayout/Content/PageProjects/ProjectsControls/AddButton",
-		"AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/AddButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/AddRemoteProjectButton",
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/AddToolButton",
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/ChangeVersionButton",
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/NewFolderBtn",
@@ -624,15 +626,15 @@ func _test_main_scene_button_variations(results: Dictionary) -> void:
 	instance.free()
 
 func _test_projects_status_bar_structure(results: Dictionary) -> void:
-	## Verifies that Projects page has a compact horizontal status bar with pill badge.
+	## Verifies that Projects page has a compact horizontal status bar with pill badge under Project Details.
 	var scene: PackedScene = load("res://main.tscn")
 	_expect(scene != null, "main.tscn should load for status bar test", results)
 	if scene == null:
 		return
 
 	var instance: Node = scene.instantiate()
-	var status_bar: PanelContainer = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar") as PanelContainer
-	_expect(status_bar != null, "ProjectsStatusBar PanelContainer should exist", results)
+	var status_bar: PanelContainer = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar") as PanelContainer
+	_expect(status_bar != null, "ProjectsStatusBar PanelContainer should exist under Project Details", results)
 	if status_bar != null:
 		var bar_style: StyleBoxFlat = status_bar.get_theme_stylebox("panel") as StyleBoxFlat
 		_expect(bar_style != null, "ProjectsStatusBar should have panel style", results)
@@ -640,21 +642,97 @@ func _test_projects_status_bar_structure(results: Dictionary) -> void:
 			_expect(bar_style.corner_radius_top_left == 6, "ProjectsStatusBar should have rounded corners", results)
 			_expect(bar_style.content_margin_left == 12.0, "ProjectsStatusBar should have 12px horizontal margin", results)
 
-	var hbox: HBoxContainer = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer") as HBoxContainer
+	var hbox: HBoxContainer = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer") as HBoxContainer
 	_expect(hbox != null, "ProjectsStatusBar HBoxContainer should exist", results)
 
-	var project_status: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel") as Label
+	var project_status: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel") as Label
 	_expect(project_status != null, "ProjectsStatusLabel should exist inside status bar", results)
 	if project_status != null:
 		_expect(project_status.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "ProjectsStatusLabel should expand horizontally", results)
 
-	var offline_status: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel") as Label
+	var offline_status: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel") as Label
 	_expect(offline_status != null, "OfflineStatusLabel should exist inside status bar", results)
 	if offline_status != null:
 		var pill_style: StyleBoxFlat = offline_status.get_theme_stylebox("normal") as StyleBoxFlat
 		_expect(pill_style != null, "OfflineStatusLabel should have pill badge normal style", results)
 		if pill_style != null:
 			_expect(pill_style.corner_radius_top_left == 10, "OfflineStatusLabel pill should have corner radius 10", results)
+
+	instance.free()
+
+func _test_page_projects_hierarchy_and_separation(results: Dictionary) -> void:
+	## Verifies UI reorganization under PageProjects:
+	## - ProjectsTabs is directly below ProjectsTitle
+	## - ProjectsControls is first child under Project Library (above search line edit)
+	## - ProjectsStatusBar is first child under Project Details (above VSplitContainer)
+	## - ProjectActionRow contains only OpenProjectButton and RemoveButton (no SealButton)
+	## - ProjectDetailsActionRow at bottom of Project Details has separation 12 and contains LaunchButton and SealButton (both expand fill)
+	var scene: PackedScene = load("res://main.tscn")
+	_expect(scene != null, "main.tscn should load for hierarchy test", results)
+	if scene == null:
+		return
+
+	var instance: Node = scene.instantiate()
+
+	var page_projects: VBoxContainer = instance.get_node_or_null("AppLayout/Content/PageProjects") as VBoxContainer
+	_expect(page_projects != null, "PageProjects should exist", results)
+	if page_projects != null:
+		var title: Label = page_projects.get_node_or_null("ProjectsTitle") as Label
+		var tabs: TabContainer = page_projects.get_node_or_null("ProjectsTabs") as TabContainer
+		_expect(title != null, "ProjectsTitle should exist under PageProjects", results)
+		_expect(tabs != null, "ProjectsTabs should exist under PageProjects", results)
+		if title != null and tabs != null:
+			_expect(tabs.get_index() == title.get_index() + 1, "ProjectsTabs should be directly below ProjectsTitle", results)
+
+		var controls_direct: Node = page_projects.get_node_or_null("ProjectsControls")
+		_expect(controls_direct == null, "ProjectsControls should not be direct child of PageProjects", results)
+		var status_direct: Node = page_projects.get_node_or_null("ProjectsStatusBar")
+		_expect(status_direct == null, "ProjectsStatusBar should not be direct child of PageProjects", results)
+
+	var project_library: VBoxContainer = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library") as VBoxContainer
+	_expect(project_library != null, "Project Library should exist", results)
+	if project_library != null:
+		_expect(project_library.get_child_count() > 0, "Project Library should have children", results)
+		var first_child: Node = project_library.get_child(0)
+		_expect(first_child != null and first_child.name == "ProjectsControls", "ProjectsControls should be first child of Project Library", results)
+
+		var search_edit: LineEdit = project_library.get_node_or_null("ProjectSearchLineEdit") as LineEdit
+		_expect(search_edit != null, "ProjectSearchLineEdit should exist in Project Library", results)
+		if first_child != null and search_edit != null:
+			_expect(search_edit.get_index() > first_child.get_index(), "ProjectSearchLineEdit should sit below ProjectsControls", results)
+
+		var action_row: HBoxContainer = project_library.get_node_or_null("ProjectActionRow") as HBoxContainer
+		_expect(action_row != null, "ProjectActionRow should exist in Project Library", results)
+		if action_row != null:
+			_expect(action_row.get_node_or_null("OpenProjectButton") != null, "OpenProjectButton should exist in ProjectActionRow", results)
+			_expect(action_row.get_node_or_null("RemoveButton") != null, "RemoveButton should exist in ProjectActionRow", results)
+			_expect(action_row.get_node_or_null("SealButton") == null, "SealButton should NOT exist in ProjectActionRow", results)
+
+	var project_details: VBoxContainer = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details") as VBoxContainer
+	_expect(project_details != null, "Project Details should exist", results)
+	if project_details != null:
+		_expect(project_details.get_child_count() > 0, "Project Details should have children", results)
+		var first_child: Node = project_details.get_child(0)
+		_expect(first_child != null and first_child.name == "ProjectsStatusBar", "ProjectsStatusBar should be first child of Project Details", results)
+
+		var split: VSplitContainer = project_details.get_node_or_null("VSplitContainer") as VSplitContainer
+		_expect(split != null, "VSplitContainer should exist in Project Details", results)
+		if first_child != null and split != null:
+			_expect(split.get_index() > first_child.get_index(), "VSplitContainer should sit below ProjectsStatusBar", results)
+
+		var details_action_row: HBoxContainer = project_details.get_node_or_null("ProjectDetailsActionRow") as HBoxContainer
+		_expect(details_action_row != null, "ProjectDetailsActionRow should exist under Project Details", results)
+		if details_action_row != null:
+			var separation: int = details_action_row.get_theme_constant("separation")
+			_expect(separation == 12, "ProjectDetailsActionRow separation should be 12 (got %d)" % separation, results)
+			var launch_btn: Button = details_action_row.get_node_or_null("LaunchButton") as Button
+			var seal_btn: Button = details_action_row.get_node_or_null("SealButton") as Button
+			_expect(launch_btn != null, "LaunchButton should exist in ProjectDetailsActionRow", results)
+			_expect(seal_btn != null, "SealButton should exist in ProjectDetailsActionRow", results)
+			if launch_btn != null:
+				_expect(launch_btn.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "LaunchButton should have expand fill size flags", results)
+			if seal_btn != null:
+				_expect(seal_btn.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "SealButton should have expand fill size flags", results)
 
 	instance.free()
 
