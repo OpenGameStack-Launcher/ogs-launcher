@@ -125,7 +125,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 - ✅ Brand header displays 32x32 OGS logo and "OGS Launcher" title separated from navigation buttons by an HSeparator
 - ✅ Navigation buttons (Projects, Tools, Settings) visible with Projects highlighted as active (elevated background with 3px primary blue accent border)
 - ✅ Projects page is default/active
-- ✅ Sidebar footer displays global connectivity status indicator ("● Online" / "● Offline") and launcher version label ("v0.1.0")
+- ✅ Sidebar footer displays global connectivity status indicator ("● Online" / "● Offline") and launcher version label ("v0.2.0")
 - ✅ Onboarding wizard appears with brand logo, starter stack preview card (6 tools), and unified footer buttons
 - ✅ Default AcceptDialog OK button and container are hidden
 - ✅ Clicking **Start** initializes default stack directories (`godot\4.7.2`, `blender\4.2`), writes `ogs_wizard_complete.txt`, and closes dialog
@@ -1299,7 +1299,7 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Verify the expanding spacer pushes the footer container cleanly to the bottom of the sidebar.
    - Verify the footer separator line.
    - Verify the connectivity status label displays "● Offline" (in amber) or "● Online" (in green) depending on repository connectivity.
-   - Verify the version label displays the launcher version (e.g. "v0.1.0").
+   - Verify the version label displays the launcher version (e.g. "v0.2.0").
 6. Connectivity State Synchronization:
    - In the Project Details tab under Project Offline Policy, toggle "Force offline" (or "Offline mode") to ON.
    - Verify the sidebar footer status label immediately updates to "● Offline" in amber with descriptive tooltip ("Offline Mode (enforced: force_offline)").
@@ -2207,7 +2207,7 @@ After completing all editor tests, move to installed-build testing with same rep
 **Prerequisites:**
 - Remote `main` branch clean and passing CI
 - GitHub CLI (`gh`) authenticated with repository write access
-- Target semantic version (e.g., `0.1.6`) does not match an existing tag
+- Target semantic version (e.g., `0.2.0`) does not match an existing tag
 
 **Steps:**
 1. Ensure working directory is clean and up to date with `origin/main`

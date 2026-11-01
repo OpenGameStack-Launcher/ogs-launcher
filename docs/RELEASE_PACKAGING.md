@@ -8,8 +8,8 @@ Produce a standalone ZIP package containing the launcher executable, bundled PCK
 
 ## Versioning Standard
 
-OGS Launcher follows semantic versioning (`X.Y.Z`, such as `0.1.6` or `0.2.0`):
-- Release tags follow the pattern `v<version>` (e.g., `v0.1.6`).
+OGS Launcher follows semantic versioning (`X.Y.Z`, such as `0.2.0`):
+- Release tags follow the pattern `v<version>` (e.g., `v0.2.0`).
 - Standard releases are published as "Latest" on GitHub Releases (dropping previous alpha designations and prerelease flags).
 - Version strings are strictly verified to ensure clean semver syntax (`^[0-9]+\.[0-9]+\.[0-9]+$`).
 
@@ -68,24 +68,24 @@ Triggered via `workflow_dispatch` on `main`:
 Maintainers and developers can also build release packages locally from the repo root:
 
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\release\build_release_package.ps1 -Version 0.1.6
+powershell -ExecutionPolicy Bypass -File .\scripts\release\build_release_package.ps1 -Version 0.2.0
 ```
 
 ### Optional Flags
 
 - Skip tests during local development:
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\release\build_release_package.ps1 -Version 0.1.6 -SkipTests
+powershell -ExecutionPolicy Bypass -File .\scripts\release\build_release_package.ps1 -Version 0.2.0 -SkipTests
 ```
 
 - Skip zip packaging (staging only):
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\release\build_release_package.ps1 -Version 0.1.6 -SkipZip
+powershell -ExecutionPolicy Bypass -File .\scripts\release\build_release_package.ps1 -Version 0.2.0 -SkipZip
 ```
 
 - Explicit tool paths:
 ```powershell
-powershell -ExecutionPolicy Bypass -File .\scripts\release\build_release_package.ps1 -Version 0.1.6 -GodotPath "C:\Custom\godot.exe" -RcEditPath "C:\Custom\rcedit-x64.exe"
+powershell -ExecutionPolicy Bypass -File .\scripts\release\build_release_package.ps1 -Version 0.2.0 -GodotPath "C:\Custom\godot.exe" -RcEditPath "C:\Custom\rcedit-x64.exe"
 ```
 
 ## Package Outputs
@@ -136,4 +136,4 @@ Get-Content "artifacts\release\OGS-Launcher-win64-<version>.zip.sha256"
 | 0.1.3-alpha | v0.1.3-alpha | 2026-04-03 | Pre-release |
 | 0.1.4-alpha | v0.1.4-alpha | 2026-04-10 | Pre-release |
 | 0.1.5-alpha | v0.1.5-alpha | 2026-04-17 | Pre-release |
-| 0.1.6 | v0.1.6 | TBD | Latest (Full Release) |
+| 0.2.0 | v0.2.0 | 2026-11-01 | Latest (Full Release) |

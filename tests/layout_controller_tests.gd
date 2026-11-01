@@ -179,9 +179,9 @@ func _test_version_label_update(results: Dictionary) -> void:
 	var controller: LayoutController = env["controller"] as LayoutController
 	var version_label: Label = env["version_label"] as Label
 
-	controller.update_version("v0.1.0")
-	_expect(version_label.text == "v0.1.0", "Version label text should update to v0.1.0", results)
-	_expect(version_label.tooltip_text.contains("0.1.0"), "Version label tooltip should contain version", results)
+	controller.update_version("v0.2.0")
+	_expect(version_label.text == "v0.2.0", "Version label text should update to v0.2.0", results)
+	_expect(version_label.tooltip_text.contains("0.2.0"), "Version label tooltip should contain version", results)
 
 	_free_test_environment(env)
 

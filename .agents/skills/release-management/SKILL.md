@@ -10,13 +10,13 @@ This skill defines the orchestrated workflow for dispatching, monitoring, verify
 
 ## Rules
 - **Sequential Execution Only:** You must ONLY run one subagent at a time.
-- **Strict Authorization Gate:** You must NEVER autonomously invoke the `release_manager` simply because a set of issues or PRs was just merged. You must ALWAYS stop and wait for explicit user instruction (e.g., "build and release v0.1.6") before running this pipeline.
+- **Strict Authorization Gate:** You must NEVER autonomously invoke the `release_manager` simply because a set of issues or PRs was just merged. You must ALWAYS stop and wait for explicit user instruction (e.g., "build and release v0.2.0") before running this pipeline.
 - **Liveness Monitoring:** When waiting for the `release_manager` subagent to finish its pipeline, you must ALWAYS set a 10-minute (600s) one-shot timer using the `schedule` tool (with `TimerCondition: 'any'`).
 - **Pre-Flight Cleanliness:** Releases must only be triggered when the remote `main` branch is clean, up-to-date, and passing all automated CI tests.
 
 ## Pipeline Steps
 
-When the user explicitly asks to cut a new release (e.g., "Build and publish v0.1.6"):
+When the user explicitly asks to cut a new release (e.g., "Build and publish v0.2.0"):
 
 1. **Invoke the Subagent:** Define and invoke the `release_manager` subagent using the **`pro`** model.
 2. **Schedule Liveness:** Schedule a 10-minute (600s) Liveness timer (`TimerCondition: 'any'`).
@@ -54,7 +54,7 @@ Follow these steps strictly in order:
    - If CI has not passed, STOP immediately and inform the orchestrator.
 
 2. **Validate Semantic Version String:**
-   - Verify the target `<VERSION>` (e.g., `0.1.6`) follows strict semantic formatting `^[0-9]+\.[0-9]+\.[0-9]+$` without `v` prefix or `-alpha` suffix.
+   - Verify the target `<VERSION>` (e.g., `0.2.0`) follows strict semantic formatting `^[0-9]+\.[0-9]+\.[0-9]+$` without `v` prefix or `-alpha` suffix.
    - Verify the tag `v<VERSION>` does not already exist:
      `git fetch --tags origin; git tag -l "v<VERSION>"`
    - If the tag exists, STOP immediately.
