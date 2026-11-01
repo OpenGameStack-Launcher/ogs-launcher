@@ -185,8 +185,8 @@ func _test_manifest_failure_re_enables_inputs_preserves_url(results: Dictionary)
 	controller._set_busy_ui(true)
 	
 	# Simulate cloner emitting clone_failed for missing manifest
-	var error_msg = "Repository root must contain stack.json manifest."
-	controller._on_cloner_clone_failed("missing_stack_json", error_msg)
+	var error_msg = "Repository root must contain ogs_stack.json manifest."
+	controller._on_cloner_clone_failed("missing_ogs_stack_json", error_msg)
 	
 	_expect(controller.lbl_status.text == error_msg, "Status label should display manifest error message", results)
 	_expect(controller.url_edit.text == entered_url, "Entered URL should remain intact after manifest failure", results)

@@ -4,7 +4,7 @@
 ## from the central library and creates a sealed, offline-ready deliverable.
 ##
 ## Workflow:
-## 1. Validate project has stack.json and all required tools exist in library
+## 1. Validate project has ogs_stack.json and all required tools exist in library
 ## 2. Create ./tools directory and copy tool binaries from library
 ## 3. Write ogs_config.json with force_offline=true
 ## 4. Create a sealed zip archive: [ProjectName]_Sealed_[Date].zip
@@ -340,7 +340,7 @@ func seal_project(
 	
 	return result
 
-## Validates that the project exists, has stack.json, and all required tools are in library.
+## Validates that the project exists, has ogs_stack.json, and all required tools are in library.
 ## Returns: {"success": bool, "errors": Array, "manifest": StackManifest}
 func _validate_project(project_path: String) -> Dictionary:
 	## Delegates project pre-seal validation to ProjectSealValidator.

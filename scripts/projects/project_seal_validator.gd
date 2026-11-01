@@ -1,6 +1,6 @@
 ## ProjectSealValidator: Validates project readiness for sealing.
 ##
-## Ensures the target project directory exists, stack.json is valid,
+## Ensures the target project directory exists, ogs_stack.json is valid,
 ## and required tools are present in the central library.
 
 extends RefCounted
@@ -24,14 +24,14 @@ func validate_project(project_path: String, library: LibraryManager) -> Dictiona
 		result.errors.append("Project directory does not exist: %s" % project_path)
 		return result
 
-	var stack_path = project_path.path_join("stack.json")
+	var stack_path = project_path.path_join("ogs_stack.json")
 	if not FileAccess.file_exists(stack_path):
-		result.errors.append("stack.json not found at: %s" % stack_path)
+		result.errors.append("ogs_stack.json not found at: %s" % stack_path)
 		return result
 
 	var manifest = StackManifest.load_from_file(stack_path)
 	if not manifest.is_valid():
-		result.errors.append("stack.json is invalid: %s" % str(manifest.errors))
+		result.errors.append("ogs_stack.json is invalid: %s" % str(manifest.errors))
 		return result
 
 	for tool in manifest.tools:

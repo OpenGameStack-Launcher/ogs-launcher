@@ -47,7 +47,7 @@ const _NON_EXEC_EXTENSIONS: Array = [".so", ".py", ".txt", ".sh", ".json", ".xml
 ## Launches a tool from the manifest with the project directory as working context.
 ##
 ## @param tool_entry: Dictionary with keys: id, version, (optional) path
-## @param project_dir: Absolute path to the project root (where stack.json lives)
+## @param project_dir: Absolute path to the project root (where ogs_stack.json lives)
 ## @return: Dictionary with keys: success (bool), error_code (int), error_message (String), pid (int, -1 if failed)
 static func launch(tool_entry: Dictionary, project_dir: String, target_file: String = "") -> Dictionary:
 	# Validate inputs
@@ -61,7 +61,7 @@ static func launch(tool_entry: Dictionary, project_dir: String, target_file: Str
 	
 	if tool_id == "unknown" or tool_version == "unknown":
 		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "invalid_entry"})
-		return _error_result(LaunchError.INVALID_TOOL_ENTRY, "Invalid tool entry in stack.json")
+		return _error_result(LaunchError.INVALID_TOOL_ENTRY, "Invalid tool entry in ogs_stack.json")
 		
 	# Check if path is provided (legacy support for project-relative paths)
 	if tool_entry.has("path"):
@@ -137,7 +137,7 @@ static func launch(tool_entry: Dictionary, project_dir: String, target_file: Str
 ##
 ## Looks for an existing project.godot within the OGS project folder.
 ## If missing, creates a minimal project.godot under the OGS game/ folder
-## using stack.json stack_name as the project name when available.
+## using ogs_stack.json stack_name as the project name when available.
 static func _resolve_godot_project_dir(project_dir: String) -> Dictionary:
 	var existing_project_dir = _find_existing_godot_project_dir(project_dir)
 	if not existing_project_dir.is_empty():
@@ -237,9 +237,9 @@ static func _find_first_project_godot(directory: String, max_depth: int, depth: 
 
 	return ""
 
-## Resolves the display project name from stack.json or falls back to folder name.
+## Resolves the display project name from ogs_stack.json or falls back to folder name.
 static func _resolve_ogs_project_name(project_dir: String) -> String:
-	var stack_path = project_dir.path_join("stack.json")
+	var stack_path = project_dir.path_join("ogs_stack.json")
 	if FileAccess.file_exists(stack_path):
 		var stack_file = FileAccess.open(stack_path, FileAccess.READ)
 		if stack_file != null:
@@ -654,7 +654,7 @@ static func _is_hex_sha256(value: String) -> bool:
 	return true
 
 ## Configures portable Git in project's .vscode/settings.json when VSCodium is launched.
-## Checks if project's stack.json contains Git, resolves Git's Central Library directory,
+## Checks if project's ogs_stack.json contains Git, resolves Git's Central Library directory,
 ## and sets git.path and git.enabled in .vscode/settings.json.
 ##
 ## @param project_dir: Absolute path to the project root
@@ -663,7 +663,7 @@ static func _configure_vscodium_git(project_dir: String) -> bool:
 	if project_dir.is_empty():
 		return false
 	
-	var stack_path = project_dir.path_join("stack.json")
+	var stack_path = project_dir.path_join("ogs_stack.json")
 	if not FileAccess.file_exists(stack_path):
 		return false
 	

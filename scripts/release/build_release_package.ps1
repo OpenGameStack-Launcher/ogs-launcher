@@ -273,7 +273,7 @@ Build Date (UTC): $(Get-Date -Format "yyyy-MM-dd HH:mm:ss")
 Quick Start:
 1. Keep OGS-Launcher.exe and OGS-Launcher.pck in the same folder.
 2. Run OGS-Launcher.exe.
-3. Add or create a project with stack.json and ogs_config.json.
+3. Add or create a project with ogs_stack.json and ogs_config.json.
 
 Notes:
 - Tools are managed through the launcher using OGS manifests.

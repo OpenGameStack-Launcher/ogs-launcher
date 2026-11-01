@@ -161,7 +161,7 @@ func _test_create_godot_project_when_missing(results: Dictionary) -> void:
 	var existing_source_project = project_dir.path_join("project_source").path_join("project.godot")
 	if FileAccess.file_exists(existing_source_project):
 		DirAccess.remove_absolute(existing_source_project)
-	var stack_path = project_dir.path_join("stack.json")
+	var stack_path = project_dir.path_join("ogs_stack.json")
 	var stack_file = FileAccess.open(stack_path, FileAccess.WRITE)
 	if stack_file:
 		stack_file.store_string(JSON.stringify({
@@ -190,10 +190,10 @@ func _test_create_godot_project_when_missing(results: Dictionary) -> void:
 		_expect(false, "created project.godot should be readable", results)
 
 func _test_resolve_ogs_project_name_from_stack(results: Dictionary) -> void:
-	## Validates stack.json stack_name is preferred for Godot project naming.
+	## Validates ogs_stack.json stack_name is preferred for Godot project naming.
 	var project_dir = ProjectSettings.globalize_path("user://tool_launcher_stack_name")
 	DirAccess.make_dir_recursive_absolute(project_dir)
-	var stack_path = project_dir.path_join("stack.json")
+	var stack_path = project_dir.path_join("ogs_stack.json")
 	var stack_file = FileAccess.open(stack_path, FileAccess.WRITE)
 	if stack_file:
 		stack_file.store_string(JSON.stringify({
@@ -203,7 +203,7 @@ func _test_resolve_ogs_project_name_from_stack(results: Dictionary) -> void:
 		stack_file.close()
 
 	var resolved_name = ToolLauncher._resolve_ogs_project_name(project_dir)
-	_expect(resolved_name == "Named From Stack", "stack_name should be resolved from stack.json", results)
+	_expect(resolved_name == "Named From Stack", "stack_name should be resolved from ogs_stack.json", results)
 
 func _test_sha256_mismatch(results: Dictionary) -> void:
 	## Validates sha256 mismatch is detected before spawning tools.
@@ -418,8 +418,8 @@ func _test_vscodium_git_settings_injection(results: Dictionary) -> void:
 	var f = FileAccess.open(mock_git_exe, FileAccess.WRITE)
 	if f: f.store_string("mock git"); f.close()
 	
-	# Create stack.json with git and vscodium
-	var stack_path = abs_test_proj.path_join("stack.json")
+	# Create ogs_stack.json with git and vscodium
+	var stack_path = abs_test_proj.path_join("ogs_stack.json")
 	var stack_content = {
 		"schema_version": 1,
 		"stack_name": "Test Code Stack",

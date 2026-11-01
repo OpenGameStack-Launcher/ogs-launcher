@@ -26,7 +26,7 @@ func run() -> Dictionary:
 		{"name": "test_seal_project_returns_dict", "func": test_seal_project_returns_dict},
 		{"name": "test_seal_project_rejects_empty_path", "func": test_seal_project_rejects_empty_path},
 		{"name": "test_seal_project_rejects_missing_directory", "func": test_seal_project_rejects_missing_directory},
-		{"name": "test_seal_project_rejects_missing_stack_json", "func": test_seal_project_rejects_missing_stack_json},
+		{"name": "test_seal_project_rejects_missing_ogs_stack_json", "func": test_seal_project_rejects_missing_ogs_stack_json},
 		{"name": "test_seal_project_rejects_missing_tools", "func": test_seal_project_rejects_missing_tools},
 		{"name": "test_seal_project_validates_manifest_integrity", "func": test_seal_project_validates_manifest_integrity},
 		{"name": "test_seal_project_success_with_valid_project", "func": test_seal_project_success_with_valid_project},
@@ -116,9 +116,9 @@ func test_seal_project_rejects_missing_directory() -> Dictionary:
 	
 	return {"passed": true}
 
-## Test: seal_project rejects directory without stack.json
-func test_seal_project_rejects_missing_stack_json() -> Dictionary:
-	# Create temporary directory without stack.json
+## Test: seal_project rejects directory without ogs_stack.json
+func test_seal_project_rejects_missing_ogs_stack_json() -> Dictionary:
+	# Create temporary directory without ogs_stack.json
 	var temp_dir = "user://test_seal_no_stack"
 	var dir_access = DirAccess.open("user://")
 	if dir_access == null:
@@ -133,20 +133,20 @@ func test_seal_project_rejects_missing_stack_json() -> Dictionary:
 	DirAccess.remove_absolute(temp_dir)
 	
 	if result.success:
-		return {"passed": false, "error": "Should reject missing stack.json"}
+		return {"passed": false, "error": "Should reject missing ogs_stack.json"}
 	
 	if result.errors.is_empty():
 		return {"passed": false, "error": "Should have error message"}
 	
 	var error_text = str(result.errors)
-	if not error_text.contains("stack.json"):
-		return {"passed": false, "error": "Error should mention stack.json"}
+	if not error_text.contains("ogs_stack.json"):
+		return {"passed": false, "error": "Error should mention ogs_stack.json"}
 	
 	return {"passed": true}
 
 ## Test: seal_project rejects manifest with missing tools in library
 func test_seal_project_rejects_missing_tools() -> Dictionary:
-	# Create temporary directory with stack.json
+	# Create temporary directory with ogs_stack.json
 	var temp_dir = "user://test_seal_missing_tools"
 	var dir_access = DirAccess.open("user://")
 	if dir_access == null:
@@ -154,11 +154,11 @@ func test_seal_project_rejects_missing_tools() -> Dictionary:
 	
 	DirAccess.make_dir_absolute(temp_dir)
 	
-	# Create a stack.json with a tool that definitely doesn't exist
-	var stack_file = FileAccess.open(temp_dir.path_join("stack.json"), FileAccess.WRITE)
+	# Create a ogs_stack.json with a tool that definitely doesn't exist
+	var stack_file = FileAccess.open(temp_dir.path_join("ogs_stack.json"), FileAccess.WRITE)
 	if stack_file == null:
 		DirAccess.remove_absolute(temp_dir)
-		return {"passed": false, "error": "Cannot write test stack.json"}
+		return {"passed": false, "error": "Cannot write test ogs_stack.json"}
 	
 	stack_file.store_string('{"schema_version": 1, "stack_name": "test", "tools": [{"id": "nonexistent_xyz", "version": "999.999.999", "path": "test"}]}')
 	
@@ -183,7 +183,7 @@ func test_seal_project_rejects_missing_tools() -> Dictionary:
 
 ## Test: seal_project validates manifest schema
 func test_seal_project_validates_manifest_integrity() -> Dictionary:
-	# Create temporary directory with invalid stack.json
+	# Create temporary directory with invalid ogs_stack.json
 	var temp_dir = "user://test_seal_invalid_manifest"
 	var dir_access = DirAccess.open("user://")
 	if dir_access == null:
@@ -191,10 +191,10 @@ func test_seal_project_validates_manifest_integrity() -> Dictionary:
 	
 	DirAccess.make_dir_absolute(temp_dir)
 	
-	var stack_file = FileAccess.open(temp_dir.path_join("stack.json"), FileAccess.WRITE)
+	var stack_file = FileAccess.open(temp_dir.path_join("ogs_stack.json"), FileAccess.WRITE)
 	if stack_file == null:
 		DirAccess.remove_absolute(temp_dir)
-		return {"passed": false, "error": "Cannot write test stack.json"}
+		return {"passed": false, "error": "Cannot write test ogs_stack.json"}
 	
 	# Invalid manifest (missing schema_version)
 	stack_file.store_string('{"stack_name": "broken", "tools": [{"id": "test", "version": "1.0", "path": "t"}]}')
@@ -219,7 +219,7 @@ func test_seal_project_validates_manifest_integrity() -> Dictionary:
 
 ## Test: seal_project succeeds with valid project (if tools exist in library)
 func test_seal_project_success_with_valid_project() -> Dictionary:
-	# Create temporary project with valid stack.json
+	# Create temporary project with valid ogs_stack.json
 	var temp_dir = "user://test_seal_valid_project"
 	var dir_access = DirAccess.open("user://")
 	if dir_access == null:
@@ -227,12 +227,12 @@ func test_seal_project_success_with_valid_project() -> Dictionary:
 	
 	DirAccess.make_dir_absolute(temp_dir)
 	
-	var stack_file = FileAccess.open(temp_dir.path_join("stack.json"), FileAccess.WRITE)
+	var stack_file = FileAccess.open(temp_dir.path_join("ogs_stack.json"), FileAccess.WRITE)
 	if stack_file == null:
 		DirAccess.remove_absolute(temp_dir)
-		return {"passed": false, "error": "Cannot write test stack.json"}
+		return {"passed": false, "error": "Cannot write test ogs_stack.json"}
 	
-	# Create a valid stack.json (but godot 4.3 may not exist in library, so seal will fail)
+	# Create a valid ogs_stack.json (but godot 4.3 may not exist in library, so seal will fail)
 	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "godot", "version": "4.3", "path": "tools/godot"}]}')
 	
 	var sealer = ProjectSealer.new()
@@ -264,10 +264,10 @@ func test_seal_project_creates_ogs_config() -> Dictionary:
 	
 	DirAccess.make_dir_absolute(temp_dir)
 	
-	var stack_file = FileAccess.open(temp_dir.path_join("stack.json"), FileAccess.WRITE)
+	var stack_file = FileAccess.open(temp_dir.path_join("ogs_stack.json"), FileAccess.WRITE)
 	if stack_file == null:
 		DirAccess.remove_absolute(temp_dir)
-		return {"passed": false, "error": "Cannot write test stack.json"}
+		return {"passed": false, "error": "Cannot write test ogs_stack.json"}
 	
 	# Use a valid manifest structure
 	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "test_tool", "version": "1.0", "path": "tools/test"}]}')
@@ -296,10 +296,10 @@ func test_seal_project_returns_tools_copied() -> Dictionary:
 	
 	DirAccess.make_dir_absolute(temp_dir)
 	
-	var stack_file = FileAccess.open(temp_dir.path_join("stack.json"), FileAccess.WRITE)
+	var stack_file = FileAccess.open(temp_dir.path_join("ogs_stack.json"), FileAccess.WRITE)
 	if stack_file == null:
 		DirAccess.remove_absolute(temp_dir)
-		return {"passed": false, "error": "Cannot write test stack.json"}
+		return {"passed": false, "error": "Cannot write test ogs_stack.json"}
 	
 	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "godot", "version": "4.3", "path": "tools/godot"}]}')
 	
@@ -326,10 +326,10 @@ func test_seal_project_returns_zip_path() -> Dictionary:
 	
 	DirAccess.make_dir_absolute(temp_dir)
 	
-	var stack_file = FileAccess.open(temp_dir.path_join("stack.json"), FileAccess.WRITE)
+	var stack_file = FileAccess.open(temp_dir.path_join("ogs_stack.json"), FileAccess.WRITE)
 	if stack_file == null:
 		DirAccess.remove_absolute(temp_dir)
-		return {"passed": false, "error": "Cannot write test stack.json"}
+		return {"passed": false, "error": "Cannot write test ogs_stack.json"}
 	
 	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "godot", "version": "4.3", "path": "tools/godot"}]}')
 	
@@ -357,10 +357,10 @@ func test_seal_project_trims_path_slash() -> Dictionary:
 	
 	DirAccess.make_dir_absolute(temp_dir)
 	
-	var stack_file = FileAccess.open(temp_dir.path_join("stack.json"), FileAccess.WRITE)
+	var stack_file = FileAccess.open(temp_dir.path_join("ogs_stack.json"), FileAccess.WRITE)
 	if stack_file == null:
 		DirAccess.remove_absolute(temp_dir)
-		return {"passed": false, "error": "Cannot write test stack.json"}
+		return {"passed": false, "error": "Cannot write test ogs_stack.json"}
 	
 	# Use a tool that likely doesn't exist so seal fails, but we just test path handling
 	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "nonexistent_tool_xyz", "version": "1.0", "path": "tools/test"}]}')
@@ -427,8 +427,8 @@ func test_sealed_zip_contains_expected_files() -> Dictionary:
 
 	_helpers.cleanup_seal_fixture(fixture)
 
-	if not zip_files.has("stack.json"):
-		return {"passed": false, "error": "Zip missing stack.json"}
+	if not zip_files.has("ogs_stack.json"):
+		return {"passed": false, "error": "Zip missing ogs_stack.json"}
 
 	if not zip_files.has("ogs_config.json"):
 		return {"passed": false, "error": "Zip missing ogs_config.json"}
@@ -545,7 +545,7 @@ func test_tool_copier_reports_file_counts_and_progress() -> Dictionary:
 		f2.store_string("extra-content")
 		f2.close()
 
-	var manifest = StackManifest.load_from_file(fixture.project_dir.path_join("stack.json"))
+	var manifest = StackManifest.load_from_file(fixture.project_dir.path_join("ogs_stack.json"))
 	if manifest == null:
 		_helpers.cleanup_seal_fixture(fixture)
 		return {"passed": false, "error": "Failed to load manifest from fixture"}
