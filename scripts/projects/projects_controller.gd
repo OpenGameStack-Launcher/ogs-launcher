@@ -1065,9 +1065,32 @@ func update_current_project_offline_settings(offline_mode: bool, force_offline: 
 	file.close()
 
 	current_project_config = config
+
+	# Manage ogs_tools/ lifecycle based on force_offline state
+	if force_offline:
+		if current_manifest != null and not current_project_dir.is_empty():
+			ProjectSealToolCopier.copy_tools_to_project(current_manifest, current_project_dir, _library_manager)
+	else:
+		if not current_project_dir.is_empty():
+			var ogs_tools_dir = current_project_dir.path_join("ogs_tools")
+			if DirAccess.dir_exists_absolute(ogs_tools_dir) and PathUtils.is_path_under_root(ogs_tools_dir, current_project_dir):
+				_remove_dir_recursive(ogs_tools_dir)
+				OgsLogger.info("ogs_tools_cleaned_up_on_force_offline_disable", {
+					"component": "projects",
+					"project": current_project_dir.get_file()
+				})
+
 	_apply_offline_config(config)
 	_update_offline_status(config)
 	_sync_project_offline_toggles(config)
+
+	# Refresh tools list and project explorer so UI immediately reflects updated ogs_tools state
+	if current_manifest != null:
+		_populate_tools_list(current_manifest.tools)
+	elif self.has_meta("project_explorer_instance"):
+		var explorer = self.get_meta("project_explorer_instance")
+		explorer.load_project(current_project_dir)
+
 	var use_project_tools = config != null and config.force_offline
 	_validate_and_report_environment(current_project_dir, use_project_tools)
 	project_selection_changed.emit(current_project_dir, config.offline_mode, config.force_offline)
@@ -1077,6 +1100,37 @@ func update_current_project_offline_settings(offline_mode: bool, force_offline: 
 		"force_offline": force_offline
 	})
 	return true
+
+func delete_current_project_files() -> bool:
+	## Safely deletes all files in the currently selected project folder from disk,
+	## ensuring the path is valid and within tracked projects, and cleans up registry.
+	if current_project_dir.is_empty() or _selected_project_index < 0:
+		return false
+	if not DirAccess.dir_exists_absolute(current_project_dir):
+		return false
+	_remove_dir_recursive(current_project_dir)
+	_remove_project_at_index(_selected_project_index)
+	return true
+
+## Recursively deletes directory contents and directory itself.
+static func _remove_dir_recursive(path: String) -> void:
+	if path.is_empty() or not DirAccess.dir_exists_absolute(path):
+		return
+	var dir = DirAccess.open(path)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var name = dir.get_next()
+	while name != "":
+		if name != "." and name != "..":
+			var item_path = path.path_join(name)
+			if dir.current_is_dir():
+				_remove_dir_recursive(item_path)
+			else:
+				DirAccess.remove_absolute(item_path)
+		name = dir.get_next()
+	dir.list_dir_end()
+	DirAccess.remove_absolute(path)
 
 func _on_project_offline_setting_toggled(_enabled: bool) -> void:
 	## Handles user toggling either project offline policy CheckButton.
@@ -1180,8 +1234,8 @@ func _populate_tools_list(tools: Array) -> void:
 		var tool_path = String(tool_entry.get("path", ""))
 		var display_name: String = ToolCategoryMapper.get_display_name(tool_id)
 		
-		# Check if tool is installed in library
-		var is_installed: bool = _library_manager != null and _library_manager.tool_exists(tool_id, tool_version)
+		# Check if tool is installed
+		var is_installed: bool = _is_tool_installed(tool_entry)
 		
 		var availability = {"available": false, "installed": is_installed}
 		
@@ -1191,7 +1245,11 @@ func _populate_tools_list(tools: Array) -> void:
 		if not is_installed:
 			missing_count += 1
 			# Check if available in repository (only when repository data is loaded)
-			if repository_known and available_tools.has(tool_id) and available_tools[tool_id].has(tool_version):
+			if current_project_config != null and current_project_config.force_offline:
+				status_text = "⚠️ Missing from ogs_tools"
+				tooltip_text = "%s v%s is missing from project ogs_tools/ (force_offline enabled)." % [display_name, tool_version]
+				availability["available"] = false
+			elif repository_known and available_tools.has(tool_id) and available_tools[tool_id].has(tool_version):
 				status_text = "⚠️ Missing (Available in Tools)"
 				tooltip_text = "%s v%s is not installed. This tool can be downloaded from the Tools page." % [display_name, tool_version]
 				availability["available"] = true
@@ -1211,6 +1269,8 @@ func _populate_tools_list(tools: Array) -> void:
 			status_text = "✓ Installed"
 			if not tool_path.is_empty():
 				tooltip_text = "%s v%s is installed and ready to launch.\nPath: %s" % [display_name, tool_version, tool_path]
+			elif current_project_config != null and current_project_config.force_offline:
+				tooltip_text = "%s v%s is installed in project ogs_tools/ (force_offline enabled)." % [display_name, tool_version]
 			else:
 				tooltip_text = "%s v%s is installed and ready to launch." % [display_name, tool_version]
 		
@@ -1321,20 +1381,57 @@ func _on_tool_item_activated(index: int) -> void:
 		var tool_entry: Dictionary = current_manifest.tools[index]
 		var tool_id = String(tool_entry.get("id", "unknown"))
 		var tool_version = String(tool_entry.get("version", "?"))
-		if not _is_tool_installed(tool_id, tool_version):
-			_update_status("Status: Tool '%s' is not installed. Opening Tools page to download." % tool_id)
-			_emit_tool_view_request(tool_id, tool_version)
+		if not _is_tool_installed(tool_entry):
+			if current_project_config != null and current_project_config.force_offline:
+				_update_status("Status: Tool '%s' is missing from project ogs_tools/ (force_offline active)." % tool_id)
+			else:
+				_update_status("Status: Tool '%s' is not installed. Opening Tools page to download." % tool_id)
+				_emit_tool_view_request(tool_id, tool_version)
 			return
 	_on_launch_tool_pressed()
 
-func _is_tool_installed(tool_id: String, tool_version: String) -> bool:
-	## Checks whether the specified tool and version is installed in the local library.
-	var clean_version = "" if tool_version == "?" else tool_version
+func _is_tool_installed(tool_id_or_entry: Variant, tool_version: String = "") -> bool:
+	## Checks whether the specified tool is installed locally (in ogs_tools/ or explicit path)
+	## or in the Central Library, taking into account project force_offline enforcement.
+	var tool_id := ""
+	var version := ""
+	var tool_path := ""
+
+	if tool_id_or_entry is Dictionary:
+		var entry: Dictionary = tool_id_or_entry as Dictionary
+		tool_id = String(entry.get("id", "unknown")).strip_edges()
+		version = String(entry.get("version", "?")).strip_edges()
+		tool_path = String(entry.get("path", "")).strip_edges()
+	else:
+		tool_id = String(tool_id_or_entry).strip_edges()
+		version = tool_version.strip_edges()
+
+	var clean_version = "" if (version == "?" or version == "unknown") else version
+	var is_force_offline = current_project_config != null and current_project_config.force_offline
+
+	# If we have an active project, check local resolution first
+	if not current_project_dir.is_empty():
+		if not tool_path.is_empty():
+			var full_path = current_project_dir.path_join(tool_path) if not tool_path.is_absolute_path() else tool_path
+			if FileAccess.file_exists(full_path):
+				return true
+		else:
+			var local_res = ToolLauncher.resolve_local_ogs_tool(current_project_dir, tool_id, clean_version)
+			if local_res.get("available", false):
+				return true
+
+		# If force_offline is active, Central Library fallback is strictly blocked
+		if is_force_offline:
+			return false
+
+	# Central Library check
 	if _library_manager != null and _library_manager.tool_exists(tool_id, clean_version):
 		return true
-	var availability_key = "%s_%s" % [tool_id, tool_version]
+
+	var availability_key = "%s_%s" % [tool_id, version]
 	if availability_key in _tool_availability:
 		return bool(_tool_availability[availability_key].get("installed", false))
+
 	return false
 
 func _emit_tool_view_request(tool_id: String, tool_version: String) -> void:
@@ -1741,9 +1838,12 @@ func _on_launch_tool_pressed() -> void:
 
 	var tool_id = String(tool_entry.get("id", "unknown"))
 	var tool_version = String(tool_entry.get("version", "?"))
-	if not _is_tool_installed(tool_id, tool_version):
-		_update_status("Status: Tool '%s' is not installed. Opening Tools page to download." % tool_id)
-		_emit_tool_view_request(tool_id, tool_version)
+	if not _is_tool_installed(tool_entry):
+		if current_project_config != null and current_project_config.force_offline:
+			_update_status("Status: Tool '%s' is missing from project ogs_tools/ (force_offline active)." % tool_id)
+		else:
+			_update_status("Status: Tool '%s' is not installed. Opening Tools page to download." % tool_id)
+			_emit_tool_view_request(tool_id, tool_version)
 		return
 
 	# If the target is a directory, don't pass it as a file argument. 

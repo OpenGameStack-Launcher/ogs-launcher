@@ -36,6 +36,8 @@ func run() -> Dictionary:
 	_test_git_vscodium_executable_discovery(results)
 	_test_vscodium_git_settings_injection(results)
 	_test_find_first_project_godot_skips_ogs_tools(results)
+	_test_resolve_local_ogs_tool(results)
+	_test_launch_local_ogs_tools_and_force_offline(results)
 	
 	return results
 
@@ -509,4 +511,130 @@ func _test_find_first_project_godot_skips_ogs_tools(results: Dictionary) -> void
 	DirAccess.remove_absolute(ogs_tools_godot)
 	DirAccess.remove_absolute(project_dir.path_join("ogs_tools"))
 	DirAccess.remove_absolute(project_dir)
+
+func _test_resolve_local_ogs_tool(results: Dictionary) -> void:
+	## Validates resolve_local_ogs_tool functionality with metadata, fallback, and security checks.
+	var test_id = str(Time.get_ticks_msec())
+	var project_dir = ProjectSettings.globalize_path("user://test_tl_resolve_%s" % test_id)
+	DirAccess.make_dir_recursive_absolute(project_dir)
+
+	# 1. Missing ogs_tools dir
+	var res_missing = ToolLauncher.resolve_local_ogs_tool(project_dir, "godot", "4.7.2")
+	_expect(not res_missing["available"], "resolve should return not available when ogs_tools missing", results)
+
+	# 2. ogs_tools exists but specific tool folder missing
+	var ogs_tools_dir = project_dir.path_join("ogs_tools")
+	DirAccess.make_dir_recursive_absolute(ogs_tools_dir)
+	var res_folder_missing = ToolLauncher.resolve_local_ogs_tool(project_dir, "godot", "4.7.2")
+	_expect(not res_folder_missing["available"], "resolve should return not available when tool folder missing", results)
+
+	# 3. Local tool folder with ogs_metadata.json
+	var godot_dir = ogs_tools_dir.path_join("godot_4.7.2")
+	DirAccess.make_dir_recursive_absolute(godot_dir)
+	var bin_name = "godot.exe" if OS.get_name() == "Windows" else "godot"
+	var bin_path = godot_dir.path_join(bin_name)
+	var bf = FileAccess.open(bin_path, FileAccess.WRITE)
+	bf.store_string("binary")
+	bf.close()
+
+	var meta_path = godot_dir.path_join("ogs_metadata.json")
+	var mf = FileAccess.open(meta_path, FileAccess.WRITE)
+	mf.store_string(JSON.stringify({"executable_path": bin_name}))
+	mf.close()
+
+	var res_meta = ToolLauncher.resolve_local_ogs_tool(project_dir, "godot", "4.7.2")
+	_expect(res_meta["available"], "resolve should succeed via ogs_metadata.json", results)
+	_expect(res_meta["full_path"] == bin_path, "resolved full_path should match executable", results)
+
+	# 4. Local tool folder without metadata (fallback search)
+	var blender_dir = ogs_tools_dir.path_join("blender_4.2")
+	DirAccess.make_dir_recursive_absolute(blender_dir)
+	var blender_bin_name = "blender.exe" if OS.get_name() == "Windows" else "blender"
+	var blender_bin = blender_dir.path_join(blender_bin_name)
+	var bbf = FileAccess.open(blender_bin, FileAccess.WRITE)
+	bbf.store_string("blender")
+	bbf.close()
+
+	var res_fallback = ToolLauncher.resolve_local_ogs_tool(project_dir, "blender", "4.2")
+	_expect(res_fallback["available"], "resolve should succeed via fallback search", results)
+	_expect(res_fallback["full_path"] == blender_bin, "resolved fallback path should match binary", results)
+
+	# 5. Security: Path escape rejection
+	var res_escape = ToolLauncher.resolve_local_ogs_tool(project_dir, "../escaping_tool", "1.0")
+	_expect(not res_escape["available"], "path escaping tool should not be available", results)
+
+	_cleanup_dir_recursive(project_dir)
+
+func _test_launch_local_ogs_tools_and_force_offline(results: Dictionary) -> void:
+	## Validates launch() behavior for local ogs_tools and strict force_offline blocking.
+	var test_id = str(Time.get_ticks_msec())
+	var project_dir = ProjectSettings.globalize_path("user://test_tl_launch_fo_%s" % test_id)
+	DirAccess.make_dir_recursive_absolute(project_dir)
+
+	var config_path = project_dir.path_join("ogs_config.json")
+
+	# 1. Force offline = true, tool missing from ogs_tools/
+	# Must return TOOL_NOT_FOUND and block Central Library fallback
+	var cf = FileAccess.open(config_path, FileAccess.WRITE)
+	cf.store_string(JSON.stringify({
+		"schema_version": OgsConfig.CURRENT_SCHEMA_VERSION,
+		"offline_mode": true,
+		"force_offline": true
+	}))
+	cf.close()
+
+	var missing_tool_entry = {"id": "godot", "version": "4.7.2"}
+	var res_blocked = ToolLauncher.launch(missing_tool_entry, project_dir)
+	_expect(not res_blocked["success"], "launch should fail when tool missing from ogs_tools and force_offline=true", results)
+	_expect(res_blocked["error_code"] == ToolLauncher.LaunchError.TOOL_NOT_FOUND, "error code should be TOOL_NOT_FOUND", results)
+	_expect(res_blocked["error_message"].contains("force_offline"), "error message should mention force_offline blocking", results)
+
+	# 2. Force offline = true, tool PRESENT in ogs_tools/<id>_<version>/
+	# Populated mock binary
+	var godot_dir = project_dir.path_join("ogs_tools").path_join("godot_4.7.2")
+	DirAccess.make_dir_recursive_absolute(godot_dir)
+	var bin_name = "godot.exe" if OS.get_name() == "Windows" else "godot"
+	var bin_path = godot_dir.path_join(bin_name)
+	var bf = FileAccess.open(bin_path, FileAccess.WRITE)
+	bf.store_string("mock")
+	bf.close()
+
+	var res_local = ToolLauncher.launch(missing_tool_entry, project_dir)
+	_expect(res_local["error_code"] != ToolLauncher.LaunchError.TOOL_NOT_FOUND, "local tool should be found in ogs_tools", results)
+
+	# 3. Force offline = false, tool missing from ogs_tools/
+	# Should fall back to Central Library (which in test env doesn't have it, but returns normal library not found message)
+	var cf2 = FileAccess.open(config_path, FileAccess.WRITE)
+	cf2.store_string(JSON.stringify({
+		"schema_version": OgsConfig.CURRENT_SCHEMA_VERSION,
+		"offline_mode": false,
+		"force_offline": false
+	}))
+	cf2.close()
+
+	var res_fallback = ToolLauncher.launch({"id": "nonexistent_tool", "version": "1.0"}, project_dir)
+	_expect(not res_fallback["success"], "nonexistent tool should fail", results)
+	_expect(res_fallback["error_code"] == ToolLauncher.LaunchError.TOOL_NOT_FOUND, "error code should be TOOL_NOT_FOUND", results)
+	_expect(not res_fallback["error_message"].contains("force_offline"), "error message should not mention force_offline when disabled", results)
+
+	_cleanup_dir_recursive(project_dir)
+
+static func _cleanup_dir_recursive(path: String) -> void:
+	if path.is_empty() or not DirAccess.dir_exists_absolute(path):
+		return
+	var dir = DirAccess.open(path)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var name = dir.get_next()
+	while name != "":
+		if name != "." and name != "..":
+			var item_path = path.path_join(name)
+			if dir.current_is_dir():
+				_cleanup_dir_recursive(item_path)
+			else:
+				DirAccess.remove_absolute(item_path)
+		name = dir.get_next()
+	dir.list_dir_end()
+	DirAccess.remove_absolute(path)
 

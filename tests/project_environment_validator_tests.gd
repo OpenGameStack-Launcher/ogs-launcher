@@ -20,6 +20,8 @@ func run() -> Dictionary:
 		{"name": "test_validate_project_returns_dict", "func": test_validate_project_returns_dict},
 		{"name": "test_get_download_list_returns_array", "func": test_get_download_list_returns_array},
 		{"name": "test_is_library_accessible_returns_dict", "func": test_is_library_accessible_returns_dict},
+		{"name": "test_validate_project_with_local_ogs_tools_succeeds", "func": test_validate_project_with_local_ogs_tools_succeeds},
+		{"name": "test_validate_project_with_missing_local_ogs_tools_fails", "func": test_validate_project_with_missing_local_ogs_tools_fails},
 	]
 	
 	for test in tests:
@@ -137,3 +139,99 @@ func test_is_library_accessible_returns_dict() -> Dictionary:
 		return {"passed": false, "error": "'accessible' should be boolean"}
 	
 	return {"passed": true}
+
+func test_validate_project_with_local_ogs_tools_succeeds() -> Dictionary:
+	## Verifies that validation succeeds when use_project_tools=true and tools are in ogs_tools/<id>_<version>.
+	var test_id = str(Time.get_ticks_msec())
+	var project_dir = ProjectSettings.globalize_path("user://test_pev_local_ogs_tools_%s" % test_id)
+	DirAccess.make_dir_recursive_absolute(project_dir)
+
+	var stack_file = project_dir.path_join("ogs_stack.json")
+	var stack_payload = {
+		"schema_version": StackManifest.CURRENT_SCHEMA_VERSION,
+		"stack_name": "PEV Local Test",
+		"tools": [
+			{"id": "godot", "version": "4.7.2"}
+		]
+	}
+	var f = FileAccess.open(stack_file, FileAccess.WRITE)
+	f.store_string(JSON.stringify(stack_payload))
+	f.close()
+
+	# Create local ogs_tools/godot_4.7.2/ with mock binary and ogs_metadata.json
+	var local_tool_dir = project_dir.path_join("ogs_tools").path_join("godot_4.7.2")
+	DirAccess.make_dir_recursive_absolute(local_tool_dir)
+	var bin_file = local_tool_dir.path_join("godot.exe" if OS.get_name() == "Windows" else "godot")
+	var bf = FileAccess.open(bin_file, FileAccess.WRITE)
+	bf.store_string("mock")
+	bf.close()
+
+	var meta_file = local_tool_dir.path_join("ogs_metadata.json")
+	var mf = FileAccess.open(meta_file, FileAccess.WRITE)
+	mf.store_string(JSON.stringify({"executable_path": bin_file.get_file()}))
+	mf.close()
+
+	var validator = ProjectEnvironmentValidator.new()
+	var result = validator.validate_project(project_dir, true)
+
+	_cleanup_dir_recursive(project_dir)
+
+	if not result["valid"]:
+		return {"passed": false, "error": "Validation should be valid: %s" % str(result["errors"])}
+	if not result["ready"]:
+		return {"passed": false, "error": "Validation should be ready with local ogs_tools populated"}
+	if not result["missing_tools"].is_empty():
+		return {"passed": false, "error": "Missing tools should be empty, but got: %s" % str(result["missing_tools"])}
+
+	return {"passed": true}
+
+func test_validate_project_with_missing_local_ogs_tools_fails() -> Dictionary:
+	## Verifies that validation marks tool missing when use_project_tools=true and ogs_tools/ is empty.
+	var test_id = str(Time.get_ticks_msec())
+	var project_dir = ProjectSettings.globalize_path("user://test_pev_missing_local_%s" % test_id)
+	DirAccess.make_dir_recursive_absolute(project_dir)
+
+	var stack_file = project_dir.path_join("ogs_stack.json")
+	var stack_payload = {
+		"schema_version": StackManifest.CURRENT_SCHEMA_VERSION,
+		"stack_name": "PEV Missing Local Test",
+		"tools": [
+			{"id": "godot", "version": "4.7.2"}
+		]
+	}
+	var f = FileAccess.open(stack_file, FileAccess.WRITE)
+	f.store_string(JSON.stringify(stack_payload))
+	f.close()
+
+	var validator = ProjectEnvironmentValidator.new()
+	var result = validator.validate_project(project_dir, true)
+
+	_cleanup_dir_recursive(project_dir)
+
+	if not result["valid"]:
+		return {"passed": false, "error": "Validation syntax should be valid"}
+	if result["ready"]:
+		return {"passed": false, "error": "Validation should not be ready when ogs_tools is missing"}
+	if result["missing_tools"].size() != 1:
+		return {"passed": false, "error": "Expected 1 missing tool, got %d" % result["missing_tools"].size()}
+
+	return {"passed": true}
+
+static func _cleanup_dir_recursive(path: String) -> void:
+	if path.is_empty() or not DirAccess.dir_exists_absolute(path):
+		return
+	var dir = DirAccess.open(path)
+	if dir == null:
+		return
+	dir.list_dir_begin()
+	var name = dir.get_next()
+	while name != "":
+		if name != "." and name != "..":
+			var item_path = path.path_join(name)
+			if dir.current_is_dir():
+				_cleanup_dir_recursive(item_path)
+			else:
+				DirAccess.remove_absolute(item_path)
+		name = dir.get_next()
+	dir.list_dir_end()
+	DirAccess.remove_absolute(path)

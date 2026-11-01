@@ -7,7 +7,98 @@ extends RefCounted
 class_name ProjectSealToolCopier
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
+const PathUtils = preload("res://scripts/utils/path_utils.gd")
 const _COPY_CHUNK_SIZE := 1_048_576  # 1 MB
+
+## Copies installed tools from the Central Library to the project's ogs_tools folder.
+## Only copies tools from manifest that are not already populated in <project_dir>/ogs_tools/<id>_<version>.
+##
+## @param manifest: StackManifest containing tool definitions
+## @param project_dir: Absolute path to the project root directory
+## @param library: Optional LibraryManager instance (created if null)
+## @return: Dictionary with keys: success (bool), errors (Array), tools_copied (Array)
+static func copy_tools_to_project(
+	manifest: StackManifest,
+	project_dir: String,
+	library: LibraryManager = null
+) -> Dictionary:
+	var result = {
+		"success": false,
+		"errors": [],
+		"tools_copied": []
+	}
+
+	if manifest == null:
+		result.errors.append("Manifest is null.")
+		return result
+	if project_dir.is_empty():
+		result.errors.append("Project directory is empty.")
+		return result
+
+	var tools_dir = project_dir.path_join("ogs_tools")
+	if not PathUtils.is_path_under_root(tools_dir, project_dir):
+		result.errors.append("ogs_tools directory escapes project root.")
+		return result
+
+	if not DirAccess.dir_exists_absolute(tools_dir):
+		var err = DirAccess.make_dir_recursive_absolute(tools_dir)
+		if err != OK and not DirAccess.dir_exists_absolute(tools_dir):
+			result.errors.append("Failed to create ./ogs_tools directory: %s" % error_string(err))
+			return result
+
+	var lib = library if library != null else LibraryManager.new()
+	var copier = ProjectSealToolCopier.new()
+
+	for tool in manifest.tools:
+		if not (tool is Dictionary):
+			continue
+		var tool_dict: Dictionary = tool as Dictionary
+		var tool_id = String(tool_dict.get("id", "")).strip_edges()
+		var version = String(tool_dict.get("version", "")).strip_edges()
+		if tool_id.is_empty() or version.is_empty():
+			continue
+
+		var dest_folder_name = "%s_%s" % [tool_id, version]
+		var dest_path = tools_dir.path_join(dest_folder_name)
+
+		# Check if already populated
+		if DirAccess.dir_exists_absolute(dest_path):
+			var existing_count = copier._count_files_recursive(dest_path)
+			if existing_count > 0:
+				OgsLogger.debug("tool_already_populated_in_ogs_tools", {
+					"component": "sealer",
+					"tool_id": tool_id,
+					"version": version
+				})
+				continue
+
+		if not lib.tool_exists(tool_id, version):
+			OgsLogger.debug("tool_not_in_library_for_copy", {
+				"component": "sealer",
+				"tool_id": tool_id,
+				"version": version
+			})
+			continue
+
+		var source_path = lib.get_tool_path(tool_id, version)
+		if source_path.is_empty() or not DirAccess.dir_exists_absolute(source_path):
+			result.errors.append("Cannot resolve source path for tool: %s v%s" % [tool_id, version])
+			continue
+
+		var copy_err = copier._copy_directory_recursive(source_path, dest_path)
+		if copy_err != OK:
+			result.errors.append("Failed to copy %s v%s: %s" % [tool_id, version, error_string(copy_err)])
+			continue
+
+		result.tools_copied.append("%s v%s" % [tool_id, version])
+		OgsLogger.info("tool_copied_to_ogs_tools", {
+			"component": "sealer",
+			"tool_id": tool_id,
+			"version": version
+		})
+
+	result.success = result.errors.is_empty()
+	return result
 
 ## Copies all manifest tools from central library to project ./ogs_tools.
 ## Parameters:

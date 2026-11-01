@@ -79,12 +79,42 @@ static func launch(tool_entry: Dictionary, project_dir: String, target_file: Str
 			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "path_escape"})
 			return _error_result(LaunchError.TOOL_PATH_OUTSIDE_ROOT, "Tool path escapes project root.")
 	else:
-		# Path not provided - resolve from library
-		var resolver_result = _resolve_tool_from_library(LibraryManager.new(), tool_id, tool_version)
-		if not resolver_result["success"]:
-			OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "not_installed", "tool": tool_id})
-			return _error_result(resolver_result["error_code"], resolver_result["error_message"])
-		full_tool_path = String(resolver_result["executable_path"])
+		# Path not provided in tool_entry.
+		# Check if force_offline is enabled or if tool exists in local ogs_tools/
+		var is_force_offline := false
+		var config_path = project_dir.path_join("ogs_config.json")
+		if FileAccess.file_exists(config_path):
+			var config_file = FileAccess.open(config_path, FileAccess.READ)
+			if config_file != null:
+				var config_text = config_file.get_as_text()
+				config_file.close()
+				var config_json = JSON.parse_string(config_text)
+				if config_json is Dictionary:
+					is_force_offline = bool(config_json.get("force_offline", false))
+		if not is_force_offline and OfflineEnforcer.is_offline() and OfflineEnforcer.get_reason() == "force_offline":
+			is_force_offline = true
+
+		var local_res = resolve_local_ogs_tool(project_dir, tool_id, tool_version)
+		if local_res.get("available", false):
+			full_tool_path = String(local_res.get("full_path", ""))
+		elif is_force_offline:
+			OgsLogger.warn("tool_launch_failed", {
+				"component": "launcher",
+				"reason": "missing_local_tool_force_offline",
+				"tool": tool_id,
+				"version": tool_version
+			})
+			return _error_result(
+				LaunchError.TOOL_NOT_FOUND,
+				"Tool %s v%s not found in local ogs_tools/ and fallback to Central Library is blocked by force_offline policy." % [tool_id, tool_version]
+			)
+		else:
+			# Not force_offline and not present in local ogs_tools/ - resolve from Central Library
+			var resolver_result = _resolve_tool_from_library(LibraryManager.new(), tool_id, tool_version)
+			if not resolver_result["success"]:
+				OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "not_installed", "tool": tool_id})
+				return _error_result(resolver_result["error_code"], resolver_result["error_message"])
+			full_tool_path = String(resolver_result["executable_path"])
 		
 	if not _tool_path_exists(full_tool_path):
 		OgsLogger.warn("tool_launch_failed", {"component": "launcher", "reason": "not_found", "absolute_path": full_tool_path})
@@ -286,6 +316,99 @@ static func _error_result(error_code: LaunchError, message: String) -> Dictionar
 		"error_code": error_code,
 		"error_message": message,
 		"pid": -1
+	}
+
+## Resolves a tool executable from the project-local ogs_tools directory.
+##
+## Validates path containment within the project root to guard against traversal attacks.
+## Inspects <project_dir>/ogs_tools/<tool_id>_<version> using ogs_metadata.json (executable_path)
+## when present, or falls back to convention-based executable search.
+##
+## @param project_dir: Absolute path to the project root directory
+## @param tool_id: Tool identifier (e.g. "godot", "blender")
+## @param tool_version: Tool version string (e.g. "4.7.2", "4.2")
+## @return: Dictionary with keys: available (bool), full_path (String), error (String)
+static func resolve_local_ogs_tool(project_dir: String, tool_id: String, tool_version: String) -> Dictionary:
+	if project_dir.is_empty():
+		return {
+			"available": false,
+			"full_path": "",
+			"error": "Project directory is empty."
+		}
+	if tool_id.is_empty() or tool_id == "unknown":
+		return {
+			"available": false,
+			"full_path": "",
+			"error": "Tool ID is empty or invalid."
+		}
+
+	var tools_dir: String = project_dir.path_join("ogs_tools")
+	if not PathUtils.is_path_under_root(tools_dir, project_dir):
+		return {
+			"available": false,
+			"full_path": "",
+			"error": "Local ogs_tools directory escapes project root."
+		}
+	if not DirAccess.dir_exists_absolute(tools_dir):
+		return {
+			"available": false,
+			"full_path": "",
+			"error": "Local ogs_tools directory does not exist."
+		}
+
+	# Identify local tool directory: check <tool_id>_<tool_version> first, then <tool_id>
+	var clean_version = "" if (tool_version == "?" or tool_version == "unknown") else tool_version
+	var candidate_dirs: Array[String] = []
+	if not clean_version.is_empty():
+		candidate_dirs.append(tools_dir.path_join("%s_%s" % [tool_id, clean_version]))
+	candidate_dirs.append(tools_dir.path_join(tool_id))
+
+	var local_tool_dir: String = ""
+	for c_dir in candidate_dirs:
+		if PathUtils.is_path_under_root(c_dir, project_dir) and DirAccess.dir_exists_absolute(c_dir):
+			local_tool_dir = c_dir
+			break
+
+	if local_tool_dir.is_empty():
+		return {
+			"available": false,
+			"full_path": "",
+			"error": "Local tool directory not found for %s in ogs_tools/" % tool_id
+		}
+
+	# 1. Check ogs_metadata.json
+	var metadata_path = local_tool_dir.path_join("ogs_metadata.json")
+	if FileAccess.file_exists(metadata_path):
+		var file = FileAccess.open(metadata_path, FileAccess.READ)
+		if file != null:
+			var text = file.get_as_text()
+			file.close()
+			var json = JSON.new()
+			if json.parse(text) == OK and json.data is Dictionary:
+				var metadata: Dictionary = json.data
+				if metadata.has("executable_path"):
+					var rel_exe = String(metadata["executable_path"])
+					var exe_path = local_tool_dir.path_join(rel_exe)
+					if PathUtils.is_path_under_root(exe_path, local_tool_dir) and _tool_path_exists(exe_path):
+						return {
+							"available": true,
+							"full_path": exe_path,
+							"error": ""
+						}
+
+	# 2. Fallback heuristic executable discovery
+	var fallback_exe = _find_executable_in_directory(local_tool_dir, tool_id)
+	if not fallback_exe.is_empty() and _tool_path_exists(fallback_exe):
+		return {
+			"available": true,
+			"full_path": fallback_exe,
+			"error": ""
+		}
+
+	return {
+		"available": false,
+		"full_path": "",
+		"error": "No executable found in local tool directory: %s" % local_tool_dir.get_file()
 	}
 
 ## Resolves tool executable path from the library.
@@ -692,31 +815,37 @@ static func _configure_vscodium_git(project_dir: String) -> bool:
 	if not git_found:
 		return false
 	
-	var library = LibraryManager.new()
-	var git_tool_dir := ""
-	if not git_version.is_empty():
-		git_tool_dir = library.get_tool_path("git", git_version)
-	
-	if git_tool_dir.is_empty():
-		var git_parent_dir = library.path_resolver.get_library_root().path_join("git")
-		var dir = DirAccess.open(git_parent_dir)
-		if dir != null:
-			dir.list_dir_begin()
-			var fname = dir.get_next()
-			while fname != "":
-				if dir.current_is_dir() and not fname.begins_with("."):
-					var candidate_dir = git_parent_dir.path_join(fname)
-					if FileAccess.file_exists(candidate_dir.path_join("cmd").path_join("git.exe")):
-						git_tool_dir = candidate_dir
-						break
-				fname = dir.get_next()
-			dir.list_dir_end()
-	
-	if git_tool_dir.is_empty():
-		return false
-	
-	var git_exe = git_tool_dir.path_join("cmd").path_join("git.exe")
-	if not FileAccess.file_exists(git_exe):
+	var git_exe := ""
+	var local_git = resolve_local_ogs_tool(project_dir, "git", git_version)
+	if local_git.get("available", false):
+		git_exe = String(local_git.get("full_path", ""))
+	else:
+		var library = LibraryManager.new()
+		var git_tool_dir := ""
+		if not git_version.is_empty():
+			git_tool_dir = library.get_tool_path("git", git_version)
+		
+		if git_tool_dir.is_empty():
+			var git_parent_dir = library.path_resolver.get_library_root().path_join("git")
+			var dir = DirAccess.open(git_parent_dir)
+			if dir != null:
+				dir.list_dir_begin()
+				var fname = dir.get_next()
+				while fname != "":
+					if dir.current_is_dir() and not fname.begins_with("."):
+						var candidate_dir = git_parent_dir.path_join(fname)
+						if FileAccess.file_exists(candidate_dir.path_join("cmd").path_join("git.exe")):
+							git_tool_dir = candidate_dir
+							break
+					fname = dir.get_next()
+				dir.list_dir_end()
+		
+		if not git_tool_dir.is_empty():
+			var candidate = git_tool_dir.path_join("cmd").path_join("git.exe")
+			if FileAccess.file_exists(candidate):
+				git_exe = candidate
+
+	if git_exe.is_empty():
 		return false
 	
 	var vscode_dir = project_dir.path_join(".vscode")

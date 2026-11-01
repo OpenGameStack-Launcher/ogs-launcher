@@ -76,14 +76,16 @@ func validate_project(project_dir: String, use_project_tools: bool = false) -> D
 		
 		if use_project_tools:
 			if tool_path.is_empty():
-				missing.append({"tool_id": tool_id, "version": version})
-				OgsLogger.debug("tool_missing_from_project", {
-					"component": "projects",
-					"tool_id": tool_id,
-					"version": version,
-					"project": project_dir,
-					"reason": "missing_path"
-				})
+				var local_tool = ToolLauncher.resolve_local_ogs_tool(project_dir, tool_id, version)
+				if not local_tool.get("available", false):
+					missing.append({"tool_id": tool_id, "version": version})
+					OgsLogger.debug("tool_missing_from_project", {
+						"component": "projects",
+						"tool_id": tool_id,
+						"version": version,
+						"project": project_dir,
+						"reason": "missing_from_ogs_tools"
+					})
 				continue
 			
 			var resolved_path = tool_path
