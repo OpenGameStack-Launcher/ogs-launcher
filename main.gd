@@ -36,17 +36,23 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var tools_status_label = $AppLayout/Content/PageTools/ToolsStatusLabel
 @onready var tools_offline_message = $AppLayout/Content/PageTools/OfflineMessage
 @onready var tools_tabs = $AppLayout/Content/PageTools/ToolsTabs
-@onready var installed_content = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent
+@onready var installed_scroll_container = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer
+@onready var installed_content = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent
 @onready var download_content = $AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent
-@onready var installed_empty_state = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState
-@onready var browse_available_tools_button = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/BrowseAvailableToolsButton
+@onready var installed_empty_state = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledEmptyState
+@onready var browse_available_tools_button = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledEmptyState/BrowseAvailableToolsButton
 
 # Installed tab containers
-@onready var installed_engine_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/EngineSection/EngineTools
-@onready var installed_2d_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/"2DSection"/"2DTools"
-@onready var installed_3d_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/"3DSection"/"3DTools"
-@onready var installed_audio_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/AudioSection/AudioTools
-@onready var installed_code_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/CodeSection/CodeTools
+@onready var installed_engine_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/EngineSection/EngineTools
+@onready var installed_2d_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/"2DSection"/"2DTools"
+@onready var installed_3d_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/"3DSection"/"3DTools"
+@onready var installed_audio_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/AudioSection/AudioTools
+@onready var installed_code_tools = $AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/CodeSection/CodeTools
+
+# Installed tab footer
+@onready var library_footer = $AppLayout/Content/PageTools/ToolsTabs/Installed/LibraryFooter
+@onready var library_path_label = $AppLayout/Content/PageTools/ToolsTabs/Installed/LibraryFooter/FooterVBox/LibraryPathHBox/LibraryPathLabel
+@onready var library_warning_label = $AppLayout/Content/PageTools/ToolsTabs/Installed/LibraryFooter/FooterVBox/LibraryWarningLabel
 
 # Download tab containers
 @onready var download_engine_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/EngineSection/EngineTools
@@ -354,7 +360,7 @@ func _apply_global_theme() -> void:
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolchainHeaderLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolchainHeaderLabel") != null else find_child("ToolchainHeaderLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar/ExplorerLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar/ExplorerLabel") != null else find_child("ExplorerLabel", true, false) as Label),
 		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyTitleLabel") as Label,
-		(get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/InstalledEmptyTitle") as Label if get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/InstalledEmptyTitle") != null else find_child("InstalledEmptyTitle", true, false) as Label)
+		(get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledEmptyState/InstalledEmptyTitle") as Label if get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledEmptyState/InstalledEmptyTitle") != null else find_child("InstalledEmptyTitle", true, false) as Label)
 	]
 	for header: Label in section_headers:
 		if header != null:
@@ -382,7 +388,7 @@ func _apply_global_theme() -> void:
 		(get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsHelperLabel") != null else find_child("ProjectsHelperLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorHelperLabel") != null else find_child("MirrorHelperLabel", true, false) as Label),
 		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyMessageLabel") as Label,
-		(get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/InstalledEmptyDescription") as Label if get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/InstalledEmptyDescription") != null else find_child("InstalledEmptyDescription", true, false) as Label)
+		(get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledEmptyState/InstalledEmptyDescription") as Label if get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledEmptyState/InstalledEmptyDescription") != null else find_child("InstalledEmptyDescription", true, false) as Label)
 	]
 	for sec_label: Label in secondary_labels:
 		if sec_label != null:
@@ -502,6 +508,9 @@ func _ready() -> void:
 	tools_page_deps.remove_tool_confirmation_label = remove_tool_confirmation_label
 	tools_page_deps.remove_tool_status_label = remove_tool_status_label
 	tools_page_deps.remove_tool_progress_bar = remove_tool_progress_bar
+	tools_page_deps.library_footer = library_footer
+	tools_page_deps.library_path_label = library_path_label
+	tools_page_deps.library_warning_label = library_warning_label
 	
 	tools_page_controller.setup(tools_page_deps, tools_controller, progress_controller, projects_controller, download_dialog_controller)
 

@@ -6,6 +6,8 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 const OfflineEnforcer = preload("res://scripts/network/offline_enforcer.gd")
 const LibraryManager = preload("res://scripts/library/library_manager.gd")
 const ToolCategoryMapper = preload("res://scripts/tools/tool_category_mapper.gd")
+const PathResolverScript = preload("res://scripts/library/path_resolver.gd")
+const PathUtils = preload("res://scripts/utils/path_utils.gd")
 
 const TOOL_ICON_PATHS := {
 	"audacity": "res://Images/tools/Audacity.png",
@@ -39,6 +41,9 @@ class UIDeps extends RefCounted:
 	var remove_tool_confirmation_label: Label
 	var remove_tool_status_label: Label
 	var remove_tool_progress_bar: ProgressBar
+	var library_footer: Control
+	var library_path_label: Label
+	var library_warning_label: Label
 
 var _ui: UIDeps
 var _tools_controller: ToolsController
@@ -90,6 +95,12 @@ func setup(deps: UIDeps, tools_controller: ToolsController, progress_controller:
 			_ui.browse_available_tools_button = _ui.installed_empty_state.find_child("BrowseAvailableToolsButton", true, false) as Button
 		if _ui.browse_available_tools_button != null and not _ui.browse_available_tools_button.pressed.is_connected(_on_browse_available_tools_pressed):
 			_ui.browse_available_tools_button.pressed.connect(_on_browse_available_tools_pressed)
+		if _ui.library_footer == null and _ui.tools_tabs != null:
+			_ui.library_footer = _ui.tools_tabs.find_child("LibraryFooter", true, false) as Control
+		if _ui.library_path_label == null and _ui.tools_tabs != null:
+			_ui.library_path_label = _ui.tools_tabs.find_child("LibraryPathLabel", true, false) as Label
+		if _ui.library_warning_label == null and _ui.tools_tabs != null:
+			_ui.library_warning_label = _ui.tools_tabs.find_child("LibraryWarningLabel", true, false) as Label
 	
 	populate_tools_ui()
 
@@ -152,6 +163,7 @@ func populate_tools_ui() -> void:
 	_update_category_sections_and_dividers(_get_installed_category_containers(), _get_installed_content())
 	_update_category_sections_and_dividers(_get_download_category_containers(), _get_download_content())
 	_update_installed_empty_state(installed_count)
+	_update_library_footer()
 
 	update_download_button_states()
 	_focus_requested_tool_card()
@@ -237,6 +249,55 @@ func _update_installed_empty_state(installed_count: int) -> void:
 		empty_state.visible = is_empty
 	if installed_content != null:
 		installed_content.visible = not is_empty
+
+	var footer = _get_library_footer()
+	if footer != null:
+		footer.visible = true
+
+## Resolves the LibraryFooter control from UIDeps or the tools tab hierarchy.
+func _get_library_footer() -> Control:
+	if _ui == null:
+		return null
+	if _ui.library_footer != null:
+		return _ui.library_footer
+	if _ui.tools_tabs != null:
+		return _ui.tools_tabs.find_child("LibraryFooter", true, false) as Control
+	return null
+
+## Resolves the LibraryPathLabel from UIDeps or the tools tab hierarchy.
+func _get_library_path_label() -> Label:
+	if _ui == null:
+		return null
+	if _ui.library_path_label != null:
+		return _ui.library_path_label
+	if _ui.tools_tabs != null:
+		return _ui.tools_tabs.find_child("LibraryPathLabel", true, false) as Label
+	return null
+
+## Resolves the LibraryWarningLabel from UIDeps or the tools tab hierarchy.
+func _get_library_warning_label() -> Label:
+	if _ui == null:
+		return null
+	if _ui.library_warning_label != null:
+		return _ui.library_warning_label
+	if _ui.tools_tabs != null:
+		return _ui.tools_tabs.find_child("LibraryWarningLabel", true, false) as Label
+	return null
+
+## Updates the Central Library footer path label and ensures persistent visibility.
+func _update_library_footer() -> void:
+	var footer = _get_library_footer()
+	if footer != null:
+		footer.visible = true
+	var path_label = _get_library_path_label()
+	if path_label != null:
+		var resolver = PathResolverScript.new()
+		var formatted_path = PathUtils.format_for_display(resolver.get_library_root())
+		path_label.text = formatted_path
+		path_label.tooltip_text = formatted_path
+	var warning_label = _get_library_warning_label()
+	if warning_label != null and warning_label.text.is_empty():
+		warning_label.text = "⚠️ Do not manually adjust or modify files in the Central Library directory on disk. Use the Tools screen to install and remove software."
 
 ## Hides empty category sections and ensures dividers appear strictly between visible sections.
 func _update_category_sections_and_dividers(category_containers: Array, content_container: Container) -> void:

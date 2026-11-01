@@ -11,6 +11,8 @@ class_name ToolsPageControllerTests
 
 const ToolsPageControllerScript = preload("res://scripts/tools/tools_page_controller.gd")
 const ToolsControllerScript = preload("res://scripts/tools/tools_controller.gd")
+const PathResolverScript = preload("res://scripts/library/path_resolver.gd")
+const PathUtils = preload("res://scripts/utils/path_utils.gd")
 
 class MockToolsControllerForBadges extends ToolsController:
 	var mock_tools: Dictionary = {}
@@ -32,6 +34,7 @@ func run() -> Dictionary:
 	_test_main_notification_calls_cleanup(results)
 	_test_dynamic_tab_title_count_badges(results)
 	_test_installed_empty_state_visibility_toggles(results)
+	_test_library_footer_visibility_and_path_resolution(results)
 	_test_browse_available_tools_button_switches_tab(results)
 	_test_category_sections_and_dividers_visibility(results)
 
@@ -192,34 +195,81 @@ func _test_installed_empty_state_visibility_toggles(results: Dictionary) -> void
 
 	var installed_content = VBoxContainer.new()
 	var empty_state = VBoxContainer.new()
+	var footer = PanelContainer.new()
+	var path_label = Label.new()
+	var warning_label = Label.new()
 	tab_installed.add_child(installed_content)
 	tab_installed.add_child(empty_state)
+	tab_installed.add_child(footer)
+	footer.add_child(path_label)
+	footer.add_child(warning_label)
+
 	deps.installed_content = installed_content
 	deps.installed_empty_state = empty_state
+	deps.library_footer = footer
+	deps.library_path_label = path_label
+	deps.library_warning_label = warning_label
 
 	controller.setup(deps, mock_tools_controller, null, null, null)
 
-	# 1. 0 installed tools -> empty state visible, installed content hidden
+	var expected_path = PathUtils.format_for_display(PathResolverScript.new().get_library_root())
+
+	# 1. 0 installed tools -> empty state visible, installed content hidden, footer visible
 	mock_tools_controller.mock_tools = {}
 	controller.populate_tools_ui()
 	_expect(empty_state.visible == true, "InstalledEmptyState should be visible when 0 tools installed", results)
 	_expect(installed_content.visible == false, "InstalledContent should be hidden when 0 tools installed", results)
+	_expect(footer.visible == true, "LibraryFooter should be visible when 0 tools installed", results)
+	_expect(path_label.text == expected_path, "LibraryPathLabel should show resolved path when 0 tools installed", results)
+	_expect(warning_label.text.find("Central Library") != -1 or warning_label.text.find("manually") != -1, "LibraryWarningLabel should contain guidance against manual modifications", results)
 
-	# 2. Add uninstalled tool in catalog (0 installed) -> still empty state visible
+	# 2. Add uninstalled tool in catalog (0 installed) -> still empty state visible, footer visible
 	mock_tools_controller.mock_tools = {
 		"Engine": [{"id": "godot", "version": "4.7.2", "installed": false}]
 	}
 	controller.populate_tools_ui()
 	_expect(empty_state.visible == true, "InstalledEmptyState should remain visible when catalog tools are not installed", results)
 	_expect(installed_content.visible == false, "InstalledContent should remain hidden when catalog tools are not installed", results)
+	_expect(footer.visible == true, "LibraryFooter should remain visible when catalog tools are not installed", results)
 
-	# 3. 1 installed tool -> empty state hidden, installed content visible
+	# 3. 1 installed tool -> empty state hidden, installed content visible, footer visible
 	mock_tools_controller.mock_tools = {
 		"Engine": [{"id": "godot", "version": "4.7.2", "installed": true}]
 	}
 	controller.populate_tools_ui()
 	_expect(empty_state.visible == false, "InstalledEmptyState should be hidden when 1 tool installed", results)
 	_expect(installed_content.visible == true, "InstalledContent should be visible when 1 tool installed", results)
+	_expect(footer.visible == true, "LibraryFooter should remain visible when 1 tool installed", results)
+
+	tabs.free()
+
+func _test_library_footer_visibility_and_path_resolution(results: Dictionary) -> void:
+	var controller = ToolsPageControllerScript.new()
+	var mock_tools_controller = MockToolsControllerForBadges.new()
+
+	var deps = ToolsPageControllerScript.UIDeps.new()
+	var tabs = TabContainer.new()
+	var tab_installed = Control.new()
+	tabs.add_child(tab_installed)
+	deps.tools_tabs = tabs
+
+	var footer = PanelContainer.new()
+	footer.name = "LibraryFooter"
+	var path_label = Label.new()
+	path_label.name = "LibraryPathLabel"
+	var warning_label = Label.new()
+	warning_label.name = "LibraryWarningLabel"
+	tab_installed.add_child(footer)
+	footer.add_child(path_label)
+	footer.add_child(warning_label)
+
+	# Verify fallback node resolution when deps footer is not explicitly bound
+	controller.setup(deps, mock_tools_controller, null, null, null)
+
+	var expected_path = PathUtils.format_for_display(PathResolverScript.new().get_library_root())
+	_expect(footer.visible == true, "LibraryFooter should be resolved and made visible via fallback lookup", results)
+	_expect(path_label.text == expected_path, "LibraryPathLabel should be populated via fallback lookup", results)
+	_expect(not warning_label.text.is_empty(), "LibraryWarningLabel should be populated via fallback lookup", results)
 
 	tabs.free()
 
