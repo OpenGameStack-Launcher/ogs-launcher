@@ -55,9 +55,9 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var download_audio_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/AudioSection/AudioTools
 @onready var download_code_tools = $AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/CodeSection/CodeTools
 
-@onready var btn_add_project = $AppLayout/Content/PageProjects/ProjectsControls/AddButton
-@onready var btn_add_remote_project = $AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton
-@onready var btn_new_project = $AppLayout/Content/PageProjects/ProjectsControls/NewProjectButton
+@onready var btn_add_project = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/AddButton"
+@onready var btn_add_remote_project = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/AddRemoteProjectButton"
+@onready var btn_new_project = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/NewProjectButton"
 @onready var projects_tabs = $AppLayout/Content/PageProjects/ProjectsTabs
 @onready var project_search_line_edit: LineEdit = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectSearchLineEdit"
 @onready var projects_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsList"
@@ -68,9 +68,9 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var empty_add_local_btn: Button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyActionsContainer/EmptyAddLocalButton"
 @onready var empty_add_remote_btn: Button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyActionsContainer/EmptyAddRemoteButton"
 @onready var empty_clear_filter_btn: Button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyActionsContainer/EmptyClearFilterButton"
-@onready var projects_status_bar = $AppLayout/Content/PageProjects/ProjectsStatusBar
-@onready var lbl_project_status = $AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel
-@onready var lbl_offline_status = $AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel
+@onready var projects_status_bar = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar"
+@onready var lbl_project_status = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel"
+@onready var lbl_offline_status = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel"
 @onready var toolchain_header_label: Label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel"
 @onready var project_tools_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ProjectToolsList"
 @onready var lbl_tools_list_title = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel"
@@ -82,10 +82,10 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var btn_add_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/AddToolButton"
 @onready var btn_remove_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/RemoveToolButton"
 @onready var btn_change_version = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/ChangeVersionButton"
-@onready var btn_launch_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/LaunchButton"
+@onready var btn_launch_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow/LaunchButton"
 @onready var btn_open_project = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/OpenProjectButton"
 @onready var btn_remove_project = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/RemoveButton"
-@onready var btn_seal_for_delivery = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/SealButton"
+@onready var btn_seal_for_delivery = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow/SealButton"
 @onready var project_dir_dialog = $ProjectDirDialog
 @onready var remove_project_dialog = $RemoveProjectDialog
 @onready var remove_tool_dialog = $RemoveToolDialog
@@ -359,10 +359,14 @@ func _apply_global_theme() -> void:
 			header.add_theme_font_size_override("font_size", SECTION_FONT_SIZE)
 			header.add_theme_color_override("font_color", SECTION_ACCENT_COLOR)
 	
-	var project_status_node := get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel") as Label
+	var project_status_node := get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel") as Label
+	if project_status_node == null:
+		project_status_node = get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel") as Label
 	if project_status_node == null:
 		project_status_node = get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusLabel") as Label
-	var offline_status_node := get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel") as Label
+	var offline_status_node := get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel") as Label
+	if offline_status_node == null:
+		offline_status_node = get_node_or_null("AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel") as Label
 	if offline_status_node == null:
 		offline_status_node = get_node_or_null("AppLayout/Content/PageProjects/OfflineStatusLabel") as Label
 	var secondary_labels: Array[Label] = [

@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 2158
+tests passed: 2190
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -376,7 +376,9 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Bidirectional mutual deselection synchronizes selection states between `project_tools_list` and `explorer_tree`
   - Double-click file activation in project explorer triggers launch targeting the activated file
   - New file creation in projects with VSCodium creates empty files on disk and defaults extensionless files to .txt with VSCodium launch state
-  - Three-button toolbar layout (Add Local Project, Add Remote Project, New Project) with equal size flags and 16px separation
+  - Three-button toolbar layout (Add Local Project, Add Remote Project, New Project) located in `ProjectsTabs/Project Library/ProjectsControls` with equal size flags and 16px separation
+  - Status bar (`ProjectsStatusBar`) located as child index 0 of `Project Details` above `VSplitContainer`
+  - Horizontal action row (`ProjectDetailsActionRow`) located at bottom of `Project Details` housing `LaunchButton` and `SealButton` side-by-side with equal width expansion
   - Missing-Git detection opens guided dialog and "Go to Tools" emits navigation hook
   - Offline mode disabling and descriptive tooltip enforcement on AddRemoteProjectButton
   - Single-clicking a missing tool row in `project_tools_list` selects it and enables Remove Tool and Change Version without emitting `tool_view_requested` or navigating away
@@ -385,7 +387,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Single-clicking a project in `projects_list` selects the project, updates Tab 1 title to the stack name, enables action buttons, and keeps `current_tab == 0` (Project Library)
   - Double-clicking (`item_activated`) a project in `projects_list` selects the project and switches `current_tab` to 1 (Project Details)
   - Clicking "Open Project" button switches `current_tab` to 1 (Project Details)
-  - Open Project, Remove Project, and Seal buttons are disabled initially when library is empty, enabled on project addition, and disabled when library becomes empty
+  - Open Project and Remove Project buttons are disabled initially when library is empty, enabled on project addition, and disabled when library becomes empty
   - `CustomItemList` emits `item_selected` on single-click and `item_activated` on double-click
   - Path normalization across project list items, item tooltips, Project Explorer title header, and New Project dialog instructions
   - Status bar severity color modulation: verifies `_update_status` modulates font color across ready (green), warning (amber), error (red), and neutral states while preserving status text
@@ -433,13 +435,14 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Compact horizontal status bar container (`ProjectsStatusBar` PanelContainer with inner HBoxContainer, 6px rounded corners, 12px horizontal margins, expanding status label, and pill badge offline status label)
   - Settings page Projects folder controls (label, path line edit, browse button, reset button) exist and wire properly
   - Primary projects root browse dialog is queued for free when closed or canceled without selection
-  - Tool action rows include Add Tool, Remove Tool, Launch Selected Tool, Remove Project, and Seal for Delivery
+  - Tool action rows include Add Tool, Remove Tool, Launch Selected Tool, Remove Project, and Seal for Delivery (with LaunchButton and SealButton in ProjectDetailsActionRow under Project Details, and OpenProjectButton and RemoveButton in ProjectActionRow under Project Library)
   - OpenProjectButton exists with minimum size Vector2(140, 32), starts disabled, and wires properly in UIDeps
   - `installed_code_tools` and `download_code_tools` node bindings are wired
   - AddRemoteProjectButton wired to UIDeps and toggles disabled state and descriptive tooltip on offline state change
   - Uniform content margins (20px horizontal, 16px vertical) on `AppLayout/Content` in both scene definition and runtime
   - Standard typographic hierarchy across page titles (24px), section headers (18px cyan accent Color(0.45, 0.8, 1.0)), form labels/body (16px), and secondary/metadata labels (13px muted Color(0.65, 0.70, 0.78))
   - Runtime theme application in `_apply_global_theme()` persists content margins and font sizes during scene readiness
+  - PageProjects hierarchy and controls separation (`_test_page_projects_hierarchy_and_separation`): verifies `ProjectsTabs` sits directly below `ProjectsTitle`, `ProjectsControls` is first child of `Project Library` (above search edit), `ProjectsStatusBar` is first child of `Project Details` (above VSplitContainer), `ProjectActionRow` contains only `OpenProjectButton` and `RemoveButton` (without `SealButton`), and `ProjectDetailsActionRow` at bottom of `Project Details` contains `LaunchButton` and `SealButton` side-by-side with separation 12 and `SIZE_EXPAND_FILL` horizontal sizing
   - Sidebar container structure (minimum width >= 200px, 1px right border Color(0.22, 0.25, 0.30), dark background Color(0.09, 0.10, 0.13), 12px horizontal and 16px vertical padding)
   - Sidebar Brand Header containing 32x32 logo (res://Images/logo.png), "OGS Launcher" title, and HSeparator divider
   - Sidebar Footer containing expanding vertical spacer, footer container, status indicator, and launcher version label

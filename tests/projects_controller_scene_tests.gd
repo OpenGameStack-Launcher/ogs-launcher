@@ -892,8 +892,8 @@ func _test_three_button_toolbar_layout(results: Dictionary) -> void:
 	if scene == null:
 		return
 	var instance = scene.instantiate()
-	var controls = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls") as HBoxContainer
-	_expect(controls != null, "ProjectsControls HBoxContainer should exist", results)
+	var controls = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls") as HBoxContainer
+	_expect(controls != null, "ProjectsControls HBoxContainer should exist under Project Library", results)
 	if controls != null:
 		var separation = controls.get_theme_constant("separation")
 		_expect(separation == 16, "ProjectsControls separation should be 16, got %d" % separation, results)
@@ -963,7 +963,7 @@ func _test_offline_mode_disables_remote_button_and_enforces_tooltip(results: Dic
 	var instance = scene.instantiate()
 	(Engine.get_main_loop() as SceneTree).root.add_child(instance)
 	
-	var add_remote = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsControls/AddRemoteProjectButton") as Button
+	var add_remote = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/AddRemoteProjectButton") as Button
 	_expect(add_remote != null, "AddRemoteProjectButton should exist in main scene", results)
 	if add_remote != null:
 		instance._collect_network_ui_nodes()
@@ -1802,11 +1802,22 @@ func _test_project_details_split_container_and_explorer_label(results: Dictionar
 						_expect(explorer_label.clip_text == true, "ExplorerLabel should have clip_text enabled", results)
 						_expect(explorer_label.text_overrun_behavior == TextServer.OVERRUN_TRIM_ELLIPSIS, "ExplorerLabel text_overrun_behavior should be OVERRUN_TRIM_ELLIPSIS (3)", results)
 
-		var launch_btn: Button = project_details.get_node_or_null("LaunchButton") as Button
-		_expect(launch_btn != null, "LaunchButton should exist directly under Project Details", results)
+		var status_bar: PanelContainer = project_details.get_node_or_null("ProjectsStatusBar") as PanelContainer
+		_expect(status_bar != null, "ProjectsStatusBar should exist as first child of Project Details", results)
+		if status_bar != null:
+			_expect(status_bar.get_index() == 0, "ProjectsStatusBar should be child index 0 of Project Details", results)
+
+		var action_row: HBoxContainer = project_details.get_node_or_null("ProjectDetailsActionRow") as HBoxContainer
+		_expect(action_row != null, "ProjectDetailsActionRow should exist under Project Details", results)
+
+		var launch_btn: Button = project_details.get_node_or_null("ProjectDetailsActionRow/LaunchButton") as Button
+		_expect(launch_btn != null, "LaunchButton should exist under ProjectDetailsActionRow", results)
 		if launch_btn != null:
 			_expect(launch_btn.disabled == true, "LaunchButton should be disabled by default in main.tscn", results)
 			_expect(launch_btn.text == "Select a Tool to Launch", "LaunchButton default text should be 'Select a Tool to Launch'", results)
+
+		var seal_btn: Button = project_details.get_node_or_null("ProjectDetailsActionRow/SealButton") as Button
+		_expect(seal_btn != null, "SealButton should exist under ProjectDetailsActionRow", results)
 
 	main_instance.free()
 

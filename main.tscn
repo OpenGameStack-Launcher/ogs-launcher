@@ -200,60 +200,6 @@ layout_mode = 2
 theme_override_font_sizes/font_size = 24
 text = "Projects"
 
-[node name="ProjectsControls" type="HBoxContainer" parent="AppLayout/Content/PageProjects" unique_id=938020695]
-layout_mode = 2
-theme_override_constants/separation = 16
-
-[node name="AddButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls" unique_id=755997457]
-theme_type_variation = &"SecondaryButton"
-custom_minimum_size = Vector2(140, 32)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Add Local Project"
-
-[node name="AddRemoteProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls"]
-theme_type_variation = &"SecondaryButton"
-custom_minimum_size = Vector2(140, 32)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "Add Remote Project"
-metadata/network_ui = true
-
-[node name="NewProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsControls" unique_id=866719061]
-theme_type_variation = &"PrimaryButton"
-custom_minimum_size = Vector2(140, 32)
-layout_mode = 2
-size_flags_horizontal = 3
-text = "New Project"
-
-[node name="ProjectsStatusBar" type="PanelContainer" parent="AppLayout/Content/PageProjects" unique_id=1563600938]
-unique_name_in_owner = true
-layout_mode = 2
-theme_override_styles/panel = SubResource("StyleBoxFlat_projects_status_bar")
-
-[node name="HBoxContainer" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsStatusBar" unique_id=1563600939]
-layout_mode = 2
-theme_override_constants/separation = 12
-
-[node name="ProjectsStatusLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer" unique_id=1563600937]
-unique_name_in_owner = true
-layout_mode = 2
-size_flags_horizontal = 3
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
-theme_override_font_sizes/font_size = 13
-text = "Status: Waiting for project selection."
-
-[node name="OfflineStatusLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsStatusBar/HBoxContainer" unique_id=943174233]
-unique_name_in_owner = true
-layout_mode = 2
-horizontal_alignment = 1
-vertical_alignment = 1
-theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
-theme_override_font_sizes/font_size = 13
-theme_override_styles/normal = SubResource("StyleBoxFlat_offline_pill")
-text = "Offline Mode: Unknown"
-
 [node name="ProjectsTabs" type="TabContainer" parent="AppLayout/Content/PageProjects"]
 layout_mode = 2
 size_flags_vertical = 3
@@ -262,6 +208,32 @@ current_tab = 0
 [node name="Project Library" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs"]
 layout_mode = 2
 metadata/_tab_index = 0
+
+[node name="ProjectsControls" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library" unique_id=938020695]
+layout_mode = 2
+theme_override_constants/separation = 16
+
+[node name="AddButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls" unique_id=755997457]
+theme_type_variation = &"SecondaryButton"
+custom_minimum_size = Vector2(140, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Add Local Project"
+
+[node name="AddRemoteProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls"]
+theme_type_variation = &"SecondaryButton"
+custom_minimum_size = Vector2(140, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "Add Remote Project"
+metadata/network_ui = true
+
+[node name="NewProjectButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls" unique_id=866719061]
+theme_type_variation = &"PrimaryButton"
+custom_minimum_size = Vector2(140, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+text = "New Project"
 
 [node name="ProjectSearchLineEdit" type="LineEdit" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library"]
 custom_minimum_size = Vector2(0, 32)
@@ -348,18 +320,38 @@ size_flags_horizontal = 3
 disabled = true
 text = "Remove Project"
 
-[node name="SealButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow" unique_id=996258368]
-theme_type_variation = &"PrimaryButton"
-custom_minimum_size = Vector2(140, 32)
-layout_mode = 2
-size_flags_horizontal = 3
-disabled = true
-text = "Seal for Delivery"
-
 [node name="Project Details" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs"]
 visible = false
 layout_mode = 2
 metadata/_tab_index = 1
+
+[node name="ProjectsStatusBar" type="PanelContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details" unique_id=1563600938]
+unique_name_in_owner = true
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_projects_status_bar")
+
+[node name="HBoxContainer" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar" unique_id=1563600939]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="ProjectsStatusLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer" unique_id=1563600937]
+unique_name_in_owner = true
+layout_mode = 2
+size_flags_horizontal = 3
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 13
+text = "Status: Waiting for project selection."
+
+[node name="OfflineStatusLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer" unique_id=943174233]
+unique_name_in_owner = true
+layout_mode = 2
+horizontal_alignment = 1
+vertical_alignment = 1
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 13
+theme_override_styles/normal = SubResource("StyleBoxFlat_offline_pill")
+text = "Offline Mode: Unknown"
 
 [node name="VSplitContainer" type="VSplitContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
 layout_mode = 2
@@ -501,12 +493,25 @@ text = "Enforces strict air-gap isolation; requires and launches tools exclusive
 autowrap_mode = 2
 vertical_alignment = 1
 
-[node name="LaunchButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details" unique_id=778618894]
+[node name="ProjectDetailsActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="LaunchButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow" unique_id=778618894]
 theme_type_variation = &"PrimaryButton"
 custom_minimum_size = Vector2(160, 32)
 layout_mode = 2
+size_flags_horizontal = 3
 disabled = true
 text = "Select a Tool to Launch"
+
+[node name="SealButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow" unique_id=996258368]
+theme_type_variation = &"PrimaryButton"
+custom_minimum_size = Vector2(140, 32)
+layout_mode = 2
+size_flags_horizontal = 3
+disabled = true
+text = "Seal for Delivery"
 
 [node name="PageTools" type="VBoxContainer" parent="AppLayout/Content" unique_id=238307947]
 layout_mode = 2

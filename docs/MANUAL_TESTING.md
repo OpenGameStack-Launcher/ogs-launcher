@@ -357,26 +357,26 @@ dir "$env:LOCALAPPDATA\OGS\"
 2. Verify that Tab 0 ("Project Library") is the active tab.
 3. Single-click a project entry in the project list.
 4. Verify that the project entry is highlighted, the title of Tab 1 updates to the project's stack name, and the active view remains on Tab 0 ("Project Library").
-5. Verify that "Open Project", "Remove Project", and "Seal for Delivery" buttons in the action row are enabled.
+5. Verify that "Open Project" and "Remove Project" buttons in the action row are enabled.
 6. Click the "Open Project" button.
 7. Verify that the view navigates to Tab 1 ("Project Details").
 8. Switch back to Tab 0 ("Project Library").
 9. Double-click the project entry in the project list.
 10. Verify that the view navigates directly to Tab 1 ("Project Details").
 11. Switch back to Tab 0 ("Project Library"), click "Remove Project", and confirm removal until all projects are removed from the library.
-12. Verify that "Open Project", "Remove Project", and "Seal for Delivery" buttons are disabled when the library is empty.
+12. Verify that "Open Project" and "Remove Project" buttons are disabled when the library is empty.
 
 **Expected Results:**
 - [x] Single-clicking a project selects it without switching away from Tab 0.
 - [x] Tab 1 header updates to reflect the selected project's stack name.
-- [x] "Open Project", "Remove Project", and "Seal for Delivery" action buttons are enabled upon project selection.
+- [x] "Open Project" and "Remove Project" action buttons are enabled upon project selection.
 - [x] Clicking "Open Project" navigates to Tab 1 ("Project Details").
 - [x] Double-clicking a project in the list navigates to Tab 1 ("Project Details").
 - [x] Action row buttons are disabled when no project is selected or when the library is empty.
 
 **Pass Criteria:**
 - Project selection and tab navigation are cleanly decoupled.
-- Users can access Remove Project and Seal for Delivery directly from Tab 0 without premature navigation.
+- Users can access Remove Project directly from Tab 0 without premature navigation.
 
 **If test fails:**
 - Verify `ProjectsController._select_project()` does not alter `projects_tabs.current_tab`.
@@ -385,38 +385,34 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
-### Editor Test 3.6: Projects Page - Compact Status Bar and Pill Badges
+### Editor Test 3.6: Projects Page - Hierarchy Reorganization, Tab Separation, and Compact Status Bar
 
-**Objective:** Verify that the Projects page displays a compact horizontal status bar with semantic color modulation and styled pill badges for offline status.
+**Objective:** Verify that the Projects page hierarchy separates library-level creation actions from selected-project controls, positioning `ProjectsTabs` directly beneath the page title, placing `ProjectsControls` in the Project Library tab, displaying `ProjectsStatusBar` inside Project Details, and housing `LaunchButton` and `SealButton` side-by-side.
 
 **Steps:**
 1. Launch the launcher and navigate to the Projects page.
-2. Inspect the region between the project action buttons ("Add Local Project", "Add Remote Project", "New Project") and the Projects tabs.
-3. Confirm `ProjectsStatusBar` is rendered as a compact horizontal panel container (`PanelContainer`) with an inner `HBoxContainer`.
-4. Note the initial idle/waiting status message ("Status: Waiting for project selection.") and verify it renders in muted neutral text (`Color(0.65, 0.70, 0.78)`).
-5. Check the initial offline pill badge: verify it renders as a rounded pill badge with 10px corner radius showing "Offline Mode: Unknown" (or configured state).
-6. Add a project with missing tools (e.g. `samples/sample_project` with online config):
-   - Verify status message modulates to warning amber (`Color(0.95, 0.75, 0.25)`): "Status: Manifest loaded (2 tool(s) missing - use Tools page to download)."
-   - Verify offline status badge updates to a subtle online/disabled pill badge: "Offline Mode: Disabled" with dark slate background and border.
-7. Add or select a sealed project (e.g. `samples/sample_project_sealed` with `force_offline=true`):
-   - Verify status message displays in warning amber (`Color(0.95, 0.75, 0.25)`): "Status: Manifest loaded (2 tool(s) missing - offline mode prevents downloads)."
-   - Verify offline status badge updates to a high-contrast danger red pill badge: "Offline Mode: Forced (force_offline=true)" with dark crimson background, bright red border, and high-contrast text.
-8. Switch to the Project Details tab, enable "Offline mode" (with `force_offline=false`) in the Project Offline Policy section, and observe the status bar:
-   - Verify offline status badge updates to an amber pill badge: "Offline Mode: Enabled (offline_mode=true)" with dark amber background, amber border, and amber text.
-9. Select a ready project where all tools are installed in the library (or launch a tool):
-   - Verify status message displays with green accent (`Color(0.35, 0.85, 0.55)`): "Status: Environment ready - all tools in library."
-10. Trigger an error condition (such as selecting a project missing `stack.json` or a failed launch):
-   - Verify status message displays in danger red (`Color(0.95, 0.40, 0.40)`).
+2. Confirm `ProjectsTabs` sits directly underneath the `Projects` page title without any intervening toolbar or status bar.
+3. On Tab 0 ("Project Library"), confirm that the creation toolbar ("Add Local Project", "Add Remote Project", "New Project") renders at the top of the tab directly above `ProjectSearchLineEdit`.
+4. Confirm that the status bar and offline pill badge do NOT appear on Tab 0 ("Project Library").
+5. Confirm that the bottom action row in `Project Library` contains only "Open Project" and "Remove Project" (with no "Seal for Delivery" button).
+6. Switch to Tab 1 ("Project Details") by double-clicking a project or clicking "Open Project".
+7. Confirm that the creation toolbar ("Add Local Project", "Add Remote Project", "New Project") does NOT appear on Tab 1 ("Project Details").
+8. Confirm that `ProjectsStatusBar` is rendered as the first child at the top of `Project Details` directly above `VSplitContainer` as a compact horizontal panel container (`PanelContainer`) with an inner `HBoxContainer`.
+9. Verify the status message ("Status: ...") and offline pill badge in the status bar across states (idle prompt, missing tools, forced offline, offline mode, ready, error).
+10. Inspect the bottom of Tab 1 ("Project Details"): confirm that `ProjectDetailsActionRow` houses `LaunchButton` ("Select a Tool to Launch") and `SealButton` ("Seal for Delivery") side-by-side with 12px separation and equal width expansion.
 
 **Expected Results:**
-- [x] Compact status bar occupies minimal vertical height and prevents visual clutter.
-- [x] ProjectsStatusLabel expands horizontally on the left with vertical centering.
-- [x] OfflineStatusLabel renders on the right as a rounded pill badge with 10px corner radius and state-specific styling.
+- [x] `ProjectsTabs` sits directly underneath the `Projects` page title.
+- [x] "Add Local Project", "Add Remote Project", and "New Project" buttons render only in the `Project Library` tab header.
+- [x] Status bar and offline pill render only in the `Project Details` tab header.
+- [x] Project Library bottom action row contains only "Open Project" and "Remove Project".
+- [x] "Seal for Delivery" renders side-by-side with "Launch Selected Tool" at the bottom of the `Project Details` tab.
 - [x] Semantic status colors distinguish Ready (green), Warning (amber), Error (red), and Neutral (muted) clearly.
 - [x] Offline pill badges clearly indicate Disabled (neutral/slate), Enabled (amber), and Forced (high-contrast red).
 
 **Pass Criteria:**
-- Status bar and badges render cleanly without clipping or text overflow.
+- Projects page hierarchy cleanly separates library management from selected project controls.
+- Status bar, toolbar, and action buttons render without clipping, overlapping, or visual clutter.
 - Visual colors and styling accurately communicate environment readiness and offline policy.
 
 **If test fails:**
@@ -486,7 +482,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 8. With filtered search results displayed, click to select a matching project card:
    - Verify the selected card is highlighted with a 2px cyan border.
    - Verify the title of Tab 1 updates to the selected project's stack name.
-   - Verify action buttons ("Open Project", "Remove Project", "Seal for Delivery") are enabled.
+   - Verify action buttons ("Open Project", "Remove Project") are enabled.
 9. Double-click the filtered project card (or click "Open Project"):
    - Verify navigation switches to Tab 1 ("Project Details") displaying the correct project.
 10. Return to Tab 0 ("Project Library") and enter a query that matches zero projects (e.g. `nonexistent_query_xyz`):
@@ -1114,7 +1110,7 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Verify 20px left margin between the sidebar panel and page content.
    - Verify 20px right margin between project cards/scrollbars and the right window edge.
    - Verify 16px top margin above the "Projects" title.
-   - Verify 16px bottom margin below the action row buttons ("Open Project", "Remove Project", "Seal for Delivery") so buttons do not sit directly on the bottom window edge.
+   - Verify 16px bottom margin below the action row buttons ("Open Project", "Remove Project" in Project Library, and "Launch" / "Seal for Delivery" in Project Details) so buttons do not sit directly on the bottom window edge.
    - Verify "Projects" page title renders with prominent 24px font size.
    - Verify "Project Explorer" header renders with 18px font size and cyan accent color (`Color(0.45, 0.8, 1.0)`).
    - In Project Details, verify "Project Offline Policy" section header renders with 18px font size and cyan accent color (`Color(0.45, 0.8, 1.0)`).
@@ -1201,11 +1197,10 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Verify "New Project" renders with vibrant brand-blue background (`Color(0.20, 0.48, 0.78)`), brighter hover state (`Color(0.26, 0.56, 0.88)`), and high-contrast cyan focus ring (`PrimaryButton`).
    - Verify "Add Local Project" and "Add Remote Project" render with dark slate background (`Color(0.18, 0.21, 0.26)`) and 1px border (`SecondaryButton`).
    - Select a project in the Project Library.
-   - Verify "Seal for Delivery" renders in vibrant brand blue (`PrimaryButton`).
    - Verify "Remove Project" renders with dark surface and muted crimson border (`Color(0.65, 0.22, 0.25)`), transitioning to crimson hover fill (`DangerButton`).
    - Verify "Open Project" renders with standard default button styling.
    - Navigate to the Project Details tab.
-   - Verify "Launch Selected Tool" displays vibrant brand blue (`PrimaryButton`).
+   - In the bottom action row (`ProjectDetailsActionRow`), verify "Launch Selected Tool" and "Seal for Delivery" display vibrant brand blue (`PrimaryButton`) side-by-side.
    - Verify "Add Tool", "Change Version", "New Folder", and "New File" buttons display dark slate with subtle borders (`SecondaryButton`).
    - Verify "Remove Tool" displays dark surface with muted crimson border and crimson hover (`DangerButton`).
 3. Tools Page - Dynamic Tool Card Buttons:

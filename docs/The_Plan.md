@@ -186,7 +186,7 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Remove Project with confirmation dialog
     *   [x] New Project scaffolding under configurable Primary Projects Folder (defaults to `%USERPROFILE%/OGS_Projects` or `$HOME/OGS_Projects`)
     *   [x] Primary Projects Folder setting in PageSettings with Browse and Reset to Default buttons, persisted in `ogs_launcher_settings.json`
-    *   [x] Decoupled project library selection from immediate tab navigation: single-clicking selects entry, enables library actions (Open Project, Remove Project, Seal for Delivery), and updates Tab 1 title without leaving Tab 0; double-clicking or clicking Open Project navigates to Tab 1 (Project Details)
+    *   [x] Decoupled project library selection from immediate tab navigation: single-clicking selects entry, enables library actions (Open Project, Remove Project), and updates Tab 1 title without leaving Tab 0; double-clicking or clicking Open Project navigates to Tab 1 (Project Details)
 *   [x] Remote Project Clone Workflow and Three-Button Toolbar - 100% Complete ✅
     *   [x] Three-button Projects toolbar (Add Local Project, Add Remote Project, New Project) with equal width and 16px separation
     *   [x] Offline mode enforcement disabling Add Remote Project with descriptive tooltip
@@ -371,7 +371,7 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   Uniform 20x20 tool icon rendering with asset mapping from res://Images/tools/ and case-insensitive fallback
     *   Explicit status labels (✓ Installed, ⚠️ Missing (Available in Tools), ❌ Unavailable in Repository) and detailed status tooltips
     *   Comprehensive test coverage in projects_page_indicators_tests.gd and projects_controller_scene_tests.gd (1836 tests passing across 38 test suites)
-*   **Test Suite:** 1955 tests passing across 38 test suites (~3-5 sec execution), comprehensive coverage across all components
+*   **Test Suite:** 2190 tests passing across 38 test suites (~3-5 sec execution), comprehensive coverage across all components
     *   ToolsController unit tests: download tracking, duplicate suppression, repository validation
     *   Tools page scene tests: node existence, status updates, button state management
     *   ProgressController unit tests: inline tracking, phase transitions, signal emission
@@ -544,6 +544,14 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Implemented graceful fallback for missing icons or unrecognized tool IDs with null icon and clean text-only rendering.
 - Replaced oversized confirmation button minimum width (`Vector2(350, 40)`) with balanced button proportions: `Vector2(180, 36)` for OK/confirmation action button and `Vector2(100, 36)` for Cancel button across both Add Tool and Change Version flows.
 - Added comprehensive scene test coverage in `tests/projects_controller_scene_tests.gd` covering icon loading, badge formatting, tooltips, unknown tool fallback, selection/activation handler compatibility, and button sizing (38 test suites passing, 2079 total tests with zero failures).
+
+**Reorganized PageProjects Hierarchy and Controls Separation (Issue #164, Oct 31, 2026):**
+- Positioned `ProjectsTabs` directly beneath `ProjectsTitle` under `AppLayout/Content/PageProjects`, removing out-of-tab controls that cluttered both views.
+- Reparented library-wide creation toolbar (`ProjectsControls`: `AddButton`, `AddRemoteProjectButton`, `NewProjectButton`) into `Project Library` (Tab 0) as its first child directly above `ProjectSearchLineEdit`.
+- Reparented project-specific status bar (`ProjectsStatusBar`: `ProjectsStatusLabel`, `OfflineStatusLabel`) into `Project Details` (Tab 1) as its first child directly above `VSplitContainer`.
+- Removed `SealButton` ("Seal for Delivery") from `Project Library/ProjectActionRow`, dedicating the library row strictly to library actions (`OpenProjectButton` and `RemoveButton`).
+- Created a horizontal action row (`ProjectDetailsActionRow`, separation 12) at the bottom of `Project Details` housing `LaunchButton` and `SealButton` side-by-side with `Control.SIZE_EXPAND_FILL` sizing on both buttons.
+- Updated node paths in `main.gd` and added comprehensive hierarchy and separation assertions in `tests/main_scene_tests.gd`, `tests/projects_controller_scene_tests.gd`, and `tests/startup_tests.gd` (38 test suites passing, 2190 total tests with zero failures).
 
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management

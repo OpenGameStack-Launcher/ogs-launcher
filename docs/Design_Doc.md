@@ -114,7 +114,7 @@ To prevent inconsistent path presentation across desktop platforms, the applicat
 *   **Security Boundary Preservation:** `PathUtils.is_path_under_root(full_path: String, root_dir: String) -> bool` guarantees path containment within designated workspace boundaries, preventing directory traversal and zip-slip attacks during cloning, extraction, and sealing.
 
 ### 2.10 Compact Projects Status Bar and Semantic Pill Badges
-To replace unstyled full-width console-style text lines and provide instantaneous visual feedback on environment readiness, the Projects page wraps status indicators inside a compact horizontal status bar (`ProjectsStatusBar` `PanelContainer` with an inner `HBoxContainer`) positioned directly between `ProjectsControls` and `ProjectsTabs`:
+To replace unstyled full-width console-style text lines and provide instantaneous visual feedback on environment readiness, the Projects page wraps status indicators inside a compact horizontal status bar (`ProjectsStatusBar` `PanelContainer` with an inner `HBoxContainer`) positioned as the first child at the top of the **Project Details** tab (`ProjectsTabs/Project Details/ProjectsStatusBar`) directly above `VSplitContainer`:
 *   **ProjectsStatusBar Layout:** Styled with a dark elevated panel background (`Color(0.12, 0.14, 0.18, 0.8)`), subtle 1px border (`Color(0.20, 0.24, 0.30, 0.8)`), 6px rounded corners, and 12px horizontal / 6px vertical margins.
 *   **Semantic Status Font Modulation (`ProjectsStatusLabel`):** Dynamically modulated in `ProjectsController._update_status()` based on message severity classification (`_classify_status_severity()`):
     *   *Ready / Success:* Green accent (`Color(0.35, 0.85, 0.55)`) when environment is ready or tools are launched.
@@ -129,7 +129,7 @@ To replace unstyled full-width console-style text lines and provide instantaneou
 
 ### 2.11 Structured Project Cards and Tool Badges (`CustomItemList`)
 In the Project Library (Tab 0 of the Projects page), registered projects are rendered using `CustomItemList` as dedicated, structured project cards rather than generic buttons:
-*   **Dedicated Card Surfaces:** Each entry is rendered with a dark card background (`Color(0.14, 0.16, 0.20)`), 1px border (`Color(0.22, 0.26, 0.32)`), and 6px rounded corners, cleanly differentiating project items from clickable action buttons (`Add Local Project`, `New Project`, `Remove Project`, `Seal for Delivery`).
+*   **Dedicated Card Surfaces:** Each entry is rendered with a dark card background (`Color(0.14, 0.16, 0.20)`), 1px border (`Color(0.22, 0.26, 0.32)`), and 6px rounded corners, cleanly differentiating project items from clickable action buttons (`Add Local Project`, `Add Remote Project`, `New Project`, `Open Project`, `Remove Project`).
 *   **Prominent Selection State:** When selected, the active card displays an elevated dark background (`Color(0.18, 0.22, 0.28)`) and a prominent 2px cyan accent border (`Color(0.35, 0.68, 0.95)`), providing clear focus feedback.
 *   **Visual Hierarchy and Pill Badges:** Each card organizes project data into a clear hierarchy:
     *   *Title:* 16px high-contrast project title label (`Color(0.95, 0.96, 0.98)`).
@@ -158,6 +158,7 @@ In the Project Details tab (Tab 1 of the Projects page), the interface adapts dy
     *   *Toolchain Selection:* When a tool row is selected in `ProjectToolsList`, the button enables and displays `"Launch <Tool Name> <Version>"` (e.g., `"Launch Godot v4.7.2"` or `"Launch VSCodium v1.85.1"`).
     *   *Explorer Selection:* When a recognized file or direct tool folder is selected in `ProjectExplorerTree`, the button enables and displays `"Open <filename> in <Tool Name>"` (e.g., `"Open main.gd in VSCodium"`).
 *   **Clean Deselection Handlers:** Clicking empty space in either `ProjectToolsList` (`empty_clicked`) or `ProjectExplorerTree` (`nothing_selected`) deselects active items and cleanly reverts the launch button to its disabled prompt state.
+*   **Side-by-Side Launch and Seal Action Row (`ProjectDetailsActionRow`):** At the bottom of the Project Details tab, a horizontal action container (`ProjectDetailsActionRow`, separation 12) houses `LaunchButton` alongside `SealButton` ("Seal for Delivery"), with both buttons configured with equal width horizontal expansion (`size_flags_horizontal = Control.SIZE_EXPAND_FILL`). This places project-specific execution and export actions together while keeping the Project Library tab focused cleanly on project browsing and management.
 
 ### 2.14 Per-Project Offline Policy Configuration (Project Details)
 Rather than managing project-specific offline toggles inside global launcher settings, per-project offline policies are configured directly in the **Project Details** tab (`PageProjects/ProjectsTabs/Project Details`):
