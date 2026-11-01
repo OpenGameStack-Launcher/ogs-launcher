@@ -35,9 +35,11 @@ var scene_tree: SceneTree
 var _available_tools: Array = []  # Tools from repository.json
 var _installed_tools: Dictionary = {}  # {tool_id: [versions]}
 var _is_loading: bool = false
+var _is_checking_connectivity: bool = false
 var _last_error: String = ""
 var _is_online: bool = false
 var _currently_downloading: Dictionary = {}  # {tool_id+version: true}
+var _active_http_requests: Array[HTTPRequest] = []
 
 func _init(tree: SceneTree, repo_url: String) -> void:
 	## Initializes the tools controller.
@@ -49,6 +51,8 @@ func _init(tree: SceneTree, repo_url: String) -> void:
 	library = LibraryManager.new()
 	repository = null  # Will be populated after fetch
 	
+	_scan_installed_tools()
+	
 	remote_hydrator = RemoteMirrorHydrator.new(remote_repository_url, scene_tree)
 	
 	# Connect hydrator signals for progress tracking
@@ -56,6 +60,20 @@ func _init(tree: SceneTree, repo_url: String) -> void:
 	remote_hydrator.tool_install_started.connect(_on_install_started)
 	remote_hydrator.tool_install_progress.connect(_on_install_progress)
 	remote_hydrator.tool_install_complete.connect(_on_install_complete)
+
+func _notification(what: int) -> void:
+	if what == NOTIFICATION_PREDELETE:
+		cleanup()
+
+## Cancels and frees all in-flight HTTPRequest nodes and clears references.
+func cleanup() -> void:
+	for http: HTTPRequest in _active_http_requests:
+		if is_instance_valid(http):
+			http.cancel_request()
+			http.queue_free()
+	_active_http_requests.clear()
+	_is_loading = false
+	_is_checking_connectivity = false
 
 ## Refreshes the tool list by fetching remote repository.json and scanning library.
 func refresh_tool_list() -> void:
@@ -73,6 +91,7 @@ func refresh_tool_list() -> void:
 	
 	# Fetch remote repository.json
 	if remote_repository_url.is_empty():
+		_is_online = false
 		_last_error = "No remote repository URL configured"
 		OgsLogger.warn("tools_refresh_no_url", {
 			"component": "tools",
@@ -83,6 +102,7 @@ func refresh_tool_list() -> void:
 	
 	var guard = OfflineEnforcer.guard_network_call("tools_refresh")
 	if not guard["allowed"]:
+		_is_online = false
 		_last_error = guard["error_message"]
 		OgsLogger.info("tools_refresh_offline", {
 			"component": "tools",
@@ -91,28 +111,40 @@ func refresh_tool_list() -> void:
 		_finalize_refresh(false)
 		return
 	
+	if scene_tree == null or scene_tree.root == null:
+		_is_online = false
+		_last_error = "No scene tree available"
+		_finalize_refresh(false)
+		return
+	
 	# Fetch repository.json
 	var http = HTTPRequest.new()
+	_active_http_requests.append(http)
 	scene_tree.root.add_child(http)
 	http.request_completed.connect(_on_repository_fetched.bind(http))
 	
 	var err = http.request(remote_repository_url)
 	if err != OK:
+		_is_online = false
 		_last_error = "Failed to start HTTP request: " + str(err)
 		OgsLogger.error("tools_refresh_http_failed", {
 			"component": "tools",
 			"url": remote_repository_url,
 			"error": err
 		})
+		_active_http_requests.erase(http)
 		http.queue_free()
 		_finalize_refresh(false)
 
 ## HTTP callback for repository.json fetch.
 func _on_repository_fetched(result: int, response_code: int, _headers: PackedStringArray, body: PackedByteArray, http: HTTPRequest) -> void:
 	## Handles repository.json download completion.
-	http.queue_free()
+	if is_instance_valid(http):
+		_active_http_requests.erase(http)
+		http.queue_free()
 	
 	if result != HTTPRequest.RESULT_SUCCESS or response_code != 200:
+		_is_online = false
 		_last_error = "HTTP request failed: code %d" % response_code
 		OgsLogger.error("tools_refresh_http_error", {
 			"component": "tools",
@@ -121,6 +153,9 @@ func _on_repository_fetched(result: int, response_code: int, _headers: PackedStr
 		})
 		_finalize_refresh(false)
 		return
+	
+	_is_online = true
+	connectivity_checked.emit(true)
 	
 	var json_text = body.get_string_from_utf8()
 	
@@ -169,6 +204,7 @@ func _finalize_refresh(success: bool) -> void:
 	if success:
 		tool_list_updated.emit()
 	else:
+		_scan_installed_tools()
 		tool_list_refresh_failed.emit(_last_error)
 
 ## Returns categorized tools for UI display.
@@ -187,12 +223,17 @@ func get_categorized_tools() -> Dictionary:
 	for category in ToolCategoryMapper.get_all_categories():
 		categorized[category] = []
 	
+	var seen_tool_keys: Dictionary = {}
+	
 	# Categorize available tools
 	for tool in _available_tools:
 		var category = ToolCategoryMapper.get_category_for_tool(tool)
-		var tool_id = tool["id"]
-		var version = tool["version"]
+		var tool_id = String(tool.get("id", ""))
+		var version = String(tool.get("version", ""))
 		var is_installed = _is_tool_installed(tool_id, version)
+		
+		var key = "%s_%s" % [tool_id, version]
+		seen_tool_keys[key] = true
 		
 		if not categorized.has(category):
 			categorized[category] = []
@@ -208,12 +249,44 @@ func get_categorized_tools() -> Dictionary:
 			"info_url": tool.get("info_url", "")
 		})
 	
+	# Include locally installed tools not present in available tools
+	for tool_id in _installed_tools:
+		var versions: Array = _installed_tools[tool_id]
+		for version in versions:
+			var key = "%s_%s" % [tool_id, version]
+			if seen_tool_keys.has(key):
+				continue
+			seen_tool_keys[key] = true
+			
+			var tool_entry = {
+				"id": tool_id,
+				"version": version
+			}
+			var category = ToolCategoryMapper.get_category_for_tool(tool_entry)
+			if not categorized.has(category):
+				categorized[category] = []
+			
+			categorized[category].append({
+				"id": tool_id,
+				"version": version,
+				"installed": true,
+				"category": category,
+				"size_bytes": 0,
+				"sha256": "",
+				"archive_url": "",
+				"info_url": ""
+			})
+	
 	return categorized
 
 ## Checks if a specific tool version is installed.
 func _is_tool_installed(tool_id: String, version: String) -> bool:
 	## Returns true if tool version exists in library.
-	return library.tool_exists(tool_id, version)
+	if _installed_tools.has(tool_id) and version in _installed_tools[tool_id]:
+		return true
+	if library != null:
+		return library.tool_exists(tool_id, version)
+	return false
 
 ## Returns total count of installed tool versions.
 func _get_installed_count() -> int:
@@ -322,6 +395,9 @@ func has_repository_data() -> bool:
 ## Checks connectivity to GitHub by performing a lightweight HEAD request.
 func check_connectivity() -> void:
 	## Performs a HEAD request to check if GitHub is reachable.
+	if _is_checking_connectivity:
+		return
+	
 	if remote_repository_url.is_empty():
 		_is_online = false
 		connectivity_checked.emit(false)
@@ -337,15 +413,24 @@ func check_connectivity() -> void:
 		})
 		return
 	
+	if scene_tree == null or scene_tree.root == null:
+		_is_online = false
+		connectivity_checked.emit(false)
+		return
+	
 	# Use HEAD request for minimal bandwidth
 	var http = HTTPRequest.new()
+	_active_http_requests.append(http)
+	_is_checking_connectivity = true
 	scene_tree.root.add_child(http)
 	http.request_completed.connect(_on_connectivity_checked.bind(http))
 	
 	var err = http.request(remote_repository_url, PackedStringArray(), HTTPClient.METHOD_HEAD)
 	if err != OK:
+		_is_checking_connectivity = false
 		_is_online = false
 		connectivity_checked.emit(false)
+		_active_http_requests.erase(http)
 		http.queue_free()
 		OgsLogger.debug("tools_connectivity_failed", {
 			"component": "tools",
@@ -355,7 +440,10 @@ func check_connectivity() -> void:
 ## HTTP callback for connectivity check.
 func _on_connectivity_checked(result: int, response_code: int, _headers: PackedStringArray, _body: PackedByteArray, http: HTTPRequest) -> void:
 	## Handles connectivity check completion.
-	http.queue_free()
+	_is_checking_connectivity = false
+	if is_instance_valid(http):
+		_active_http_requests.erase(http)
+		http.queue_free()
 	
 	_is_online = (result == HTTPRequest.RESULT_SUCCESS and (response_code == 200 or response_code == 304))
 	connectivity_checked.emit(_is_online)

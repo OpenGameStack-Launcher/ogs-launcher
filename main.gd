@@ -420,6 +420,8 @@ func _notification(what: int) -> void:
 		if projects_controller != null and projects_controller.has_meta("project_explorer_instance"):
 			projects_controller.get_meta("project_explorer_instance").refresh()
 	elif what == NOTIFICATION_WM_CLOSE_REQUEST or what == NOTIFICATION_PREDELETE:
+		if tools_controller != null:
+			tools_controller.cleanup()
 		if tools_page_controller != null:
 			tools_page_controller.cleanup()
 		if projects_controller != null:
@@ -608,8 +610,8 @@ func _ready() -> void:
 	
 	layout_controller.page_changed.connect(func(page):
 		if page == "tools" and tools_controller:
-			tools_controller.check_connectivity()
 			if not tools_controller.has_repository_data():
+				tools_controller.check_connectivity()
 				tools_controller.refresh_tool_list()
 	)
 
@@ -619,6 +621,10 @@ func _ready() -> void:
 	btn_seal_for_delivery.tooltip_text = ""
 	
 	layout_controller.navigate_to("projects")
+	
+	if tools_controller != null:
+		tools_controller.check_connectivity.call_deferred()
+		tools_controller.refresh_tool_list.call_deferred()
 	
 func _collect_network_ui_nodes() -> void:
 	var found: Array = []
@@ -697,6 +703,8 @@ func _on_projects_root_browse_pressed() -> void:
 		settings_controller.on_projects_root_browse_pressed()
 
 func _exit_tree() -> void:
+	if tools_controller != null:
+		tools_controller.cleanup()
 	if layout_controller != null:
 		layout_controller.cleanup()
 	if tools_page_controller != null:
