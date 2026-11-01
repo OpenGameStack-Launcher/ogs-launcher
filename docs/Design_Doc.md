@@ -283,12 +283,16 @@ This is the critical utility that converts a **State 1 (Linked)** project into a
     *   Removes `.gitignore` (or modifies it) so the tools are now seen as part of the directory.
 5.  **Packaging:** Zips the entire folder structure into a timestamped artifact (e.g., `Project_Name_Sealed_20251101.zip`).
 
-### 6.1 Seal Dialog UX and Asynchronous Packaging State
-When project sealing is initiated (`SealController.seal_for_delivery()`), packaging executes on a background worker thread (`ProjectSealer`) to keep the UI responsive. The seal modal provides clear visual feedback and defensive interaction guards:
-*   **Progress Feedback:** Displays `SealProgressBar` with `indeterminate = true` while background copying and archive creation are actively running.
-*   **Modal Close Button Protection:** Disables the dialog Close/OK button during active background sealing to prevent accidental modal dismissal mid-operation; automatically restores the button upon success or failure.
+### 6.1 Seal Dialog UX, Confirmation State, and Asynchronous Packaging
+When the user clicks "Seal for Delivery" on a ready project, `SealController.seal_for_delivery()` presents a pre-seal confirmation view rather than immediately starting heavy background operations. The dialog and lifecycle provide clear visual feedback, explicit user confirmation, and defensive window chrome guards:
+*   **Pre-Seal Confirmation View:** Displays the resolved target project name from `stack.json` (or folder name fallback), canonical stack tools formatted via `ToolCategoryMapper.get_display_name()`, and a multi-minute packaging advisory notice.
+*   **Explicit Confirmation Actions:** Bottom action buttons display Confirm (PrimaryButton) and Cancel (SecondaryButton). Clicking Cancel dismisses the dialog immediately without touching files or starting threads; clicking Confirm transitions the dialog in-place into active sealing.
+*   **Borderless Dialog Chrome and Styled Header:** `SealDialog` is configured with `borderless = true`, unresizable window flags, and empty close theme icons to remove the OS titlebar close button. An internal `HeaderBar` with an 18px `HeaderTitle` ("Seal for Delivery") and horizontal separator provides clean window structure.
+*   **Modal Dismissal Protection:** Intercepts `close_requested` on `SealDialog` to block window dismissal while background worker threads are actively sealing.
+*   **Progress Feedback:** Activates `SealProgressBar` with `indeterminate = true` and updates elapsed time and stage hints every 0.25s while background copying and archive creation run.
+*   **Dynamic Action Button Lifecycle:** Disables Close and hides Cancel during active background sealing to prevent modal dismissal mid-operation; automatically restores and enables Close upon completion (success or error).
 *   **Typography Hierarchy:** Formats `StatusLabel` as the prominent 18px primary headline with state-driven color modulations (`#F3F4F6` progress off-white, `#22C55E` success green, `#EF4444` failure red), paired with a 14px muted body (`#9CA3AF`) on `OutputLabel`.
-*   **Canonical Tool Display Naming:** Passes copied tool IDs through `ToolCategoryMapper.get_display_name()` in completion summaries (e.g., "• Godot v4.7.2", "• Blender v4.2") rather than displaying raw lowercase IDs.
+*   **Canonical Tool Display Naming:** Passes tool IDs through `ToolCategoryMapper.get_display_name()` across both the pre-seal confirmation view and completion summaries (e.g., "• Godot v4.7.2", "• Blender v4.2.0") rather than displaying raw lowercase IDs.
 
 ---
 

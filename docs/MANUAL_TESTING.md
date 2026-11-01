@@ -1808,35 +1808,46 @@ If onboarding wizard does NOT appear, fresh state was not achieved. Repeat the c
 
 ---
 
-### Installed Test 5: Seal for Delivery — Export Project
+### Installed Test 5: Seal for Delivery - Export Project
 
-**Objective:** Verify the "Seal for Delivery" workflow creates a valid, portable archive.
+**Objective:** Verify the "Seal for Delivery" pre-seal confirmation workflow, borderless dialog chrome, and creation of a valid, portable archive.
 
 **Prerequisite:**
 - Completed Installed Test 4 (tools are in library)
 - sample_project loaded with "Seal for Delivery" button enabled
 
 **Steps:**
-1. Click "Seal for Delivery" button
-2. Observe seal dialog that appears:
-   - `SealProgressBar` is visible and actively indeterminate
-   - Modal "Close" button is disabled during active background copying
+1. Click "Seal for Delivery" button on a ready project.
+2. Verify `SealDialog` opens borderless without a top-right "X" close button, displaying a styled in-dialog header ("Seal for Delivery").
+3. Inspect the confirmation view:
+   - StatusLabel displays "Confirm Project Sealing"
+   - OutputLabel displays target project name, canonical stack tools list (e.g. "• Godot v4.7.2", "• Blender v4.2.0"), and multi-minute packaging advisory notice
+   - Confirm (PrimaryButton) and Cancel (SecondaryButton) action buttons are visible and enabled
+   - Progress bar and "Open Sealed Folder" button remain hidden
+4. Click "Cancel" and verify the modal dismisses cleanly without altering project files or launching a background thread.
+5. Re-open by clicking "Seal for Delivery", then click "Confirm":
+   - Observe in-place transition to progress view
+   - `SealProgressBar` becomes visible and actively indeterminate
+   - Modal "Close" button is disabled and Cancel button is hidden
    - `StatusLabel` displays prominent 18px headline text ("Sealing project...") with neutral off-white styling (`#F3F4F6`)
-3. Monitor status as sealing progresses:
+6. Monitor status as sealing progresses:
    - "Sealing project... (Xs)"
    - OutputLabel shows stage information at 14px muted text (`#9CA3AF`)
-4. When complete, note the sealing output summary:
+7. When complete, note the sealing output summary:
    - `SealProgressBar` is hidden and modal "Close" button is re-enabled
    - `StatusLabel` modulates to success green (`#22C55E`, "✓ Project sealed successfully!")
    - Output shows tools copied with canonical display names from `ToolCategoryMapper` (e.g., "• Godot v4.7.2", "• Blender v4.5.7")
    - Project size
    - Sealed archive path
-5. Click "Open Sealed Folder" button to navigate to the result
-6. Verify the sealed .zip file exists with a reasonable size (>100 MB likely)
-7. Click "Close" to dismiss the dialog
+8. Click "Open Sealed Folder" button to navigate to the result
+9. Verify the sealed .zip file exists with a reasonable size (>100 MB likely)
+10. Click "Close" to dismiss the dialog
 
 **Expected Results:**
-- ✅ Seal dialog progresses through stages without errors
+- ✅ Seal dialog renders borderless with rounded corners and styled in-dialog header without window titlebar close button
+- ✅ Pre-seal confirmation state presents target project name, configured toolchain, and packaging advisory notice
+- ✅ Cancel action aborts the operation and hides the dialog cleanly
+- ✅ Confirm action transitions the dialog in-place into active progress
 - ✅ Modal "Close" button remains disabled while packaging is in progress and re-enables on completion
 - ✅ `SealProgressBar` is visible during copying and cleanly hidden upon completion
 - ✅ Final status shows: "✓ Project sealed successfully!" in success green (`#22C55E`)

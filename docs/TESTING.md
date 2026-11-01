@@ -268,7 +268,7 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Skip for Now action marks wizard complete, hides dialog, and emits completion signal
   - Custom action add_button fallback for skip workflows
 
-- **[tests/seal_controller_tests.gd](tests/seal_controller_tests.gd)** - Validates SealController thread lifecycle, progress feedback, typography, and safety.
+- **[tests/seal_controller_tests.gd](tests/seal_controller_tests.gd)** - Validates SealController thread lifecycle, confirmation workflow, progress feedback, typography, and safety.
   - Thread joined cleanly when controller freed during active execution
   - Predelete handler safe when no thread is active
   - Finished-but-started thread joined and cleared during predelete
@@ -278,6 +278,11 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Progress bar visibility lifecycle and close button disabled state during sealing, success, and error transitions
   - Canonical tool display naming via ToolCategoryMapper in success summary
   - Active async sealing lifecycle keeps close button disabled and progress bar visible until thread completion
+  - Pre-seal confirmation state presentation displays project name, canonical tools, and multi-minute packaging advisory notice without launching worker thread
+  - Cancel flow dismisses SealDialog without modifying project files or launching worker thread
+  - Confirm flow transitions dialog in-place to active sealing progress and initiates background packaging
+  - Window close_requested signal interception blocks unexpected modal dismissal during active sealing
+  - Window chrome configuration verifies borderless, unresizable, dialog flags, and styled in-dialog HeaderBar layout in `main.tscn`
 
 - **[tests/tools_page_controller_tests.gd](tests/tools_page_controller_tests.gd)** - Validates ToolsPageController thread lifecycle, cleanup, and dynamic count badges.
   - Predelete joins active tool removal thread
