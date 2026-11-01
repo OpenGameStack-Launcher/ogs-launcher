@@ -874,9 +874,9 @@ func _on_open_folder_pressed() -> void:
 		"folder_path": folder_path
 	})
 
-## Resolves project name and tool list from stack.json or project directory.
+## Resolves project name and tool list from ogs_stack.json or project directory.
 static func _resolve_project_name_and_tools(project_path: String) -> Dictionary:
-	var stack_file: String = project_path.path_join("stack.json")
+	var stack_file: String = project_path.path_join("ogs_stack.json")
 	var project_name: String = ""
 	var tools_list: Array[String] = []
 

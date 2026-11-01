@@ -16,9 +16,9 @@ func create_seal_success_fixture(prefix: String) -> Dictionary:
 	var version = "1.0.0"
 
 	DirAccess.make_dir_recursive_absolute(project_dir)
-	var stack_file = FileAccess.open(project_dir.path_join("stack.json"), FileAccess.WRITE)
+	var stack_file = FileAccess.open(project_dir.path_join("ogs_stack.json"), FileAccess.WRITE)
 	if stack_file == null:
-		return {"success": false, "error": "Cannot create stack.json for fixture"}
+		return {"success": false, "error": "Cannot create ogs_stack.json for fixture"}
 
 	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "%s", "version": "%s", "path": "tools/%s"}]}' % [tool_id, version, tool_id])
 

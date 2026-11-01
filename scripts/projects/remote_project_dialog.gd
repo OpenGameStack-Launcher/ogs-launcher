@@ -176,7 +176,7 @@ func _build_ui() -> void:
 	vbox.add_theme_constant_override("separation", 8)
 	
 	header_label = Label.new()
-	header_label.text = "Clone a remote Git repository. The repository must be an OGS project containing a valid stack.json at its root."
+	header_label.text = "Clone a remote Git repository. The repository must be an OGS project containing a valid ogs_stack.json at its root."
 	header_label.autowrap_mode = TextServer.AUTOWRAP_WORD_SMART
 	header_label.custom_minimum_size = Vector2(480, 0)
 	vbox.add_child(header_label)
@@ -425,7 +425,7 @@ func _start_clone(url: String, target_dir_name: String, dest_root: String) -> vo
 	_set_busy_ui(true)
 	progress_bar.visible = true
 	progress_bar.value = 0.0
-	lbl_status.text = "Verifying OGS project (stack.json)..."
+	lbl_status.text = "Verifying OGS project (ogs_stack.json)..."
 	OgsLogger.info("remote_clone_started", {
 		"component": "remote_dialog",
 		"repo_slug": target_dir_name
@@ -476,7 +476,7 @@ func _on_missing_git_canceled() -> void:
 func _on_cloner_phase_changed(phase: String) -> void:
 	## Updates status label when cloner changes operational phase.
 	if phase == "verifying":
-		lbl_status.text = "Verifying OGS project (stack.json)..."
+		lbl_status.text = "Verifying OGS project (ogs_stack.json)..."
 	elif phase == "cloning":
 		lbl_status.text = "Cloning repository..."
 

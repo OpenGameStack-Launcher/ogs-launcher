@@ -2,7 +2,7 @@
 ##
 ## Manages Git discovery in the Central Library, air-gap and URL security validation,
 ## repo slug extraction, destination collision resolution, two-phase cloning
-## (blobless pre-checkout check for stack.json followed by working tree checkout),
+## (blobless pre-checkout check for ogs_stack.json followed by working tree checkout),
 ## non-blocking execution, and safe cancellation/cleanup.
 extends RefCounted
 class_name RemoteProjectCloner
@@ -681,7 +681,7 @@ func _worker_thread_func(args: Dictionary) -> void:
 	
 	var show_args := PackedStringArray()
 	show_args.append_array(HARDENED_GIT_ARGS)
-	show_args.append_array(["-C", target_dir, "show", "HEAD:stack.json"])
+	show_args.append_array(["-C", target_dir, "show", "HEAD:ogs_stack.json"])
 	
 	var show_res: Dictionary = _run_command(git_exe, show_args, Callable())
 	if show_res.get("cancelled", false) or _is_cancelled():
@@ -695,10 +695,10 @@ func _worker_thread_func(args: Dictionary) -> void:
 		_safe_remove_directory(target_dir, dest_root)
 		OgsLogger.warn("clone_failed", {
 			"component": "cloner",
-			"error_code": "missing_stack_json",
-			"error_message": "Repository does not contain a root stack.json manifest."
+			"error_code": "missing_ogs_stack_json",
+			"error_message": "Repository does not contain a root ogs_stack.json manifest."
 		})
-		clone_failed.emit.call_deferred("missing_stack_json", "Repository does not contain a root stack.json manifest.")
+		clone_failed.emit.call_deferred("missing_ogs_stack_json", "Repository does not contain a root ogs_stack.json manifest.")
 		_deferred_finish.call_deferred()
 		return
 	
@@ -710,10 +710,10 @@ func _worker_thread_func(args: Dictionary) -> void:
 		var err_detail: String = ", ".join(manifest.errors)
 		OgsLogger.warn("clone_failed", {
 			"component": "cloner",
-			"error_code": "invalid_stack_json",
-			"error_message": "Repository stack.json manifest is invalid: " + err_detail
+			"error_code": "invalid_ogs_stack_json",
+			"error_message": "Repository ogs_stack.json manifest is invalid: " + err_detail
 		})
-		clone_failed.emit.call_deferred("invalid_stack_json", "Repository stack.json manifest is invalid: " + err_detail)
+		clone_failed.emit.call_deferred("invalid_ogs_stack_json", "Repository ogs_stack.json manifest is invalid: " + err_detail)
 		_deferred_finish.call_deferred()
 		return
 	

@@ -430,7 +430,7 @@ func _test_clone_missing_manifest(results: Dictionary) -> void:
 			DirAccess.make_dir_recursive_absolute(target_dest.path_join("no-manifest-repo"))
 			return {"exit_code": 0, "stdout": "", "stderr": "", "cancelled": false}
 		elif args.has("show"):
-			return {"exit_code": 128, "stdout": "", "stderr": "fatal: path 'stack.json' does not exist in 'HEAD'", "cancelled": false}
+			return {"exit_code": 128, "stdout": "", "stderr": "fatal: path 'ogs_stack.json' does not exist in 'HEAD'", "cancelled": false}
 		return {"exit_code": 0, "stdout": "", "stderr": "", "cancelled": false}
 	
 	cloner.clone_project_async("https://github.com/org/no-manifest-repo.git", "no-manifest-repo", target_dest)
@@ -443,7 +443,7 @@ func _test_clone_missing_manifest(results: Dictionary) -> void:
 	cloner.wait_for_finish()
 	await tree.process_frame
 	
-	_expect(state["failed_code"] == "missing_stack_json", "Missing stack.json reported: " + String(state["failed_code"]), results)
+	_expect(state["failed_code"] == "missing_ogs_stack_json", "Missing ogs_stack.json reported: " + String(state["failed_code"]), results)
 	_expect(not DirAccess.dir_exists_absolute(target_dest.path_join("no-manifest-repo")), "Incomplete directory purged on missing manifest", results)
 	
 	if old_env.is_empty():
@@ -490,7 +490,7 @@ func _test_clone_invalid_manifest(results: Dictionary) -> void:
 	cloner.wait_for_finish()
 	await tree.process_frame
 	
-	_expect(state["failed_code"] == "invalid_stack_json", "Invalid stack.json reported: " + String(state["failed_code"]), results)
+	_expect(state["failed_code"] == "invalid_ogs_stack_json", "Invalid ogs_stack.json reported: " + String(state["failed_code"]), results)
 	_expect(not DirAccess.dir_exists_absolute(target_dest.path_join("invalid-manifest-repo")), "Incomplete directory purged on invalid manifest", results)
 	
 	if old_env.is_empty():

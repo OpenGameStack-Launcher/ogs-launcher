@@ -544,10 +544,10 @@ func _test_confirmation_state_presentation_and_content(results: Dictionary) -> v
 
 	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
 
-	# Setup temporary project directory with stack.json
+	# Setup temporary project directory with ogs_stack.json
 	var test_proj_dir: String = "user://test_confirm_project_%d" % int(Time.get_unix_time_from_system() * 1000.0)
 	DirAccess.make_dir_recursive_absolute(test_proj_dir)
-	var stack_json_path: String = test_proj_dir.path_join("stack.json")
+	var stack_json_path: String = test_proj_dir.path_join("ogs_stack.json")
 	var manifest_content: String = JSON.stringify({
 		"schema_version": 1,
 		"stack_name": "Skybound Odyssey",
