@@ -138,7 +138,7 @@ func _test_ci_and_release_workflows(results: Dictionary) -> void:
 		if ci_file != null:
 			var ci_content: String = ci_file.get_as_text()
 			ci_file.close()
-			_expect(ci_content.contains("pull_request:"), "ci.yml must trigger on pull_request", results)
+			_expect(ci_content.contains("workflow_dispatch:"), "ci.yml must trigger on workflow_dispatch", results)
 			_expect(ci_content.contains("push:"), "ci.yml must trigger on push", results)
 			_expect(ci_content.contains("windows-latest"), "ci.yml must run on windows-latest", results)
 			_expect(ci_content.contains("build_release_package.ps1"), "ci.yml must invoke build_release_package.ps1", results)

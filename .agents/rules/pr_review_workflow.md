@@ -49,12 +49,19 @@ When reviewing and merging Pull Requests, adhere to the canonical standards in [
 
 ## 5. Safe Merge and Complete Cleanup
 Once tests pass and documentation is pushed:
-1. Release any Windows file locks held by Godot processes and return to the repository root:
+1. Dispatch and monitor the manual CI pre-merge gate against the feature branch:
+   ```powershell
+   gh workflow run ci.yml --ref <headRefName>
+   $runId = gh run list --workflow=ci.yml --branch <headRefName> --event workflow_dispatch --limit 1 --json databaseId --jq ".[0].databaseId"
+   gh run watch $runId --exit-status
+   ```
+   Confirm the run exits with status code 0 before proceeding. (Note: on the bootstrap PR introducing this trigger, dispatch requires workflow_dispatch to exist on main).
+2. Release any Windows file locks held by Godot processes and return to the repository root:
    ```powershell
    Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue
    Set-Location "c:\Projects\ogs-launcher"
    ```
-2. Remove any local worktrees for this issue/PR and prune worktree metadata:
+3. Remove any local worktrees for this issue/PR and prune worktree metadata:
    ```powershell
    git worktree remove .worktrees/issue-<issue_number> --force -ErrorAction SilentlyContinue
    git worktree remove .worktrees/review-pr-<PR_ID> --force -ErrorAction SilentlyContinue
@@ -62,11 +69,11 @@ Once tests pass and documentation is pushed:
    if (Test-Path ".worktrees/review-pr-<PR_ID>") { Remove-Item -Path ".worktrees/review-pr-<PR_ID>" -Recurse -Force -ErrorAction SilentlyContinue }
    git worktree prune
    ```
-3. Merge the PR using a standard merge commit (never squash or rebase):
+4. Merge the PR using a standard merge commit (never squash or rebase):
    ```powershell
    gh pr merge <PR_ID> --merge --delete-branch
    ```
-4. Synchronize `main`, delete the local feature branch, register merged classes, and confirm the issue is closed:
+5. Synchronize `main`, delete the local feature branch, register merged classes, and confirm the issue is closed:
    ```powershell
    git checkout main
    git pull origin main

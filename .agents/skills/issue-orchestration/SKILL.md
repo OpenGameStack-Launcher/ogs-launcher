@@ -34,7 +34,7 @@ When the user asks to log one or more bugs or feature requests:
 When the user explicitly authorizes you to begin resolving issues:
 1. **Queue Assessment:** Use the terminal (`gh issue list --state open --limit 50 --json number,title,labels,body`) to fetch all open issues. Analyze the list and determine the optimal resolution order based on dependencies (`Depends on #X`), severity (`severity: critical` > `severity: high` > `severity: medium` > `severity: low`), architectural foundation (`scripts/config`, `scripts/manifest`, `scripts/library`, `scripts/network` before UI tweaks), and issue number (oldest first within the same priority tier).
 2. **Issue Resolution:** Define and invoke the `issue_resolver` subagent (Model: `pro`), instructing it to resolve the SINGLE top-priority unblocked issue identified in Step 1. Schedule a 10-minute (600s) Liveness timer (`TimerCondition: 'any'`). Wait for it to push the branch and open a PR. Kill the `issue_resolver` when done.
-3. **PR Review & Merge:** Immediately define and invoke the `pr_reviewer` subagent (Model: `flash`), instructing it to review, update documentation, and merge the PR just opened. Schedule a 10-minute (600s) Liveness timer (`TimerCondition: 'any'`). Wait for it to complete the merge and worktree cleanup. Kill the `pr_reviewer` when done.
+3. **PR Review & Merge:** Immediately define and invoke the `pr_reviewer` subagent (Model: `flash`), instructing it to review, update documentation, dispatch and monitor pre-merge CI on `<headRefName>`, and merge the PR just opened. Schedule a 10-minute (600s) Liveness timer (`TimerCondition: 'any'`). Wait for it to complete the merge and worktree cleanup. Kill the `pr_reviewer` when done.
 4. **Re-evaluate:** After the PR is merged, return to Step 1. Re-fetch the open issues from GitHub and perform a fresh assessment before starting the next issue. Repeat this cycle until the queue is completely empty or the user asks you to pause.
 
 ---
@@ -131,11 +131,18 @@ You are the PR Reviewer & Documentation Agent for the Open Game Stack (OGS) Laun
    - Confirm 0 failures (`tests failed: 0`, exit code 0).
    - If the PR touches UI scenes, layouts, dialogs, icons, or visual behavior, perform Agentic Visual QA via the MCP bridge: stop any lingering Godot processes (`Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue`), launch `godot --path <worktree_path>` in the background, run `python mcp_client.py ping`, `python mcp_client.py screenshot`, and `python mcp_client.py get_ui_elements`, inspect `screenshot.png` with `read_file` to verify the app is visually working right, and immediately terminate the background Godot instance (`Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue`).
 3. **Documentation Coordination & Minor Fixes:** You are the documentation steward. Based on the PR's handoff notes and diff, update `docs/TESTING.md`, `docs/MANUAL_TESTING.md`, `docs/The_Plan.md`, `docs/*_SCHEMA.md`, or `README.md` as needed. If small review fixes (e.g. missing docstring or comment) are needed, apply them in the worktree, re-run tests, commit directly to the feature branch, verify `git status` is clean, and push (`git push origin HEAD:<headRefName>`).
-4. **Safe Merge & Complete Worktree/Branch Cleanup:**
+4. **Manual CI Dispatch Gate:** After all documentation updates and review commits are pushed to `<headRefName>`, manually dispatch the Windows CI workflow:
+   `gh workflow run ci.yml --ref <headRefName>`
+   Retrieve the run ID:
+   `gh run list --workflow=ci.yml --branch <headRefName> --event workflow_dispatch --limit 1 --json databaseId --jq ".[0].databaseId"`
+   Watch execution to completion:
+   `gh run watch <run_id> --exit-status`
+   Send 10-minute liveness status updates while watching. Only proceed to merge if the dispatched CI workflow run exits with status code 0. (Note: on the bootstrap PR introducing this trigger, dispatch requires the workflow to exist on `main`).
+5. **Safe Merge & Complete Worktree/Branch Cleanup:**
    - Stop any lingering Godot processes so Windows file locks are released:
      `Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue`
    - Return to the main repo root (`Set-Location "c:\Projects\ogs-launcher"`).
    - Remove both the issue worktree and any review worktree (`git worktree remove .worktrees/issue-<issue_number> --force -ErrorAction SilentlyContinue; git worktree remove .worktrees/review-pr-<pr_number> --force -ErrorAction SilentlyContinue`), clean up any leftover folder in `.worktrees/` with `Remove-Item -Recurse -Force`, and run `git worktree prune`.
    - Merge the PR using a standard merge commit: `gh pr merge <pr_number> --merge --delete-branch`. **DO NOT squash or rebase.**
-5. **Post-Merge Sync:** Checkout `main` and pull latest changes (`git checkout main; git pull origin main`). Delete the local feature branch (`git branch -D <headRefName> -ErrorAction SilentlyContinue`). Run `godot --headless --editor --quit` on `main`. Confirm the linked GitHub issue is `CLOSED` (and close it via `gh issue close` if GitHub did not auto-close it).
+6. **Post-Merge Sync:** Checkout `main` and pull latest changes (`git checkout main; git pull origin main`). Delete the local feature branch (`git branch -D <headRefName> -ErrorAction SilentlyContinue`). Run `godot --headless --editor --quit` on `main`. Confirm the linked GitHub issue is `CLOSED` (and close it via `gh issue close` if GitHub did not auto-close it).
 ```

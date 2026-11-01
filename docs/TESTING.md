@@ -661,9 +661,13 @@ godot --headless --script res://tests/test_runner.gd
 
 ## Continuous Integration
 
-All pull requests and pushes to `main` must pass continuous integration on GitHub Actions (`.github/workflows/ci.yml`).
+Continuous integration is orchestrated via GitHub Actions (`.github/workflows/ci.yml`) on `windows-latest`.
 
-The CI workflow executes on `windows-latest` and performs the following verification gates:
+### Triggers & Verification Gates
+- **Pre-Merge PR Verification (`workflow_dispatch`):** Rather than triggering automatically on every pull request push or documentation commit, CI is manually dispatched by the `pr_reviewer` agent against `<headRefName>` once all review updates and documentation commits are staged. The PR review protocol strictly gates merge approval on CI exit status 0 (`gh workflow run ci.yml --ref <headRefName>`, `gh run watch <run_id> --exit-status`).
+- **Main Branch Validation (`push`):** Pushes and merges targeting `main` automatically run CI to ensure post-merge branch integrity.
+
+The CI workflow executes the following verification gates:
 1. **Tooling Cache & Installation:** Installs and caches Godot 4.7.2 Stable (`Godot_v4.7.2-stable_win64_console.exe`), Windows export templates, and `rcedit-x64.exe` (v2.0.0).
 2. **Headless Editor Import:** Executes `godot --headless --editor --quit` to register class names, resources, and UID metadata.
 3. **Headless Test Suite:** Runs the full 38-suite headless test runner:

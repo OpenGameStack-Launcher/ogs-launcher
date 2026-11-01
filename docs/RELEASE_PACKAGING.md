@@ -44,7 +44,9 @@ If `rcedit` or `Images/logo.ico` is missing, packaging aborts immediately by des
 
 ### 1. Continuous Integration (`.github/workflows/ci.yml`)
 
-Runs automatically on every pull request targeting `main` and on push to `main` on `windows-latest`:
+Triggers via `workflow_dispatch` for pre-merge PR verification and automatically on `push` to `main` on `windows-latest`:
+- Triggered manually on feature branches by the `pr_reviewer` agent as the final pre-merge verification gate (`gh workflow run ci.yml --ref <headRefName>`).
+- Triggered automatically on pushes and merges to `main` to ensure branch health.
 - Caches Godot 4.7.2 Stable, Windows export templates, and `rcedit-x64.exe`.
 - Performs headless editor import (`godot --headless --editor --quit`).
 - Runs full test suite (`godot --headless -s res://tests/test_runner.gd`).

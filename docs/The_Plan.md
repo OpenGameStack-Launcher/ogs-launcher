@@ -509,7 +509,7 @@ Granular, actionable items for the Tools/Projects page redesign:
 - 32 test suites passing (916 total tests) with zero failures
 
 **Automated CI Testing, Release Packaging, and GitHub Release Publishing (Oct 31, 2026):**
-- Automated CI Workflow (`.github/workflows/ci.yml`): Runs on all pull requests and pushes to `main` on `windows-latest` with Godot 4.7.2, Windows export templates, and rcedit caching, headless editor import, full 33-suite headless test runner execution, and packaging smoke checks.
+- Automated CI Workflow (`.github/workflows/ci.yml`): Triggers via `workflow_dispatch` on feature/PR branches for pre-merge validation and automatically on pushes and merges to `main` on `windows-latest` with Godot 4.7.2, Windows export templates, and rcedit caching, headless editor import, headless test runner execution, and packaging smoke checks.
 - Build-First Automated Release Workflow (`.github/workflows/release.yml`): Triggered via `workflow_dispatch` on `main` with strict semantic version validation (`^[0-9]+\.[0-9]+\.[0-9]+$`), executing full test suite and release build, verifying EXE metadata and SHA-256 checksums, pushing git tag `v<version>`, and publishing a standard Latest GitHub Release.
 - Parameterized Windows Release Packaging Script (`scripts/release/build_release_package.ps1`): Replaces retired `build_alpha_package.ps1`, supporting `-Version`, `-GodotPath`, `-RcEditPath`, `-SkipTests`, and `-SkipZip`, generating deterministic staging artifacts, ZIP distribution, and companion `.sha256` checksum file.
 - Updated `export_presets.cfg`: Default export path transitioned from alpha to `artifacts/release/OGS-Launcher-win64/OGS-Launcher.exe`.
@@ -614,6 +614,12 @@ Granular, actionable items for the Tools/Projects page redesign:
   - `Policy` (Tab 2): Houses Project Offline Policy controls (offline mode and force offline CheckButtons with autowrapped helper descriptions, normalized path label, vertical spacer) and pairs offline settings directly with `SealButton` ("Seal for Delivery").
 - Updated ProjectsController to bind the new controls, synchronize contextual launch state across tabs, and handle tab transitions.
 - Added comprehensive scene test coverage in `tests/main_scene_tests.gd` and `tests/projects_controller_scene_tests.gd`, and updated node paths in `tests/startup_tests.gd` and `tests/projects_page_indicators_tests.gd` (38 test suites passing, 2387 total tests with zero failures).
+
+**Manual CI Dispatch Pre-Merge Gate (Issue #178, Nov 1, 2026):**
+- Replaced automatic `pull_request` event trigger with `workflow_dispatch` in `.github/workflows/ci.yml`, retaining automatic `push` on `main`.
+- Established pre-merge manual CI dispatch gate in PR review workflow (`gh workflow run ci.yml --ref <headRefName>`, `gh run watch <run_id> --exit-status`) to eliminate redundant CI runs during agent orchestration cycles while guaranteeing clean verification prior to merge.
+- Updated `tests/release_packaging_tests.gd` to validate `workflow_dispatch:` trigger contract.
+- Synchronized canonical review and packaging guides (`docs/REVIEWING_AND_MERGING_PRS.md`, `docs/TESTING.md`, `docs/RELEASE_PACKAGING.md`, `.agents/skills/issue-orchestration/SKILL.md`, `.agents/rules/pr_review_workflow.md`).
 
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
