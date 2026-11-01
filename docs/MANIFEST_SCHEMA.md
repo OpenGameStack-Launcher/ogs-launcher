@@ -37,7 +37,7 @@ my-game/
 |-------|------|----------|-------------|
 | `id` | String | Yes | Unique tool identifier (e.g., `"godot"`, `"blender"`). Used in logs and UI. |
 | `version` | String | Yes | Version string (e.g., `"4.7.2"`, `"4.2"`). No whitespace. |
-| `path` | String | **No** | **(Optional)** Relative path from project root (e.g., `"ogs_tools/godot_4.7.2/Godot_v4.7.2-stable_win64.exe"`). If omitted, launcher resolves executable from central library at `[LIBRARY_ROOT]/[id]/[version]/`. |
+| `path` | String | **No** | **(Optional)** Relative path from project root (e.g., `"ogs_tools/godot_4.7.2/Godot_v4.7.2-stable_win64.exe"`). If omitted, the launcher attempts local resolution from `<project_dir>/ogs_tools/<id>_<version>/` first. If `force_offline` is true and the tool is missing from `ogs_tools/`, Central Library fallback is strictly blocked; otherwise, resolution falls back to the Central Library at `[LIBRARY_ROOT]/[id]/[version]/`. |
 | `sha256` | String | No | SHA-256 checksum (lowercase hex, 64 chars). Used in Sovereign Mode to verify binary integrity. |
 
 ## Example
@@ -67,7 +67,7 @@ my-game/
 }
 ```
 
-**Note:** The `path` field is optional. When omitted, the launcher resolves tool executables from the central library directory (`%LOCALAPPDATA%\OGS\Library\[tool_id]\[version]\`). This is the recommended approach for most projects.
+**Note:** The `path` field is optional. When omitted, standard manifests resolve against `<project_dir>/ogs_tools/<id>_<version>/` first (using `ogs_metadata.json` or fallback heuristic executable search) when local tools exist or when `force_offline` is enabled. If `force_offline` is false and the tool is not present locally, resolution falls back to the Central Library (`%LOCALAPPDATA%\OGS\Library\[tool_id]\[version]\`). This is the recommended approach for most projects.
 
 ### Legacy Format (Project-Relative Paths)
 

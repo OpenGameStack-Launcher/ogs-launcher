@@ -65,6 +65,7 @@ func run() -> Dictionary:
 	_test_project_details_subtabs_and_explorer_label(results)
 	_test_contextual_launch_button_states_and_transitions(results)
 	_test_offline_policy_toggles_and_persistence(results)
+	_test_force_offline_lifecycle_and_tools_isolation(results)
 	_test_project_dialogs_compact_dimensions_and_margins(results)
 	_test_dialog_input_validation_empty_guards(results)
 	_test_new_file_dialog_instruction_preview(results)
@@ -2091,6 +2092,111 @@ func _test_offline_policy_toggles_and_persistence(results: Dictionary) -> void:
 
 	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_dir_recursive(test_dir)
+	_cleanup_registry(storage_path)
+	OfflineEnforcer.reset()
+
+func _test_force_offline_lifecycle_and_tools_isolation(results: Dictionary) -> void:
+	## Verifies that toggling force_offline ON populates ogs_tools/<id>_<version> from the Central Library,
+	## toggling force_offline OFF removes ogs_tools while strictly preserving developer files in tools/,
+	## and that _is_tool_installed blocks fallback to the Central Library when force_offline is true.
+	OfflineEnforcer.reset()
+	var test_id = str(Time.get_ticks_msec())
+	var storage_path = "user://proj_ctrl_fo_lifecycle_%s.json" % test_id
+	var test_dir = "user://fo_lifecycle_proj_%s" % test_id
+	var abs_dir = ProjectSettings.globalize_path(test_dir)
+	DirAccess.make_dir_recursive_absolute(abs_dir)
+
+	# 1. Developer tools directory with custom script
+	var dev_tools_dir = abs_dir.path_join("tools")
+	DirAccess.make_dir_recursive_absolute(dev_tools_dir)
+	var dev_script_path = dev_tools_dir.path_join("custom_script.py")
+	var dsf = FileAccess.open(dev_script_path, FileAccess.WRITE)
+	dsf.store_string("print('developer custom script')\n")
+	dsf.close()
+
+	# 2. ogs_stack.json with Godot 4.7.2
+	var stack_path = abs_dir.path_join("ogs_stack.json")
+	var stack_payload = {
+		"schema_version": StackManifest.CURRENT_SCHEMA_VERSION,
+		"stack_name": "FO Lifecycle Test Project",
+		"tools": [
+			{"id": "godot", "version": "4.7.2"}
+		]
+	}
+	var sf = FileAccess.open(stack_path, FileAccess.WRITE)
+	sf.store_string(JSON.stringify(stack_payload))
+	sf.close()
+
+	# 3. ogs_config.json initially force_offline = false
+	var config_path = abs_dir.path_join("ogs_config.json")
+	var config_payload = {
+		"schema_version": OgsConfig.CURRENT_SCHEMA_VERSION,
+		"offline_mode": false,
+		"force_offline": false
+	}
+	var cf = FileAccess.open(config_path, FileAccess.WRITE)
+	cf.store_string(JSON.stringify(config_payload))
+	cf.close()
+
+	# 4. Set up mock tool in Central Library
+	var lib = LibraryManager.new()
+	var lib_godot_dir = lib.get_tool_path("godot", "4.7.2")
+	if lib_godot_dir.is_empty():
+		lib_godot_dir = lib.path_resolver.get_library_root().path_join("godot").path_join("4.7.2")
+	DirAccess.make_dir_recursive_absolute(lib_godot_dir)
+	var lib_bin_name = "godot.exe" if OS.get_name() == "Windows" else "godot"
+	var lib_bin_file = lib_godot_dir.path_join(lib_bin_name)
+	var lbf = FileAccess.open(lib_bin_file, FileAccess.WRITE)
+	lbf.store_string("mock godot binary")
+	lbf.close()
+
+	_cleanup_registry(storage_path)
+	var ctx = _build_controller(storage_path)
+	var controller: ProjectsController = ctx["controller"]
+	var force_offline_cb: CheckButton = ctx["project_force_offline_check_button"]
+
+	var added = controller.add_project_from_path(abs_dir)
+	_expect(added, "adding project should succeed", results)
+
+	# Initial checks
+	var ogs_tools_dir = abs_dir.path_join("ogs_tools")
+	_expect(not DirAccess.dir_exists_absolute(ogs_tools_dir), "ogs_tools should not exist initially", results)
+	_expect(FileAccess.file_exists(dev_script_path), "developer tools/custom_script.py must exist", results)
+	_expect(controller._is_tool_installed("godot", "4.7.2"), "tool should be installed via Central Library initially", results)
+
+	# 5. Toggle force_offline ON -> populates ogs_tools/ from Central Library
+	force_offline_cb.button_pressed = true
+	_expect(DirAccess.dir_exists_absolute(ogs_tools_dir), "ogs_tools should be created when force_offline enabled", results)
+	var local_godot_dir = ogs_tools_dir.path_join("godot_4.7.2")
+	_expect(DirAccess.dir_exists_absolute(local_godot_dir), "ogs_tools/godot_4.7.2 should exist", results)
+	_expect(FileAccess.file_exists(local_godot_dir.path_join(lib_bin_name)), "copied binary should exist in local ogs_tools", results)
+
+	# Verify developer tools/ folder was NOT touched
+	_expect(FileAccess.file_exists(dev_script_path), "developer tools/custom_script.py must remain intact after force_offline ON", results)
+	var dsf_read = FileAccess.open(dev_script_path, FileAccess.READ)
+	_expect(dsf_read != null and dsf_read.get_as_text().contains("developer custom script"), "developer script content must be untouched", results)
+	if dsf_read: dsf_read.close()
+
+	# Tool is installed via local ogs_tools
+	_expect(controller._is_tool_installed("godot", "4.7.2"), "tool should be reported installed from local ogs_tools", results)
+
+	# 6. Toggle force_offline OFF -> removes ogs_tools/, preserves tools/
+	force_offline_cb.button_pressed = false
+	_expect(not DirAccess.dir_exists_absolute(ogs_tools_dir), "ogs_tools should be removed when force_offline disabled", results)
+	_expect(FileAccess.file_exists(dev_script_path), "developer tools/custom_script.py must remain intact after force_offline OFF", results)
+	_expect(controller._is_tool_installed("godot", "4.7.2"), "tool should still be installed via Central Library fallback", results)
+
+	# 7. Test strict force_offline blocking:
+	# If force_offline is true and ogs_tools does NOT have a tool, Central Library fallback is blocked
+	controller.update_current_project_offline_settings(false, true)
+	# Remove the copied tool from ogs_tools to simulate missing local tool
+	_cleanup_dir_recursive(ogs_tools_dir)
+	_expect(not controller._is_tool_installed("godot", "4.7.2"), "_is_tool_installed must return false when force_offline is true and local ogs_tools missing", results)
+
+	# Cleanup
+	_cleanup_nodes(ctx["nodes"], controller)
+	_cleanup_dir_recursive(abs_dir)
+	_cleanup_dir_recursive(lib_godot_dir)
 	_cleanup_registry(storage_path)
 	OfflineEnforcer.reset()
 
