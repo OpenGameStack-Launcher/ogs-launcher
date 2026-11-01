@@ -5,7 +5,7 @@
 ##
 ## Usage:
 ## var sealer = SealController.new()
-## sealer.setup(seal_dialog, status_label, output_label, open_button)
+## sealer.setup(seal_dialog, status_label, output_label, open_button, progress_bar)
 ## sealer.seal_for_delivery(project_path)
 
 extends RefCounted
@@ -23,6 +23,7 @@ func _notification(what: int) -> void:
 		_seal_thread = null
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
+const ToolCategoryMapper = preload("res://scripts/tools/tool_category_mapper.gd")
 
 ## Emitted when seal operation completes (success or failure).
 signal seal_completed(success: bool, zip_path: String)
@@ -31,6 +32,7 @@ var _seal_dialog: AcceptDialog
 var _status_label: Label
 var _output_label: Label
 var _open_folder_button: Button
+var _progress_bar: ProgressBar
 
 var _last_sealed_zip: String = ""
 var _seal_in_progress: bool = false
@@ -43,20 +45,62 @@ var _seal_started_at_msec: int = 0
 ## status_label (Label): Shows success/failure message
 ## output_label (Label): Shows detailed information
 ## open_folder_button (Button): Opens the sealed folder
+## progress_bar (ProgressBar): Shows indeterminate progress during active sealing
 func setup(
 	seal_dialog: AcceptDialog,
 	status_label: Label,
 	output_label: Label,
-	open_folder_button: Button
+	open_folder_button: Button,
+	progress_bar: ProgressBar = null
 ) -> void:
 	## Configures the seal controller.
 	_seal_dialog = seal_dialog
 	_status_label = status_label
 	_output_label = output_label
 	_open_folder_button = open_folder_button
-	
+	_progress_bar = progress_bar
+
+	if is_instance_valid(_progress_bar):
+		_progress_bar.visible = false
+
 	# Wire button
-	_open_folder_button.pressed.connect(_on_open_folder_pressed)
+	if is_instance_valid(_open_folder_button) and not _open_folder_button.pressed.is_connected(_on_open_folder_pressed):
+		_open_folder_button.pressed.connect(_on_open_folder_pressed)
+
+## Formats a tool entry using ToolCategoryMapper for canonical display naming.
+static func _format_tool_entry(raw_entry: String) -> String:
+	## Formats raw tool string (e.g. 'godot v4.7.2' -> 'Godot v4.7.2').
+	var trimmed: String = raw_entry.strip_edges()
+	if trimmed.is_empty():
+		return ""
+	var prefix: String = ""
+	if trimmed.begins_with("• "):
+		prefix = "• "
+		trimmed = trimmed.substr(2).strip_edges()
+	elif trimmed.begins_with("- "):
+		prefix = "- "
+		trimmed = trimmed.substr(2).strip_edges()
+	elif trimmed.begins_with("* "):
+		prefix = "* "
+		trimmed = trimmed.substr(2).strip_edges()
+
+	var first_space_idx: int = trimmed.find(" ")
+	var formatted: String = ""
+	if first_space_idx == -1:
+		formatted = ToolCategoryMapper.get_display_name(trimmed)
+	else:
+		var raw_id: String = trimmed.substr(0, first_space_idx)
+		var rest: String = trimmed.substr(first_space_idx)
+		formatted = "%s%s" % [ToolCategoryMapper.get_display_name(raw_id), rest]
+	return prefix + formatted
+
+## Helper to set ok button disabled state on the seal dialog if available.
+func _set_close_button_disabled(is_disabled: bool) -> void:
+	## Updates dialog OK button disabled state.
+	if is_instance_valid(_seal_dialog):
+		var ok_btn: Button = _seal_dialog.get_ok_button()
+		if is_instance_valid(ok_btn):
+			ok_btn.disabled = is_disabled
 
 ## Seals a project for offline delivery.
 ## Parameters:
@@ -70,7 +114,7 @@ func seal_for_delivery(project_path: String) -> void:
 	if _seal_in_progress:
 		_show_error("Seal already running.", "Please wait for the current seal operation to complete.")
 		return
-	
+
 	# Show progress dialog
 	_show_progress()
 	_run_seal_async(project_path)
@@ -81,6 +125,13 @@ func _run_seal_async(project_path: String) -> void:
 	_seal_in_progress = true
 	_seal_started_at_msec = Time.get_ticks_msec()
 	_seal_thread = Thread.new()
+
+	if is_instance_valid(_progress_bar):
+		_progress_bar.indeterminate = true
+		_progress_bar.visible = true
+	_set_close_button_disabled(true)
+	if is_instance_valid(_status_label):
+		_status_label.modulate = Color("#F3F4F6")
 
 	# Yield one frame so the progress dialog renders before heavy work starts.
 	if is_instance_valid(_seal_dialog) and _seal_dialog.is_inside_tree():
@@ -146,49 +197,78 @@ func _update_progress_status() -> void:
 	## Shows elapsed time and stage hints during long-running packaging.
 	var elapsed_seconds = int((Time.get_ticks_msec() - _seal_started_at_msec) / 1000.0)
 	var phase = "Validating and copying tools" if elapsed_seconds < 10 else "Packaging archive"
-	_status_label.text = "Sealing project... (%ds)" % elapsed_seconds
-	_output_label.text = "Stage: %s\n\nThis step can take several minutes for large toolchains.\nPlease keep this window open." % phase
+	if is_instance_valid(_status_label):
+		_status_label.text = "Sealing project... (%ds)" % elapsed_seconds
+		_status_label.modulate = Color("#F3F4F6")
+	if is_instance_valid(_output_label):
+		_output_label.text = "Stage: %s\n\nThis step can take several minutes for large toolchains.\nPlease keep this window open." % phase
+	if is_instance_valid(_progress_bar):
+		_progress_bar.indeterminate = true
+		_progress_bar.visible = true
+	_set_close_button_disabled(true)
 
 ## Displays success state with result details.
 func _show_success(result: Dictionary) -> void:
 	## Shows the successful seal result.
-	_status_label.text = "✓ Project sealed successfully!"
-	
-	var size_text = "%.1f MB" % result.project_size_mb
-	var tools_list = result.tools_copied
-	var tools_text = "No tools to copy" if tools_list.is_empty() else "Tools copied:\n  • " + "\n  • ".join(tools_list)
-	
-	_output_label.text = "Archive: %s\nSize: %s\n\n%s" % [
-		result.sealed_zip.get_file(),
-		size_text,
-		tools_text
-	]
-	
-	_open_folder_button.visible = true
-	_seal_dialog.popup_centered()
-	
+	if is_instance_valid(_status_label):
+		_status_label.text = "✓ Project sealed successfully!"
+		_status_label.modulate = Color("#22C55E")
+
+	var size_text = "%.1f MB" % result.get("project_size_mb", 0.0)
+	var tools_list = result.get("tools_copied", [])
+	var formatted_tools: Array[String] = []
+	for tool_item in tools_list:
+		formatted_tools.append(_format_tool_entry(str(tool_item)))
+
+	var tools_text = "No tools to copy" if formatted_tools.is_empty() else "Tools copied:\n  • " + "\n  • ".join(formatted_tools)
+
+	if is_instance_valid(_output_label):
+		_output_label.text = "Archive: %s\nSize: %s\n\n%s" % [
+			result.get("sealed_zip", "").get_file(),
+			size_text,
+			tools_text
+		]
+
+	if is_instance_valid(_open_folder_button):
+		_open_folder_button.visible = true
+	if is_instance_valid(_progress_bar):
+		_progress_bar.visible = false
+	_set_close_button_disabled(false)
+
+	if is_instance_valid(_seal_dialog) and _seal_dialog.is_inside_tree():
+		_seal_dialog.popup_centered()
+
 	OgsLogger.info("seal_completed_success", {
 		"component": "sealer",
-		"zip_path": result.sealed_zip,
-		"size_mb": result.project_size_mb,
-		"tools_count": result.tools_copied.size()
+		"zip_path": result.get("sealed_zip", ""),
+		"size_mb": result.get("project_size_mb", 0.0),
+		"tools_count": formatted_tools.size()
 	})
 
 ## Displays error state with error messages.
 func _show_error(title: String, errors: Variant) -> void:
 	## Shows the error result.
-	_status_label.text = "✗ %s" % title
-	
+	if is_instance_valid(_status_label):
+		_status_label.text = "✗ %s" % title
+		_status_label.modulate = Color("#EF4444")
+
 	var error_text: String = ""
 	if errors is Array:
 		error_text = "\n".join(errors) if not errors.is_empty() else "Unknown error occurred."
 	else:
 		error_text = str(errors)
-	
-	_output_label.text = "Errors:\n" + error_text
-	_open_folder_button.visible = false
-	_seal_dialog.popup_centered()
-	
+
+	if is_instance_valid(_output_label):
+		_output_label.text = "Errors:\n" + error_text
+	if is_instance_valid(_open_folder_button):
+		_open_folder_button.visible = false
+	if is_instance_valid(_progress_bar):
+		_progress_bar.visible = false
+	_set_close_button_disabled(false)
+
+	if is_instance_valid(_seal_dialog) and _seal_dialog.is_inside_tree():
+		_seal_dialog.popup_centered()
+
 	OgsLogger.warn("seal_completed_failure", {
 		"component": "sealer",
 		"error_count": errors.size() if errors is Array else 1
@@ -196,11 +276,21 @@ func _show_error(title: String, errors: Variant) -> void:
 
 ## Displays progress state while sealing.
 func _show_progress() -> void:
-	## Shows the progress dialog.
-	_status_label.text = "Sealing project..."
-	_output_label.text = "Stage: Preparing\n\nCreating offline-ready artifact..."
-	_open_folder_button.visible = false
-	_seal_dialog.popup_centered()
+	## Shows the progress dialog and activates progress indicators.
+	if is_instance_valid(_status_label):
+		_status_label.text = "Sealing project..."
+		_status_label.modulate = Color("#F3F4F6")
+	if is_instance_valid(_output_label):
+		_output_label.text = "Stage: Preparing\n\nCreating offline-ready artifact..."
+	if is_instance_valid(_open_folder_button):
+		_open_folder_button.visible = false
+	if is_instance_valid(_progress_bar):
+		_progress_bar.indeterminate = true
+		_progress_bar.visible = true
+	_set_close_button_disabled(true)
+
+	if is_instance_valid(_seal_dialog) and _seal_dialog.is_inside_tree():
+		_seal_dialog.popup_centered()
 
 ## Opens the folder containing the sealed zip.
 func _on_open_folder_pressed() -> void:
@@ -224,7 +314,7 @@ func _on_open_folder_pressed() -> void:
 		return
 
 	OS.shell_show_in_file_manager(folder_path)
-	
+
 	OgsLogger.info("open_folder_pressed", {
 		"component": "sealer",
 		"folder_path": folder_path
