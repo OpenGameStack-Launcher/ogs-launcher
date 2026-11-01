@@ -7,6 +7,8 @@ class_name ToolsPageSceneTests
 
 const ToolsControllerScript = preload("res://scripts/tools/tools_controller.gd")
 const DownloadDialogControllerScript = preload("res://scripts/tools/download_dialog_controller.gd")
+const PathResolverScript = preload("res://scripts/library/path_resolver.gd")
+const PathUtils = preload("res://scripts/utils/path_utils.gd")
 
 func run() -> Dictionary:
 	## Runs Tools page scene tests.
@@ -20,6 +22,7 @@ func run() -> Dictionary:
 	_test_download_button_state(results)
 	_test_installed_empty_state_nodes_exist(results)
 	_test_main_scene_tools_dynamic_collapse_and_empty_state(results)
+	_test_installed_library_footer(results)
 	_test_remove_tool_dialog_compact_sizing_and_status_visibility(results)
 	_test_download_dialog_controller_styling_and_layout(results)
 	return results
@@ -56,10 +59,10 @@ func _test_tools_nodes_exist(results: Dictionary) -> void:
 	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/3DSection/3DTools") != null, "Download 3D tools container should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/AudioSection/AudioTools") != null, "Download Audio tools container should exist", results)
 	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer/DownloadContent/CodeSection/CodeTools") != null, "Download Code tools container should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer") != null, "Installed MarginContainer should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/CodeSection/CodeTools") != null, "Installed Code tools container should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer") != null, "Installed MarginContainer should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/CodeSection/CodeTools") != null, "Installed Code tools container should exist", results)
 
-	var installed_mc: MarginContainer = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer") as MarginContainer
+	var installed_mc: MarginContainer = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer") as MarginContainer
 	var download_mc: MarginContainer = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Download/MarginContainer") as MarginContainer
 	if installed_mc != null:
 		_expect(installed_mc.get_theme_constant("margin_right") == 14, "Installed tab MarginContainer should have 14px right margin", results)
@@ -219,7 +222,7 @@ func _test_installed_empty_state_nodes_exist(results: Dictionary) -> void:
 	if instance == null:
 		return
 
-	var empty_state: VBoxContainer = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState") as VBoxContainer
+	var empty_state: VBoxContainer = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledEmptyState") as VBoxContainer
 	_expect(empty_state != null, "InstalledEmptyState container should exist in main.tscn", results)
 	if empty_state != null:
 		var title_label: Label = empty_state.get_node_or_null("InstalledEmptyTitle") as Label
@@ -247,8 +250,8 @@ func _test_main_scene_tools_dynamic_collapse_and_empty_state(results: Dictionary
 	if instance == null:
 		return
 
-	var empty_state: Control = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState") as Control
-	var installed_content: Container = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent") as Container
+	var empty_state: Control = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledEmptyState") as Control
+	var installed_content: Container = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent") as Container
 
 	_expect(empty_state != null, "InstalledEmptyState should exist", results)
 	_expect(installed_content != null, "InstalledContent should exist", results)
@@ -263,6 +266,49 @@ func _test_main_scene_tools_dynamic_collapse_and_empty_state(results: Dictionary
 				_expect(not child.visible, "Category divider in InstalledContent should be hidden when empty: %s" % child.name, results)
 			elif child is Container:
 				_expect(not child.visible, "Category section in InstalledContent should be hidden when empty: %s" % child.name, results)
+
+	instance.free()
+
+func _test_installed_library_footer(results: Dictionary) -> void:
+	## Verifies that the LibraryFooter exists in main.tscn, displays the resolved Central Library path,
+	## includes a management warning message, contains no external/clickable link buttons,
+	## and remains visible regardless of tool installation count.
+	var instance = _instantiate_main_scene(results)
+	if instance == null:
+		return
+
+	var footer = instance.get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/LibraryFooter") as PanelContainer
+	_expect(footer != null, "LibraryFooter should exist in main.tscn under Installed tab", results)
+	if footer != null:
+		_expect(footer.visible == true, "LibraryFooter should be visible by default", results)
+
+		var path_label = footer.find_child("LibraryPathLabel", true, false) as Label
+		_expect(path_label != null, "LibraryPathLabel should exist in LibraryFooter", results)
+
+		var warning_label = footer.find_child("LibraryWarningLabel", true, false) as Label
+		_expect(warning_label != null, "LibraryWarningLabel should exist in LibraryFooter", results)
+		if warning_label != null:
+			_expect(warning_label.text.find("manually") != -1 or warning_label.text.find("modify") != -1, "Warning label should advise against manual modifications (got: %s)" % warning_label.text, results)
+			_expect(warning_label.text.find("Tools") != -1 or warning_label.text.find("screen") != -1, "Warning label should direct user to Tools screen (got: %s)" % warning_label.text, results)
+
+		var clickable_buttons: Array[Button] = []
+		for child in footer.find_children("*", "Button", true, false):
+			if child is Button:
+				clickable_buttons.append(child as Button)
+		_expect(clickable_buttons.is_empty(), "LibraryFooter should not contain any clickable buttons (found: %d)" % clickable_buttons.size(), results)
+
+	if instance.tools_page_controller != null:
+		var resolver = PathResolverScript.new()
+		var expected_display_path = PathUtils.format_for_display(resolver.get_library_root())
+
+		instance.tools_page_controller.populate_tools_ui()
+		var path_label = instance.find_child("LibraryPathLabel", true, false) as Label
+		var footer_node = instance.find_child("LibraryFooter", true, false) as Control
+		_expect(footer_node != null and footer_node.visible == true, "LibraryFooter should remain visible when 0 tools installed", results)
+		_expect(path_label != null and path_label.text == expected_display_path, "LibraryPathLabel should match resolved library root when 0 tools installed (got: %s, expected: %s)" % ["" if path_label == null else path_label.text, expected_display_path], results)
+
+		instance.tools_page_controller._update_installed_empty_state(1)
+		_expect(footer_node != null and footer_node.visible == true, "LibraryFooter should remain visible when 1 tool is installed", results)
 
 	instance.free()
 

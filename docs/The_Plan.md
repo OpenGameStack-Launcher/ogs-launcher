@@ -304,6 +304,14 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Tab 2 (Policy): Encapsulates Project Offline Policy controls (ProjectOfflineSettingsLabel, ProjectOfflineStatusLabel, OfflineModeContainer, ForceOfflineContainer, PolicySpacer) and pairs them directly with SealButton ("Seal for Delivery", PrimaryButton)
     *   [x] Synchronized launch action state, button text, and disabled status across Toolchain and Explorer tabs in ProjectsController
     *   [x] Updated tests in tests/main_scene_tests.gd, tests/projects_controller_scene_tests.gd, tests/projects_page_indicators_tests.gd, and tests/startup_tests.gd (38 test suites passing, 2387 total tests with zero failures)
+*   [x] Central Library Path Display and Management Warning Footer on Installed Tab (Issue #176) - 100% Complete ✅
+    *   [x] Restructured Installed tab in ToolsTabs into a VBoxContainer wrapping InstalledScrollContainer and a persistent LibraryFooter panel
+    *   [x] Dedicated StyleBoxFlat_library_footer panel container matching dark launcher palette (dark background Color(0.12, 0.14, 0.18, 0.8), subtle border Color(0.2, 0.24, 0.3, 0.8), 6px corner radius, and 14px horizontal by 10px vertical content margins)
+    *   [x] Scrollbar termination above footer bar via dedicated InstalledScrollContainer (size_flags_vertical = Control.SIZE_EXPAND_FILL)
+    *   [x] Dynamically resolved Central Library path via PathResolver and PathUtils.format_for_display() with read-only text and tooltip
+    *   [x] Descriptive warning label advising against manual file tampering on disk and directing management through the Tools screen
+    *   [x] Guaranteed persistent visibility across both empty (0 tools) and populated (1+ tools) library states
+    *   [x] Added unit tests in tests/tools_page_controller_tests.gd and scene tests in tests/tools_page_scene_tests.gd (38 test suites passing, 2403 total tests with zero failures)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:

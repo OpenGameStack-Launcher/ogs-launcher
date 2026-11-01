@@ -83,6 +83,22 @@ corner_radius_top_right = 6
 corner_radius_bottom_left = 6
 corner_radius_bottom_right = 6
 
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_library_footer"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
+bg_color = Color(0.12, 0.14, 0.18, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.24, 0.3, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+
 [node name="Main" type="Control" unique_id=308260745]
 layout_mode = 3
 anchors_preset = 15
@@ -564,110 +580,116 @@ layout_mode = 2
 size_flags_vertical = 3
 current_tab = 0
 
-[node name="Installed" type="ScrollContainer" parent="AppLayout/Content/PageTools/ToolsTabs" unique_id=1663194702]
+[node name="Installed" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs" unique_id=1663194702]
 layout_mode = 2
+theme_override_constants/separation = 8
 metadata/_tab_index = 0
 
-[node name="MarginContainer" type="MarginContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed"]
+[node name="InstalledScrollContainer" type="ScrollContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed" unique_id=1663194703]
+layout_mode = 2
+size_flags_horizontal = 3
+size_flags_vertical = 3
+
+[node name="MarginContainer" type="MarginContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/margin_right = 14
 
-[node name="InstalledContent" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer" unique_id=1471721297]
+[node name="InstalledContent" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer" unique_id=1471721297]
 layout_mode = 2
 size_flags_horizontal = 3
 size_flags_vertical = 3
 theme_override_constants/separation = 20
 
-[node name="EngineSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=524823504]
+[node name="EngineSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent" unique_id=524823504]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="EngineHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/EngineSection" unique_id=1404457622]
+[node name="EngineHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/EngineSection" unique_id=1404457622]
 modulate = Color(0.45, 0.8, 1, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Engine"
 
-[node name="EngineTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/EngineSection" unique_id=1572554511]
+[node name="EngineTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/EngineSection" unique_id=1572554511]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CategoryDivider" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=2062689336]
+[node name="CategoryDivider" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent" unique_id=2062689336]
 layout_mode = 2
 
-[node name="2DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=574834040]
+[node name="2DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent" unique_id=574834040]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="2DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/2DSection" unique_id=1410285366]
+[node name="2DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/2DSection" unique_id=1410285366]
 modulate = Color(0.55, 0.9, 0.65, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "2D Tools"
 
-[node name="2DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/2DSection" unique_id=739796838]
+[node name="2DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/2DSection" unique_id=739796838]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CategoryDivider2" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=1161450709]
+[node name="CategoryDivider2" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent" unique_id=1161450709]
 layout_mode = 2
 
-[node name="3DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=2132407013]
+[node name="3DSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent" unique_id=2132407013]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="3DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/3DSection" unique_id=1477040708]
+[node name="3DHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/3DSection" unique_id=1477040708]
 modulate = Color(1, 0.72, 0.35, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "3D Tools"
 
-[node name="3DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/3DSection" unique_id=798722386]
+[node name="3DTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/3DSection" unique_id=798722386]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CategoryDivider3" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=271342658]
+[node name="CategoryDivider3" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent" unique_id=271342658]
 layout_mode = 2
 
-[node name="AudioSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=583224698]
+[node name="AudioSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent" unique_id=583224698]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="AudioHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/AudioSection" unique_id=1080829129]
+[node name="AudioHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/AudioSection" unique_id=1080829129]
 modulate = Color(0.85, 0.65, 1, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Audio Tools"
 
-[node name="AudioTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/AudioSection" unique_id=1576073845]
+[node name="AudioTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/AudioSection" unique_id=1576073845]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CategoryDivider4" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=271342659]
+[node name="CategoryDivider4" type="HSeparator" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent" unique_id=271342659]
 layout_mode = 2
 
-[node name="CodeSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent" unique_id=583224699]
+[node name="CodeSection" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent" unique_id=583224699]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="CodeHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/CodeSection" unique_id=1080829130]
+[node name="CodeHeader" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/CodeSection" unique_id=1080829130]
 modulate = Color(0.95, 0.8, 0.4, 1)
 custom_minimum_size = Vector2(0, 30)
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "Code Tools"
 
-[node name="CodeTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledContent/CodeSection" unique_id=1576073846]
+[node name="CodeTools" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledContent/CodeSection" unique_id=1576073846]
 layout_mode = 2
 theme_override_constants/separation = 8
 
-[node name="InstalledEmptyState" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer"]
+[node name="InstalledEmptyState" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer"]
 visible = false
 layout_mode = 2
 size_flags_horizontal = 3
@@ -675,13 +697,13 @@ size_flags_vertical = 3
 theme_override_constants/separation = 16
 alignment = 1
 
-[node name="InstalledEmptyTitle" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState"]
+[node name="InstalledEmptyTitle" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledEmptyState"]
 layout_mode = 2
 theme_override_font_sizes/font_size = 18
 text = "No Tools Installed Yet"
 horizontal_alignment = 1
 
-[node name="InstalledEmptyDescription" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState"]
+[node name="InstalledEmptyDescription" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledEmptyState"]
 custom_minimum_size = Vector2(420, 0)
 layout_mode = 2
 size_flags_horizontal = 4
@@ -691,12 +713,45 @@ text = "Downloaded tools are stored in the Central Library for offline use acros
 horizontal_alignment = 1
 autowrap_mode = 2
 
-[node name="BrowseAvailableToolsButton" type="Button" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState"]
+[node name="BrowseAvailableToolsButton" type="Button" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/InstalledScrollContainer/MarginContainer/InstalledEmptyState"]
 theme_type_variation = &"PrimaryButton"
 custom_minimum_size = Vector2(180, 36)
 layout_mode = 2
 size_flags_horizontal = 4
 text = "Browse Available Tools"
+
+[node name="LibraryFooter" type="PanelContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed" unique_id=1663194704]
+layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_library_footer")
+
+[node name="FooterVBox" type="VBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/LibraryFooter" unique_id=1663194705]
+layout_mode = 2
+theme_override_constants/separation = 4
+
+[node name="LibraryPathHBox" type="HBoxContainer" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/LibraryFooter/FooterVBox" unique_id=1663194706]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="LibraryPathTitleLabel" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/LibraryFooter/FooterVBox/LibraryPathHBox" unique_id=1663194707]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.75, 0.82, 0.95, 1)
+theme_override_font_sizes/font_size = 12
+text = "Central Library:"
+
+[node name="LibraryPathLabel" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/LibraryFooter/FooterVBox/LibraryPathHBox" unique_id=1663194708]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 12
+text = ""
+text_overrun_behavior = 3
+
+[node name="LibraryWarningLabel" type="Label" parent="AppLayout/Content/PageTools/ToolsTabs/Installed/LibraryFooter/FooterVBox" unique_id=1663194709]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.9, 0.75, 0.45, 1)
+theme_override_font_sizes/font_size = 11
+text = "⚠️ Do not manually adjust or modify files in the Central Library directory on disk. Use the Tools screen to install and remove software."
+autowrap_mode = 2
 
 [node name="Download" type="ScrollContainer" parent="AppLayout/Content/PageTools/ToolsTabs" unique_id=1569399598]
 visible = false
