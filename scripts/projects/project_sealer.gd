@@ -52,9 +52,10 @@ func _init() -> void:
 ## Main entry point: seals a project for offline delivery.
 ## Parameters:
 ## project_path (String): Absolute path to the project directory
+## progress_callback (Callable): Optional callback for progress reporting (phase, current, total)
 ## Returns:
 ## Dictionary: Seal operation result with success flag and metadata
-func seal_project(project_path: String) -> Dictionary:
+func seal_project(project_path: String, progress_callback: Callable = Callable()) -> Dictionary:
 	var result = {
 		"success": false,
 		"sealed_zip": "",
@@ -91,7 +92,7 @@ func seal_project(project_path: String) -> Dictionary:
 		return result
 	
 	# Step 2: Copy tools to local ./tools directory
-	var copy_result = _copy_tools_to_local(project_path, validation.manifest)
+	var copy_result = _copy_tools_to_local(project_path, validation.manifest, progress_callback)
 	if not copy_result.success:
 		result.errors = copy_result.errors
 		OgsLogger.error("seal_project_copy_failed", {
@@ -115,7 +116,7 @@ func seal_project(project_path: String) -> Dictionary:
 		return result
 	
 	# Step 4: Create sealed zip
-	var zip_result = _create_sealed_zip(project_path)
+	var zip_result = _create_sealed_zip(project_path, progress_callback)
 	if not zip_result.success:
 		result.errors = zip_result.errors
 		OgsLogger.error("seal_project_zip_failed", {
@@ -147,9 +148,9 @@ func _validate_project(project_path: String) -> Dictionary:
 
 ## Copies all tools from library to project's ./tools directory.
 ## Returns: {"success": bool, "errors": Array, "tools_copied": Array}
-func _copy_tools_to_local(project_path: String, manifest: StackManifest) -> Dictionary:
+func _copy_tools_to_local(project_path: String, manifest: StackManifest, progress_callback: Callable = Callable()) -> Dictionary:
 	## Delegates library-to-project tool copy operations to ProjectSealToolCopier.
-	return copier.copy_tools_to_local(project_path, manifest, library)
+	return copier.copy_tools_to_local(project_path, manifest, library, progress_callback)
 
 ## Writes ogs_config.json with force_offline=true to project root.
 ## Returns: {"success": bool, "errors": Array}
@@ -159,6 +160,6 @@ func _write_offline_config(project_path: String) -> Dictionary:
 
 ## Creates a sealed zip archive of the entire project.
 ## Returns: {"success": bool, "errors": Array, "zip_path": String, "size_mb": float}
-func _create_sealed_zip(project_path: String) -> Dictionary:
+func _create_sealed_zip(project_path: String, progress_callback: Callable = Callable()) -> Dictionary:
 	## Delegates zip packaging to ProjectSealArchiver.
-	return archiver.create_sealed_zip(project_path)
+	return archiver.create_sealed_zip(project_path, progress_callback)

@@ -10,6 +10,8 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 
 const SealerTestHelpersScript = preload("res://tests/project_sealer_test_helpers.gd")
 const SealToolCopierScript = preload("res://scripts/projects/project_seal_tool_copier.gd")
+const SealArchiverScript = preload("res://scripts/projects/project_seal_archiver.gd")
+const StackManifest = preload("res://scripts/manifest/stack_manifest.gd")
 
 var _helpers = SealerTestHelpersScript.new()
 
@@ -36,6 +38,10 @@ func run() -> Dictionary:
 		{"name": "test_sealed_zip_contains_expected_files", "func": test_sealed_zip_contains_expected_files},
 		{"name": "test_seal_project_writes_packaging_logs", "func": test_seal_project_writes_packaging_logs},
 		{"name": "test_project_seal_tool_copier_copies_large_files", "func": test_project_seal_tool_copier_copies_large_files},
+		{"name": "test_tool_copier_reports_file_counts_and_progress", "func": test_tool_copier_reports_file_counts_and_progress},
+		{"name": "test_archiver_reports_file_counts_and_progress", "func": test_archiver_reports_file_counts_and_progress},
+		{"name": "test_sealer_forwards_two_phase_progress", "func": test_sealer_forwards_two_phase_progress},
+		{"name": "test_progress_zero_files_edge_case", "func": test_progress_zero_files_edge_case},
 	]
 	
 	for test in tests:
@@ -521,3 +527,168 @@ func test_project_seal_tool_copier_copies_large_files() -> Dictionary:
 		return {"passed": false, "error": "Copied file contents did not match source"}
 
 	return {"passed": true}
+
+## Test: ProjectSealToolCopier reports expected file counts and progress updates from 0 to total_files
+func test_tool_copier_reports_file_counts_and_progress() -> Dictionary:
+	var fixture = _helpers.create_seal_success_fixture("test_copier_prog")
+	if not fixture.success:
+		return {"passed": false, "error": fixture.error}
+
+	# Add extra fixture files in the tool directory to test multi-file progress
+	var tool_dir = fixture.library_tool_root.path_join(fixture.version)
+	var f2 = FileAccess.open(tool_dir.path_join("extra.txt"), FileAccess.WRITE)
+	if f2 != null:
+		f2.store_string("extra-content")
+		f2.close()
+
+	var manifest = StackManifest.load_from_file(fixture.project_dir.path_join("stack.json"))
+	if manifest == null:
+		_helpers.cleanup_seal_fixture(fixture)
+		return {"passed": false, "error": "Failed to load manifest from fixture"}
+
+	var library = LibraryManager.new()
+	var copier = SealToolCopierScript.new()
+
+	var events: Array = []
+	var callback = func(phase: String, current: int, total: int) -> void:
+		events.append({"phase": phase, "current": current, "total": total})
+
+	var result = copier.copy_tools_to_local(fixture.project_dir, manifest, library, callback)
+	_helpers.cleanup_seal_fixture(fixture)
+
+	if not result.success:
+		return {"passed": false, "error": "Tool copy failed: %s" % str(result.errors)}
+
+	if events.is_empty():
+		return {"passed": false, "error": "No progress events recorded"}
+
+	var expected_total: int = events[0].total
+	if expected_total < 3:
+		return {"passed": false, "error": "Expected at least 3 files, got %d" % expected_total}
+
+	if events[0].current != 0:
+		return {"passed": false, "error": "First progress event should report current = 0"}
+
+	if events[0].phase != "Step 1/2: Copying tools":
+		return {"passed": false, "error": "Expected phase 'Step 1/2: Copying tools', got '%s'" % events[0].phase}
+
+	var last_event = events[-1]
+	if last_event.current != expected_total or last_event.total != expected_total:
+		return {"passed": false, "error": "Final progress event should report (%d of %d), got (%d of %d)" % [
+			expected_total, expected_total, last_event.current, last_event.total
+		]}
+
+	for i in range(1, events.size()):
+		if events[i].current < events[i - 1].current:
+			return {"passed": false, "error": "Progress event current file decreased at index %d" % i}
+		if events[i].total != expected_total:
+			return {"passed": false, "error": "Total file count changed during copy progress at index %d" % i}
+
+	return {"passed": true}
+
+## Test: ProjectSealArchiver reports expected file counts and progress updates from 0 to total_files
+func test_archiver_reports_file_counts_and_progress() -> Dictionary:
+	var temp_proj: String = "user://test_archiver_prog_%d" % int(Time.get_ticks_usec())
+	DirAccess.make_dir_recursive_absolute(temp_proj.path_join("sub"))
+
+	var f1 = FileAccess.open(temp_proj.path_join("file1.txt"), FileAccess.WRITE)
+	if f1 != null:
+		f1.store_string("one")
+		f1.close()
+	var f2 = FileAccess.open(temp_proj.path_join("file2.txt"), FileAccess.WRITE)
+	if f2 != null:
+		f2.store_string("two")
+		f2.close()
+	var f3 = FileAccess.open(temp_proj.path_join("sub").path_join("file3.txt"), FileAccess.WRITE)
+	if f3 != null:
+		f3.store_string("three")
+		f3.close()
+
+	var archiver = SealArchiverScript.new()
+	var events: Array = []
+	var callback = func(phase: String, current: int, total: int) -> void:
+		events.append({"phase": phase, "current": current, "total": total})
+
+	var result = archiver.create_sealed_zip(temp_proj, callback)
+
+	if result.success and FileAccess.file_exists(result.zip_path):
+		DirAccess.remove_absolute(result.zip_path)
+	_helpers.remove_directory_recursive(temp_proj)
+
+	if not result.success:
+		return {"passed": false, "error": "Archiver failed: %s" % str(result.errors)}
+
+	if events.size() != 4:
+		return {"passed": false, "error": "Expected 4 progress events (0..3 of 3), got %d" % events.size()}
+
+	if events[0].current != 0 or events[0].total != 3:
+		return {"passed": false, "error": "Expected first event (0 of 3), got (%d of %d)" % [events[0].current, events[0].total]}
+
+	if events[0].phase != "Step 2/2: Creating ZIP archive":
+		return {"passed": false, "error": "Expected phase 'Step 2/2: Creating ZIP archive', got '%s'" % events[0].phase}
+
+	if events[-1].current != 3 or events[-1].total != 3:
+		return {"passed": false, "error": "Expected last event (3 of 3), got (%d of %d)" % [events[-1].current, events[-1].total]}
+
+	return {"passed": true}
+
+## Test: ProjectSealer forwards progress events across both Phase 1 and Phase 2
+func test_sealer_forwards_two_phase_progress() -> Dictionary:
+	var fixture = _helpers.create_seal_success_fixture("test_sealer_two_phase")
+	if not fixture.success:
+		return {"passed": false, "error": fixture.error}
+
+	var sealer = ProjectSealer.new()
+	var events: Array = []
+	var callback = func(phase: String, current: int, total: int) -> void:
+		events.append({"phase": phase, "current": current, "total": total})
+
+	var result = sealer.seal_project(fixture.project_dir, callback)
+
+	if result.success and FileAccess.file_exists(result.sealed_zip):
+		DirAccess.remove_absolute(result.sealed_zip)
+	_helpers.cleanup_seal_fixture(fixture)
+
+	if not result.success:
+		return {"passed": false, "error": "Seal failed: %s" % str(result.errors)}
+
+	var saw_phase1: bool = false
+	var saw_phase2: bool = false
+	for ev in events:
+		if ev.phase == "Step 1/2: Copying tools":
+			saw_phase1 = true
+		elif ev.phase == "Step 2/2: Creating ZIP archive":
+			saw_phase2 = true
+
+	if not saw_phase1:
+		return {"passed": false, "error": "Did not receive progress events for Step 1/2: Copying tools"}
+	if not saw_phase2:
+		return {"passed": false, "error": "Did not receive progress events for Step 2/2: Creating ZIP archive"}
+
+	return {"passed": true}
+
+## Test: Zero-file edge cases report cleanly without division by zero
+func test_progress_zero_files_edge_case() -> Dictionary:
+	var empty_dir: String = "user://test_empty_arch_%d" % int(Time.get_ticks_usec())
+	DirAccess.make_dir_recursive_absolute(empty_dir)
+
+	var archiver = SealArchiverScript.new()
+	var archiver_events: Array = []
+	var arch_cb = func(phase: String, current: int, total: int) -> void:
+		archiver_events.append({"phase": phase, "current": current, "total": total})
+
+	var arch_result = archiver.create_sealed_zip(empty_dir, arch_cb)
+	if arch_result.success and FileAccess.file_exists(arch_result.zip_path):
+		DirAccess.remove_absolute(arch_result.zip_path)
+	_helpers.remove_directory_recursive(empty_dir)
+
+	if archiver_events.is_empty():
+		return {"passed": false, "error": "Archiver should report progress even with 0 files"}
+
+	if archiver_events[0].current != 0 or archiver_events[0].total != 0:
+		return {"passed": false, "error": "Expected archiver 0-file progress (0 of 0), got (%d of %d)" % [
+			archiver_events[0].current, archiver_events[0].total
+		]}
+
+	return {"passed": true}
+
