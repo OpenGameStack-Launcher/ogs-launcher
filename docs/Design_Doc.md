@@ -298,9 +298,22 @@ When the user clicks "Seal for Delivery" on a ready project, `SealController.sea
 *   **Borderless Dialog Chrome and Styled Header:** `SealDialog` is configured with `borderless = true`, unresizable window flags, and empty close theme icons to remove the OS titlebar close button. An internal `HeaderBar` with an 18px `HeaderTitle` ("Seal for Delivery") and horizontal separator provides clean window structure.
 *   **Modal Dismissal Protection:** Intercepts `close_requested` on `SealDialog` to block window dismissal while background worker threads are actively sealing.
 *   **Progress Feedback:** Activates `SealProgressBar` with `indeterminate = true` and updates elapsed time and stage hints every 0.25s while background copying and archive creation run.
-*   **Dynamic Action Button Lifecycle:** Disables Close and hides Cancel during active background sealing to prevent modal dismissal mid-operation; automatically restores and enables Close upon completion (success or error).
+*   **Dynamic Action Button Lifecycle:** During active background sealing, the bottom action button remains enabled with text "Cancel" while the secondary cancel button is hidden, allowing users to safely abort long-running copy or archive jobs. Clicking Cancel immediately disables the button to prevent duplicate triggers, updates the status label to "Cancelling and restoring project state...", and signals the worker thread to abort. Upon completion (success, error, or cancelled rollback), the button transitions back to an enabled "Close" button.
 *   **Typography Hierarchy:** Formats `StatusLabel` as the prominent 18px primary headline with state-driven color modulations (`#F3F4F6` progress off-white, `#22C55E` success green, `#EF4444` failure red), paired with a 14px muted body (`#9CA3AF`) on `OutputLabel`.
 *   **Canonical Tool Display Naming:** Passes tool IDs through `ToolCategoryMapper.get_display_name()` across both the pre-seal confirmation view and completion summaries (e.g., "• Godot v4.7.2", "• Blender v4.2.0") rather than displaying raw lowercase IDs.
+
+### 6.2 Cooperative Thread Cancellation, Filesystem Snapshots, and Atomic Rollback
+To ensure that aborted operations or mid-seal I/O errors never leave a project directory in a dirty or corrupted state, `ProjectSealer` (`scripts/projects/project_sealer.gd`) integrates defensive snapshotting, cooperative thread cancellation, and atomic rollback:
+*   **Pre-Seal Filesystem Snapshot:** Before any disk mutations begin, `_capture_pre_seal_snapshot(project_path)` captures the state of the project directory:
+    *   *Tools Directory:* Checks if `<project_path>/tools` exists and records the exact names of all pre-existing subdirectories and files.
+    *   *Configuration:* Checks if `<project_path>/ogs_config.json` exists and preserves its exact text contents in memory.
+*   **Thread-Safe Cooperative Cancellation:** `ProjectSealer` exposes thread-safe `request_cancel()` and `is_cancelled()` methods protected by `_cancel_mutex`. A cancellation `Callable` is passed through to `ProjectSealToolCopier.copy_tools_to_local()` and `ProjectSealArchiver.create_sealed_zip()`.
+*   **Granular Loop Evaluation:** Cancellation checks evaluate before directory creation, before copying each file, before creating or appending to the ZIP archive, and within the 1 MB chunk read/write buffer loops of both the tool copier and the ZIP archiver. Open `FileAccess` handles and `ZIPPacker` instances are closed immediately upon cancellation, releasing Windows file locks before filesystem cleanup.
+*   **Atomic State Rollback:** When cancellation is requested or when an unrecoverable failure occurs at any stage:
+    *   *Partial Archive Cleanup:* Removes any partial or corrupted `<ProjectName>_Sealed_<Timestamp>.zip` archive created in the parent directory.
+    *   *Tool Directory Rollback:* Removes all `<tool_id>_<version>` subdirectories created during the seal operation while strictly preserving pre-existing tool folders and user files. If `./tools` did not exist prior to sealing, the entire `./tools` directory is deleted.
+    *   *Configuration Reversion:* Restores `ogs_config.json` to its exact pre-seal text, or removes it if it did not exist before sealing.
+    *   *Result Structure:* Returns a clear result dictionary: `{"success": false, "cancelled": true, "errors": ["Seal cancelled by user."]}`.
 
 ---
 
