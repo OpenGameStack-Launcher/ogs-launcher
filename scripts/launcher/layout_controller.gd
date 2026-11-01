@@ -185,7 +185,7 @@ func update_connectivity_status(is_online: bool) -> void:
 
 ## Updates the launcher version label in the sidebar footer.
 ## Parameters:
-## version_str (String): Formatted version string (e.g. "v0.1.0")
+## version_str (String): Formatted version string (e.g. "v0.2.0")
 func update_version(version_str: String) -> void:
 	if _version_label == null or not is_instance_valid(_version_label):
 		return

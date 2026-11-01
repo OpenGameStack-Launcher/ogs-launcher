@@ -459,7 +459,7 @@ func _ready() -> void:
 		page_projects, page_tools, page_settings,
 		sidebar_status_label, sidebar_version_label
 	)
-	var app_ver: String = String(ProjectSettings.get_setting("application/config/version", "0.1.0"))
+	var app_ver: String = String(ProjectSettings.get_setting("application/config/version", "0.2.0"))
 	var formatted_ver: String = "v%s" % app_ver if not app_ver.begins_with("v") else app_ver
 	layout_controller.update_version(formatted_ver)
 	_update_sidebar_connectivity_status(false)

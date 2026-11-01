@@ -233,7 +233,8 @@ func _test_sidebar_footer(results: Dictionary) -> void:
 	_expect(status_label != null, "SidebarStatusLabel should exist", results)
 	_expect(version_label != null, "SidebarVersionLabel should exist", results)
 	if version_label != null:
-		_expect(version_label.text.contains("0.1.0"), "SidebarVersionLabel should display launcher version", results)
+		var expected_ver: String = String(ProjectSettings.get_setting("application/config/version", "0.2.0"))
+		_expect(version_label.text == "v%s" % expected_ver, "SidebarVersionLabel should display launcher version v%s" % expected_ver, results)
 
 	instance.free()
 

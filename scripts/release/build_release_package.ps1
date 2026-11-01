@@ -1,6 +1,6 @@
 [CmdletBinding()]
 param(
-    [string]$Version = "0.1.6",
+    [string]$Version = "0.2.0",
     [string]$GodotPath,
     [string]$RcEditPath,
     [string]$CompanyName = "Open Game Stack",
@@ -93,7 +93,7 @@ function Convert-ToWindowsVersion {
     Converts a semantic-like version label into Windows file version format.
     .DESCRIPTION
     Windows file metadata expects 4 numeric parts. This function extracts up to
-    the first 4 numeric components from labels such as 0.1.6 and pads
+    the first 4 numeric components from labels such as 0.2.0 and pads
     missing parts with zeros.
     #>
     param([string]$VersionLabel)

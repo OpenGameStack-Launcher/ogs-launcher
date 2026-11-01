@@ -196,7 +196,7 @@ text = "● Offline"
 layout_mode = 2
 theme_override_colors/font_color = Color(0.55, 0.6, 0.7, 1)
 theme_override_font_sizes/font_size = 11
-text = "v0.1.0"
+text = "v0.2.0"
 
 [node name="Content" type="MarginContainer" parent="AppLayout" unique_id=782060099]
 layout_mode = 2

@@ -16,6 +16,7 @@ func run() -> Dictionary:
 	_test_logo_icon_asset(results)
 	_test_documentation_contract(results)
 	_test_ci_and_release_workflows(results)
+	_test_launcher_version_sync(results)
 	
 	return results
 
@@ -160,6 +161,21 @@ func _test_ci_and_release_workflows(results: Dictionary) -> void:
 			_expect(rel_content.contains(".zip.sha256"), "release.yml must attach and verify .sha256 checksum", results)
 		else:
 			_expect(false, "Failed to open release.yml for reading", results)
+
+## Test 7: Verifies ProjectSettings application/config/version, main.tscn, and build_release_package.ps1 default version match.
+func _test_launcher_version_sync(results: Dictionary) -> void:
+	var config_ver: String = String(ProjectSettings.get_setting("application/config/version", ""))
+	var semver_regex: RegEx = RegEx.new()
+	semver_regex.compile("^[0-9]+\\.[0-9]+\\.[0-9]+$")
+	_expect(semver_regex.search(config_ver) != null, "ProjectSettings application/config/version ('%s') must follow strict X.Y.Z semver" % config_ver, results)
+	
+	var script_file: FileAccess = FileAccess.open("res://scripts/release/build_release_package.ps1", FileAccess.READ)
+	if script_file != null:
+		var script_content: String = script_file.get_as_text()
+		script_file.close()
+		_expect(script_content.contains("[string]$Version = \"%s\"" % config_ver), "build_release_package.ps1 default $Version must match ProjectSettings version '%s'" % config_ver, results)
+	else:
+		_expect(false, "Failed to open build_release_package.ps1 for version sync check", results)
 
 ## Helper to record test results.
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
