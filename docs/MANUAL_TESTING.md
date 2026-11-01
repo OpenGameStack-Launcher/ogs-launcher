@@ -146,6 +146,43 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 1.1: Application Startup Tools Discovery and Connectivity Verification
+
+**Objective:** Verify that launching OGS Launcher with an active internet connection immediately updates the sidebar connectivity indicator to "● Online" on the initial Projects page, and verify that launching offline retains "● Offline" while still discovering all locally installed tools on the Tools page.
+
+**Scenario A: Online Startup Verification**
+1. Ensure the workstation has active internet connectivity.
+2. Launch OGS Launcher (run `main.tscn` or execute launcher binary).
+3. Observe the bottom-left sidebar status indicator (`SidebarStatusLabel`) on the initial Projects page without clicking anything.
+4. Verify that the indicator updates to **"● Online"** in green accent text upon background connectivity verification.
+5. Click **"Tools"** in the sidebar.
+6. Verify that the Tools page displays immediately with populated tab badges (e.g. `Installed (X)` and `Download (Y)`) without triggering duplicate network requests or stalling the UI.
+
+**Scenario B: Offline Startup Verification**
+1. Disconnect network connectivity (or simulate offline mode).
+2. Launch OGS Launcher.
+3. Observe the bottom-left sidebar status indicator (`SidebarStatusLabel`) on the initial Projects page.
+4. Verify that the indicator displays **"● Offline"** in amber text.
+5. Click **"Tools"** in the sidebar.
+6. Verify that the **Installed** tab immediately lists all locally installed tools found in the Central Library (`%LOCALAPPDATA%\OGS\Library`).
+
+**Expected Results:**
+- [x] Connected startup displays "● Online" in green on the default Projects page without requiring navigation.
+- [x] Navigating to Tools page reuses preloaded catalog data smoothly without redundant network fetches.
+- [x] Offline startup displays "● Offline" and populates locally installed tools from disk into categorized buckets on the Installed tab.
+- [x] Application exit cleans up in-flight HTTP requests without crashes or memory leaks.
+
+**Pass Criteria:**
+- Startup connectivity check is non-blocking and accurate.
+- Local tools are scanned and visible even in offline mode.
+
+**If test fails:**
+- Verify `main.gd._ready()` calls `tools_controller.check_connectivity.call_deferred()` and `tools_controller.refresh_tool_list.call_deferred()`.
+- Verify `ToolsController._scan_installed_tools()` runs in `_init()`.
+- Check Godot Output panel for network request or parsing errors.
+
+---
+
 ### Editor Test 2: Projects Page - Add sample_project (Development)
 
 **Objective:** Verify that adding a development project to the Project Library shows missing tools with visual indicators and click-through navigation.

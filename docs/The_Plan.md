@@ -280,6 +280,14 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Enforced uniform minimum width of 195px (`custom_minimum_size = Vector2(195, 0)`) on `ProjectsRootLabel`, `MirrorRootLabel`, and `MirrorRepoLabel` for uniform horizontal alignment of all text inputs
     *   [x] Enabled clear buttons (`clear_button_enabled = true`) across `ProjectsRootPath`, `MirrorRootPath`, and `MirrorRepoPath` LineEdit controls
     *   [x] Updated tests in `tests/main_scene_tests.gd`, `tests/startup_tests.gd`, and registered `settings_controller.gd` in `tests/test_runner.gd` (2027 tests passing across 38 test suites with zero failures)
+*   [x] Application Startup Tools Catalog Discovery and Connectivity Checking (Issue #169) - 100% Complete ✅
+    *   [x] Initiated non-blocking tools catalog discovery (`refresh_tool_list()`) and network connectivity check (`check_connectivity()`) asynchronously at startup via `call_deferred()` in `main.gd._ready()`
+    *   [x] Dynamic sidebar status indicator immediately displays "● Online" while on the default Projects page upon successful connectivity verification
+    *   [x] Scanned local library tools during `ToolsController._init()` and during refresh failure fallback in `_finalize_refresh(false)`
+    *   [x] Updated `ToolsController.get_categorized_tools()` to merge locally installed tools into mapped categories with `installed = true` when remote catalog is unavailable or offline
+    *   [x] Guarded `layout_controller.page_changed` for "tools" to prevent redundant network fetches when catalog data is already present
+    *   [x] Implemented in-flight `HTTPRequest` tracking and clean disposal via `ToolsController.cleanup()` during application exit and destruction
+    *   [x] Comprehensive unit and scene tests in `tests/tools_controller_tests.gd` and `tests/main_scene_tests.gd` (2232 tests passing across 38 test suites with zero failures)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:
@@ -371,7 +379,15 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   Uniform 20x20 tool icon rendering with asset mapping from res://Images/tools/ and case-insensitive fallback
     *   Explicit status labels (✓ Installed, ⚠️ Missing (Available in Tools), ❌ Unavailable in Repository) and detailed status tooltips
     *   Comprehensive test coverage in projects_page_indicators_tests.gd and projects_controller_scene_tests.gd (1836 tests passing across 38 test suites)
-*   **Test Suite:** 2190 tests passing across 38 test suites (~3-5 sec execution), comprehensive coverage across all components
+*   **Startup Tools Catalog Discovery & Connectivity Check (Phase 2.5):** Complete Nov 1, 2026
+    *   Initiated non-blocking tools catalog discovery (`refresh_tool_list()`) and network connectivity check (`check_connectivity()`) asynchronously at startup via `call_deferred()` in `main.gd._ready()`
+    *   Dynamic sidebar status indicator immediately displays "● Online" on Projects page upon launch
+    *   Scanned local library tools during `ToolsController._init()` and during refresh failure fallback in `_finalize_refresh(false)`
+    *   Updated `ToolsController.get_categorized_tools()` to merge locally installed tools into mapped categories with `installed = true` when remote catalog is unavailable or offline
+    *   Preserved catalog state across navigation, preventing redundant network requests
+    *   Active `HTTPRequest` node tracking and disposal via `ToolsController.cleanup()` on application close and exit
+    *   Comprehensive unit and scene tests in `tests/tools_controller_tests.gd` and `tests/main_scene_tests.gd` (2232 tests passing across 38 test suites with zero failures)
+*   **Test Suite:** 2232 tests passing across 38 test suites (~3-5 sec execution), comprehensive coverage across all components
     *   ToolsController unit tests: download tracking, duplicate suppression, repository validation
     *   Tools page scene tests: node existence, status updates, button state management
     *   ProgressController unit tests: inline tracking, phase transitions, signal emission

@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (31 total, 38 suites across all categories):**
+**Current unit test suites (31 total, 38 suites across all categories, 2232 passing tests):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -247,13 +247,18 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Fallback mappings for `git` -> `Code` and `vscodium` -> `Code`
   - Canonical tool display name formatting via `get_display_name()` (e.g., "Git", "VSCodium", "GIMP")
 
-- **[tests/tools_controller_tests.gd](tests/tools_controller_tests.gd)** - Validates Tools page controller tracking and categorization.
+- **[tests/tools_controller_tests.gd](tests/tools_controller_tests.gd)** - Validates Tools page controller tracking, offline scanning, and categorization.
   - Download tracking state (active/inactive)
   - Missing tool download rejection
   - Duplicate download suppression
   - Repository data availability flag
   - Tool categorization for "Code" category tools
   - Defensive dynamic bucket creation for unknown or future categories
+  - Library scanning on initialization (`_init`) and failure fallback (`_finalize_refresh(false)`)
+  - Offline tool categorization merging locally installed tools when remote catalog is unavailable
+  - Tool deduplication and installed flag preservation when present in both catalog and local library
+  - Lifecycle cleanup and cancellation of active in-flight `HTTPRequest` nodes
+  - Successful repository fetch updating `_is_online = true` and emitting `connectivity_checked` signal
 
 - **[tests/onboarding_wizard_tests.gd](tests/onboarding_wizard_tests.gd)** - Validates first-run detection behavior, dialog layout, and brand visuals for onboarding wizard.
   - Returns false when library has visible entries
@@ -457,6 +462,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Form label uniform minimum widths: `ProjectsRootLabel`, `MirrorRootLabel`, and `MirrorRepoLabel` verified with `custom_minimum_size.x >= 195.0` to eliminate ragged offsets and ensure aligned inputs
   - Clear buttons enabled (`clear_button_enabled = true`) across `ProjectsRootPath`, `MirrorRootPath`, and `MirrorRepoPath` LineEdit controls
   - Network UI offline state test updated to verify `MirrorRepoClearButton` (and `AddRemoteProjectButton`) disabled state and descriptive tooltip when offline mode is active
+  - Startup tools catalog and connectivity lifecycle (`_test_startup_tools_and_connectivity_lifecycle`): verifies initiating connectivity check and tool refresh at startup, immediate sidebar status update to "● Online" on Projects page without requiring navigation, catalog data preservation on page change, and safe disposal of in-flight `HTTPRequest` nodes on application close
 
 - **[tests/tools_page_scene_tests.gd](tests/tools_page_scene_tests.gd)** - Scene tests for Tools page UI.
   - Tools/Download tab nodes exist
