@@ -46,6 +46,7 @@ func run() -> Dictionary:
 		{"name": "test_seal_project_cancel_during_archiving", "func": test_seal_project_cancel_during_archiving},
 		{"name": "test_seal_project_failure_triggers_complete_rollback", "func": test_seal_project_failure_triggers_complete_rollback},
 		{"name": "test_seal_project_preserves_pre_existing_tools_and_config", "func": test_seal_project_preserves_pre_existing_tools_and_config},
+		{"name": "test_seal_project_rollback_preserves_developer_tools_directory", "func": test_seal_project_rollback_preserves_developer_tools_directory},
 	]
 	
 	for test in tests:
@@ -233,7 +234,7 @@ func test_seal_project_success_with_valid_project() -> Dictionary:
 		return {"passed": false, "error": "Cannot write test ogs_stack.json"}
 	
 	# Create a valid ogs_stack.json (but godot 4.3 may not exist in library, so seal will fail)
-	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "godot", "version": "4.3", "path": "tools/godot"}]}')
+	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "godot", "version": "4.3", "path": "ogs_tools/godot"}]}')
 	
 	var sealer = ProjectSealer.new()
 	var result = sealer.seal_project(temp_dir)
@@ -270,7 +271,7 @@ func test_seal_project_creates_ogs_config() -> Dictionary:
 		return {"passed": false, "error": "Cannot write test ogs_stack.json"}
 	
 	# Use a valid manifest structure
-	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "test_tool", "version": "1.0", "path": "tools/test"}]}')
+	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "test_tool", "version": "1.0", "path": "ogs_tools/test"}]}')
 	
 	var sealer = ProjectSealer.new()
 	var result = sealer.seal_project(temp_dir)
@@ -301,7 +302,7 @@ func test_seal_project_returns_tools_copied() -> Dictionary:
 		DirAccess.remove_absolute(temp_dir)
 		return {"passed": false, "error": "Cannot write test ogs_stack.json"}
 	
-	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "godot", "version": "4.3", "path": "tools/godot"}]}')
+	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "godot", "version": "4.3", "path": "ogs_tools/godot"}]}')
 	
 	var sealer = ProjectSealer.new()
 	var result = sealer.seal_project(temp_dir)
@@ -331,7 +332,7 @@ func test_seal_project_returns_zip_path() -> Dictionary:
 		DirAccess.remove_absolute(temp_dir)
 		return {"passed": false, "error": "Cannot write test ogs_stack.json"}
 	
-	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "godot", "version": "4.3", "path": "tools/godot"}]}')
+	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "godot", "version": "4.3", "path": "ogs_tools/godot"}]}')
 	
 	var sealer = ProjectSealer.new()
 	var result = sealer.seal_project(temp_dir)
@@ -363,7 +364,7 @@ func test_seal_project_trims_path_slash() -> Dictionary:
 		return {"passed": false, "error": "Cannot write test ogs_stack.json"}
 	
 	# Use a tool that likely doesn't exist so seal fails, but we just test path handling
-	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "nonexistent_tool_xyz", "version": "1.0", "path": "tools/test"}]}')
+	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "nonexistent_tool_xyz", "version": "1.0", "path": "ogs_tools/test"}]}')
 	
 	var sealer = ProjectSealer.new()
 	# Call with trailing slash - path should still be normalized
@@ -433,7 +434,7 @@ func test_sealed_zip_contains_expected_files() -> Dictionary:
 	if not zip_files.has("ogs_config.json"):
 		return {"passed": false, "error": "Zip missing ogs_config.json"}
 
-	var expected_prefix = "tools/%s_%s/" % [fixture.tool_id, fixture.version]
+	var expected_prefix = "ogs_tools/%s_%s/" % [fixture.tool_id, fixture.version]
 	var has_tool_file = false
 	for zip_path in zip_files:
 		if String(zip_path).begins_with(expected_prefix):
@@ -702,14 +703,14 @@ class MockFailingArchiver:
 	func create_sealed_zip(_path: String, _progress: Callable = Callable(), _cancel: Callable = Callable()) -> Dictionary:
 		return {"success": false, "cancelled": false, "errors": ["Mock zip write error"]}
 
-## Test: Cancelling during Step 1 (tool copy) aborts copying promptly and cleans up newly copied directories under ./tools/ without affecting pre-existing files
+## Test: Cancelling during Step 1 (tool copy) aborts copying promptly and cleans up newly copied directories under ./ogs_tools/ without affecting pre-existing files
 func test_seal_project_cancel_during_tool_copy() -> Dictionary:
 	var fixture = _helpers.create_seal_success_fixture("test_cancel_step1")
 	if not fixture.success:
 		return {"passed": false, "error": fixture.error}
 
-	# Pre-create a custom tool folder in ./tools/
-	var pre_tools_dir = fixture.project_dir.path_join("tools")
+	# Pre-create a custom tool folder in ./ogs_tools/
+	var pre_tools_dir = fixture.project_dir.path_join("ogs_tools")
 	var custom_dir = pre_tools_dir.path_join("custom_preexisting_tool")
 	DirAccess.make_dir_recursive_absolute(custom_dir)
 	var custom_file = FileAccess.open(custom_dir.path_join("notes.txt"), FileAccess.WRITE)
@@ -798,9 +799,9 @@ func test_seal_project_cancel_during_archiving() -> Dictionary:
 				failed_msg = "ogs_config.json was not restored to pre-seal contents: got '%s'" % restored_text
 
 	# Verify newly copied tools were cleaned up
-	var tools_dir = fixture.project_dir.path_join("tools")
+	var tools_dir = fixture.project_dir.path_join("ogs_tools")
 	if failed_msg.is_empty() and DirAccess.dir_exists_absolute(tools_dir):
-		failed_msg = "tools directory was not cleaned up during Step 2 rollback"
+		failed_msg = "ogs_tools directory was not cleaned up during Step 2 rollback"
 
 	# Verify partial zip was removed
 	if failed_msg.is_empty() and not String(result.get("sealed_zip", "")).is_empty():
@@ -831,8 +832,8 @@ func test_seal_project_failure_triggers_complete_rollback() -> Dictionary:
 		failed_msg = "Expected seal_project to fail with mock archiver"
 	elif result.get("cancelled", false):
 		failed_msg = "Expected result.cancelled to be false on mid-seal error"
-	elif DirAccess.dir_exists_absolute(fixture.project_dir.path_join("tools")):
-		failed_msg = "tools directory was not cleaned up after mid-seal failure"
+	elif DirAccess.dir_exists_absolute(fixture.project_dir.path_join("ogs_tools")):
+		failed_msg = "ogs_tools directory was not cleaned up after mid-seal failure"
 	elif FileAccess.file_exists(fixture.project_dir.path_join("ogs_config.json")):
 		failed_msg = "ogs_config.json was not cleaned up after mid-seal failure"
 
@@ -849,8 +850,8 @@ func test_seal_project_preserves_pre_existing_tools_and_config() -> Dictionary:
 	if not fixture.success:
 		return {"passed": false, "error": fixture.error}
 
-	# Pre-create tools directory and ogs_config.json
-	var tools_dir = fixture.project_dir.path_join("tools")
+	# Pre-create ogs_tools directory and ogs_config.json
+	var tools_dir = fixture.project_dir.path_join("ogs_tools")
 	var existing_subdir = tools_dir.path_join("existing_tool")
 	DirAccess.make_dir_recursive_absolute(existing_subdir)
 	var f = FileAccess.open(existing_subdir.path_join("keep.txt"), FileAccess.WRITE)
@@ -886,6 +887,61 @@ func test_seal_project_preserves_pre_existing_tools_and_config() -> Dictionary:
 			read_cfg.close()
 			if cfg_text != initial_config:
 				failed_msg = "ogs_config.json content changed: expected '%s', got '%s'" % [initial_config, cfg_text]
+
+	_helpers.cleanup_seal_fixture(fixture)
+
+	if not failed_msg.is_empty():
+		return {"passed": false, "error": failed_msg}
+
+	return {"passed": true}
+
+## Test: Developer-authored tools/ directory with custom files is completely preserved and untouched when sealing is rolled back
+func test_seal_project_rollback_preserves_developer_tools_directory() -> Dictionary:
+	var fixture = _helpers.create_seal_success_fixture("test_preserve_dev_tools")
+	if not fixture.success:
+		return {"passed": false, "error": fixture.error}
+
+	# Pre-create a developer-authored <project_dir>/tools/ folder with custom scripts
+	var dev_tools_dir = fixture.project_dir.path_join("tools")
+	DirAccess.make_dir_recursive_absolute(dev_tools_dir)
+	var build_script_path = dev_tools_dir.path_join("build_helper.py")
+	var f = FileAccess.open(build_script_path, FileAccess.WRITE)
+	if f != null:
+		f.store_string("print('developer build automation')")
+		f.close()
+
+	var cancel_state := {"requested": false}
+	var cancel_cb = func() -> bool:
+		return cancel_state["requested"]
+
+	var sealer = ProjectSealer.new()
+	var progress_cb = func(phase: String, current: int, _total: int) -> void:
+		if phase.contains("Step 1") and current >= 0:
+			cancel_state["requested"] = true
+			sealer.request_cancel()
+
+	var result = sealer.seal_project(fixture.project_dir, progress_cb, cancel_cb)
+
+	var failed_msg: String = ""
+	if result.success:
+		failed_msg = "Expected seal_project to be cancelled"
+	elif not result.get("cancelled", false):
+		failed_msg = "Expected result.cancelled to be true"
+	elif not DirAccess.dir_exists_absolute(dev_tools_dir):
+		failed_msg = "Developer tools/ directory was deleted during rollback!"
+	elif not FileAccess.file_exists(build_script_path):
+		failed_msg = "Developer build_helper.py was deleted during rollback!"
+	else:
+		var script_file = FileAccess.open(build_script_path, FileAccess.READ)
+		if script_file == null or script_file.get_as_text() != "print('developer build automation')":
+			failed_msg = "Developer build_helper.py content was corrupted during rollback!"
+		if script_file != null:
+			script_file.close()
+
+	# Also verify ogs_tools was removed or cleaned up
+	var ogs_tools_dir = fixture.project_dir.path_join("ogs_tools")
+	if failed_msg.is_empty() and DirAccess.dir_exists_absolute(ogs_tools_dir):
+		failed_msg = "ogs_tools directory was not cleaned up during rollback"
 
 	_helpers.cleanup_seal_fixture(fixture)
 

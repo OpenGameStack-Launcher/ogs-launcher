@@ -227,7 +227,7 @@ static func _find_first_project_godot(directory: String, max_depth: int, depth: 
 	dir.list_dir_begin()
 	var entry = dir.get_next()
 	while entry != "":
-		if dir.current_is_dir() and not entry.begins_with(".") and entry != "tools":
+		if dir.current_is_dir() and not entry.begins_with(".") and entry != "ogs_tools":
 			var nested_result = _find_first_project_godot(directory.path_join(entry), max_depth, depth + 1)
 			if not nested_result.is_empty():
 				dir.list_dir_end()

@@ -118,7 +118,7 @@ func _populate_dir(dir_path: String, parent_item: TreeItem) -> void:
 	var launchable_files: Array[String] = []
 	
 	while not file_name.is_empty():
-		if not file_name.begins_with("."):
+		if not file_name.begins_with(".") and file_name != "ogs_tools":
 			if dir.current_is_dir():
 				var full_sub_path: String = dir_path.path_join(file_name)
 				if _has_relevant_content(full_sub_path):
@@ -160,6 +160,8 @@ func _populate_dir(dir_path: String, parent_item: TreeItem) -> void:
 ## Checks whether a directory or any of its non-dot-prefixed descendants
 ## contains at least one launchable file or at least one direct tool folder.
 func _has_relevant_content(dir_path: String) -> bool:
+	if dir_path.get_file() == "ogs_tools":
+		return false
 	if _is_direct_tool_folder(dir_path):
 		return true
 		
@@ -172,7 +174,7 @@ func _has_relevant_content(dir_path: String) -> bool:
 	var sub_dirs: Array[String] = []
 	
 	while not file_name.is_empty():
-		if not file_name.begins_with("."):
+		if not file_name.begins_with(".") and file_name != "ogs_tools":
 			if dir.current_is_dir():
 				sub_dirs.append(dir_path.path_join(file_name))
 			else:

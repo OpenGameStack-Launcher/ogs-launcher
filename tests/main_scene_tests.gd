@@ -572,6 +572,9 @@ func _test_checkbutton_styling(results: Dictionary) -> void:
 	var force_offline_helper: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ForceOfflineContainer/ProjectForceOfflineHelperLabel") as Label
 	_expect(offline_mode_helper != null, "ProjectOfflineModeHelperLabel should exist under Project Details", results)
 	_expect(force_offline_helper != null, "ProjectForceOfflineHelperLabel should exist under Project Details", results)
+	if force_offline_helper != null:
+		_expect(force_offline_helper.text.contains("ogs_tools/"), "ProjectForceOfflineHelperLabel should reference ogs_tools/", results)
+		_expect(not force_offline_helper.text.contains("local tools/"), "ProjectForceOfflineHelperLabel should not reference local tools/", results)
 
 	instance.free()
 

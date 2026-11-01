@@ -1,4 +1,4 @@
-## ProjectSealToolCopier: Copies required tools into local project tools folder.
+## ProjectSealToolCopier: Copies required tools into local project ogs_tools folder.
 ##
 ## Implements recursive directory copy operations used during the
 ## "Seal for Delivery" workflow.
@@ -9,7 +9,7 @@ class_name ProjectSealToolCopier
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 const _COPY_CHUNK_SIZE := 1_048_576  # 1 MB
 
-## Copies all manifest tools from central library to project ./tools.
+## Copies all manifest tools from central library to project ./ogs_tools.
 ## Parameters:
 ## project_path (String): Absolute project path
 ## manifest (StackManifest): Parsed and validated stack manifest
@@ -25,7 +25,7 @@ func copy_tools_to_local(
 	progress_callback: Callable = Callable(),
 	cancel_check: Callable = Callable()
 ) -> Dictionary:
-	## Copies all required tools from library into the project-local tools folder.
+	## Copies all required tools from library into the project-local ogs_tools folder.
 	var result = {
 		"success": false,
 		"cancelled": false,
@@ -38,16 +38,16 @@ func copy_tools_to_local(
 		result.errors.append("Seal cancelled by user.")
 		return result
 
-	var tools_dir = project_path.path_join("tools")
+	var tools_dir = project_path.path_join("ogs_tools")
 	if not DirAccess.dir_exists_absolute(tools_dir):
 		var dir = DirAccess.open(project_path)
 		if dir == null:
 			result.errors.append("Cannot open project directory for writing: %s" % project_path)
 			return result
 
-		var make_err = dir.make_dir("tools")
+		var make_err = dir.make_dir("ogs_tools")
 		if make_err != OK:
-			result.errors.append("Failed to create ./tools directory: %s" % error_string(make_err))
+			result.errors.append("Failed to create ./ogs_tools directory: %s" % error_string(make_err))
 			return result
 
 	# Pre-count total files across all tools before copying starts

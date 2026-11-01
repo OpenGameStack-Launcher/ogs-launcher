@@ -26,7 +26,7 @@ const TOOL_TO_EXTENSION := {
 }
 
 const VSCODIUM_EXTENSIONS: Array[String] = [
-	"gd", "cs", "gdshader", "shader", "txt", "md", "csv", "json", "yaml", "yml", "toml"
+	"gd", "cs", "gdshader", "shader", "txt", "md", "csv", "json", "yaml", "yml", "toml", "py"
 ]
 
 const EXCLUDED_FILENAMES: Array[String] = [

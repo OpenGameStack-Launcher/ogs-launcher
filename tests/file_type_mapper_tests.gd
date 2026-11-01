@@ -27,7 +27,7 @@ func _expect(condition: bool, message: String, results: Dictionary) -> void:
 
 func _test_vscodium_supported_extensions(results: Dictionary) -> void:
 	var expected_exts: Array[String] = [
-		"gd", "cs", "gdshader", "shader", "txt", "md", "csv", "json", "yaml", "yml", "toml"
+		"gd", "cs", "gdshader", "shader", "txt", "md", "csv", "json", "yaml", "yml", "toml", "py"
 	]
 	for ext: String in expected_exts:
 		_expect(FileTypeMapperScript.is_vscodium_extension(ext), "ext '%s' should be recognized as vscodium extension" % ext, results)

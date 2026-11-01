@@ -48,6 +48,7 @@ func _run_tests_async() -> void:
 	load("res://scripts/projects/custom_item_list.gd")
 	load("res://scripts/projects/project_environment_validator.gd")
 	load("res://scripts/projects/project_sealer.gd")
+	load("res://scripts/projects/project_seal_tool_copier.gd")
 	load("res://scripts/projects/project_tool_manager.gd")
 	load("res://scripts/launcher/layout_controller.gd")
 	load("res://scripts/launcher/tool_launcher.gd")

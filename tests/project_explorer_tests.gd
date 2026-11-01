@@ -32,6 +32,7 @@ func run() -> Dictionary:
 	_test_vscodium_files_pruned_when_not_in_stack(results)
 	_test_double_click_file_activated_signal(results)
 	_test_load_project_reads_ogs_stack_json_when_tools_omitted(results)
+	_test_ogs_tools_directory_excluded_and_developer_tools_displayed(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -567,7 +568,7 @@ func _test_vscodium_files_displayed_and_emit_selection(results: Dictionary) -> v
 	## When vscodium is in the stack, all mapped extensions appear, show the icon, and emit "vscodium" on selection.
 	var proj: String = _create_test_dir("vscodium_files")
 	var exts: Array[String] = [
-		"gd", "cs", "gdshader", "shader", "txt", "md", "csv", "json", "yaml", "yml", "toml"
+		"gd", "cs", "gdshader", "shader", "txt", "md", "csv", "json", "yaml", "yml", "toml", "py"
 	]
 	for ext: String in exts:
 		_create_file(proj.path_join("src/sample.%s" % ext), "content")
@@ -767,3 +768,46 @@ func _test_load_project_reads_ogs_stack_json_when_tools_omitted(results: Diction
 
 	tree.free()
 	_cleanup_dir_recursive(proj)
+
+func _test_ogs_tools_directory_excluded_and_developer_tools_displayed(results: Dictionary) -> void:
+	## Verifies that <project_dir>/ogs_tools/ is pruned from the tree even with internal scripts/binaries,
+	## while a developer-authored <project_dir>/tools/ folder with custom scripts (e.g. tools/script.py)
+	## is displayed when VSCodium is in the stack.
+	var proj: String = _create_test_dir("ogs_tools_vs_tools")
+
+	# 1. Embedded OGS tool binaries and internal scripts inside ogs_tools/
+	_create_file(proj.path_join("ogs_tools/godot_4.7.2/godot.exe"), "dummy exe")
+	_create_file(proj.path_join("ogs_tools/godot_4.7.2/internal_script.py"), "python")
+	_create_file(proj.path_join("ogs_tools/godot_4.7.2/notes.txt"), "text")
+	_create_file(proj.path_join("ogs_tools/blender_4.5.7/blender.exe"), "dummy exe")
+
+	# 2. Developer-authored scripts in tools/
+	_create_file(proj.path_join("tools/script.py"), "print('user pipeline script')")
+	_create_file(proj.path_join("tools/build_helper.sh"), "#!/bin/bash")
+
+	# 3. Main Godot project file
+	_create_file(proj.path_join("game/project.godot"), "; godot project")
+
+	var tree: Tree = Tree.new()
+	var explorer = ProjectExplorerScript.new(tree)
+	var active_tools: Array[String] = ["godot", "vscodium"]
+	explorer.load_project(proj, active_tools)
+
+	var root: TreeItem = tree.get_root()
+	_expect(root != null, "root should exist", results)
+	if root != null:
+		var texts: Array[String] = _collect_item_texts(root)
+		# ogs_tools must be completely pruned
+		_expect(not texts.has("ogs_tools"), "ogs_tools directory must be pruned from tree", results)
+		_expect(not texts.has("godot_4.7.2"), "subdirs inside ogs_tools must not appear", results)
+		_expect(not texts.has("internal_script.py"), "files inside ogs_tools must not appear", results)
+		_expect(not texts.has("blender_4.5.7"), "tools inside ogs_tools must not appear", results)
+
+		# developer-authored tools/ must appear because it contains script.py and vscodium is in stack
+		_expect(texts.has("tools"), "developer tools/ folder must be displayed in tree", results)
+		_expect(texts.has("script.py"), "developer tools/script.py must be displayed in tree", results)
+		_expect(texts.has("project.godot"), "project.godot must be displayed in tree", results)
+
+	tree.free()
+	_cleanup_dir_recursive(proj)
+
