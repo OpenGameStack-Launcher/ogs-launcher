@@ -71,21 +71,22 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var projects_status_bar = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar"
 @onready var lbl_project_status = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel"
 @onready var lbl_offline_status = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel"
-@onready var toolchain_header_label: Label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel"
-@onready var project_tools_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ProjectToolsList"
-@onready var lbl_tools_list_title = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel"
-@onready var project_explorer_tree = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ProjectExplorerTree"
-@onready var new_folder_btn = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/NewFolderBtn"
-@onready var new_file_btn = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/NewFileBtn"
+@onready var toolchain_header_label: Label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolchainHeaderLabel"
+@onready var project_tools_list = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ProjectToolsList"
+@onready var lbl_tools_list_title = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar/ExplorerLabel"
+@onready var project_explorer_tree = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ProjectExplorerTree"
+@onready var new_folder_btn = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar/NewFolderBtn"
+@onready var new_file_btn = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar/NewFileBtn"
 @onready var new_file_dialog = $NewFileDialog
 @onready var new_file_name_line_edit = $NewFileDialog/VBoxContainer/FileNameLineEdit
-@onready var btn_add_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/AddToolButton"
-@onready var btn_remove_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/RemoveToolButton"
-@onready var btn_change_version = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/ChangeVersionButton"
-@onready var btn_launch_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow/LaunchButton"
+@onready var btn_add_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolActionRow/AddToolButton"
+@onready var btn_remove_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolActionRow/RemoveToolButton"
+@onready var btn_change_version = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolActionRow/ChangeVersionButton"
+@onready var btn_launch_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/LaunchButton"
+@onready var btn_explorer_launch_tool = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerLaunchButton"
 @onready var btn_open_project = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/OpenProjectButton"
 @onready var btn_remove_project = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/RemoveButton"
-@onready var btn_seal_for_delivery = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow/SealButton"
+@onready var btn_seal_for_delivery = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/SealButton"
 @onready var project_dir_dialog = $ProjectDirDialog
 @onready var remove_project_dialog = $RemoveProjectDialog
 @onready var remove_tool_dialog = $RemoveToolDialog
@@ -117,13 +118,14 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 @onready var mirror_repo_path = ($AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer/MirrorRepoPath if has_node("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer/MirrorRepoPath") else find_child("MirrorRepoPath", true, false)) as LineEdit
 @onready var mirror_repo_clear_button = ($AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer/MirrorRepoClearButton if has_node("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorRepoContainer/MirrorRepoClearButton") else find_child("MirrorRepoClearButton", true, false)) as Button
 @onready var mirror_status_label = ($AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorStatusLabel if has_node("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorStatusLabel") else find_child("MirrorStatusLabel", true, false)) as Label
-@onready var project_offline_section = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection"
-@onready var project_offline_settings_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel"
-@onready var project_offline_status_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel"
-@onready var project_offline_mode_check_button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeCheckButton"
-@onready var project_offline_mode_helper_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeHelperLabel"
-@onready var project_force_offline_check_button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineCheckButton"
-@onready var project_force_offline_helper_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineHelperLabel"
+@onready var project_details_tabs = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs"
+@onready var project_offline_section = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy"
+@onready var project_offline_settings_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ProjectOfflineSettingsLabel"
+@onready var project_offline_status_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ProjectOfflineStatusLabel"
+@onready var project_offline_mode_check_button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/OfflineModeContainer/ProjectOfflineModeCheckButton"
+@onready var project_offline_mode_helper_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/OfflineModeContainer/ProjectOfflineModeHelperLabel"
+@onready var project_force_offline_check_button = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ForceOfflineContainer/ProjectForceOfflineCheckButton"
+@onready var project_force_offline_helper_label = $"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ForceOfflineContainer/ProjectForceOfflineHelperLabel"
 
 var network_ui_nodes: Array = []
 
@@ -348,9 +350,9 @@ func _apply_global_theme() -> void:
 	var section_headers: Array[Label] = [
 		(get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsSettingsLabel") as Label if get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsSettingsLabel") != null else find_child("ProjectsSettingsLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorSettingsLabel") as Label if get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorSettingsLabel") != null else find_child("MirrorSettingsLabel", true, false) as Label),
-		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel") != null else find_child("ProjectOfflineSettingsLabel", true, false) as Label),
-		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolchainHeaderLabel") != null else find_child("ToolchainHeaderLabel", true, false) as Label),
-		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel") != null else find_child("ExplorerLabel", true, false) as Label),
+		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ProjectOfflineSettingsLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ProjectOfflineSettingsLabel") != null else find_child("ProjectOfflineSettingsLabel", true, false) as Label),
+		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolchainHeaderLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolchainHeaderLabel") != null else find_child("ToolchainHeaderLabel", true, false) as Label),
+		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar/ExplorerLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar/ExplorerLabel") != null else find_child("ExplorerLabel", true, false) as Label),
 		get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Library/EmptyLibraryState/EmptyStateContent/EmptyTitleLabel") as Label,
 		(get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/InstalledEmptyTitle") as Label if get_node_or_null("AppLayout/Content/PageTools/ToolsTabs/Installed/MarginContainer/InstalledEmptyState/InstalledEmptyTitle") != null else find_child("InstalledEmptyTitle", true, false) as Label)
 	]
@@ -373,9 +375,9 @@ func _apply_global_theme() -> void:
 		project_status_node,
 		offline_status_node,
 		get_node_or_null("AppLayout/Content/PageTools/ToolsStatusLabel") as Label,
-		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel") != null else find_child("ProjectOfflineStatusLabel", true, false) as Label),
-		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeHelperLabel") != null else find_child("ProjectOfflineModeHelperLabel", true, false) as Label),
-		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineHelperLabel") != null else find_child("ProjectForceOfflineHelperLabel", true, false) as Label),
+		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ProjectOfflineStatusLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ProjectOfflineStatusLabel") != null else find_child("ProjectOfflineStatusLabel", true, false) as Label),
+		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/OfflineModeContainer/ProjectOfflineModeHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/OfflineModeContainer/ProjectOfflineModeHelperLabel") != null else find_child("ProjectOfflineModeHelperLabel", true, false) as Label),
+		(get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ForceOfflineContainer/ProjectForceOfflineHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ForceOfflineContainer/ProjectForceOfflineHelperLabel") != null else find_child("ProjectForceOfflineHelperLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorStatusLabel") as Label if get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorStatusLabel") != null else find_child("MirrorStatusLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsHelperLabel") != null else find_child("ProjectsHelperLabel", true, false) as Label),
 		(get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorHelperLabel") as Label if get_node_or_null("AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorHelperLabel") != null else find_child("MirrorHelperLabel", true, false) as Label),
@@ -569,6 +571,7 @@ func _ready() -> void:
 	deps.btn_remove_project = btn_remove_project
 	deps.btn_seal_project = btn_seal_for_delivery
 	deps.btn_launch_tool = btn_launch_tool
+	deps.btn_explorer_launch_tool = btn_explorer_launch_tool
 	deps.project_dir_dialog = project_dir_dialog
 	deps.remove_project_dialog = remove_project_dialog
 	deps.new_project_dialog = new_project_dialog
@@ -576,6 +579,7 @@ func _ready() -> void:
 	deps.add_tool_dialog = add_tool_dialog
 	deps.add_tool_option_list = add_tool_option_list
 	deps.projects_tabs = projects_tabs
+	deps.project_details_tabs = project_details_tabs
 	deps.toolchain_header_label = toolchain_header_label
 	deps.project_tools_list = project_tools_list
 	deps.btn_change_version = btn_change_version

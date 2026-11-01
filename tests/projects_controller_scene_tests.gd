@@ -62,7 +62,7 @@ func run() -> Dictionary:
 	_test_empty_state_on_zero_search_results_and_clear_action(results)
 	_test_empty_state_hides_when_project_added(results)
 	_test_toolchain_section_header_and_list_icons(results)
-	_test_project_details_split_container_and_explorer_label(results)
+	_test_project_details_subtabs_and_explorer_label(results)
 	_test_contextual_launch_button_states_and_transitions(results)
 	_test_offline_policy_toggles_and_persistence(results)
 	_test_project_dialogs_compact_dimensions_and_margins(results)
@@ -221,6 +221,21 @@ func _build_controller(storage_path: String) -> Dictionary:
 	deps.project_offline_status_label = offline_status_lbl
 	deps.project_offline_mode_helper_label = offline_mode_helper_lbl
 	deps.project_force_offline_helper_label = force_offline_helper_lbl
+
+	var project_details_tabs = TabContainer.new()
+	var toolchain_tab = VBoxContainer.new()
+	toolchain_tab.name = "Toolchain"
+	var explorer_tab = VBoxContainer.new()
+	explorer_tab.name = "Explorer"
+	var policy_tab = VBoxContainer.new()
+	policy_tab.name = "Policy"
+	project_details_tabs.add_child(toolchain_tab)
+	project_details_tabs.add_child(explorer_tab)
+	project_details_tabs.add_child(policy_tab)
+
+	var explorer_launch_btn = Button.new()
+	deps.btn_explorer_launch_tool = explorer_launch_btn
+	deps.project_details_tabs = project_details_tabs
 	
 	controller.setup(deps, null)
 
@@ -242,6 +257,8 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"remove_btn": remove_button,
 		"seal_btn": seal_button,
 		"launch_btn": launch_button,
+		"explorer_launch_btn": explorer_launch_btn,
+		"project_details_tabs": project_details_tabs,
 		"new_name": new_project_name,
 		"new_project_dialog": new_project_dialog,
 		"new_project_name": new_project_name,
@@ -264,7 +281,7 @@ func _build_controller(storage_path: String) -> Dictionary:
 		"project_offline_status_label": offline_status_lbl,
 		"project_offline_mode_helper_label": offline_mode_helper_lbl,
 		"project_force_offline_helper_label": force_offline_helper_lbl,
-		"nodes": [add_button, add_remote_button, new_button, open_button, remove_button, seal_button, projects_list, search_edit, empty_state, status_label, offline_label, explorer_title_lbl, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_vbox, new_file_instructions, new_file_name, add_tool_button, remove_tool_button, launch_button, dialog, remove_dialog, new_project_dialog, new_project_vbox, instructions_label, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button, offline_mode_cb, force_offline_cb, offline_status_lbl, offline_mode_helper_lbl, force_offline_helper_lbl]
+		"nodes": [add_button, add_remote_button, new_button, open_button, remove_button, seal_button, projects_list, search_edit, empty_state, status_label, offline_label, explorer_title_lbl, explorer_tree, new_folder_btn, new_file_btn, new_file_dialog, new_file_vbox, new_file_instructions, new_file_name, add_tool_button, remove_tool_button, launch_button, explorer_launch_btn, project_details_tabs, toolchain_tab, explorer_tab, policy_tab, dialog, remove_dialog, new_project_dialog, new_project_vbox, instructions_label, new_project_name, add_tool_dialog, add_tool_option, project_tools_list, projects_tabs, change_version_button, offline_mode_cb, force_offline_cb, offline_status_lbl, offline_mode_helper_lbl, force_offline_helper_lbl]
 	}
 
 func _cleanup_nodes(nodes: Array, controller: ProjectsController = null) -> void:
@@ -1754,8 +1771,8 @@ func _test_toolchain_section_header_and_list_icons(results: Dictionary) -> void:
 	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_registry(storage_path)
 
-func _test_project_details_split_container_and_explorer_label(results: Dictionary) -> void:
-	## Verifies VSplitContainer hierarchy, minimum sizes, and ExplorerLabel truncation properties in main.tscn.
+func _test_project_details_subtabs_and_explorer_label(results: Dictionary) -> void:
+	## Verifies ProjectDetailsTabs nested hierarchy, sub-tabs (Toolchain, Explorer, Policy), and control properties in main.tscn.
 	var main_scene = load("res://main.tscn")
 	_expect(main_scene != null, "main.tscn should load successfully", results)
 	if main_scene == null:
@@ -1770,54 +1787,91 @@ func _test_project_details_split_container_and_explorer_label(results: Dictionar
 	_expect(project_details != null, "Project Details tab container should exist in main.tscn", results)
 
 	if project_details != null:
-		var split: VSplitContainer = project_details.get_node_or_null("VSplitContainer") as VSplitContainer
-		_expect(split != null, "VSplitContainer should exist directly under Project Details", results)
-		if split != null:
-			_expect(split.size_flags_vertical == Control.SIZE_EXPAND_FILL, "VSplitContainer should have vertical expand fill flags", results)
-			
-			var toolchain_section: VBoxContainer = split.get_node_or_null("ToolchainSection") as VBoxContainer
-			_expect(toolchain_section != null, "ToolchainSection should exist under VSplitContainer", results)
-			if toolchain_section != null:
-				_expect(toolchain_section.custom_minimum_size.y >= 80.0, "ToolchainSection should have sensible minimum height", results)
-				var header_lbl: Label = toolchain_section.get_node_or_null("ToolchainHeaderLabel") as Label
-				_expect(header_lbl != null, "ToolchainHeaderLabel should exist under ToolchainSection", results)
-				var tools_list: ItemList = toolchain_section.get_node_or_null("ProjectToolsList") as ItemList
-				_expect(tools_list != null, "ProjectToolsList should exist under ToolchainSection", results)
-				var tool_action_row: HBoxContainer = toolchain_section.get_node_or_null("ToolActionRow") as HBoxContainer
-				_expect(tool_action_row != null, "ToolActionRow should exist under ToolchainSection", results)
+		var status_bar: PanelContainer = project_details.get_node_or_null("ProjectsStatusBar") as PanelContainer
+		_expect(status_bar != null, "ProjectsStatusBar should exist as first child of Project Details", results)
+		if status_bar != null:
+			_expect(status_bar.get_index() == 0, "ProjectsStatusBar should be child index 0 of Project Details", results)
 
-			var explorer_section: VBoxContainer = split.get_node_or_null("ExplorerSection") as VBoxContainer
-			_expect(explorer_section != null, "ExplorerSection should exist under VSplitContainer", results)
-			if explorer_section != null:
-				_expect(explorer_section.custom_minimum_size.y >= 100.0, "ExplorerSection should have sensible minimum height", results)
-				var explorer_toolbar: HBoxContainer = explorer_section.get_node_or_null("ExplorerToolbar") as HBoxContainer
-				_expect(explorer_toolbar != null, "ExplorerToolbar should exist under ExplorerSection", results)
-				var tree_node: Tree = explorer_section.get_node_or_null("ProjectExplorerTree") as Tree
-				_expect(tree_node != null, "ProjectExplorerTree should exist under ExplorerSection", results)
+		var old_split: VSplitContainer = project_details.get_node_or_null("VSplitContainer") as VSplitContainer
+		_expect(old_split == null, "VSplitContainer should be removed from Project Details", results)
 
+		var subtabs: TabContainer = project_details.get_node_or_null("ProjectDetailsTabs") as TabContainer
+		_expect(subtabs != null, "ProjectDetailsTabs should exist directly under Project Details", results)
+		if subtabs != null:
+			_expect(subtabs.size_flags_vertical == Control.SIZE_EXPAND_FILL, "ProjectDetailsTabs should have vertical expand fill flags", results)
+			_expect(subtabs.get_tab_count() == 3, "ProjectDetailsTabs should have exactly 3 sub-tabs", results)
+			_expect(subtabs.get_tab_title(0) == "Toolchain", "Sub-tab 0 title should be 'Toolchain'", results)
+			_expect(subtabs.get_tab_title(1) == "Explorer", "Sub-tab 1 title should be 'Explorer'", results)
+			_expect(subtabs.get_tab_title(2) == "Policy", "Sub-tab 2 title should be 'Policy'", results)
+
+			# 1. Toolchain Sub-Tab
+			var toolchain_tab: VBoxContainer = subtabs.get_node_or_null("Toolchain") as VBoxContainer
+			_expect(toolchain_tab != null, "Toolchain sub-tab should exist", results)
+			if toolchain_tab != null:
+				var header_lbl: Label = toolchain_tab.get_node_or_null("ToolchainHeaderLabel") as Label
+				_expect(header_lbl != null, "ToolchainHeaderLabel should exist under Toolchain", results)
+				if header_lbl != null:
+					_expect(header_lbl.text == "Stack Toolchain", "ToolchainHeaderLabel text should be 'Stack Toolchain'", results)
+
+				var tools_list: ItemList = toolchain_tab.get_node_or_null("ProjectToolsList") as ItemList
+				_expect(tools_list != null, "ProjectToolsList should exist under Toolchain", results)
+				if tools_list != null:
+					_expect(tools_list.size_flags_vertical == Control.SIZE_EXPAND_FILL, "ProjectToolsList should have SIZE_EXPAND_FILL", results)
+
+				var tool_action_row: HBoxContainer = toolchain_tab.get_node_or_null("ToolActionRow") as HBoxContainer
+				_expect(tool_action_row != null, "ToolActionRow should exist under Toolchain", results)
+				if tool_action_row != null:
+					_expect(tool_action_row.get_node_or_null("AddToolButton") != null, "AddToolButton should exist in ToolActionRow", results)
+					_expect(tool_action_row.get_node_or_null("RemoveToolButton") != null, "RemoveToolButton should exist in ToolActionRow", results)
+					_expect(tool_action_row.get_node_or_null("ChangeVersionButton") != null, "ChangeVersionButton should exist in ToolActionRow", results)
+
+				var launch_btn: Button = toolchain_tab.get_node_or_null("LaunchButton") as Button
+				_expect(launch_btn != null, "LaunchButton should exist under Toolchain", results)
+				if launch_btn != null:
+					_expect(launch_btn.disabled == true, "LaunchButton should be disabled by default in main.tscn", results)
+					_expect(launch_btn.text == "Select a Tool to Launch", "LaunchButton default text should be 'Select a Tool to Launch'", results)
+					_expect(launch_btn.theme_type_variation == &"PrimaryButton", "LaunchButton should have PrimaryButton theme variation", results)
+
+			# 2. Explorer Sub-Tab
+			var explorer_tab: VBoxContainer = subtabs.get_node_or_null("Explorer") as VBoxContainer
+			_expect(explorer_tab != null, "Explorer sub-tab should exist", results)
+			if explorer_tab != null:
+				var explorer_toolbar: HBoxContainer = explorer_tab.get_node_or_null("ExplorerToolbar") as HBoxContainer
+				_expect(explorer_toolbar != null, "ExplorerToolbar should exist under Explorer", results)
 				if explorer_toolbar != null:
 					var explorer_label: Label = explorer_toolbar.get_node_or_null("ExplorerLabel") as Label
 					_expect(explorer_label != null, "ExplorerLabel should exist under ExplorerToolbar", results)
 					if explorer_label != null:
 						_expect(explorer_label.clip_text == true, "ExplorerLabel should have clip_text enabled", results)
 						_expect(explorer_label.text_overrun_behavior == TextServer.OVERRUN_TRIM_ELLIPSIS, "ExplorerLabel text_overrun_behavior should be OVERRUN_TRIM_ELLIPSIS (3)", results)
+					_expect(explorer_toolbar.get_node_or_null("NewFolderBtn") != null, "NewFolderBtn should exist under ExplorerToolbar", results)
+					_expect(explorer_toolbar.get_node_or_null("NewFileBtn") != null, "NewFileBtn should exist under ExplorerToolbar", results)
 
-		var status_bar: PanelContainer = project_details.get_node_or_null("ProjectsStatusBar") as PanelContainer
-		_expect(status_bar != null, "ProjectsStatusBar should exist as first child of Project Details", results)
-		if status_bar != null:
-			_expect(status_bar.get_index() == 0, "ProjectsStatusBar should be child index 0 of Project Details", results)
+				var tree_node: Tree = explorer_tab.get_node_or_null("ProjectExplorerTree") as Tree
+				_expect(tree_node != null, "ProjectExplorerTree should exist under Explorer", results)
+				if tree_node != null:
+					_expect(tree_node.size_flags_vertical == Control.SIZE_EXPAND_FILL, "ProjectExplorerTree should have SIZE_EXPAND_FILL", results)
 
-		var action_row: HBoxContainer = project_details.get_node_or_null("ProjectDetailsActionRow") as HBoxContainer
-		_expect(action_row != null, "ProjectDetailsActionRow should exist under Project Details", results)
+				var explorer_launch_btn: Button = explorer_tab.get_node_or_null("ExplorerLaunchButton") as Button
+				_expect(explorer_launch_btn != null, "ExplorerLaunchButton should exist under Explorer", results)
+				if explorer_launch_btn != null:
+					_expect(explorer_launch_btn.disabled == true, "ExplorerLaunchButton should be disabled by default", results)
+					_expect(explorer_launch_btn.theme_type_variation == &"PrimaryButton", "ExplorerLaunchButton should have PrimaryButton theme variation", results)
 
-		var launch_btn: Button = project_details.get_node_or_null("ProjectDetailsActionRow/LaunchButton") as Button
-		_expect(launch_btn != null, "LaunchButton should exist under ProjectDetailsActionRow", results)
-		if launch_btn != null:
-			_expect(launch_btn.disabled == true, "LaunchButton should be disabled by default in main.tscn", results)
-			_expect(launch_btn.text == "Select a Tool to Launch", "LaunchButton default text should be 'Select a Tool to Launch'", results)
-
-		var seal_btn: Button = project_details.get_node_or_null("ProjectDetailsActionRow/SealButton") as Button
-		_expect(seal_btn != null, "SealButton should exist under ProjectDetailsActionRow", results)
+			# 3. Policy Sub-Tab
+			var policy_tab: VBoxContainer = subtabs.get_node_or_null("Policy") as VBoxContainer
+			_expect(policy_tab != null, "Policy sub-tab should exist", results)
+			if policy_tab != null:
+				_expect(policy_tab.get_node_or_null("ProjectOfflineSettingsLabel") != null, "ProjectOfflineSettingsLabel should exist under Policy", results)
+				_expect(policy_tab.get_node_or_null("ProjectOfflineStatusLabel") != null, "ProjectOfflineStatusLabel should exist under Policy", results)
+				_expect(policy_tab.get_node_or_null("OfflineModeContainer") != null, "OfflineModeContainer should exist under Policy", results)
+				_expect(policy_tab.get_node_or_null("ForceOfflineContainer") != null, "ForceOfflineContainer should exist under Policy", results)
+				var seal_btn: Button = policy_tab.get_node_or_null("SealButton") as Button
+				_expect(seal_btn != null, "SealButton should exist under Policy", results)
+				if seal_btn != null:
+					_expect(seal_btn.disabled == true, "SealButton should be disabled by default", results)
+					_expect(seal_btn.text == "Seal for Delivery", "SealButton text should be 'Seal for Delivery'", results)
+					_expect(seal_btn.theme_type_variation == &"PrimaryButton", "SealButton should have PrimaryButton theme variation", results)
 
 	main_instance.free()
 
@@ -1897,6 +1951,34 @@ func _test_contextual_launch_button_states_and_transitions(results: Dictionary) 
 	controller._on_tools_list_empty_clicked()
 	_expect(launch_btn.disabled == true, "launch button should be disabled after tools list empty click", results)
 	_expect(launch_btn.text == "Select a Tool to Launch", "launch button text should prompt selection after tools list empty click", results)
+
+	# 11. Contextual sub-tab switching: select tool on Toolchain tab, verify state
+	var subtabs: TabContainer = ctx["project_details_tabs"]
+	var explorer_launch_btn: Button = ctx["explorer_launch_btn"]
+	subtabs.current_tab = 0
+	controller._on_tool_item_selected(godot_idx)
+	_expect(launch_btn.disabled == false, "launch button should be enabled after tool selection", results)
+	_expect(launch_btn.text == "Launch Godot v4.7.2", "launch button text should display Godot launch", results)
+	_expect(explorer_launch_btn.text == "Launch Godot v4.7.2", "explorer launch button should stay in sync with launch button", results)
+
+	# 12. Switch to Explorer sub-tab without an explorer tree selection
+	subtabs.current_tab = 1
+	controller._on_project_details_tab_changed(1)
+	_expect(launch_btn.disabled == true, "launch button should reset to disabled when switching to Explorer with no selection", results)
+	_expect(launch_btn.text == "Select a Tool to Launch", "launch button should prompt selection in Explorer tab", results)
+	_expect(explorer_launch_btn.disabled == true, "explorer launch button should be disabled when no file is selected", results)
+
+	# 13. Select file in explorer, verify ExplorerLaunchButton, then switch back to Toolchain
+	controller._on_explorer_file_selected("res://samples/sample_project/game/main.gd", "vscodium")
+	_expect(explorer_launch_btn.disabled == false, "explorer launch button should be enabled after file selection", results)
+	_expect(explorer_launch_btn.text == "Open main.gd in VSCodium", "explorer launch button text should reflect selected file", results)
+	subtabs.current_tab = 0
+	controller._on_project_details_tab_changed(0)
+	_expect(launch_btn.disabled == true, "launch button should be disabled when switching back with no tool selected", results)
+	_expect(launch_btn.text == "Select a Tool to Launch", "launch button should prompt selection in Toolchain tab", results)
+	controller._on_tool_item_selected(godot_idx)
+	_expect(launch_btn.disabled == false, "launch button should be enabled after re-selecting tool", results)
+	_expect(launch_btn.text == "Launch Godot v4.7.2", "launch button should display Godot tool launch text", results)
 
 	_cleanup_nodes(ctx["nodes"], controller)
 	_cleanup_dir_recursive(projects_root)

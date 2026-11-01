@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 2344
+tests passed: 2387
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (31 total, 38 suites across all categories, 2344 passing tests):**
+**Current unit test suites (31 total, 38 suites across all categories, 2387 passing tests):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -409,8 +409,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Double-click file activation in project explorer triggers launch targeting the activated file
   - New file creation in projects with VSCodium creates empty files on disk and defaults extensionless files to .txt with VSCodium launch state
   - Three-button toolbar layout (Add Local Project, Add Remote Project, New Project) located in `ProjectsTabs/Project Library/ProjectsControls` with equal size flags and 16px separation
-  - Status bar (`ProjectsStatusBar`) located as child index 0 of `Project Details` above `VSplitContainer`
-  - Horizontal action row (`ProjectDetailsActionRow`) located at bottom of `Project Details` housing `LaunchButton` and `SealButton` side-by-side with equal width expansion
+  - Status bar (`ProjectsStatusBar`) located as child index 0 of `Project Details` directly above `ProjectDetailsTabs`
   - Missing-Git detection opens guided dialog and "Go to Tools" emits navigation hook
   - Offline mode disabling and descriptive tooltip enforcement on AddRemoteProjectButton
   - Single-clicking a missing tool row in `project_tools_list` selects it and enables Remove Tool and Change Version without emitting `tool_view_requested` or navigating away
@@ -432,8 +431,8 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Empty state on zero search results and clear action: verifies empty state presentation with "No Projects Match Filter" when a query matches zero projects, and list restoration via the Clear Filter button
   - Empty state transitions on project addition: verifies that adding a project transitions from the empty state view to a populated projects list
   - Toolchain section header and list icons: verifies ToolchainHeaderLabel presence in main.tscn, 20x20 uniform icon sizing on project_tools_list, tool icon assignment, and explicit status labels/tooltips
-  - Resizable split container and explorer label truncation: verifies VSplitContainer presence dividing ToolchainSection (minimum height 120px) and ExplorerSection (minimum height 140px), split offset, and ExplorerLabel ellipsis clipping properties (`clip_text` and `text_overrun_behavior = 3`)
-  - Contextual launch button states and transitions: verifies dynamic prompt text ("Select a Tool to Launch"), toolchain selection formatting ("Launch <Tool> <Version>"), explorer selection formatting ("Open <filename> in <Tool>"), double-click activation, empty-click deselection, and launch state resets
+  - Nested sub-tabs and explorer label truncation (`_test_project_details_subtabs_and_explorer_label`): verifies `ProjectDetailsTabs` `TabContainer` presence directly beneath `ProjectsStatusBar`, verifies 3 sub-tabs in order (`Toolchain`, `Explorer`, `Policy`), confirms `ProjectToolsList` and `ProjectExplorerTree` have vertical expansion flags (`size_flags_vertical = Control.SIZE_EXPAND_FILL`), verifies `ExplorerLabel` ellipsis clipping properties (`clip_text` and `text_overrun_behavior = 3`), and confirms `PrimaryButton` theme variation and horizontal expansion across `LaunchButton`, `ExplorerLaunchButton`, and `SealButton`
+  - Contextual launch button states and transitions: verifies dynamic prompt text ("Select a Tool to Launch"), toolchain selection formatting ("Launch <Tool> <Version>"), explorer selection formatting ("Open <filename> in <Tool>"), double-click activation, empty-click deselection, tab transitions between Toolchain and Explorer, and launch state resets
   - Offline policy toggles and persistence: verifies that offline policy toggles in Project Details initialize disabled, activate and reflect project config on selection, synchronize status label with normalized path, emit `project_selection_changed` and `offline_state_changed`, persist `offline_mode` and `force_offline` updates to `ogs_config.json` on disk, reset on project removal, and restore toggle states on project reload
   - Compact confirmation and creation dialog layouts: verifies compact 420x150 dimensions and 16px horizontal / 12px vertical internal content margins for NewProjectDialog, RemoveProjectDialog, and NewFileDialog
   - Input validation and empty-input guards: verifies that NewProjectDialog and NewFileDialog disable confirm buttons on empty or whitespace input and enable upon typing valid names
@@ -467,23 +466,23 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Compact horizontal status bar container (`ProjectsStatusBar` PanelContainer with inner HBoxContainer, 6px rounded corners, 12px horizontal margins, expanding status label, and pill badge offline status label)
   - Settings page Projects folder controls (label, path line edit, browse button, reset button) exist and wire properly
   - Primary projects root browse dialog is queued for free when closed or canceled without selection
-  - Tool action rows include Add Tool, Remove Tool, Launch Selected Tool, Remove Project, and Seal for Delivery (with LaunchButton and SealButton in ProjectDetailsActionRow under Project Details, and OpenProjectButton and RemoveButton in ProjectActionRow under Project Library)
+  - Tool action rows include Add Tool, Remove Tool, Launch Selected Tool, Remove Project, and Seal for Delivery (with LaunchButton in Toolchain, ExplorerLaunchButton in Explorer, SealButton in Policy, and OpenProjectButton and RemoveButton in ProjectActionRow under Project Library)
   - OpenProjectButton exists with minimum size Vector2(140, 32), starts disabled, and wires properly in UIDeps
   - `installed_code_tools` and `download_code_tools` node bindings are wired
   - AddRemoteProjectButton wired to UIDeps and toggles disabled state and descriptive tooltip on offline state change
   - Uniform content margins (20px horizontal, 16px vertical) on `AppLayout/Content` in both scene definition and runtime
   - Standard typographic hierarchy across page titles (24px), section headers (18px cyan accent Color(0.45, 0.8, 1.0)), form labels/body (16px), and secondary/metadata labels (13px muted Color(0.65, 0.70, 0.78))
   - Runtime theme application in `_apply_global_theme()` persists content margins and font sizes during scene readiness
-  - PageProjects hierarchy and controls separation (`_test_page_projects_hierarchy_and_separation`): verifies `ProjectsTabs` sits directly below `ProjectsTitle`, `ProjectsControls` is first child of `Project Library` (above search edit), `ProjectsStatusBar` is first child of `Project Details` (above VSplitContainer), `ProjectActionRow` contains only `OpenProjectButton` and `RemoveButton` (without `SealButton`), and `ProjectDetailsActionRow` at bottom of `Project Details` contains `LaunchButton` and `SealButton` side-by-side with separation 12 and `SIZE_EXPAND_FILL` horizontal sizing
+  - PageProjects hierarchy and controls separation (`_test_page_projects_hierarchy_and_separation`): verifies `ProjectsTabs` sits directly below `ProjectsTitle`, `ProjectsControls` is first child of `Project Library` (above search edit), `ProjectsStatusBar` is first child of `Project Details` (above `ProjectDetailsTabs`), `ProjectDetailsTabs` contains exactly three sub-tabs (`Toolchain`, `Explorer`, `Policy`), confirms removal of legacy `VSplitContainer` and `ProjectDetailsActionRow`, verifies `ProjectActionRow` contains only `OpenProjectButton` and `RemoveButton`, and verifies `LaunchButton`, `ExplorerLaunchButton`, and `SealButton` have `SIZE_EXPAND_FILL` horizontal sizing
   - Sidebar container structure (minimum width >= 200px, 1px right border Color(0.22, 0.25, 0.30), dark background Color(0.09, 0.10, 0.13), 12px horizontal and 16px vertical padding)
   - Sidebar Brand Header containing 32x32 logo (res://Images/logo.png), "OGS Launcher" title, and HSeparator divider
   - Sidebar Footer containing expanding vertical spacer, footer container, status indicator, and launcher version label
   - Sidebar live interaction verifying startup active highlight on Projects, navigation switching to Tools, and footer connectivity sync
   - Semantic Button theme variations (`PrimaryButton`, `SecondaryButton`, `DangerButton`) defined on `global_theme` with matching background colors, borders, and focus rings
   - CheckButton stylebox overrides defined on `global_theme` using `StyleBoxEmpty` and hover styling, replacing solid Button stylebox inheritance
-  - Target buttons across Projects, Tools, and Settings pages in `main.tscn` configured with appropriate `PrimaryButton`, `SecondaryButton`, and `DangerButton` theme variations
+  - Target buttons across Projects, Tools, and Settings pages in `main.tscn` configured with appropriate `PrimaryButton`, `SecondaryButton`, and `DangerButton` theme variations (including `ExplorerLaunchButton`)
   - Normalized path separators verified in Settings page Primary Projects Folder placeholder text and Project Details Project Offline Policy status label
-  - Project offline policy controls verified under Project Details (`ProjectOfflineSection`, `ProjectOfflineModeCheckButton`, `ProjectForceOfflineCheckButton`, helper labels, and normalized path status label) and verified absent from PageSettings
+  - Project offline policy controls verified under Project Details `Policy` sub-tab (`ProjectDetailsTabs/Policy`, `ProjectOfflineModeCheckButton`, `ProjectForceOfflineCheckButton`, helper labels, and normalized path status label) and verified absent from PageSettings
   - Redesigned `PageSettings` section cards: `ProjectsCard` and `MirrorCard` `PanelContainer` elements with `StyleBoxFlat_settings_card`, 6px corner radii, and 16px internal padding
   - Unwired `CheckUpdatesButton` and orphaned `NetworkLabel` verified removed from `PageSettings`
   - Form label uniform minimum widths: `ProjectsRootLabel`, `MirrorRootLabel`, and `MirrorRepoLabel` verified with `custom_minimum_size.x >= 195.0` to eliminate ragged offsets and ensure aligned inputs

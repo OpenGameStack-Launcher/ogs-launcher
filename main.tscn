@@ -353,32 +353,32 @@ theme_override_font_sizes/font_size = 13
 theme_override_styles/normal = SubResource("StyleBoxFlat_offline_pill")
 text = "Offline Mode: Unknown"
 
-[node name="VSplitContainer" type="VSplitContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+[node name="ProjectDetailsTabs" type="TabContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
 layout_mode = 2
 size_flags_vertical = 3
-split_offset = 120
+current_tab = 0
 
-[node name="ToolchainSection" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer"]
-custom_minimum_size = Vector2(0, 120)
+[node name="Toolchain" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs"]
 layout_mode = 2
-size_flags_vertical = 3
+theme_override_constants/separation = 8
+metadata/_tab_index = 0
 
-[node name="ToolchainHeaderLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection"]
+[node name="ToolchainHeaderLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "Stack Toolchain"
 
-[node name="ProjectToolsList" type="ItemList" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection"]
-custom_minimum_size = Vector2(0, 80)
+[node name="ProjectToolsList" type="ItemList" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain"]
 layout_mode = 2
 size_flags_vertical = 3
 fixed_icon_size = Vector2i(20, 20)
 
-[node name="ToolActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection" unique_id=1082188753]
+[node name="ToolActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain"]
 layout_mode = 2
+theme_override_constants/separation = 8
 
-[node name="AddToolButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow" unique_id=2133794034]
+[node name="AddToolButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolActionRow"]
 theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
@@ -386,7 +386,7 @@ size_flags_horizontal = 3
 disabled = true
 text = "Add Tool"
 
-[node name="RemoveToolButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow" unique_id=437998484]
+[node name="RemoveToolButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolActionRow"]
 theme_type_variation = &"DangerButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
@@ -394,7 +394,7 @@ size_flags_horizontal = 3
 disabled = true
 text = "Remove Tool"
 
-[node name="ChangeVersionButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow"]
+[node name="ChangeVersionButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolActionRow"]
 theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
@@ -402,15 +402,25 @@ size_flags_horizontal = 3
 disabled = true
 text = "Change Version"
 
-[node name="ExplorerSection" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer"]
-custom_minimum_size = Vector2(0, 140)
+[node name="LaunchButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain"]
+theme_type_variation = &"PrimaryButton"
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
-size_flags_vertical = 3
+size_flags_horizontal = 3
+disabled = true
+text = "Select a Tool to Launch"
 
-[node name="ExplorerToolbar" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection"]
+[node name="Explorer" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs"]
+visible = false
 layout_mode = 2
+theme_override_constants/separation = 8
+metadata/_tab_index = 1
 
-[node name="ExplorerLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar"]
+[node name="ExplorerToolbar" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer"]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="ExplorerLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
@@ -419,52 +429,61 @@ text = "Project Explorer"
 clip_text = true
 text_overrun_behavior = 3
 
-[node name="NewFolderBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar"]
+[node name="NewFolderBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar"]
 theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
 text = "New Folder"
 
-[node name="NewFileBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar"]
+[node name="NewFileBtn" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar"]
 theme_type_variation = &"SecondaryButton"
 custom_minimum_size = Vector2(100, 32)
 layout_mode = 2
 text = "New File"
 
-[node name="ProjectExplorerTree" type="Tree" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection"]
-custom_minimum_size = Vector2(0, 100)
+[node name="ProjectExplorerTree" type="Tree" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer"]
 layout_mode = 2
 size_flags_vertical = 3
 hide_root = true
 
-[node name="ProjectOfflineSection" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+[node name="ExplorerLaunchButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer"]
+theme_type_variation = &"PrimaryButton"
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
-theme_override_constants/separation = 4
+size_flags_horizontal = 3
+disabled = true
+text = "Select a Tool to Launch"
 
-[node name="ProjectOfflineSettingsLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection"]
+[node name="Policy" type="VBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs"]
+visible = false
+layout_mode = 2
+theme_override_constants/separation = 8
+metadata/_tab_index = 2
+
+[node name="ProjectOfflineSettingsLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
 theme_override_font_sizes/font_size = 18
 text = "Project Offline Policy"
 
-[node name="ProjectOfflineStatusLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection"]
+[node name="ProjectOfflineStatusLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy"]
 layout_mode = 2
 theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
 theme_override_font_sizes/font_size = 13
 text = "No project selected"
 
-[node name="OfflineModeContainer" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection"]
+[node name="OfflineModeContainer" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="ProjectOfflineModeCheckButton" type="CheckButton" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer"]
+[node name="ProjectOfflineModeCheckButton" type="CheckButton" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/OfflineModeContainer"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 tooltip_text = "Blocks outbound network activity while this project is active."
 disabled = true
 text = "Offline mode"
 
-[node name="ProjectOfflineModeHelperLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer"]
+[node name="ProjectOfflineModeHelperLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/OfflineModeContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
@@ -473,18 +492,18 @@ text = "Blocks outbound network activity while this project is active; allows la
 autowrap_mode = 2
 vertical_alignment = 1
 
-[node name="ForceOfflineContainer" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection"]
+[node name="ForceOfflineContainer" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy"]
 layout_mode = 2
 theme_override_constants/separation = 12
 
-[node name="ProjectForceOfflineCheckButton" type="CheckButton" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer"]
+[node name="ProjectForceOfflineCheckButton" type="CheckButton" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ForceOfflineContainer"]
 custom_minimum_size = Vector2(160, 0)
 layout_mode = 2
 tooltip_text = "Enforces strict air-gap isolation for the selected project."
 disabled = true
 text = "Force offline"
 
-[node name="ProjectForceOfflineHelperLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer"]
+[node name="ProjectForceOfflineHelperLabel" type="Label" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ForceOfflineContainer"]
 layout_mode = 2
 size_flags_horizontal = 3
 theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
@@ -493,21 +512,13 @@ text = "Enforces strict air-gap isolation; requires and launches tools exclusive
 autowrap_mode = 2
 vertical_alignment = 1
 
-[node name="ProjectDetailsActionRow" type="HBoxContainer" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details"]
+[node name="PolicySpacer" type="Control" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy"]
 layout_mode = 2
-theme_override_constants/separation = 12
+size_flags_vertical = 3
 
-[node name="LaunchButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow" unique_id=778618894]
+[node name="SealButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy"]
 theme_type_variation = &"PrimaryButton"
-custom_minimum_size = Vector2(160, 32)
-layout_mode = 2
-size_flags_horizontal = 3
-disabled = true
-text = "Select a Tool to Launch"
-
-[node name="SealButton" type="Button" parent="AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow" unique_id=996258368]
-theme_type_variation = &"PrimaryButton"
-custom_minimum_size = Vector2(140, 32)
+custom_minimum_size = Vector2(0, 36)
 layout_mode = 2
 size_flags_horizontal = 3
 disabled = true
