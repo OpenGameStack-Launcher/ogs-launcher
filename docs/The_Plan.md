@@ -59,19 +59,20 @@ The MVP is not complete until this full sequence works end to end:
     *   *UI Integration:* Environment incomplete → shows "Repair Environment" button.
     *   *Repair Workflow:* LibraryHydrator orchestrates batch downloads (Phase 2: actual HTTP).
     *   *Tests:* Unit + scene tests covering validation and repair flow.
-*   [x] **The "Seal for Delivery" Utility (Export)** — 100% Complete ✅
+*   [x] **The "Seal for Delivery" Utility (Export)** - 100% Complete ✅
     *   *ProjectSealer Class:* `seal_project(project_path)` implements full workflow.
     *   *Validation:* Validates manifest and checks tool availability.
-    *   *Copy Logic:* Recursively copies tool binaries from library → `./tools/`.
+    *   *Copy Logic:* Recursively copies tool binaries from library -> `./tools/`.
     *   *Config Creation:* Writes `ogs_config.json` with `force_offline=true`.
     *   *Archive Packaging:* Creates a real `.zip` artifact using Godot `ZIPPacker`.
     *   *Packaging Logs:* Logs packaging start, file count, and completion/failure events.
-    *   *Tests:* Unit tests covering validation, copying, archive contents, and logging.
+    *   *Cooperative Cancellation & Rollback:* Thread-safe cooperative cancellation (`_cancel_mutex`, `request_cancel()`) checked at file and 1 MB chunk boundaries across copier and archiver. Pre-seal filesystem snapshot capture and full disk rollback restoring project state upon cancellation or mid-seal failure.
+    *   *Tests:* Unit tests covering validation, copying, archive contents, logging, cooperative cancellation, and atomic rollback.
 *   [x] **UI Integration: "Seal for Delivery" Button** - 100% Complete ✅
     *   *Scene Changes:* Added "Seal for Delivery" button to Projects page + SealDialog.
     *   *Wiring:* Connected button to ProjectSealer call in main.gd.
     *   *Progress Feedback:* Two-phase determinate `SealProgressBar` reporting file counts (`X of Y files`) across Step 1/2 (copying tools) and Step 2/2 (creating ZIP archive) with thousands comma formatting.
-    *   *Close Button State:* Modal Close button automatically disabled during active background sealing to prevent premature dismissal, and re-enabled upon completion or failure.
+    *   *Active Cancel Button & Lifecycle:* Action button remains enabled with text "Cancel" during active background sealing, immediately disabling on click to prevent double-clicks, updating status to "Cancelling and restoring project state...", awaiting thread abort, and transitioning back to enabled "Close" with project state restoration confirmation.
     *   *Typography Hierarchy:* Corrected inverted hierarchy in `SealDialog` so `StatusLabel` serves as the primary headline at 18px (with `#F3F4F6` progress, `#22C55E` success, `#EF4444` error semantic colors) and `OutputLabel` renders at 14px with `#9CA3AF` muted styling.
     *   *Canonical Tool Display Naming:* `ToolCategoryMapper.get_display_name()` maps raw tool IDs to clean, capitalized display names (e.g., "• Godot v4.7.2", "• Blender v4.2") in the completion summary.
     *   *Result Display:* Shows seal status, zip path, size, and tools copied in dialog.
@@ -394,7 +395,13 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   Preserved catalog state across navigation, preventing redundant network requests
     *   Active `HTTPRequest` node tracking and disposal via `ToolsController.cleanup()` on application close and exit
     *   Comprehensive unit and scene tests in `tests/tools_controller_tests.gd` and `tests/main_scene_tests.gd` (2232 tests passing across 38 test suites with zero failures)
-*   **Test Suite:** 2232 tests passing across 38 test suites (~3-5 sec execution), comprehensive coverage across all components
+*   **Seal for Delivery Active Cancellation & State Rollback (Phase 2.5):** Complete Nov 1, 2026
+    *   Added active "Cancel" button to `SealDialog` during background sealing operations with immediate double-click prevention
+    *   Implemented cooperative thread-safe cancellation callbacks (`cancel_check`) evaluated at directory, file, and 1 MB chunk boundaries across `ProjectSealToolCopier` and `ProjectSealArchiver`
+    *   Captured pre-seal filesystem snapshots (existing `./tools/` subdirectories and `ogs_config.json`) in `ProjectSealer`
+    *   Built atomic rollback cleaning up newly copied tool folders, deleting partial `.zip` archives, and restoring original configuration
+    *   Comprehensive unit and scene tests in `tests/project_sealer_tests.gd` and `tests/seal_controller_tests.gd` (2344 tests passing across 38 test suites with zero failures)
+*   **Test Suite:** 2344 tests passing across 38 test suites (~3-5 sec execution), comprehensive coverage across all components
     *   ToolsController unit tests: download tracking, duplicate suppression, repository validation
     *   Tools page scene tests: node existence, status updates, button state management
     *   ProgressController unit tests: inline tracking, phase transitions, signal emission

@@ -67,6 +67,7 @@ func run() -> Dictionary:
 	_test_determinate_progress_thousands_formatting(results)
 	_test_determinate_progress_zero_files_edge_case(results)
 	_test_determinate_progress_error_hides_progress_bar(results)
+	await _test_cancel_button_lifecycle_and_rollback(results)
 
 	return results
 
@@ -368,7 +369,8 @@ func _test_progress_bar_and_close_button_states(results: Dictionary) -> void:
 	controller._show_progress()
 	_expect(progress_bar.visible == true, "Progress bar should be visible during _show_progress()", results)
 	_expect(progress_bar.indeterminate == true, "Progress bar should be indeterminate during _show_progress()", results)
-	_expect(ok_button.disabled == true, "OK button should be disabled during _show_progress()", results)
+	_expect(ok_button.text == "Cancel", "Action button text should be 'Cancel' during _show_progress()", results)
+	_expect(ok_button.disabled == false, "Action button should remain enabled as Cancel during _show_progress()", results)
 	_expect(status_label.modulate.is_equal_approx(Color("#F3F4F6")), "Status label modulate should be #F3F4F6 in progress", results)
 
 	# 2. Success state
@@ -380,6 +382,7 @@ func _test_progress_bar_and_close_button_states(results: Dictionary) -> void:
 	}
 	controller._show_success(mock_success)
 	_expect(progress_bar.visible == false, "Progress bar should be hidden on success", results)
+	_expect(ok_button.text == "Close", "OK button text should be 'Close' on success", results)
 	_expect(ok_button.disabled == false, "OK button should be re-enabled on success", results)
 	_expect(status_label.modulate.is_equal_approx(Color("#22C55E")), "Status label modulate should be #22C55E on success", results)
 	_expect(open_button.visible == true, "Open button should be visible on success", results)
@@ -387,11 +390,13 @@ func _test_progress_bar_and_close_button_states(results: Dictionary) -> void:
 	# 3. Re-enter progress state then trigger error
 	controller._show_progress()
 	_expect(progress_bar.visible == true, "Progress bar should become visible again on progress", results)
-	_expect(ok_button.disabled == true, "OK button should be disabled again on progress", results)
+	_expect(ok_button.text == "Cancel", "Action button text should be 'Cancel' during progress", results)
+	_expect(ok_button.disabled == false, "Action button should remain enabled during progress", results)
 
 	# 4. Error state
 	controller._show_error("Test Failure", ["Disk full", "Missing assets"])
 	_expect(progress_bar.visible == false, "Progress bar should be hidden on error", results)
+	_expect(ok_button.text == "Close", "OK button text should be 'Close' on error", results)
 	_expect(ok_button.disabled == false, "OK button should be re-enabled on error", results)
 	_expect(status_label.modulate.is_equal_approx(Color("#EF4444")), "Status label modulate should be #EF4444 on error", results)
 	_expect(open_button.visible == false, "Open button should be hidden on error", results)
@@ -498,7 +503,8 @@ func _test_async_seal_progress_bar_and_close_button_lifecycle(results: Dictionar
 		var ok_btn: Button = dialog.get_ok_button()
 		_expect(progress_bar.visible == true, "ProgressBar should be visible while thread is active", results)
 		_expect(progress_bar.indeterminate == true, "ProgressBar should be indeterminate while thread is active", results)
-		_expect(ok_btn.disabled == true, "Close button should be disabled while thread is active", results)
+		_expect(ok_btn.text == "Cancel", "Action button text should be 'Cancel' while thread is active", results)
+		_expect(ok_btn.disabled == false, "Cancel button should be enabled while thread is active", results)
 		_expect(status_label.modulate.is_equal_approx(Color("#F3F4F6")), "StatusLabel modulate should be neutral off-white while active", results)
 
 	# Release worker thread
@@ -512,6 +518,7 @@ func _test_async_seal_progress_bar_and_close_button_lifecycle(results: Dictionar
 	_expect(emitted["success"], "seal_completed should emit success true", results)
 	var ok_btn_post: Button = dialog.get_ok_button()
 	_expect(progress_bar.visible == false, "ProgressBar should be hidden after seal completes", results)
+	_expect(ok_btn_post.text == "Close", "Action button text should transition to 'Close' after seal completes", results)
 	_expect(ok_btn_post.disabled == false, "Close button should be re-enabled after seal completes", results)
 	_expect(status_label.modulate.is_equal_approx(Color("#22C55E")), "StatusLabel modulate should be success green after completion", results)
 	_expect(output_label.text.contains("Godot v4.7.2"), "Output label should format tool display name", results)
@@ -653,7 +660,8 @@ func _test_confirm_transitions_in_place_to_sealing_progress(results: Dictionary)
 	_expect(controller.is_sealing() == true, "Should enter active sealing state on confirm", results)
 	_expect(progress_bar.visible == true, "Progress bar should become visible upon confirm", results)
 	_expect(progress_bar.indeterminate == true, "Progress bar should be indeterminate upon confirm", results)
-	_expect(dialog.get_ok_button().disabled == true, "OK button should be disabled upon confirm", results)
+	_expect(dialog.get_ok_button().text == "Cancel", "Action button text should be 'Cancel' upon confirm", results)
+	_expect(dialog.get_ok_button().disabled == false, "Cancel button should be enabled upon confirm", results)
 
 	var cancel_btn: Button = controller.get_cancel_button()
 	_expect(cancel_btn != null and cancel_btn.visible == false, "Cancel button should be hidden during sealing", results)
@@ -667,6 +675,7 @@ func _test_confirm_transitions_in_place_to_sealing_progress(results: Dictionary)
 		await tree.process_frame
 
 	_expect(controller.is_sealing() == false, "Sealing should complete", results)
+	_expect(dialog.get_ok_button().text == "Close", "Action button text should return to 'Close' after sealing", results)
 	_expect(dialog.get_ok_button().disabled == false, "Close button should be re-enabled after sealing", results)
 
 	controller = null
@@ -887,6 +896,85 @@ func _test_determinate_progress_error_hides_progress_bar(results: Dictionary) ->
 	_expect(output_label.text.contains("Could not write archive to disk"), "Output label should display error details", results)
 	_expect(dialog.get_ok_button().disabled == false, "Close button should be re-enabled on error", results)
 	_expect(status_label.modulate.is_equal_approx(Color("#EF4444")), "Status label modulate should be red on error", results)
+
+	controller = null
+	dialog.free()
+
+## Test: Active Cancel button lifecycle during sealing, double-click prevention, status updates, and transition to Close.
+func _test_cancel_button_lifecycle_and_rollback(results: Dictionary) -> void:
+	## Validates that clicking Cancel disables the button, updates status, and transitions back to Close.
+	var controller = DialogFreedSealController.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
+
+	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	var sem = Semaphore.new()
+	controller.gate = sem
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
+
+	var emitted := {"called": false, "success": false, "zip_path": ""}
+	controller.seal_completed.connect(func(success: bool, zip_path: String) -> void:
+		emitted["called"] = true
+		emitted["success"] = success
+		emitted["zip_path"] = zip_path
+	)
+
+	controller.seal_for_delivery("res://tests")
+	controller.confirm_seal()
+
+	var tree = Engine.get_main_loop() as SceneTree
+	var thread_alive_deadline = Time.get_ticks_msec() + 3000
+	var thread: Thread = null
+	while Time.get_ticks_msec() < thread_alive_deadline:
+		thread = controller.get("_seal_thread") as Thread
+		if thread != null and thread.is_alive():
+			break
+		await tree.process_frame
+
+	_expect(thread != null and thread.is_alive(), "Worker thread should be running and alive", results)
+	var ok_btn: Button = dialog.get_ok_button()
+
+	# Verify active Cancel button configuration
+	_expect(ok_btn.text == "Cancel", "Action button text should be 'Cancel' while sealing is running", results)
+	_expect(ok_btn.disabled == false, "Cancel button should be enabled during active sealing", results)
+	_expect(controller.is_sealing() == true, "Controller should be in sealing state", results)
+
+	# Click Cancel
+	ok_btn.pressed.emit()
+
+	# Immediately check disabled state and cancelling status
+	_expect(ok_btn.disabled == true, "Cancel button should be disabled immediately after click to prevent double clicks", results)
+	_expect(status_label.text == "Cancelling and restoring project state...", "Status label should update to cancelling message", results)
+	_expect(controller.is_cancelling() == true, "Controller should report is_cancelling() == true", results)
+	_expect(controller.is_cancel_requested() == true, "Controller should report is_cancel_requested() == true", results)
+
+	# Release the background worker
+	sem.post()
+
+	var completion_deadline = Time.get_ticks_msec() + 3000
+	while not emitted["called"] and Time.get_ticks_msec() < completion_deadline:
+		await tree.process_frame
+
+	_expect(emitted["called"], "seal_completed should be emitted after cancellation", results)
+	_expect(emitted["success"] == false, "seal_completed should emit success false on cancellation", results)
+	_expect(controller.is_sealing() == false, "Controller should not be sealing after cancellation completes", results)
+	_expect(status_label.text == "Seal cancelled.", "Status label should display 'Seal cancelled.' after rollback", results)
+	_expect(output_label.text.contains("Packaging was cancelled by user"), "Output label should explain cancellation and state restoration", results)
+	_expect(progress_bar.visible == false, "Progress bar should be hidden after cancellation", results)
+	_expect(ok_btn.text == "Close", "Action button text should transition back to 'Close' after rollback", results)
+	_expect(ok_btn.disabled == false, "Close button should be enabled after rollback completes", results)
+
+	# Click Close button to hide dialog
+	ok_btn.pressed.emit()
+	_expect(dialog.visible == false, "Clicking Close should dismiss the dialog", results)
 
 	controller = null
 	dialog.free()

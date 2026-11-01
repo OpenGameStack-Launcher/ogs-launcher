@@ -764,7 +764,7 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Verify confirmation view displays target project name, configured stack tools, and advisory notice explaining standalone packaging
    - Verify "Confirm" (PrimaryButton) and "Cancel" (SecondaryButton) buttons are visible
 5. Click "Confirm" to start packaging:
-   - Verify modal "Cancel" button hides and "Close" button becomes disabled
+   - Verify secondary "Cancel" button hides and the main action button displays "Cancel" and remains enabled
    - Verify two-phase determinate progress reporting:
      - Step 1/2 (Copying tools): `SealProgressBar` displays determinate progress (0% to 100%), while `StatusLabel` and `OutputLabel` display "Step 1/2: Copying tools (X of Y files)" with thousands comma separators where applicable
      - Step 2/2 (Creating ZIP archive): `SealProgressBar` resets to 0% and advances to 100%, while `StatusLabel` and `OutputLabel` display "Step 2/2: Creating ZIP archive (X of Y files)" with thousands comma separators
@@ -787,7 +787,7 @@ dir "$env:LOCALAPPDATA\OGS\"
   - Step 1/2: "Step 1/2: Copying tools (X of Y files)" with determinate progress bar from 0% to 100%
   - Step 2/2: "Step 2/2: Creating ZIP archive (X of Y files)" with progress bar resetting to 0% and advancing to 100%
   - Thousands comma formatting applied to file counts (e.g. "1,234 of 5,678 files")
-  - Modal "Close" button disabled during active packaging to prevent premature dismissal
+  - Modal action button displays enabled "Cancel" during active packaging, allowing user interruption
 - ✅ Seal process completes without crashes
 - ✅ Final status displays:
   - `SealProgressBar` is hidden
@@ -810,6 +810,58 @@ dir "$env:LOCALAPPDATA\OGS\"
 - Confirm write permissions to output directory (typically user's home)
 - Verify SealController.seal_for_delivery() logic
 - Check seal_dialog scene structure in main.tscn
+
+---
+
+### Editor Test 8.1: Active Seal Cancellation and Disk State Rollback
+
+**Objective:** Verify that clicking "Cancel" during active sealing immediately disables the button, updates status text, cooperatively aborts the packaging worker, restores the project filesystem to its pre-seal state, and cleanly dismisses via "Close".
+
+**Prerequisites:**
+- Sample project (or a test project) with tools present in the Central Library so "Seal for Delivery" is enabled
+- Pre-existing custom file in the project (e.g. `<project_path>/tools/custom_tool/keep.txt`) and custom `ogs_config.json` text to verify preservation
+
+**Steps:**
+1. In the target project directory, create a pre-existing directory `<project_path>/tools/custom_tool` containing a text file `keep.txt` with sample text.
+2. In `<project_path>/ogs_config.json`, add a custom property (e.g. `{"custom_flag": true, "offline_mode": false}`).
+3. In the launcher, click **"Seal for Delivery"**.
+4. In the confirmation dialog, verify the target project name and configured tools appear, then click **"Confirm"**.
+5. While sealing is actively progressing (during Step 1/2 tool copying or Step 2/2 archive compression):
+   - Observe that the bottom action button is labeled **"Cancel"** and is enabled.
+   - Click **"Cancel"**.
+6. Observe immediate UI state:
+   - Verify the "Cancel" button immediately disables to prevent double-clicks.
+   - Verify the status label updates to: **"Cancelling and restoring project state..."**.
+7. Wait for worker thread cancellation and rollback completion (typically 1-2 seconds):
+   - Verify the status label updates to: **"Seal cancelled."**.
+   - Verify the output label displays: **"Packaging was cancelled by user.\nProject state has been restored."**.
+   - Verify `SealProgressBar` hides.
+   - Verify the action button text changes to **"Close"** and becomes enabled.
+8. Inspect the filesystem on disk:
+   - Verify any newly copied tool directories under `<project_path>/tools/` have been removed.
+   - Verify the pre-existing `<project_path>/tools/custom_tool/keep.txt` is intact and undamaged.
+   - Verify `<project_path>/ogs_config.json` was restored to its exact pre-seal contents (`{"custom_flag": true, ...}`).
+   - Verify no incomplete `.zip` archive exists in the parent directory.
+9. Click **"Close"** in `SealDialog` and verify the dialog dismisses cleanly.
+
+**Expected Results:**
+- [x] Action button displays "Cancel" and remains clickable during active sealing.
+- [x] Clicking "Cancel" immediately disables the button and updates status to "Cancelling and restoring project state...".
+- [x] Worker thread aborts without hanging or crashing.
+- [x] Disk state rollback removes transient tool copies and partial zip archives.
+- [x] Pre-existing tools, custom notes, and original `ogs_config.json` are preserved.
+- [x] Dialog transitions to "Seal cancelled." with enabled "Close" button.
+- [x] Clicking "Close" dismisses the dialog cleanly.
+
+**Pass Criteria:**
+- User can interrupt in-flight sealing at any time.
+- Rollback leaves project in exact pre-seal state.
+- No file locks, orphaned threads, or process crashes occur.
+
+**If test fails:**
+- Check console for `seal_cancel_requested` and `seal_rollback_completed` log events.
+- Verify `ProjectSealer._rollback()` logic.
+- Confirm open `FileAccess` and `ZIPPacker` handles are closed before file deletion.
 
 ---
 
@@ -1609,6 +1661,7 @@ After completing Editor Tests 1-26, fill in this table:
 | 6: Seal Button States | ✅/⚠️/❌ | | |
 | 7: Per-Tool Download Workflow | ✅/⚠️/❌ | | |
 | 8: Seal Button & Real Seal | ✅/⚠️/❌ | | |
+| 8.1: Active Seal Cancel & Rollback | ✅/⚠️/❌ | | |
 | 9: Offline Tool Launch | ✅/⚠️/❌ | | |
 | 10: Code Tooling & Launch | ✅/⚠️/❌ | | |
 | 11: Project Tools List Launch | ✅/⚠️/❌ | | |
@@ -1830,13 +1883,13 @@ If onboarding wizard does NOT appear, fresh state was not achieved. Repeat the c
 5. Re-open by clicking "Seal for Delivery", then click "Confirm":
    - Observe in-place transition to progress view
    - `SealProgressBar` becomes visible and actively indeterminate
-   - Modal "Close" button is disabled and Cancel button is hidden
+   - Modal action button displays enabled "Cancel" and secondary Cancel button is hidden
    - `StatusLabel` displays prominent 18px headline text ("Sealing project...") with neutral off-white styling (`#F3F4F6`)
 6. Monitor status as sealing progresses:
    - "Sealing project... (Xs)"
    - OutputLabel shows stage information at 14px muted text (`#9CA3AF`)
 7. When complete, note the sealing output summary:
-   - `SealProgressBar` is hidden and modal "Close" button is re-enabled
+   - `SealProgressBar` is hidden and modal action button transitions to "Close"
    - `StatusLabel` modulates to success green (`#22C55E`, "✓ Project sealed successfully!")
    - Output shows tools copied with canonical display names from `ToolCategoryMapper` (e.g., "• Godot v4.7.2", "• Blender v4.5.7")
    - Project size
@@ -1850,7 +1903,7 @@ If onboarding wizard does NOT appear, fresh state was not achieved. Repeat the c
 - ✅ Pre-seal confirmation state presents target project name, configured toolchain, and packaging advisory notice
 - ✅ Cancel action aborts the operation and hides the dialog cleanly
 - ✅ Confirm action transitions the dialog in-place into active progress
-- ✅ Modal "Close" button remains disabled while packaging is in progress and re-enables on completion
+- ✅ Modal action button displays enabled "Cancel" during active packaging and transitions to enabled "Close" upon completion or cancellation
 - ✅ `SealProgressBar` is visible during copying and cleanly hidden upon completion
 - ✅ Final status shows: "✓ Project sealed successfully!" in success green (`#22C55E`)
 - ✅ Output shows tools copied with canonical display names from `ToolCategoryMapper`
@@ -2104,4 +2157,4 @@ After completing all editor tests, move to installed-build testing with same rep
 
 ---
 
-Last updated: **October 31, 2026** (Added CI and automated release packaging verification scenarios)
+Last updated: **November 1, 2026** (Added active seal cancellation and rollback verification scenarios)

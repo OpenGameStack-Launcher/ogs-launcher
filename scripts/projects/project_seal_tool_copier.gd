@@ -15,20 +15,28 @@ const _COPY_CHUNK_SIZE := 1_048_576  # 1 MB
 ## manifest (StackManifest): Parsed and validated stack manifest
 ## library (LibraryManager): Library manager instance for tool path resolution
 ## progress_callback (Callable): Optional callback for progress reporting (phase, current, total)
+## cancel_check (Callable): Optional callback returning bool to check for cooperative cancellation
 ## Returns:
-## Dictionary: {"success": bool, "errors": Array, "tools_copied": Array}
+## Dictionary: {"success": bool, "cancelled": bool, "errors": Array, "tools_copied": Array}
 func copy_tools_to_local(
 	project_path: String,
 	manifest: StackManifest,
 	library: LibraryManager,
-	progress_callback: Callable = Callable()
+	progress_callback: Callable = Callable(),
+	cancel_check: Callable = Callable()
 ) -> Dictionary:
 	## Copies all required tools from library into the project-local tools folder.
 	var result = {
 		"success": false,
+		"cancelled": false,
 		"errors": [],
 		"tools_copied": []
 	}
+
+	if _is_cancelled(cancel_check):
+		result.cancelled = true
+		result.errors.append("Seal cancelled by user.")
+		return result
 
 	var tools_dir = project_path.path_join("tools")
 	if not DirAccess.dir_exists_absolute(tools_dir):
@@ -45,6 +53,10 @@ func copy_tools_to_local(
 	# Pre-count total files across all tools before copying starts
 	var total_files: int = 0
 	for tool in manifest.tools:
+		if _is_cancelled(cancel_check):
+			result.cancelled = true
+			result.errors.append("Seal cancelled by user.")
+			return result
 		var tool_id = tool.get("id", "")
 		var version = tool.get("version", "")
 		var source_path = library.get_tool_path(tool_id, version)
@@ -62,6 +74,11 @@ func copy_tools_to_local(
 	}
 
 	for tool in manifest.tools:
+		if _is_cancelled(cancel_check):
+			result.cancelled = true
+			result.errors.append("Seal cancelled by user.")
+			return result
+
 		var tool_id = tool.get("id", "")
 		var version = tool.get("version", "")
 		var source_path = library.get_tool_path(tool_id, version)
@@ -70,8 +87,12 @@ func copy_tools_to_local(
 			continue
 
 		var dest_path = tools_dir.path_join("%s_%s" % [tool_id, version])
-		var copy_err = _copy_directory_recursive(source_path, dest_path, progress_callback, progress_context)
+		var copy_err = _copy_directory_recursive(source_path, dest_path, progress_callback, progress_context, cancel_check)
 		if copy_err != OK:
+			if _is_cancelled(cancel_check) or copy_err == ERR_SKIP:
+				result.cancelled = true
+				result.errors.append("Seal cancelled by user.")
+				return result
 			result.errors.append("Failed to copy %s v%s: %s" % [tool_id, version, error_string(copy_err)])
 			continue
 
@@ -125,15 +146,20 @@ func _count_files_recursive(dir_path: String) -> int:
 ## dest (String): Destination directory path
 ## progress_callback (Callable): Optional progress callback
 ## progress_context (Dictionary): Shared mutable tracking dictionary with "current" and "total"
+## cancel_check (Callable): Optional cancellation callback returning bool
 ## Returns:
-## int: Godot error code (OK on success)
+## int: Godot error code (OK on success, ERR_SKIP on cancellation)
 func _copy_directory_recursive(
 	source: String,
 	dest: String,
 	progress_callback: Callable = Callable(),
-	progress_context: Dictionary = {}
+	progress_context: Dictionary = {},
+	cancel_check: Callable = Callable()
 ) -> int:
 	## Copies nested directory content preserving structure.
+	if _is_cancelled(cancel_check):
+		return ERR_SKIP
+
 	if not DirAccess.dir_exists_absolute(dest):
 		DirAccess.make_dir_recursive_absolute(dest)
 
@@ -144,6 +170,10 @@ func _copy_directory_recursive(
 	dir.list_dir_begin()
 	var file_name = dir.get_next()
 	while file_name != "":
+		if _is_cancelled(cancel_check):
+			dir.list_dir_end()
+			return ERR_SKIP
+
 		if file_name == "." or file_name == "..":
 			file_name = dir.get_next()
 			continue
@@ -151,12 +181,12 @@ func _copy_directory_recursive(
 		var source_item = source.path_join(file_name)
 		var dest_item = dest.path_join(file_name)
 		if dir.current_is_dir():
-			var recurse_err = _copy_directory_recursive(source_item, dest_item, progress_callback, progress_context)
+			var recurse_err = _copy_directory_recursive(source_item, dest_item, progress_callback, progress_context, cancel_check)
 			if recurse_err != OK:
 				dir.list_dir_end()
 				return recurse_err
 		else:
-			var file_err = _copy_file(source_item, dest_item)
+			var file_err = _copy_file(source_item, dest_item, cancel_check)
 			if file_err != OK:
 				dir.list_dir_end()
 				return file_err
@@ -185,15 +215,24 @@ static func _notify_progress(callback: Callable, phase: String, current: int, to
 	else:
 		callback.call(phase, current, total)
 
+## Checks if cooperative cancellation has been requested.
+static func _is_cancelled(cancel_check: Callable) -> bool:
+	## Returns true if cancellation callable is provided and evaluates to true.
+	return cancel_check.is_valid() and bool(cancel_check.call())
+
 ## Copies a single file from source to destination using chunked reads.
 ## Uses 1MB chunks to avoid loading entire large binaries into memory.
 ## Parameters:
 ## source (String): Source file path
 ## dest (String): Destination file path
+## cancel_check (Callable): Optional cancellation callback returning bool
 ## Returns:
-## int: Godot error code (OK on success)
-func _copy_file(source: String, dest: String) -> int:
+## int: Godot error code (OK on success, ERR_SKIP on cancellation)
+func _copy_file(source: String, dest: String, cancel_check: Callable = Callable()) -> int:
 	## Copies one file in 1MB chunks to keep memory usage bounded.
+	if _is_cancelled(cancel_check):
+		return ERR_SKIP
+
 	var file = FileAccess.open(source, FileAccess.READ)
 	if file == null:
 		return FileAccess.get_open_error()
@@ -204,6 +243,10 @@ func _copy_file(source: String, dest: String) -> int:
 		return FileAccess.get_open_error()
 
 	while not file.eof_reached():
+		if _is_cancelled(cancel_check):
+			file.close()
+			out_file.close()
+			return ERR_SKIP
 		var chunk = file.get_buffer(_COPY_CHUNK_SIZE)
 		if chunk.size() == 0:
 			break

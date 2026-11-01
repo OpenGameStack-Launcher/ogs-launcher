@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 2190
+tests passed: 2344
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (31 total, 38 suites across all categories, 2232 passing tests):**
+**Current unit test suites (31 total, 38 suites across all categories, 2344 passing tests):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -188,7 +188,7 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Empty library handling
   - Hydration workflow integration
 
-- **[tests/project_sealer_tests.gd](tests/project_sealer_tests.gd)** — Validates "Seal for Delivery" workflow.
+- **[tests/project_sealer_tests.gd](tests/project_sealer_tests.gd)** - Validates "Seal for Delivery" workflow.
   - Seal project rejects missing stack.json
   - Seal project rejects missing tools in library
   - Seal project rejects invalid manifest
@@ -205,6 +205,12 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Archiver packaging progress updates from 0 to total files
   - Sealer forwarding two-phase progress events across tool copying and ZIP creation
   - Zero-file edge case handling reporting 100% cleanly without division by zero
+  - Cooperative thread cancellation during Step 1 tool copying aborting prompt file copying and cleaning up partial tool folders
+  - Cooperative thread cancellation during Step 2 zip archiving deleting partial ZIP archives and restoring pre-seal project state
+  - Pre-seal filesystem snapshot capturing pre-existing tools and ogs_config.json
+  - Full disk state rollback upon user cancellation or mid-seal failure restoring pre-seal project snapshot
+  - Preservation of pre-existing tool subdirectories and user notes during rollback
+  - Clean deletion of newly copied tool directories, partial zip archives, and transient offline configurations
 
 - **[tests/mirror_repository_tests.gd](tests/mirror_repository_tests.gd)** — Validates local mirror repository.json loading and schema.
   - Valid manifests load correctly
@@ -281,7 +287,14 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Typography hierarchy (StatusLabel 18px headline, OutputLabel 14px muted #9CA3AF) and SealProgressBar layout properties in `main.tscn`
   - Progress bar visibility lifecycle and close button disabled state during sealing, success, and error transitions
   - Canonical tool display naming via ToolCategoryMapper in success summary
-  - Active async sealing lifecycle keeps close button disabled and progress bar visible until thread completion
+  - Active async sealing lifecycle keeps action button enabled with text "Cancel", hides duplicate cancel button, and keeps progress bar visible until thread completion
+  - Active Cancel button lifecycle during background sealing, keeping the primary action button enabled with text "Cancel"
+  - Immediate button disablement on click to prevent duplicate cancellation triggers
+  - Status label updates displaying "Cancelling and restoring project state..." during cooperative rollback
+  - Controller state reporting via is_cancelling() and is_cancel_requested()
+  - Worker thread joining and dialog transition back to an enabled "Close" button upon cancellation and rollback completion
+  - Safe thread cancellation and joining on NOTIFICATION_PREDELETE without memory leaks or warnings
+  - Dialog dismissal when "Close" is pressed following cancellation
   - Pre-seal confirmation state presentation displays project name, canonical tools, and multi-minute packaging advisory notice without launching worker thread
   - Cancel flow dismisses SealDialog without modifying project files or launching worker thread
   - Confirm flow transitions dialog in-place to active sealing progress and initiates background packaging
@@ -694,4 +707,4 @@ Target coverage for all new features:
 
 ---
 
-Last updated: **October 31, 2026**
+Last updated: **November 1, 2026**

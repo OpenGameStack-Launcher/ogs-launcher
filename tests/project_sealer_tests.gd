@@ -42,6 +42,10 @@ func run() -> Dictionary:
 		{"name": "test_archiver_reports_file_counts_and_progress", "func": test_archiver_reports_file_counts_and_progress},
 		{"name": "test_sealer_forwards_two_phase_progress", "func": test_sealer_forwards_two_phase_progress},
 		{"name": "test_progress_zero_files_edge_case", "func": test_progress_zero_files_edge_case},
+		{"name": "test_seal_project_cancel_during_tool_copy", "func": test_seal_project_cancel_during_tool_copy},
+		{"name": "test_seal_project_cancel_during_archiving", "func": test_seal_project_cancel_during_archiving},
+		{"name": "test_seal_project_failure_triggers_complete_rollback", "func": test_seal_project_failure_triggers_complete_rollback},
+		{"name": "test_seal_project_preserves_pre_existing_tools_and_config", "func": test_seal_project_preserves_pre_existing_tools_and_config},
 	]
 	
 	for test in tests:
@@ -691,4 +695,203 @@ func test_progress_zero_files_edge_case() -> Dictionary:
 		]}
 
 	return {"passed": true}
+
+class MockFailingArchiver:
+	extends RefCounted
+	var current_zip_path: String = ""
+	func create_sealed_zip(_path: String, _progress: Callable = Callable(), _cancel: Callable = Callable()) -> Dictionary:
+		return {"success": false, "cancelled": false, "errors": ["Mock zip write error"]}
+
+## Test: Cancelling during Step 1 (tool copy) aborts copying promptly and cleans up newly copied directories under ./tools/ without affecting pre-existing files
+func test_seal_project_cancel_during_tool_copy() -> Dictionary:
+	var fixture = _helpers.create_seal_success_fixture("test_cancel_step1")
+	if not fixture.success:
+		return {"passed": false, "error": fixture.error}
+
+	# Pre-create a custom tool folder in ./tools/
+	var pre_tools_dir = fixture.project_dir.path_join("tools")
+	var custom_dir = pre_tools_dir.path_join("custom_preexisting_tool")
+	DirAccess.make_dir_recursive_absolute(custom_dir)
+	var custom_file = FileAccess.open(custom_dir.path_join("notes.txt"), FileAccess.WRITE)
+	if custom_file != null:
+		custom_file.store_string("preserve me")
+		custom_file.close()
+
+	var cancel_state := {"requested": false}
+	var cancel_cb = func() -> bool:
+		return cancel_state["requested"]
+
+	var sealer = ProjectSealer.new()
+	var progress_cb = func(phase: String, current: int, _total: int) -> void:
+		if phase.contains("Step 1") and current >= 0:
+			cancel_state["requested"] = true
+			sealer.request_cancel()
+
+	var result = sealer.seal_project(fixture.project_dir, progress_cb, cancel_cb)
+
+	# Verify result
+	var failed_msg: String = ""
+	if result.success:
+		failed_msg = "Expected seal_project to fail on cancellation"
+	elif not result.get("cancelled", false):
+		failed_msg = "Expected result.cancelled to be true"
+	elif not DirAccess.dir_exists_absolute(custom_dir):
+		failed_msg = "Pre-existing tool directory was deleted by rollback"
+	elif not FileAccess.file_exists(custom_dir.path_join("notes.txt")):
+		failed_msg = "Pre-existing file inside tool directory was deleted by rollback"
+
+	var tool_sealed_dir = pre_tools_dir.path_join("%s_%s" % [fixture.tool_id, fixture.version])
+	if failed_msg.is_empty() and DirAccess.dir_exists_absolute(tool_sealed_dir):
+		failed_msg = "Newly copied tool directory was not cleaned up by rollback"
+
+	if failed_msg.is_empty() and FileAccess.file_exists(fixture.project_dir.path_join("ogs_config.json")):
+		failed_msg = "ogs_config.json was not deleted during Step 1 rollback"
+
+	_helpers.cleanup_seal_fixture(fixture)
+
+	if not failed_msg.is_empty():
+		return {"passed": false, "error": failed_msg}
+
+	return {"passed": true}
+
+## Test: Cancelling during Step 2 (archiving) closes and deletes partial ZIP, restores ogs_config.json, and cleans up tools
+func test_seal_project_cancel_during_archiving() -> Dictionary:
+	var fixture = _helpers.create_seal_success_fixture("test_cancel_step2")
+	if not fixture.success:
+		return {"passed": false, "error": fixture.error}
+
+	# Pre-create ogs_config.json with custom content that must be preserved
+	var config_path = fixture.project_dir.path_join("ogs_config.json")
+	var original_config_text = '{"custom_project_setting": true, "offline": false}'
+	var cfg = FileAccess.open(config_path, FileAccess.WRITE)
+	if cfg != null:
+		cfg.store_string(original_config_text)
+		cfg.close()
+
+	var cancel_state := {"requested": false}
+	var cancel_cb = func() -> bool:
+		return cancel_state["requested"]
+
+	var sealer = ProjectSealer.new()
+	var progress_cb = func(phase: String, current: int, _total: int) -> void:
+		if phase.contains("Step 2"):
+			cancel_state["requested"] = true
+			sealer.request_cancel()
+
+	var result = sealer.seal_project(fixture.project_dir, progress_cb, cancel_cb)
+
+	var failed_msg: String = ""
+	if result.success:
+		failed_msg = "Expected seal_project to fail on Step 2 cancellation"
+	elif not result.get("cancelled", false):
+		failed_msg = "Expected result.cancelled to be true"
+
+	# Verify ogs_config.json was restored to exact pre-seal contents
+	if failed_msg.is_empty():
+		var restored_cfg = FileAccess.open(config_path, FileAccess.READ)
+		if restored_cfg == null:
+			failed_msg = "ogs_config.json was missing after Step 2 cancellation rollback"
+		else:
+			var restored_text = restored_cfg.get_as_text()
+			restored_cfg.close()
+			if restored_text != original_config_text:
+				failed_msg = "ogs_config.json was not restored to pre-seal contents: got '%s'" % restored_text
+
+	# Verify newly copied tools were cleaned up
+	var tools_dir = fixture.project_dir.path_join("tools")
+	if failed_msg.is_empty() and DirAccess.dir_exists_absolute(tools_dir):
+		failed_msg = "tools directory was not cleaned up during Step 2 rollback"
+
+	# Verify partial zip was removed
+	if failed_msg.is_empty() and not String(result.get("sealed_zip", "")).is_empty():
+		if FileAccess.file_exists(result.sealed_zip):
+			failed_msg = "Partial zip file was not deleted during Step 2 rollback"
+
+	_helpers.cleanup_seal_fixture(fixture)
+
+	if not failed_msg.is_empty():
+		return {"passed": false, "error": failed_msg}
+
+	return {"passed": true}
+
+## Test: Mid-seal failure automatically triggers complete rollback and leaves project in pre-seal state
+func test_seal_project_failure_triggers_complete_rollback() -> Dictionary:
+	var fixture = _helpers.create_seal_success_fixture("test_failure_rollback")
+	if not fixture.success:
+		return {"passed": false, "error": fixture.error}
+
+	var sealer = ProjectSealer.new()
+	# Inject mock failing archiver to simulate Step 4 failure
+	sealer.archiver = MockFailingArchiver.new()
+
+	var result = sealer.seal_project(fixture.project_dir)
+
+	var failed_msg: String = ""
+	if result.success:
+		failed_msg = "Expected seal_project to fail with mock archiver"
+	elif result.get("cancelled", false):
+		failed_msg = "Expected result.cancelled to be false on mid-seal error"
+	elif DirAccess.dir_exists_absolute(fixture.project_dir.path_join("tools")):
+		failed_msg = "tools directory was not cleaned up after mid-seal failure"
+	elif FileAccess.file_exists(fixture.project_dir.path_join("ogs_config.json")):
+		failed_msg = "ogs_config.json was not cleaned up after mid-seal failure"
+
+	_helpers.cleanup_seal_fixture(fixture)
+
+	if not failed_msg.is_empty():
+		return {"passed": false, "error": failed_msg}
+
+	return {"passed": true}
+
+## Test: Pre-seal snapshot preserves pre-existing tools and config when seal is cancelled immediately
+func test_seal_project_preserves_pre_existing_tools_and_config() -> Dictionary:
+	var fixture = _helpers.create_seal_success_fixture("test_preserve_existing")
+	if not fixture.success:
+		return {"passed": false, "error": fixture.error}
+
+	# Pre-create tools directory and ogs_config.json
+	var tools_dir = fixture.project_dir.path_join("tools")
+	var existing_subdir = tools_dir.path_join("existing_tool")
+	DirAccess.make_dir_recursive_absolute(existing_subdir)
+	var f = FileAccess.open(existing_subdir.path_join("keep.txt"), FileAccess.WRITE)
+	if f != null:
+		f.store_string("existing data")
+		f.close()
+
+	var config_path = fixture.project_dir.path_join("ogs_config.json")
+	var initial_config = '{"my_original_config": 42}'
+	var f2 = FileAccess.open(config_path, FileAccess.WRITE)
+	if f2 != null:
+		f2.store_string(initial_config)
+		f2.close()
+
+	var sealer = ProjectSealer.new()
+	var cancel_cb = func() -> bool: return true
+
+	var result = sealer.seal_project(fixture.project_dir, Callable(), cancel_cb)
+
+	var failed_msg: String = ""
+	if not result.get("cancelled", false):
+		failed_msg = "Expected result.cancelled to be true"
+	elif not DirAccess.dir_exists_absolute(existing_subdir):
+		failed_msg = "Pre-existing tool directory was lost"
+	elif not FileAccess.file_exists(existing_subdir.path_join("keep.txt")):
+		failed_msg = "Pre-existing file inside tool directory was lost"
+	else:
+		var read_cfg = FileAccess.open(config_path, FileAccess.READ)
+		if read_cfg == null:
+			failed_msg = "ogs_config.json was lost"
+		else:
+			var cfg_text = read_cfg.get_as_text()
+			read_cfg.close()
+			if cfg_text != initial_config:
+				failed_msg = "ogs_config.json content changed: expected '%s', got '%s'" % [initial_config, cfg_text]
+
+	_helpers.cleanup_seal_fixture(fixture)
+
+	if not failed_msg.is_empty():
+		return {"passed": false, "error": failed_msg}
+
+	return {"passed": true}
+
 
