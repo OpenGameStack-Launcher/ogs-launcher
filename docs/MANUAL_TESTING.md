@@ -1115,7 +1115,7 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Call `cloner.clone_project_async("https://github.com/org/repo.git", "repo", dest_root)`.
    - Verify `clone_failed` signal emits with error code `offline` without spawning child processes.
 5. Verify two-phase manifest verification:
-   - When cloning a repository lacking `stack.json` at root: verify `clone_failed` emits `missing_stack_json` and the target directory is deleted safely within destination bounds.
+   - When cloning a repository lacking `ogs_stack.json` at root: verify `clone_failed` emits `missing_ogs_stack_json` and the target directory is deleted safely within destination bounds.
 
 **Expected Results:**
 - [x] PortableGit executable resolves accurately to the highest installed semantic version.
@@ -1123,7 +1123,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 - [x] Injection attacks, disallowed protocols (file, ext), local paths, and shell metacharacters are rejected.
 - [x] Slugs and collision avoidance names generate deterministically.
 - [x] Offline mode immediately blocks clone requests without spawning network processes.
-- [x] Two-phase manifest check deletes incomplete directories when stack.json is missing or invalid.
+- [x] Two-phase manifest check deletes incomplete directories when ogs_stack.json is missing or invalid.
 
 **Pass Criteria:**
 - RemoteProjectCloner passes all validation and lifecycle checks.

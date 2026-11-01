@@ -86,7 +86,7 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
 
 **Current unit test suites (31 total, 38 suites across all categories, 2403 passing tests):**
 
-- **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
+- **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** - Validates `ogs_stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
   - Required fields enforced (schema_version, stack_name, tools)
   - Float schema_version handling (1.0 accepted, 1.5 rejected)
@@ -94,7 +94,7 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - SHA-256 checksum validation
   - Tool entry validation
 
-- **[tests/ogs_config_tests.gd](tests/ogs_config_tests.gd)** — Validates `ogs_config.json` loading and offline mode detection.
+- **[tests/ogs_config_tests.gd](tests/ogs_config_tests.gd)** - Validates `ogs_config.json` loading and offline mode detection.
   - Valid configs load correctly
   - Missing files return defaults (no error)
   - Float schema_version handling
@@ -102,7 +102,7 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Boolean type enforcement for offline flags
   - Allowlist parsing and validation (`allowed_hosts`, `allowed_ports`)
 
-- **[tests/stack_generator_tests.gd](tests/stack_generator_tests.gd)** — Validates manifest generation and serialization.
+- **[tests/stack_generator_tests.gd](tests/stack_generator_tests.gd)** - Validates manifest generation and serialization.
   - Default manifest contains standard tools
   - JSON pretty-printing (newlines, tabs)
   - JSON compact mode (no whitespace)
@@ -116,7 +116,7 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Git launch arguments include `--cd=<project_dir>`
   - VSCodium launch arguments include workspace project path and optional target file
   - Fallback executable discovery for Git (`git-bash.exe`, `cmd/git.exe`, `bin/git.exe`) and VSCodium (`VSCodium.exe`, `codium`, `bin/codium`)
-  - Automatic detection and injection of portable Git (`git.path` and `git.enabled`) into `.vscode/settings.json` when Git is pinned in `stack.json`
+  - Automatic detection and injection of portable Git (`git.path` and `git.enabled`) into `.vscode/settings.json` when Git is pinned in `ogs_stack.json`
   - Absolute paths used as-is (no project directory joining)
   - Relative paths joined with project directory
 
@@ -189,7 +189,7 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Hydration workflow integration
 
 - **[tests/project_sealer_tests.gd](tests/project_sealer_tests.gd)** - Validates "Seal for Delivery" workflow.
-  - Seal project rejects missing stack.json
+  - Seal project rejects missing ogs_stack.json
   - Seal project rejects missing tools in library
   - Seal project rejects invalid manifest
   - Seal project validates against library state
@@ -351,9 +351,9 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Target path boundary validation: ensures targets stay strictly within destination root
   - PortableGit executable resolution in Central Library and semantic version comparison
   - Air-gap blocking: OfflineEnforcer.is_offline() blocks clone operations immediately with error code offline
-  - Two-phase clone flow with mocked commands: verifying phase, show HEAD:stack.json, and checkout phase
+  - Two-phase clone flow with mocked commands: verifying phase, show HEAD:ogs_stack.json, and checkout phase
   - Fallback from blobless clone (--filter=blob:none) to standard no-checkout clone
-  - Missing or invalid root stack.json manifests rejected before checkout and target directory purged safely
+  - Missing or invalid root ogs_stack.json manifests rejected before checkout and target directory purged safely
   - Working tree checkout failure handling and cancellation teardown killing child process
   - Target directory pre-existence rejection and defensive directory deletion bounded by destination root
 

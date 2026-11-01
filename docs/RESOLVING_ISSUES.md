@@ -99,7 +99,7 @@ Run all commands, tests, and commits inside `.worktrees/issue-<number>`.
 ### 1. OGS Core Architectural Rules
 * **Air-Gap First:** Never introduce external network calls, telemetry, or sockets outside the explicit download flows in `scripts/network/` and `scripts/mirror/`. All network access must obey `OfflineEnforcer` and `SocketBlocker`.
 * **Zero Dependencies & Portable Paths:** Never use external installers or registry keys. Resolve Central Library paths exclusively through `PathResolver` (`scripts/library/path_resolver.gd`) so `OGS_LIBRARY_ROOT` test isolation is respected.
-* **Security & Input Validation:** Treat `stack.json`, `ogs_config.json`, `repository.json`, and ZIP archives as untrusted input. Validate SHA-256 hashes where required and guard against path traversal (`../`) and zip-slip attacks.
+* **Security & Input Validation:** Treat `ogs_stack.json`, `ogs_config.json`, `repository.json`, and ZIP archives as untrusted input. Validate SHA-256 hashes where required and guard against path traversal (`../`) and zip-slip attacks.
 
 ### 2. Godot 4.7.2 & GDScript Standards
 1. **Godot 4.7.2 Syntax:** Strictly use Godot 4.7.2 syntax (`instantiate()`, `@onready`, `@export`, `Callable`-based `connect()`, `await`).

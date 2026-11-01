@@ -10,7 +10,7 @@ All code changes must strictly preserve these four architectural pillars:
 1. **Air-Gap First:** Every feature must function in a strictly offline, air-gapped environment. No external network calls, analytics, or telemetry outside the explicit tool-download flows in `scripts/network/` and `scripts/mirror/`. All socket operations must respect `OfflineEnforcer` and `SocketBlocker`.
 2. **Zero External Dependencies:** Avoid external installers, Windows registry dependencies, or unapproved system modifications. Central Library paths must be resolved through `PathResolver` (`scripts/library/path_resolver.gd`), which supports environment-variable isolation (`OGS_LIBRARY_ROOT`) for testing.
 3. **MOSA Modularity:** Keep UI orchestration, domain logic, manifest parsing, and file operations cleanly separated across `scripts/` submodules. Avoid growing God classes in `main.gd` or page controllers.
-4. **Defensive Security:** Treat `stack.json`, `ogs_config.json`, `repository.json`, and downloaded ZIP archives as untrusted input. Enforce SHA-256 verification and guard all file/archive paths against directory traversal (`../`) and zip-slip attacks. See `docs/SECURITY_CONSIDERATIONS.md`.
+4. **Defensive Security:** Treat `ogs_stack.json`, `ogs_config.json`, `repository.json`, and downloaded ZIP archives as untrusted input. Enforce SHA-256 verification and guard all file/archive paths against directory traversal (`../`) and zip-slip attacks. See `docs/SECURITY_CONSIDERATIONS.md`.
 
 ---
 
