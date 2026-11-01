@@ -434,16 +434,16 @@ dir "$env:LOCALAPPDATA\OGS\"
 5. Confirm that the bottom action row in `Project Library` contains only "Open Project" and "Remove Project" (with no "Seal for Delivery" button).
 6. Switch to Tab 1 ("Project Details") by double-clicking a project or clicking "Open Project".
 7. Confirm that the creation toolbar ("Add Local Project", "Add Remote Project", "New Project") does NOT appear on Tab 1 ("Project Details").
-8. Confirm that `ProjectsStatusBar` is rendered as the first child at the top of `Project Details` directly above `VSplitContainer` as a compact horizontal panel container (`PanelContainer`) with an inner `HBoxContainer`.
+8. Confirm that `ProjectsStatusBar` is rendered as the first child at the top of `Project Details` directly above `ProjectDetailsTabs` as a compact horizontal panel container (`PanelContainer`) with an inner `HBoxContainer`.
 9. Verify the status message ("Status: ...") and offline pill badge in the status bar across states (idle prompt, missing tools, forced offline, offline mode, ready, error).
-10. Inspect the bottom of Tab 1 ("Project Details"): confirm that `ProjectDetailsActionRow` houses `LaunchButton` ("Select a Tool to Launch") and `SealButton` ("Seal for Delivery") side-by-side with 12px separation and equal width expansion.
+10. Inspect the nested sub-tabs in Tab 1 ("Project Details"): confirm that `ProjectDetailsTabs` houses three dedicated sub-tabs (`Toolchain`, `Explorer`, and `Policy`), with `LaunchButton` at the bottom of `Toolchain`, `ExplorerLaunchButton` at the bottom of `Explorer`, and `SealButton` ("Seal for Delivery") at the bottom of `Policy`.
 
 **Expected Results:**
 - [x] `ProjectsTabs` sits directly underneath the `Projects` page title.
 - [x] "Add Local Project", "Add Remote Project", and "New Project" buttons render only in the `Project Library` tab header.
 - [x] Status bar and offline pill render only in the `Project Details` tab header.
 - [x] Project Library bottom action row contains only "Open Project" and "Remove Project".
-- [x] "Seal for Delivery" renders side-by-side with "Launch Selected Tool" at the bottom of the `Project Details` tab.
+- [x] `ProjectDetailsTabs` provides dedicated sub-tabs (`Toolchain`, `Explorer`, `Policy`) with co-located action buttons (`LaunchButton`, `ExplorerLaunchButton`, `SealButton`).
 - [x] Semantic status colors distinguish Ready (green), Warning (amber), Error (red), and Neutral (muted) clearly.
 - [x] Offline pill badges clearly indicate Disabled (neutral/slate), Enabled (amber), and Forced (high-contrast red).
 
@@ -1360,64 +1360,64 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
-### Editor Test 21: Contextual Launch Button States and Resizable Split Layout
+### Editor Test 21: Project Details - Nested Sub-Tabs and Contextual Launch Controls
 
-**Objective:** Verify that the Project Details pane features a draggable vertical split container, that `ExplorerLabel` cleanly truncates long paths without stretching the toolbar, and that `LaunchButton` provides contextual enablement and dynamic action labels.
+**Objective:** Verify that the Project Details pane organizes project workflows into three nested sub-tabs (`Toolchain`, `Explorer`, `Policy`), that `ProjectToolsList` and `ProjectExplorerTree` expand to utilize full vertical screen space, that `ExplorerLabel` cleanly truncates long paths without stretching the toolbar, and that launch buttons provide contextual enablement and dynamic action labels across both Toolchain and Explorer tabs.
 
 **Steps:**
 1. Launch the launcher and navigate to the Projects page.
 2. Select a project in the Project Library (e.g., `samples/sample_project`) and switch to Tab 1 ("Project Details").
-3. Inspect `LaunchButton` at the bottom of the Project Details view:
-   - Verify that the button is disabled.
-   - Verify that the button text displays `"Select a Tool to Launch"`.
-4. In the Stack Toolchain list (`ProjectToolsList`), click to select an installed tool (e.g., Godot or VSCodium):
-   - Verify that `LaunchButton` becomes enabled.
-   - Verify that the button text updates to `"Launch <Tool Name> <Version>"` (e.g., `"Launch Godot v4.7.2"` or `"Launch VSCodium v1.85.1"`).
-5. In the Project Explorer tree (`ProjectExplorerTree`), click on a recognized file or folder (e.g., `main.gd` or `project.godot`):
-   - Verify that the tool selection in `ProjectToolsList` is deselected.
-   - Verify that `LaunchButton` remains enabled.
-   - Verify that the button text updates to `"Open <filename> in <Tool Name>"` (e.g., `"Open main.gd in VSCodium"` or `"Open project.godot in Godot"`).
-6. Click empty space in the Project Explorer tree or in `ProjectToolsList`:
-   - Verify that active selections in both panes are cleared.
-   - Verify that `LaunchButton` reverts to `"Select a Tool to Launch"` in the disabled state.
-7. Test the draggable splitter (`VSplitContainer`):
-   - Click and drag the splitter separator handle between the Toolchain section and the Project Explorer section up and down.
-   - Verify both panes resize smoothly.
-   - Verify that the Toolchain section maintains its minimum height (120px) and the Explorer section maintains its minimum height (140px) without collapsing or hiding essential buttons.
-8. Test long directory path presentation on `ExplorerLabel`:
-   - Inspect a project located in a deeply nested path.
-   - Verify that `ExplorerLabel` truncates with an ellipsis (`...`) instead of pushing the "New Folder" and "New File" toolbar buttons off the edge of the panel.
-   - Hover over `ExplorerLabel` and confirm the full normalized path appears in the tooltip.
+3. Verify that `ProjectDetailsTabs` displays three sub-tabs in order: `Toolchain` (Tab 0), `Explorer` (Tab 1), and `Policy` (Tab 2), defaulting to `Toolchain`.
+4. Inspect the `Toolchain` sub-tab (Tab 0):
+   - Verify `ToolchainHeaderLabel` ("Stack Toolchain" in 18px cyan accent) renders above `ProjectToolsList`.
+   - Verify `ProjectToolsList` utilizes the full available vertical height (`size_flags_vertical = Control.SIZE_EXPAND_FILL`).
+   - Verify `LaunchButton` is positioned at the bottom, starts disabled with prompt text `"Select a Tool to Launch"`.
+   - Select an installed tool row (e.g. Godot) and confirm `LaunchButton` enables with `"Launch <Tool> <Version>"` (e.g. `"Launch Godot v4.7.2"`).
+5. Switch to the `Explorer` sub-tab (Tab 1):
+   - Verify `ExplorerToolbar` renders at the top with `ExplorerLabel`, `NewFolderBtn`, and `NewFileBtn`.
+   - Verify `ProjectExplorerTree` utilizes the full vertical height (`size_flags_vertical = Control.SIZE_EXPAND_FILL`), allowing comfortable inspection of deep directory structures without cramped scrolling.
+   - Verify `ExplorerLaunchButton` is positioned at the bottom, starts disabled with `"Select a Tool to Launch"`.
+   - Select a recognized file or direct tool folder in `ProjectExplorerTree` (e.g. `project.godot`) and confirm `ExplorerLaunchButton` enables with `"Open <filename> in <Tool>"` (e.g. `"Open project.godot in Godot"`).
+   - Test long directory path presentation on `ExplorerLabel`: verify that deeply nested paths truncate with an ellipsis (`...`) instead of pushing the toolbar buttons off-screen, and hover over `ExplorerLabel` to confirm the full path tooltip.
+6. Click empty space in `ProjectExplorerTree` or in `ProjectToolsList`:
+   - Verify active selections are cleared and the launch button reverts to `"Select a Tool to Launch"` in the disabled state.
+7. Switch to the `Policy` sub-tab (Tab 2):
+   - Verify `ProjectOfflineSettingsLabel` and `ProjectOfflineStatusLabel` render at the top.
+   - Verify `OfflineModeContainer` and `ForceOfflineContainer` render with autowrapped helper descriptions.
+   - Verify `PolicySpacer` provides vertical expanding room above `SealButton`.
+   - Verify `SealButton` ("Seal for Delivery") is positioned at the bottom of the `Policy` sub-tab with `PrimaryButton` styling.
 
 **Expected Results:**
-- [x] Initial project selection leaves `LaunchButton` disabled with `"Select a Tool to Launch"`.
+- [x] `ProjectDetailsTabs` organizes Project Details into `Toolchain`, `Explorer`, and `Policy` sub-tabs.
+- [x] Initial project selection leaves launch buttons disabled with `"Select a Tool to Launch"`.
 - [x] Selecting a tool in `ProjectToolsList` updates `LaunchButton` to `"Launch <Tool Name> <Version>"` and enables it.
-- [x] Selecting a recognized file in `ProjectExplorerTree` updates `LaunchButton` to `"Open <filename> in <Tool Name>"` and enables it.
+- [x] Selecting a recognized file in `ProjectExplorerTree` updates `ExplorerLaunchButton` to `"Open <filename> in <Tool Name>"` and enables it.
 - [x] Clicking empty space in either pane restores `"Select a Tool to Launch"` in the disabled state.
-- [x] Dragging the `VSplitContainer` divider smoothly resizes the panes while respecting minimum dimension bounds.
+- [x] `ProjectExplorerTree` expands vertically to provide expansive tree viewing without cramped scrolling.
 - [x] Deep project directory paths truncate cleanly with an ellipsis and display the full path on hover tooltip.
+- [x] `SealButton` ("Seal for Delivery") is co-located with offline policy settings at the bottom of the `Policy` sub-tab.
 
 **Pass Criteria:**
-- Dynamic launch button text accurately reflects active selection context.
-- Dragging the splitter resizes panes without layout deformation or control clipping.
+- Dynamic launch button text accurately reflects active selection context across sub-tabs.
+- All three sub-tabs render cleanly with full vertical expansion and proper button placement.
 - Long paths do not cause toolbar overflow.
 
 **If test fails:**
-- Verify `VSplitContainer` node layout and minimum sizes in `main.tscn`.
-- Check `ProjectsController._update_launch_button_state()` and signal connections (`empty_clicked`, `nothing_selected`).
+- Verify `ProjectDetailsTabs` node layout and sub-tab structure in `main.tscn`.
+- Check `ProjectsController._update_launch_button_state()` and `_on_project_details_tab_changed()`.
 - Confirm `ExplorerLabel` has `clip_text = true` and `text_overrun_behavior = 3`.
 
 ---
 
 ### Editor Test 22: Project Details - Project Offline Policy Toggles and Persistence
 
-**Objective:** Verify that per-project offline policy toggles ("Offline mode" and "Force offline") are located under the Project Details tab with clear helper descriptions, synchronize dynamically with the selected project, persist changes directly to `ogs_config.json` on disk, and verify that the global Settings page contains no project-specific controls.
+**Objective:** Verify that per-project offline policy toggles ("Offline mode" and "Force offline") are located under the Project Details Policy sub-tab with clear helper descriptions, synchronize dynamically with the selected project, persist changes directly to `ogs_config.json` on disk, and verify that the global Settings page contains no project-specific controls.
 
 **Steps:**
 1. Launch OGS Launcher and navigate to the Projects page.
 2. In the Project Library tab, select a project (e.g., `samples/sample_project`).
 3. Switch to the Project Details tab (double-click project card or click "Open Project").
-4. Inspect the **"Project Offline Policy"** section:
+4. Switch to the **"Policy"** sub-tab (`ProjectDetailsTabs/Policy`) and inspect the **"Project Offline Policy"** section:
    - Verify the section header renders in 18px cyan accent typography.
    - Verify the status label displays the normalized path of the active project: `"Selected: <normalized_path>"`.
    - Verify the "Offline mode" CheckButton renders with helper label: `"Blocks outbound network activity while this project is active; allows launching tools from the Central Library or local project stack."`.

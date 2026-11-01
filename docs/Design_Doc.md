@@ -149,22 +149,28 @@ In the Project Library (Tab 0 of the Projects page), users can quickly search an
     *   *Zero Projects Tracked:* When the library contains no registered projects, displays `"No Projects Tracked"` along with onboarding action buttons (`New Project`, `Add Local Project`, `Add Remote Project` respecting offline mode enforcement).
     *   *Zero Filter Matches:* When projects are tracked but the active search query yields no matches, displays `"No Projects Match Filter"` and provides a `"Clear Filter"` button that clears the search bar and restores all projects.
 
-### 2.13 Resizable Split Layout and Contextual Launch Button (Project Details)
-In the Project Details tab (Tab 1 of the Projects page), the interface adapts dynamically to user focus and provides proportional layout adjustments:
-*   **Draggable Vertical Splitter (`VSplitContainer`):** Wraps the Toolchain Section (`ToolchainHeaderLabel`, `ProjectToolsList`, `ToolActionRow`) and the Explorer Section (`ExplorerToolbar`, `ProjectExplorerTree`) within a draggable `VSplitContainer` with `split_offset = 120`. Both sections enforce minimum dimensions (`ToolchainSection` custom minimum height 120px; `ExplorerSection` custom minimum height 140px) to prevent controls from collapsing.
-*   **Ellipsis Path Truncation (`ExplorerLabel`):** The Project Explorer header label configures `clip_text = true` and `text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS`, preventing long filesystem paths from pushing the toolbar action buttons ("New Folder", "New File") off-screen. Full paths remain accessible via hover tooltip (`lbl_tools_for_project.tooltip_text`).
-*   **Contextual Launch Action Button (`LaunchButton`):** Rather than remaining enabled with static text, the launch button provides explicit state-aware messaging and enablement:
-    *   *Idle / Prompt State:* When no tool or launchable file is selected, the button is disabled and displays `"Select a Tool to Launch"`.
-    *   *Toolchain Selection:* When a tool row is selected in `ProjectToolsList`, the button enables and displays `"Launch <Tool Name> <Version>"` (e.g., `"Launch Godot v4.7.2"` or `"Launch VSCodium v1.85.1"`).
-    *   *Explorer Selection:* When a recognized file or direct tool folder is selected in `ProjectExplorerTree`, the button enables and displays `"Open <filename> in <Tool Name>"` (e.g., `"Open main.gd in VSCodium"`).
-*   **Clean Deselection Handlers:** Clicking empty space in either `ProjectToolsList` (`empty_clicked`) or `ProjectExplorerTree` (`nothing_selected`) deselects active items and cleanly reverts the launch button to its disabled prompt state.
-*   **Side-by-Side Launch and Seal Action Row (`ProjectDetailsActionRow`):** At the bottom of the Project Details tab, a horizontal action container (`ProjectDetailsActionRow`, separation 12) houses `LaunchButton` alongside `SealButton` ("Seal for Delivery"), with both buttons configured with equal width horizontal expansion (`size_flags_horizontal = Control.SIZE_EXPAND_FILL`). This places project-specific execution and export actions together while keeping the Project Library tab focused cleanly on project browsing and management.
+### 2.13 Nested Sub-Tabs Architecture and Contextual Launch Controls (Project Details)
+In the Project Details tab (Tab 1 of the Projects page), the interface organizes project workflows into a dedicated nested `TabContainer` (`ProjectDetailsTabs`, with `size_flags_vertical = Control.SIZE_EXPAND_FILL`) featuring three specialized sub-tabs that allocate full vertical screen space to their respective tasks:
+*   **Toolchain Sub-Tab (Tab 0):** Houses the configured stack tools management view:
+    *   *Header & List:* Displays `ToolchainHeaderLabel` ("Stack Toolchain" in 18px cyan accent typography) and `ProjectToolsList` with fixed 20x20 tool icons and full vertical expansion (`size_flags_vertical = Control.SIZE_EXPAND_FILL`), comfortably accommodating multi-tool stacks.
+    *   *Tool Actions Row:* Provides `AddToolButton`, `RemoveToolButton`, and `ChangeVersionButton` with equal width distribution.
+    *   *Dedicated Launch Button (`LaunchButton`):* Positioned across the bottom of the tab (`size_flags_horizontal = Control.SIZE_EXPAND_FILL`) with `PrimaryButton` styling, contextually enabling when a tool is selected (e.g., `"Launch Godot v4.7.2"`).
+*   **Explorer Sub-Tab (Tab 1):** Allocates the full tab height to directory browsing and file launching:
+    *   *Explorer Toolbar:* Houses `ExplorerLabel` with ellipsis clipping (`clip_text = true` and `text_overrun_behavior = TextServer.OVERRUN_TRIM_ELLIPSIS`) to safely truncate long paths, paired with `NewFolderBtn` and `NewFileBtn`.
+    *   *Expansive Tree View (`ProjectExplorerTree`):* Configured with `size_flags_vertical = Control.SIZE_EXPAND_FILL` to give developers substantial vertical room to inspect deep directory structures without cramped scrolling.
+    *   *Dedicated Launch Button (`ExplorerLaunchButton`):* Positioned across the bottom of the tab (`size_flags_horizontal = Control.SIZE_EXPAND_FILL`) with `PrimaryButton` styling, contextually enabling when a launchable file or direct tool folder is selected (e.g., `"Open main.gd in VSCodium"`).
+*   **Policy Sub-Tab (Tab 2):** Encapsulates project-level offline policies and air-gap controls, pairing them directly with project delivery packaging:
+    *   *Offline Policy Controls:* Displays `ProjectOfflineSettingsLabel`, `ProjectOfflineStatusLabel` (showing the normalized project path), `OfflineModeContainer` (`ProjectOfflineModeCheckButton` and autowrapped helper label), and `ForceOfflineContainer` (`ProjectForceOfflineCheckButton` and autowrapped helper label).
+    *   *Vertical Spacing (`PolicySpacer`):* Generous vertical expanding space separating policy toggles from packaging actions.
+    *   *Dedicated Sealing Button (`SealButton`):* Positioned across the bottom of the tab (`size_flags_horizontal = Control.SIZE_EXPAND_FILL`) with `PrimaryButton` styling ("Seal for Delivery"), logically pairing offline policy settings with project delivery export.
+*   **Contextual Launch Action Synchronization:** Launch buttons in both Toolchain and Explorer tabs dynamically synchronize prompt state (`"Select a Tool to Launch"` when idle or on empty-space deselection) and contextual action labels across tab switching.
 
-### 2.14 Per-Project Offline Policy Configuration (Project Details)
-Rather than managing project-specific offline toggles inside global launcher settings, per-project offline policies are configured directly in the **Project Details** tab (`PageProjects/ProjectsTabs/Project Details`):
-*   **Project Offline Policy Section:** Located beneath the Project Explorer pane, featuring a normalized project path indicator ("Selected: ...") and two dedicated checkbutton toggles with contextual helper descriptions:
+### 2.14 Per-Project Offline Policy Configuration (Project Details Policy Sub-Tab)
+Per-project offline policies are configured directly in the dedicated **Policy** sub-tab (`PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy`):
+*   **In-Context Policy Controls:** Features a normalized project path indicator ("Selected: ...") and two dedicated checkbutton toggles with contextual helper descriptions:
     *   *Offline mode (`offline_mode`):* Blocks outbound network activity while the project is active, allowing tool launches from the Central Library or local project stack.
     *   *Force offline (`force_offline`):* Enforces strict air-gap isolation, requiring and launching tools exclusively from the project's sealed local `tools/` directory.
+*   **Co-Located Project Sealing:** Positions the "Seal for Delivery" action button directly beneath the offline policy controls, reinforcing the workflow connection between air-gap policies and self-contained delivery packaging.
 *   **Decoupled State Persistence:** Toggling either policy setting immediately persists changes to the project's local `ogs_config.json`, triggers `OfflineEnforcer.apply_config()`, emits `offline_state_changed` to update status indicators and pill badge styling, and re-validates the project environment.
 *   **Global Settings Separation:** The Settings page (`PageSettings`) remains dedicated strictly to machine-wide configurations (Primary Projects Folder, Mirror & Offline Repository settings).
 

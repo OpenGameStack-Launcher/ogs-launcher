@@ -296,6 +296,14 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] SealController configures determinate ProgressBar (min_value = 0, max_value = 100, indeterminate = false) and formats StatusLabel and OutputLabel with "Step 1/2: Copying tools (X of Y files)" and "Step 2/2: Creating ZIP archive (X of Y files)" with thousands comma separators
     *   [x] Clean edge case handling for 0 files and error states (hiding progress bar and re-enabling Close button)
     *   [x] Added unit tests in tests/project_sealer_tests.gd and tests/seal_controller_tests.gd (2315 tests passing across 38 test suites with zero failures)
+*   [x] Nested Toolchain, Explorer, and Policy Sub-Tabs in Project Details (Issue #168) - 100% Complete ✅
+    *   [x] Replaced vertically stacked VSplitContainer and ProjectOfflineSection in Project Details with a dedicated nested TabContainer (`ProjectDetailsTabs`, size_flags_vertical = Control.SIZE_EXPAND_FILL)
+    *   [x] Defined three distinct sub-tabs in order: Toolchain (Tab 0), Explorer (Tab 1), and Policy (Tab 2)
+    *   [x] Tab 0 (Toolchain): Houses ToolchainHeaderLabel, ProjectToolsList (size_flags_vertical = Control.SIZE_EXPAND_FILL), ToolActionRow, and dedicated full-width LaunchButton (PrimaryButton)
+    *   [x] Tab 1 (Explorer): Allocates full vertical height to ProjectExplorerTree with ExplorerToolbar (ExplorerLabel, NewFolderBtn, NewFileBtn) and dedicated full-width ExplorerLaunchButton (PrimaryButton)
+    *   [x] Tab 2 (Policy): Encapsulates Project Offline Policy controls (ProjectOfflineSettingsLabel, ProjectOfflineStatusLabel, OfflineModeContainer, ForceOfflineContainer, PolicySpacer) and pairs them directly with SealButton ("Seal for Delivery", PrimaryButton)
+    *   [x] Synchronized launch action state, button text, and disabled status across Toolchain and Explorer tabs in ProjectsController
+    *   [x] Updated tests in tests/main_scene_tests.gd, tests/projects_controller_scene_tests.gd, tests/projects_page_indicators_tests.gd, and tests/startup_tests.gd (38 test suites passing, 2387 total tests with zero failures)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:
@@ -589,6 +597,15 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Removed top-right window close button from `SealDialog` by configuring `borderless = true`, unresizable window flags, clearing close theme icons, adding a styled in-dialog `HeaderBar` with 18px `HeaderTitle`, and intercepting `close_requested` to prevent modal dismissal while background worker threads are active.
 - Preserved seamless in-place state transitions across Confirmation, Sealing Progress, and Completion (Success or Error), ensuring progress indicators activate only post-confirmation and action buttons adapt dynamically per phase.
 - Added comprehensive unit and scene tests in `tests/seal_controller_tests.gd` and updated `tests/startup_tests.gd` (38 test suites passing, 2279 total tests with zero failures).
+
+**Nested Toolchain, Explorer, and Policy Sub-Tabs in Project Details (Issue #168, Nov 1, 2026):**
+- Replaced the cramped vertical layout (VSplitContainer and ProjectOfflineSection) and compound action row in Project Details with a dedicated nested TabContainer (`ProjectDetailsTabs`, `size_flags_vertical = Control.SIZE_EXPAND_FILL`).
+- Implemented three distinct sub-tabs giving full vertical real estate to their respective workflows:
+  - `Toolchain` (Tab 0): Displays Stack Toolchain header, expansive tool list (`size_flags_vertical = Control.SIZE_EXPAND_FILL`), tool management buttons (Add Tool, Remove Tool, Change Version), and dedicated full-width `LaunchButton`.
+  - `Explorer` (Tab 1): Features ExplorerToolbar (path header with ellipsis clipping, New Folder, New File), full vertical height `ProjectExplorerTree` (`size_flags_vertical = Control.SIZE_EXPAND_FILL`) for comfortable navigation of deep directory hierarchies, and dedicated full-width `ExplorerLaunchButton`.
+  - `Policy` (Tab 2): Houses Project Offline Policy controls (offline mode and force offline CheckButtons with autowrapped helper descriptions, normalized path label, vertical spacer) and pairs offline settings directly with `SealButton` ("Seal for Delivery").
+- Updated ProjectsController to bind the new controls, synchronize contextual launch state across tabs, and handle tab transitions.
+- Added comprehensive scene test coverage in `tests/main_scene_tests.gd` and `tests/projects_controller_scene_tests.gd`, and updated node paths in `tests/startup_tests.gd` and `tests/projects_page_indicators_tests.gd` (38 test suites passing, 2387 total tests with zero failures).
 
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management
