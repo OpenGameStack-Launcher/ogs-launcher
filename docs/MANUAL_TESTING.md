@@ -592,6 +592,48 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 3.10: Projects Page - Force Offline Toggle and ogs_tools/ Lifecycle Management
+
+**Objective:** Verify that toggling **Force offline** ON provisions `<project_dir>/ogs_tools/` with installed tools from the Central Library, and toggling **Force offline** OFF removes `<project_dir>/ogs_tools/` while strictly preserving developer files in `<project_dir>/tools/`.
+
+**Steps:**
+1. Launch the launcher and navigate to the Projects page.
+2. Select a project that has tools installed in the Central Library (e.g. `samples/sample_project` or a newly created project with Godot installed).
+3. Open a file manager or terminal at the project directory root.
+4. Create a developer-authored script directory and file: `<project_dir>/tools/my_script.py` (with sample content such as `print("custom automation")`).
+5. In the launcher, switch to Tab 1 ("Project Details") and click the "Policy" subtab.
+6. Verify the current offline policy toggles:
+   - "Force offline" toggle starts unchecked.
+   - Confirm `<project_dir>/ogs_tools/` does NOT exist on disk.
+   - Confirm `<project_dir>/tools/my_script.py` exists on disk.
+7. Click the **Force offline** toggle to turn it ON:
+   - Verify the toggle activates and the status pill badge updates to "Offline Mode: Forced".
+   - In your file manager, verify that `<project_dir>/ogs_tools/` has been created and populated with folders for the project tools (e.g. `ogs_tools/godot_4.7.2/`).
+   - Verify that `<project_dir>/tools/my_script.py` remains completely intact and unmodified.
+   - Switch to the "Toolchain" subtab and verify tool status badges indicate `✓ Installed` with tooltips indicating local `ogs_tools/` status.
+8. Switch back to the "Policy" subtab and click the **Force offline** toggle to turn it OFF:
+   - Verify the toggle deactivates and the status pill badge restores to "Offline Mode: Disabled".
+   - In your file manager, verify that the managed `<project_dir>/ogs_tools/` directory has been cleanly removed from disk.
+   - Verify that the developer-authored `<project_dir>/tools/my_script.py` file remains completely intact and untouched.
+   - Switch to the "Toolchain" subtab and confirm tools now reflect Central Library linked mode status.
+
+**Expected Results:**
+- [x] Toggling "Force offline" ON automatically copies installed tools into `<project_dir>/ogs_tools/<id>_<version>/`.
+- [x] Toggling "Force offline" OFF automatically deletes `<project_dir>/ogs_tools/` and restores Central Library linked mode.
+- [x] Developer files in `<project_dir>/tools/` (such as `tools/my_script.py`) are never modified or deleted during `ogs_tools/` lifecycle transitions.
+- [x] Toolchain status indicators and tooltips update dynamically to reflect local vs Central Library installation.
+
+**Pass Criteria:**
+- `ogs_tools/` directory is created and cleaned up accurately in response to the Force offline toggle.
+- Non-OGS developer directories (including `tools/`) remain strictly isolated and preserved.
+
+**If test fails:**
+- Verify `ProjectsController.update_current_project_offline_settings()` logic.
+- Verify `ProjectSealToolCopier.copy_tools_to_project()` copy logic.
+- Verify `ProjectsController._remove_dir_recursive()` path containment checks.
+
+---
+
 ### Editor Test 4: Settings Page — Mirror Configuration
 
 **Objective:** Verify mirror root can be configured and status indicator updates correctly.

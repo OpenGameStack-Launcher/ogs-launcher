@@ -312,6 +312,12 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Descriptive warning label advising against manual file tampering on disk and directing management through the Tools screen
     *   [x] Guaranteed persistent visibility across both empty (0 tools) and populated (1+ tools) library states
     *   [x] Added unit tests in tests/tools_page_controller_tests.gd and scene tests in tests/tools_page_scene_tests.gd (38 test suites passing, 2403 total tests with zero failures)
+*   [x] Resolve Local Toolchain from ogs_tools/ and Manage ogs_tools/ Lifecycle on Force Offline Toggle (Issue #187) - 100% Complete ✅
+    *   [x] Project tools resolution when path is omitted in ogs_stack.json: ToolLauncher.resolve_local_ogs_tool() locates executables in `<project_dir>/ogs_tools/<id>_<version>/` via ogs_metadata.json or fallback heuristic search, bounded by PathUtils.is_path_under_root()
+    *   [x] Air-gap contract enforcement: when force_offline == true, missing tools in ogs_tools/ immediately return LaunchError.TOOL_NOT_FOUND and strictly block Central Library fallback
+    *   [x] Lifecycle management in ProjectsController.update_current_project_offline_settings(): toggling force_offline ON automatically copies stack tools from Central Library into `<project_dir>/ogs_tools/` using ProjectSealToolCopier.copy_tools_to_project(). Toggling force_offline OFF removes `<project_dir>/ogs_tools/`, returning the project to linked Central Library mode while strictly preserving developer files in tools/
+    *   [x] ProjectEnvironmentValidator.validate_project() with use_project_tools == true recognizes local ogs_tools/ executables when path is omitted in ogs_stack.json
+    *   [x] Added unit and scene tests in tests/tool_launcher_tests.gd, tests/project_environment_validator_tests.gd, and tests/projects_controller_scene_tests.gd (38 test suites passing, 2454 total tests with zero failures)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:

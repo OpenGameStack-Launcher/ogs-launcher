@@ -29,7 +29,7 @@ Alternatively, for system-wide configuration:
 |-------|------|---------|----------|-------------|
 | `schema_version` | Integer | 1 | No | Must be `1` if present. |
 | `offline_mode` | Boolean | `false` | No | User-triggered air-gap activation. When true, disables network features. |
-| `force_offline` | Boolean | `false` | No | Immutable flag set during "Seal for Delivery". When true, enforces offline mode. |
+| `force_offline` | Boolean | `false` | No | Air-gap enforcement flag set manually or during "Seal for Delivery". When true, enforces offline mode, activates embedded tool resolution from `<project_dir>/ogs_tools/`, and blocks Central Library fallback. |
 | `allowed_hosts` | Array[String] | `[]` | No | Optional host allowlist applied by launcher socket policy. Empty+no ports falls back to secure localhost defaults. |
 | `allowed_ports` | Array[Integer] | `[]` | No | Optional port allowlist (`1..65535`) applied by launcher socket policy. |
 
@@ -118,9 +118,9 @@ The launcher then:
 
 **Scope Note:** Offline enforcement targets the launcher and editor tooling only. It does not modify project runtime networking, so exported applications can still use internal network features when required.
 
-### Sealed Project (Government Deployment)
+### Sealed Project & Force Offline Policy
 
-During "Seal for Delivery," the contractor's launcher writes:
+During "Seal for Delivery" (or when toggling **Force offline** ON in the Project Details Policy sub-tab), the launcher sets:
 
 ```json
 {
@@ -128,7 +128,11 @@ During "Seal for Delivery," the contractor's launcher writes:
 }
 ```
 
-When the government receives the project, the launcher detects `force_offline=true` and **immediately enforces offline mode**, regardless of the physical network status.
+When `force_offline=true` is enabled:
+- The launcher enforces strict offline mode and blocks all outbound socket activity.
+- The launcher automatically provisions `<project_dir>/ogs_tools/<id>_<version>/` by copying installed tools from the Central Library using `ProjectSealToolCopier`.
+- Tool execution resolves executables from the project-local `ogs_tools/` directory. If a tool is missing from `ogs_tools/`, fallback to the Central Library is strictly blocked and returns `TOOL_NOT_FOUND`.
+- When **Force offline** is toggled OFF (`false`), the launcher removes the managed `<project_dir>/ogs_tools/` directory so the project cleanly returns to Central Library linked mode, while strictly preserving any developer-authored `<project_dir>/tools/` directory.
 
 ## Best Practices
 

@@ -165,11 +165,18 @@ In the Project Details tab (Tab 1 of the Projects page), the interface organizes
     *   *Dedicated Sealing Button (`SealButton`):* Positioned across the bottom of the tab (`size_flags_horizontal = Control.SIZE_EXPAND_FILL`) with `PrimaryButton` styling ("Seal for Delivery"), logically pairing offline policy settings with project delivery export.
 *   **Contextual Launch Action Synchronization:** Launch buttons in both Toolchain and Explorer tabs dynamically synchronize prompt state (`"Select a Tool to Launch"` when idle or on empty-space deselection) and contextual action labels across tab switching.
 
-### 2.14 Per-Project Offline Policy Configuration (Project Details Policy Sub-Tab)
+### 2.14 Per-Project Offline Policy Configuration & ogs_tools/ Lifecycle Management (Project Details Policy Sub-Tab)
 Per-project offline policies are configured directly in the dedicated **Policy** sub-tab (`PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy`):
 *   **In-Context Policy Controls:** Features a normalized project path indicator ("Selected: ...") and two dedicated checkbutton toggles with contextual helper descriptions:
     *   *Offline mode (`offline_mode`):* Blocks outbound network activity while the project is active, allowing tool launches from the Central Library or local project stack.
     *   *Force offline (`force_offline`):* Enforces strict air-gap isolation, requiring and launching tools exclusively from the project's sealed local `ogs_tools/` directory.
+*   **ogs_tools/ Lifecycle Automation on Policy Toggle:**
+    *   *Enabling Force Offline:* When `force_offline` is toggled ON (`true`), the launcher automatically provisions `<project_dir>/ogs_tools/<id>_<version>/` for tools declared in `ogs_stack.json` that are installed in the Central Library using `ProjectSealToolCopier.copy_tools_to_project()`.
+    *   *Disabling Force Offline:* When `force_offline` is toggled OFF (`false`), the launcher cleanly removes `<project_dir>/ogs_tools/` (bounded safely by `PathUtils.is_path_under_root()`) returning the project to Central Library linked mode, while strictly preserving any developer-authored `<project_dir>/tools/` folder.
+    *   *UI Synchronization:* Refreshes the project tools list and Project Explorer immediately after toggling, updating tool status indicators and tooltips in real time.
+*   **Local Toolchain Resolution Without Explicit Paths:**
+    *   When `ogs_stack.json` omits explicit `path` attributes, `ToolLauncher.resolve_local_ogs_tool()` and `ProjectEnvironmentValidator.validate_project()` locate executables in `<project_dir>/ogs_tools/<id>_<version>/` using `ogs_metadata.json` or fallback heuristic executable search.
+    *   When `force_offline` is true and a tool is missing from `ogs_tools/`, fallback to the Central Library is strictly blocked and returns `LaunchError.TOOL_NOT_FOUND`, enforcing the air-gap contract.
 *   **Co-Located Project Sealing:** Positions the "Seal for Delivery" action button directly beneath the offline policy controls, reinforcing the workflow connection between air-gap policies and self-contained delivery packaging.
 *   **Decoupled State Persistence:** Toggling either policy setting immediately persists changes to the project's local `ogs_config.json`, triggers `OfflineEnforcer.apply_config()`, emits `offline_state_changed` to update status indicators and pill badge styling, and re-validates the project environment.
 *   **Global Settings Separation:** The Settings page (`PageSettings`) remains dedicated strictly to machine-wide configurations (Primary Projects Folder, Mirror & Offline Repository settings).

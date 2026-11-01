@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 2387
+tests passed: 2454
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (31 total, 38 suites across all categories, 2403 passing tests):**
+**Current unit test suites (31 total, 38 suites across all categories, 2454 passing tests):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** - Validates `ogs_stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -118,6 +118,8 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Fallback executable discovery for Git (`git-bash.exe`, `cmd/git.exe`, `bin/git.exe`) and VSCodium (`VSCodium.exe`, `codium`, `bin/codium`)
   - Automatic detection and injection of portable Git (`git.path` and `git.enabled`) into `.vscode/settings.json` when Git is pinned in `ogs_stack.json`
   - Recursive Godot project discovery (`_find_first_project_godot`) skips `ogs_tools/` directory while discovering `project.godot` files in developer directories (including `tools/`)
+  - Local toolchain resolution (`resolve_local_ogs_tool`): checks `<project_dir>/ogs_tools/<id>_<version>/` using `ogs_metadata.json` (`executable_path`), fallback heuristic executable discovery, missing directory handling, and directory traversal rejection
+  - Force offline launch resolution (`_test_launch_local_ogs_tools_and_force_offline`): verifies tool execution resolves from local `ogs_tools/` when `path` is omitted in `ogs_stack.json`, and returns `LaunchError.TOOL_NOT_FOUND` while strictly blocking Central Library fallback when `force_offline == true`
   - Absolute paths used as-is (no project directory joining)
   - Relative paths joined with project directory
 
@@ -175,9 +177,11 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Parameter validation
   - Nested archive structure handling
 
-- **[tests/project_environment_validator_tests.gd](tests/project_environment_validator_tests.gd)** — Validates project environment readiness for launching.
+- **[tests/project_environment_validator_tests.gd](tests/project_environment_validator_tests.gd)** - Validates project environment readiness for launching.
   - Environment validation against library state
   - Missing tool detection from ogs_stack.json
+  - Local ogs_tools/ validation success: verifies validation succeeds when tools are present in `<project_dir>/ogs_tools/<id>_<version>/` even when path is omitted in ogs_stack.json
+  - Missing local ogs_tools/ failure: verifies validation reports tools missing when use_project_tools == true and tools are missing from ogs_tools/
   - Library accessibility checking
   - Download list generation for hydration
   - Error reporting and validation structure
@@ -437,6 +441,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Nested sub-tabs and explorer label truncation (`_test_project_details_subtabs_and_explorer_label`): verifies `ProjectDetailsTabs` `TabContainer` presence directly beneath `ProjectsStatusBar`, verifies 3 sub-tabs in order (`Toolchain`, `Explorer`, `Policy`), confirms `ProjectToolsList` and `ProjectExplorerTree` have vertical expansion flags (`size_flags_vertical = Control.SIZE_EXPAND_FILL`), verifies `ExplorerLabel` ellipsis clipping properties (`clip_text` and `text_overrun_behavior = 3`), and confirms `PrimaryButton` theme variation and horizontal expansion across `LaunchButton`, `ExplorerLaunchButton`, and `SealButton`
   - Contextual launch button states and transitions: verifies dynamic prompt text ("Select a Tool to Launch"), toolchain selection formatting ("Launch <Tool> <Version>"), explorer selection formatting ("Open <filename> in <Tool>"), double-click activation, empty-click deselection, tab transitions between Toolchain and Explorer, and launch state resets
   - Offline policy toggles and persistence: verifies that offline policy toggles in Project Details initialize disabled, activate and reflect project config on selection, synchronize status label with normalized path, emit `project_selection_changed` and `offline_state_changed`, persist `offline_mode` and `force_offline` updates to `ogs_config.json` on disk, reset on project removal, and restore toggle states on project reload
+  - Force offline lifecycle and toolchain isolation (`_test_force_offline_lifecycle_and_tools_isolation`): verifies that toggling `force_offline` ON populates `<project_dir>/ogs_tools/<id>_<version>/` from Central Library using `ProjectSealToolCopier.copy_tools_to_project()`, toggling `force_offline` OFF removes `<project_dir>/ogs_tools/` while strictly preserving developer files in `<project_dir>/tools/custom_script.py`, and `_is_tool_installed` blocks fallback to Central Library when `force_offline` is true
   - Compact confirmation and creation dialog layouts: verifies compact 420x150 dimensions and 16px horizontal / 12px vertical internal content margins for NewProjectDialog, RemoveProjectDialog, and NewFileDialog
   - Input validation and empty-input guards: verifies that NewProjectDialog and NewFileDialog disable confirm buttons on empty or whitespace input and enable upon typing valid names
   - New file instruction previews: verifies that NewFileDialog dynamically updates its instruction label with target subdirectories and inferred file extensions based on active explorer selection or project toolchain
