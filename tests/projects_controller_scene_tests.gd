@@ -1,7 +1,7 @@
 ## ProjectsControllerSceneTests: Scene-style tests for ProjectsController
 ##
 ## Verifies Unity-Hub-style project-library behaviors with real UI nodes:
-## - Add Project requires stack.json + ogs_config.json
+## - Add Project requires ogs_stack.json + ogs_config.json
 ## - Valid project adds to persistent list and selects automatically
 ## - Persisted entries reload on next controller setup
 
@@ -22,7 +22,7 @@ func run() -> Dictionary:
 		"failures": []
 	}
 	_test_add_requires_both_project_files(results)
-	_test_add_project_with_only_stack_json(results)
+	_test_add_project_with_only_ogs_stack_json(results)
 	_test_add_valid_project_populates_lists(results)
 	_test_project_registry_persists_between_setups(results)
 	_test_project_removal(results)
@@ -323,7 +323,7 @@ func _cleanup_dir_recursive(user_or_abs_path: String) -> void:
 	DirAccess.remove_absolute(path)
 
 func _test_add_requires_both_project_files(results: Dictionary) -> void:
-	## Verifies Add Local Project rejects folder missing stack.json.
+	## Verifies Add Local Project rejects folder missing ogs_stack.json.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_missing_%s.json" % str(Time.get_ticks_msec())
 	var empty_dir = "user://test_empty_folder_%s" % str(Time.get_ticks_msec())
@@ -334,15 +334,15 @@ func _test_add_requires_both_project_files(results: Dictionary) -> void:
 	var ctx = _build_controller(storage_path)
 	var controller = ctx["controller"]
 	var added = controller.add_project_from_path(empty_dir)
-	_expect(not added, "folder without stack.json should fail to add", results)
+	_expect(not added, "folder without ogs_stack.json should fail to add", results)
 	var status_label: Label = ctx["status"]
-	_expect(status_label.text.contains("stack.json"), "status should state stack.json is required", results)
+	_expect(status_label.text.contains("ogs_stack.json"), "status should state ogs_stack.json is required", results)
 	_cleanup_nodes(ctx["nodes"])
 	_cleanup_dir_recursive(empty_dir)
 	_cleanup_registry(storage_path)
 
-func _test_add_project_with_only_stack_json(results: Dictionary) -> void:
-	## Verifies adding a folder with only stack.json succeeds and auto-generates ogs_config.json.
+func _test_add_project_with_only_ogs_stack_json(results: Dictionary) -> void:
+	## Verifies adding a folder with only ogs_stack.json succeeds and auto-generates ogs_config.json.
 	OfflineEnforcer.reset()
 	var storage_path = "user://projects_controller_scene_only_stack_%s.json" % str(Time.get_ticks_msec())
 	var test_dir = "user://test_stack_only_%s" % str(Time.get_ticks_msec())
@@ -351,7 +351,7 @@ func _test_add_project_with_only_stack_json(results: Dictionary) -> void:
 	var abs_dir = ProjectSettings.globalize_path(test_dir)
 	DirAccess.make_dir_recursive_absolute(abs_dir)
 
-	var stack_path = abs_dir.path_join("stack.json")
+	var stack_path = abs_dir.path_join("ogs_stack.json")
 	var config_path = abs_dir.path_join("ogs_config.json")
 	var stack_payload = {
 		"schema_version": StackManifest.CURRENT_SCHEMA_VERSION,
@@ -367,7 +367,7 @@ func _test_add_project_with_only_stack_json(results: Dictionary) -> void:
 	var ctx = _build_controller(storage_path)
 	var controller = ctx["controller"]
 	var added = controller.add_project_from_path(abs_dir)
-	_expect(added, "adding project with only stack.json should succeed", results)
+	_expect(added, "adding project with only ogs_stack.json should succeed", results)
 	_expect(FileAccess.file_exists(config_path), "ogs_config.json should be auto-generated on disk", results)
 
 	var loaded_config = OgsConfig.load_from_file(config_path)
@@ -1275,7 +1275,7 @@ func _test_project_display_paths_normalized(results: Dictionary) -> void:
 		"stack_name": "Normalized Path Project",
 		"tools": []
 	}
-	var f = FileAccess.open(abs_dir.path_join("stack.json"), FileAccess.WRITE)
+	var f = FileAccess.open(abs_dir.path_join("ogs_stack.json"), FileAccess.WRITE)
 	f.store_string(JSON.stringify(stack_payload))
 	f.close()
 
@@ -1350,10 +1350,10 @@ func _test_status_bar_severity_color_modulation(results: Dictionary) -> void:
 	var error_color: Color = status_label.get_theme_color("font_color")
 	_expect(error_color.is_equal_approx(ProjectsController.COLOR_STATUS_ERROR), "Error status should have red font_color accent", results)
 
-	# 6. Error / Failure state (missing stack.json)
-	controller._update_status("Status: Selected project is missing stack.json.")
-	_expect(controller.get_current_status_severity() == "error", "Missing stack.json should be 'error' severity", results)
-	_expect(status_label.get_theme_color("font_color").is_equal_approx(ProjectsController.COLOR_STATUS_ERROR), "Missing stack.json should have red font_color accent", results)
+	# 6. Error / Failure state (missing ogs_stack.json)
+	controller._update_status("Status: Selected project is missing ogs_stack.json.")
+	_expect(controller.get_current_status_severity() == "error", "Missing ogs_stack.json should be 'error' severity", results)
+	_expect(status_label.get_theme_color("font_color").is_equal_approx(ProjectsController.COLOR_STATUS_ERROR), "Missing ogs_stack.json should have red font_color accent", results)
 
 	# 7. Neutral / Idle state (initial waiting prompt)
 	controller._update_status("Status: Waiting for project selection.")
@@ -1531,7 +1531,7 @@ func _create_dummy_project(base_dir_name: String, stack_name: String, tools: Arr
 		"stack_name": stack_name,
 		"tools": tools
 	}
-	var f = FileAccess.open(abs_dir.path_join("stack.json"), FileAccess.WRITE)
+	var f = FileAccess.open(abs_dir.path_join("ogs_stack.json"), FileAccess.WRITE)
 	f.store_string(JSON.stringify(stack_payload))
 	f.close()
 	var config_f = FileAccess.open(abs_dir.path_join("ogs_config.json"), FileAccess.WRITE)
@@ -1994,7 +1994,7 @@ func _test_offline_policy_toggles_and_persistence(results: Dictionary) -> void:
 	var abs_dir = ProjectSettings.globalize_path(test_dir)
 	DirAccess.make_dir_recursive_absolute(abs_dir)
 
-	var stack_path = abs_dir.path_join("stack.json")
+	var stack_path = abs_dir.path_join("ogs_stack.json")
 	var config_path = abs_dir.path_join("ogs_config.json")
 	var stack_payload = {
 		"schema_version": StackManifest.CURRENT_SCHEMA_VERSION,

@@ -72,7 +72,7 @@ func _on_context_menu_id_pressed(id: int) -> void:
 		OS.shell_show_in_file_manager(path_to_open)
 
 ## Loads a new project directory into the Tree.
-## When active_tool_ids is omitted or empty, reads tool IDs from <project_dir>/stack.json if present.
+## When active_tool_ids is omitted or empty, reads tool IDs from <project_dir>/ogs_stack.json if present.
 func load_project(project_dir: String, p_active_tool_ids: Array[String] = []) -> void:
 	current_project_dir = project_dir
 	active_tool_ids.clear()
@@ -81,7 +81,7 @@ func load_project(project_dir: String, p_active_tool_ids: Array[String] = []) ->
 		for tid: String in p_active_tool_ids:
 			active_tool_ids.append(tid.to_lower())
 	elif not project_dir.is_empty():
-		var stack_path: String = project_dir.path_join("stack.json")
+		var stack_path: String = project_dir.path_join("ogs_stack.json")
 		if FileAccess.file_exists(stack_path):
 			var file: FileAccess = FileAccess.open(stack_path, FileAccess.READ)
 			if file != null:

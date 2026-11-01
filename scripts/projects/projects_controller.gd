@@ -6,7 +6,7 @@
 ##
 ## Project Library Lifecycle:
 ## 1. Load persisted project index from disk on startup
-## 2. Add project only when stack.json + ogs_config.json exist
+## 2. Add project only when ogs_stack.json + ogs_config.json exist
 ## 3. Select a project from the library list to activate it
 ## 4. Render tool availability indicators and launch/seal readiness
 
@@ -604,7 +604,7 @@ func _on_project_dialog_custom_action(action: String) -> void:
 
 	var selected_dir = _get_picker_selected_dir()
 	if not _is_addable_project_dir(selected_dir):
-		_update_status("Status: Add Local Project requires stack.json in the selected folder.")
+		_update_status("Status: Add Local Project requires ogs_stack.json in the selected folder.")
 		OgsLogger.warn("project_add_rejected", {
 			"component": "projects",
 			"reason": "missing_required_files"
@@ -631,7 +631,7 @@ func add_project_from_path(project_dir: String) -> bool:
 		return false
 
 	if not _is_addable_project_dir(normalized_dir):
-		_update_status("Status: Missing required file (stack.json).")
+		_update_status("Status: Missing required file (ogs_stack.json).")
 		OgsLogger.warn("project_add_failed", {
 			"component": "projects",
 			"reason": "missing_required_files"
@@ -694,11 +694,11 @@ func _is_addable_project_dir(project_dir: String) -> bool:
 ## project_dir (String): Directory to validate
 ## 
 ## Returns:
-## bool: True when stack.json exists
+## bool: True when ogs_stack.json exists
 ## 
 	if project_dir.is_empty():
 		return false
-	var stack_path = project_dir.path_join("stack.json")
+	var stack_path = project_dir.path_join("ogs_stack.json")
 	return FileAccess.file_exists(stack_path)
 
 func _get_picker_selected_dir() -> String:
@@ -723,16 +723,16 @@ func _load_manifest_from_project(project_dir: String) -> StackManifest:
 	## Loads and validates stack manifest for a candidate project directory.
 ## 
 ## Parameters:
-## project_dir (String): Project root containing stack.json
+## project_dir (String): Project root containing ogs_stack.json
 ## 
 ## Returns:
 ## StackManifest: Valid manifest or null on parse/validation failure
 ## 
-	var stack_path = project_dir.path_join("stack.json")
+	var stack_path = project_dir.path_join("ogs_stack.json")
 	var manifest = StackManifest.load_from_file(stack_path)
 	if not manifest.is_valid():
 		if not _is_manifest_acceptable_for_project_library(manifest):
-			_update_status("Status: Cannot add project. stack.json invalid: %s" % ", ".join(manifest.errors))
+			_update_status("Status: Cannot add project. ogs_stack.json invalid: %s" % ", ".join(manifest.errors))
 			OgsLogger.warn("project_add_failed", {
 				"component": "projects",
 				"reason": "invalid_manifest",
@@ -740,7 +740,7 @@ func _load_manifest_from_project(project_dir: String) -> StackManifest:
 			})
 			return null
 	if String(manifest.stack_name).strip_edges().is_empty():
-		_update_status("Status: Cannot add project. stack.json missing stack_name.")
+		_update_status("Status: Cannot add project. ogs_stack.json missing stack_name.")
 		OgsLogger.warn("project_add_failed", {
 			"component": "projects",
 			"reason": "missing_stack_name"
@@ -989,7 +989,7 @@ func _select_project(index: int) -> void:
 	if not _is_addable_project_dir(project_dir):
 		current_project_config = null
 		project_selection_changed.emit("", false, false)
-		_update_status("Status: Selected project is missing stack.json.")
+		_update_status("Status: Selected project is missing ogs_stack.json.")
 		_apply_offline_config(null)
 		_update_offline_status(null)
 		_sync_project_offline_toggles(null)
@@ -1144,7 +1144,7 @@ func _populate_tools_list(tools: Array) -> void:
 	## enabling double-click or launch navigation to download missing tools.
 	##
 	## Parameters:
-	## tools (Array): Array of tool entries from stack.json
+	## tools (Array): Array of tool entries from ogs_stack.json
 	_tool_availability.clear()
 	_selected_tool_index = -1
 	_selected_launch_tool_id = ""
@@ -1373,7 +1373,7 @@ static func _classify_status_severity(message: String) -> String:
 	# Error conditions
 	if lower.contains("error") or lower.contains("failed") or lower.contains("failure") \
 		or lower.contains("invalid") or lower.contains("missing required") \
-		or lower.contains("missing stack.json") or lower.contains("missing stack_name") \
+		or lower.contains("missing ogs_stack.json") or lower.contains("missing stack_name") \
 		or lower.contains("cannot add") or lower.contains("cannot launch") \
 		or lower.contains("unable to"):
 		return "error"

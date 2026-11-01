@@ -106,7 +106,7 @@ func _create_new_project_from_name(project_name: String) -> bool:
 	}
 	var config_payload = OgsConfig.new().to_dict()
 
-	var stack_path = new_project_dir.path_join("stack.json")
+	var stack_path = new_project_dir.path_join("ogs_stack.json")
 	var config_path = new_project_dir.path_join("ogs_config.json")
 	if not _pc.registry_manager._save_json_file(stack_path, stack_payload) or not _pc.registry_manager._save_json_file(config_path, config_payload):
 		_pc._update_status("Status: Failed writing new project files.")

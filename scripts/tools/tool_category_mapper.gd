@@ -58,7 +58,7 @@ static func get_category(tool_id: String) -> String:
 ## Gets category for a tool entry dictionary with fallback support.
 ## Checks tool["category"] first, then falls back to hardcoded mapping by ID.
 ## Parameters:
-## tool_entry (Dictionary): Tool entry from repository.json or stack.json
+## tool_entry (Dictionary): Tool entry from repository.json or ogs_stack.json
 ## Returns:
 ## String: Category ("Engine", "2D", "3D", "Audio", "Code") or "Unknown"
 static func get_category_for_tool(tool_entry: Dictionary) -> String:

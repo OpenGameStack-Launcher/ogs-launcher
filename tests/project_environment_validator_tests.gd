@@ -61,14 +61,14 @@ func test_validate_project_empty_dir_fails() -> Dictionary:
 	return {"passed": true}
 
 func test_validate_project_missing_stack_fails() -> Dictionary:
-	## Verifies validation fails when stack.json is missing.
+	## Verifies validation fails when ogs_stack.json is missing.
 	var validator = ProjectEnvironmentValidator.new()
 	
-	# Use a directory that exists but has no stack.json
+	# Use a directory that exists but has no ogs_stack.json
 	var result = validator.validate_project("user://")
 	
 	if result["valid"]:
-		return {"passed": false, "error": "Should be invalid when stack.json missing"}
+		return {"passed": false, "error": "Should be invalid when ogs_stack.json missing"}
 	
 	if result["errors"].is_empty():
 		return {"passed": false, "error": "Should have error message"}

@@ -1,6 +1,6 @@
 ## ProjectEnvironmentValidator: Validates that a project's required tools are available.
 ##
-## Checks if all tools defined in stack.json exist in the central library.
+## Checks if all tools defined in ogs_stack.json exist in the central library.
 ## Provides detailed reporting on missing tools and their status.
 ##
 ## Usage:
@@ -27,7 +27,7 @@ var library: LibraryManager
 func _init() -> void:
 	library = LibraryManager.new()
 
-## Validates that all tools in a project's stack.json exist in the library or project.
+## Validates that all tools in a project's ogs_stack.json exist in the library or project.
 ## Parameters:
 ##   project_dir (String): Path to project folder
 ##   use_project_tools (bool): When true, checks tools relative to project_dir
@@ -51,9 +51,9 @@ func validate_project(project_dir: String, use_project_tools: bool = false) -> D
 		return result
 	
 	# Load manifest
-	var stack_path = project_dir.path_join("stack.json")
+	var stack_path = project_dir.path_join("ogs_stack.json")
 	if not FileAccess.file_exists(stack_path):
-		result["errors"].append("stack.json not found")
+		result["errors"].append("ogs_stack.json not found")
 		return result
 	
 	var manifest = StackManifest.load_from_file(stack_path)

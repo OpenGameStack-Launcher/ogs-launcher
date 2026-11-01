@@ -1,13 +1,13 @@
 ## StackManifest: OGS Manifest Loader & Validator
 ##
-## Provides offline-safe loading, parsing, and validation of 'stack.json' manifests.
+## Provides offline-safe loading, parsing, and validation of 'ogs_stack.json' manifests.
 ## Manifests define the exact frozen stack of tools (Godot, Blender, Krita, Audacity) required
 ## for a specific project. Validation enforces schema compliance and produces explicit error codes
 ## for UI-level reporting without external dependencies.
 ##
 ## Usage:
 ## # Load from disk
-## var manifest = StackManifest.load_from_file("res://stack.json")
+## var manifest = StackManifest.load_from_file("res://ogs_stack.json")
 ## if manifest.is_valid():
 ## for tool in manifest.tools:
 ## print("%s v%s at %s" % [tool["id"], tool["version"], tool["path"]])
@@ -39,6 +39,7 @@ class_name StackManifest
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 
+const MANIFEST_FILENAME := "ogs_stack.json"
 const CURRENT_SCHEMA_VERSION := 1
 
 var schema_version := 0
@@ -49,7 +50,7 @@ var errors: Array[String] = []
 ## Loads manifest from a file path on disk.
 ## Returns a StackManifest instance with validation errors in .errors if I/O or parsing fails.
 ## Parameters:
-## file_path (String): Path to stack.json (e.g., "res://projects/game/stack.json")
+## file_path (String): Path to ogs_stack.json (e.g., "res://projects/game/ogs_stack.json")
 ## Returns:
 ## StackManifest: Callers should check .is_valid() before using fields.
 static func load_from_file(file_path: String) :
@@ -192,7 +193,7 @@ static func _is_hex_sha256(value: String) -> bool:
 ## Internal method: Loads JSON from disk.
 ## Private to this class; use load_from_file() instead.
 ## Parameters:
-## file_path (String): Path to stack.json
+## file_path (String): Path to ogs_stack.json
 func _load_from_file(file_path: String) -> void:
 	## Loads JSON from disk and validates it without contacting external services.
 	errors.clear()
