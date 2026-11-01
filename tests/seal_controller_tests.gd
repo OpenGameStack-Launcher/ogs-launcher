@@ -1,15 +1,18 @@
 ## SealControllerTests: Unit tests for SealController thread lifecycle.
 ##
-## Covers the NOTIFICATION_PREDELETE join behavior added to SealController:
-##   (a) thread is joined cleanly when the controller is freed while a thread
-##       is still alive,
-##   (b) the predelete handler is safe when no thread is running, and
-##   (c) a finished-but-started thread is joined and cleared during predelete,
-##       and
-##   (d) the thread start failure path clears seal state and emits failure,
+## Covers:
+##   (a) thread is joined cleanly when controller is freed while thread alive,
+##   (b) predelete handler is safe when no thread is running,
+##   (c) finished-but-started thread joined and cleared during predelete,
+##   (d) thread start failure path clears seal state and emits failure,
 ##   (e) progress bar visibility and ok button disabled states during sealing,
-##   (f) typography hierarchy and muted text colors, and
-##   (g) canonical display naming of copied tools.
+##   (f) typography hierarchy, in-dialog header, and muted text colors,
+##   (g) canonical display naming of copied tools,
+##   (h) pre-seal confirmation view displaying stack name, tools, and multi-minute notice,
+##   (i) cancel flow closing dialog without modifying files or launching thread,
+##   (j) confirm flow transitioning dialog in-place to active sealing progress,
+##   (k) close_requested dismissal blocking during active sealing, and
+##   (l) SealDialog borderless window chrome and header configuration.
 
 extends RefCounted
 class_name SealControllerTests
@@ -55,6 +58,11 @@ func run() -> Dictionary:
 	_test_progress_bar_and_close_button_states(results)
 	_test_tool_display_name_formatting_in_success(results)
 	await _test_async_seal_progress_bar_and_close_button_lifecycle(results)
+	_test_confirmation_state_presentation_and_content(results)
+	_test_cancel_flow_leaves_project_intact_and_hides_dialog(results)
+	await _test_confirm_transitions_in_place_to_sealing_progress(results)
+	_test_close_requested_blocked_while_sealing(results)
+	_test_main_tscn_seal_dialog_chrome_configuration(results)
 
 	return results
 
@@ -172,6 +180,7 @@ func _test_thread_start_failure_clears_state(results: Dictionary) -> void:
 	)
 
 	controller.seal_for_delivery("res://tests")
+	controller.confirm_seal()
 	var tree = Engine.get_main_loop() as SceneTree
 	await tree.process_frame
 	await tree.process_frame
@@ -218,6 +227,7 @@ func _test_dialog_freed_while_thread_alive(results: Dictionary) -> void:
 	controller.gate = sem
 	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
 	controller.seal_for_delivery("res://tests")
+	controller.confirm_seal()
 
 	var tree = Engine.get_main_loop() as SceneTree
 	var thread_start_deadline_msec = Time.get_ticks_msec() + 3000
@@ -468,6 +478,7 @@ func _test_async_seal_progress_bar_and_close_button_lifecycle(results: Dictionar
 	)
 
 	controller.seal_for_delivery("res://tests")
+	controller.confirm_seal()
 
 	var tree = Engine.get_main_loop() as SceneTree
 	var thread_alive_deadline = Time.get_ticks_msec() + 3000
@@ -503,3 +514,225 @@ func _test_async_seal_progress_bar_and_close_button_lifecycle(results: Dictionar
 
 	controller = null
 	dialog.free()
+
+## Test: Pre-seal confirmation state presents target project name, canonical tools, and notice without launching thread.
+func _test_confirmation_state_presentation_and_content(results: Dictionary) -> void:
+	## Validates confirmation state presentation and content accuracy.
+	var controller = SealControllerScript.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
+
+	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
+
+	# Setup temporary project directory with stack.json
+	var test_proj_dir: String = "user://test_confirm_project_%d" % int(Time.get_unix_time_from_system() * 1000.0)
+	DirAccess.make_dir_recursive_absolute(test_proj_dir)
+	var stack_json_path: String = test_proj_dir.path_join("stack.json")
+	var manifest_content: String = JSON.stringify({
+		"schema_version": 1,
+		"stack_name": "Skybound Odyssey",
+		"tools": [
+			{"id": "godot", "version": "4.7.2"},
+			{"id": "blender", "version": "4.2.0"},
+			{"id": "krita", "version": "5.2.2"}
+		]
+	}, "  ")
+	var f: FileAccess = FileAccess.open(stack_json_path, FileAccess.WRITE)
+	if f != null:
+		f.store_string(manifest_content)
+		f.close()
+
+	controller.seal_for_delivery(test_proj_dir)
+
+	_expect(controller.is_in_confirmation() == true, "Controller should be in CONFIRMATION state", results)
+	_expect(controller.is_sealing() == false, "Controller should not be actively sealing", results)
+	_expect(controller.get("_seal_thread") == null, "_seal_thread should not be created during confirmation", results)
+	_expect(status_label.text == "Confirm Project Sealing", "Status label should display 'Confirm Project Sealing'", results)
+
+	var out_text: String = output_label.text
+	_expect(out_text.contains("Skybound Odyssey"), "Confirmation output should contain project stack name 'Skybound Odyssey'", results)
+	_expect(out_text.contains("Godot v4.7.2"), "Confirmation output should format canonical tool 'Godot v4.7.2'", results)
+	_expect(out_text.contains("Blender v4.2.0"), "Confirmation output should format canonical tool 'Blender v4.2.0'", results)
+	_expect(out_text.contains("Krita v5.2.2"), "Confirmation output should format canonical tool 'Krita v5.2.2'", results)
+	_expect(out_text.contains("standalone .zip archive"), "Notice should mention bundling into a standalone .zip archive", results)
+	_expect(out_text.contains("several minutes"), "Notice should mention that sealing will take several minutes", results)
+
+	_expect(progress_bar.visible == false, "Progress bar should remain hidden during confirmation", results)
+	_expect(open_button.visible == false, "Open button should remain hidden during confirmation", results)
+
+	var confirm_btn: Button = controller.get_confirm_button()
+	_expect(confirm_btn != null and confirm_btn.visible == true, "Confirm button should be visible during confirmation", results)
+	_expect(confirm_btn != null and confirm_btn.text == "Confirm", "Confirm button text should be 'Confirm'", results)
+	_expect(confirm_btn != null and confirm_btn.disabled == false, "Confirm button should be enabled during confirmation", results)
+
+	var cancel_btn: Button = controller.get_cancel_button()
+	_expect(cancel_btn != null and cancel_btn.visible == true, "Cancel button should be visible during confirmation", results)
+	_expect(cancel_btn != null and cancel_btn.text == "Cancel", "Cancel button text should be 'Cancel'", results)
+	_expect(cancel_btn != null and cancel_btn.disabled == false, "Cancel button should be enabled during confirmation", results)
+
+	# Clean up temp files
+	if FileAccess.file_exists(stack_json_path):
+		DirAccess.remove_absolute(stack_json_path)
+	if DirAccess.dir_exists_absolute(test_proj_dir):
+		DirAccess.remove_absolute(test_proj_dir)
+
+	controller = null
+	dialog.free()
+
+## Test: Cancel action hides SealDialog without modifying project files or launching worker thread.
+func _test_cancel_flow_leaves_project_intact_and_hides_dialog(results: Dictionary) -> void:
+	## Validates cancel flow cleanly closes dialog without execution.
+	var controller = SealControllerScript.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
+
+	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
+	controller.seal_for_delivery("res://tests")
+
+	_expect(controller.is_in_confirmation() == true, "Controller should be in CONFIRMATION state before cancel", results)
+
+	controller.cancel_seal()
+
+	_expect(controller.is_in_confirmation() == false, "Controller should exit confirmation state after cancel", results)
+	_expect(controller.is_sealing() == false, "Controller should not be sealing after cancel", results)
+	_expect(controller.get("_seal_thread") == null, "_seal_thread should be null after cancel", results)
+	_expect(dialog.visible == false, "Dialog should be hidden after cancel", results)
+
+	controller = null
+	dialog.free()
+
+## Test: Confirm action transitions SealDialog in-place to progress and begins background sealing.
+func _test_confirm_transitions_in_place_to_sealing_progress(results: Dictionary) -> void:
+	## Validates in-place transition from confirmation to active sealing.
+	var controller = DialogFreedSealController.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
+
+	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	var sem = Semaphore.new()
+	controller.gate = sem
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
+
+	controller.seal_for_delivery("res://tests")
+	_expect(controller.is_in_confirmation() == true, "Should enter confirmation state", results)
+	_expect(progress_bar.visible == false, "Progress bar hidden in confirmation", results)
+
+	controller.confirm_seal()
+
+	_expect(controller.is_in_confirmation() == false, "Should exit confirmation state on confirm", results)
+	_expect(controller.is_sealing() == true, "Should enter active sealing state on confirm", results)
+	_expect(progress_bar.visible == true, "Progress bar should become visible upon confirm", results)
+	_expect(progress_bar.indeterminate == true, "Progress bar should be indeterminate upon confirm", results)
+	_expect(dialog.get_ok_button().disabled == true, "OK button should be disabled upon confirm", results)
+
+	var cancel_btn: Button = controller.get_cancel_button()
+	_expect(cancel_btn != null and cancel_btn.visible == false, "Cancel button should be hidden during sealing", results)
+
+	# Release worker thread
+	sem.post()
+
+	var tree = Engine.get_main_loop() as SceneTree
+	var deadline = Time.get_ticks_msec() + 3000
+	while controller.is_sealing() and Time.get_ticks_msec() < deadline:
+		await tree.process_frame
+
+	_expect(controller.is_sealing() == false, "Sealing should complete", results)
+	_expect(dialog.get_ok_button().disabled == false, "Close button should be re-enabled after sealing", results)
+
+	controller = null
+	dialog.free()
+
+## Test: Intercepting close_requested blocks unexpected dialog dismissal while sealing is in progress.
+func _test_close_requested_blocked_while_sealing(results: Dictionary) -> void:
+	## Validates that close_requested signal is blocked while worker thread is active.
+	var controller = SealControllerScript.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
+
+	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
+	dialog.popup_centered()
+	_expect(dialog.visible == true, "Dialog should be visible initially", results)
+
+	# Simulate active sealing state
+	controller._show_progress()
+	controller.set("_seal_in_progress", true)
+
+	# Trigger close_requested while sealing is active
+	dialog.close_requested.emit()
+
+	_expect(dialog.visible == true, "Dialog should remain visible and not be dismissed during sealing", results)
+
+	# Reset and test close_requested when NOT sealing
+	controller.set("_seal_in_progress", false)
+	dialog.close_requested.emit()
+	_expect(dialog.visible == false, "Dialog should close on close_requested when not sealing", results)
+
+	controller = null
+	dialog.free()
+
+## Test: Verifies main.tscn SealDialog borderless window chrome and in-dialog header configuration.
+func _test_main_tscn_seal_dialog_chrome_configuration(results: Dictionary) -> void:
+	## Validates SealDialog borderless = true, unresizable = true, and styled in-dialog header.
+	var main_scene = load("res://main.tscn")
+	_expect(main_scene != null, "main.tscn should load", results)
+	if main_scene == null:
+		return
+
+	var instance: Node = main_scene.instantiate()
+	_expect(instance != null, "main.tscn should instantiate", results)
+	if instance == null:
+		return
+
+	var seal_dialog: AcceptDialog = instance.get_node_or_null("SealDialog") as AcceptDialog
+	_expect(seal_dialog != null, "SealDialog should exist in main.tscn", results)
+	if seal_dialog != null:
+		_expect(seal_dialog.borderless == true, "SealDialog borderless should be true in main.tscn", results)
+		_expect(seal_dialog.unresizable == true, "SealDialog unresizable should be true in main.tscn", results)
+		_expect(seal_dialog.dialog_hide_on_ok == false, "SealDialog dialog_hide_on_ok should be false in main.tscn", results)
+		_expect(seal_dialog.dialog_close_on_escape == false, "SealDialog dialog_close_on_escape should be false in main.tscn", results)
+
+	var header_bar: HBoxContainer = instance.get_node_or_null("SealDialog/VBoxContainer/HeaderBar") as HBoxContainer
+	_expect(header_bar != null, "SealDialog should have an in-dialog HeaderBar", results)
+
+	var header_title: Label = instance.get_node_or_null("SealDialog/VBoxContainer/HeaderBar/HeaderTitle") as Label
+	_expect(header_title != null, "HeaderBar should contain HeaderTitle", results)
+	if header_title != null:
+		_expect(header_title.text == "Seal for Delivery", "HeaderTitle text should be 'Seal for Delivery'", results)
+		_expect(header_title.get_theme_font_size("font_size") == 18, "HeaderTitle font size should be 18px", results)
+
+	instance.free()
