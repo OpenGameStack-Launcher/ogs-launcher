@@ -312,6 +312,7 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Main scene pre-quit cleanup triggers controller cleanup
   - Dynamic tab title count badge formatting across empty catalog, partially installed, and updated catalog states (`Installed (X)` / `Download (Y)`)
   - Empty state visibility toggles: verifies that `InstalledEmptyState` is visible and `InstalledContent` is hidden when 0 tools are installed, and vice versa when 1+ tools are installed
+  - Central Library footer visibility and path resolution: verifies that `LibraryFooter` is persistently visible across empty (0 tools) and populated (1+ tools) states, accurately displays the formatted Central Library path via `PathResolver` and `PathUtils`, populates management warning text, and resolves via fallback lookup when not explicitly bound in `UIDeps`
   - Browse Available Tools action: verifies clicking "Browse Available Tools" switches active tools tab to the Download tab (`current_tab = 1`)
   - Dynamic category section and divider visibility: verifies empty category sections are hidden, single visible category hides all dividers, and dividers appear strictly between visible sections with leading, trailing, and consecutive dividers suppressed
 
@@ -502,6 +503,7 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Tool cards assign dynamic theme variations: `PrimaryButton` for download buttons, `DangerButton` for installed tool removal buttons, and `SecondaryButton` for active download cancel buttons
   - Installed tab empty-state nodes: verifies `InstalledEmptyState` container, `InstalledEmptyTitle` ("No Tools Installed Yet"), `InstalledEmptyDescription` (mentioning Central Library), and `BrowseAvailableToolsButton` (`PrimaryButton` variation) exist in `main.tscn`
   - Dynamic category collapse and empty state integration: verifies that populating tools with 0 installed tools shows `InstalledEmptyState`, hides `InstalledContent`, and hides all empty category sections and dividers in `main.tscn`
+  - Central Library footer layout and safety: verifies that `LibraryFooter` panel container exists under Installed tab in `main.tscn`, displays the resolved Central Library path, displays the disk management warning text, contains no clickable buttons or links, and remains visible across empty and populated tool states
   - RemoveToolDialog compact layout and status visibility: verifies compact 420x150 sizing, 16px horizontal / 12px vertical content margins, and proper visibility transitions keeping status text and progress bar hidden until removal is actively underway or fails
   - DownloadDialogController layout and styling: verifies MarginContainer wrapping with 16px horizontal and 12px vertical padding, 12px VBoxContainer separation, progress bar dimensions (360x18), single authoritative status text (`show_percentage = false`), and custom StyleBoxFlat background (#1A1D24, 1px border #2A2F3A, 6px corner radius) and fill (#3B82F6, 6px corner radius)
 

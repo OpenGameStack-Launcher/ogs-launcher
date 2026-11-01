@@ -1645,9 +1645,55 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ---
 
+### Editor Test 27: Tools Page - Central Library Path & Management Warning Footer
+
+**Objective:** Verify that the Installed tab on the Tools page displays a persistent footer showing the dynamically resolved Central Library path, includes clear warning text advising against manual modifications on disk, guarantees the vertical scrollbar terminates cleanly above the footer bar, contains no clickable buttons or links, and remains persistently visible across both empty and populated library states.
+
+**Steps:**
+1. Launch OGS Launcher in editor mode or standalone.
+2. Navigate to the **Tools** page (click "Tools" in the sidebar).
+3. Confirm the **Installed** tab (`ToolsTabs/Installed`) is active:
+   - Verify that the tab layout contains a scrollable container (`InstalledScrollContainer`) and a bottom panel (`LibraryFooter`).
+   - If tools are installed:
+     - Verify installed tool cards appear within the scrollable area.
+     - Scroll down to the bottom: confirm that the vertical scrollbar terminates cleanly above the footer bar and does not extend across the full window height.
+   - If zero tools are installed:
+     - Verify `InstalledEmptyState` is displayed within the scrollable container.
+     - Verify the `LibraryFooter` panel remains persistently visible at the bottom of the tab.
+4. Inspect the **LibraryFooter** panel:
+   - Verify the panel is styled with `StyleBoxFlat_library_footer` (dark surface `Color(0.12, 0.14, 0.18, 0.8)`, subtle border `Color(0.2, 0.24, 0.3, 0.8)`, 6px corner radius, and 14px horizontal by 10px vertical content margins).
+   - Verify the "Central Library:" label renders in high-contrast text (`Color(0.75, 0.82, 0.95)`).
+   - Verify the resolved Central Library path label (`LibraryPathLabel`) displays the normalized absolute path to the library (e.g. `C:/Users/<User>/AppData/Local/OGS/Library`) using forward slashes.
+   - Hover over the path label and confirm the tooltip displays the full path.
+   - Verify the management warning label (`LibraryWarningLabel`) renders in amber accent text (`Color(0.9, 0.75, 0.45)`) reading: `"⚠️ Do not manually adjust or modify files in the Central Library directory on disk. Use the Tools screen to install and remove software."`.
+   - Verify that there are no clickable buttons, links, or file explorer launch triggers inside the footer panel (path remains read-only).
+5. Switch to the **Download** tab and install or remove a tool:
+   - Return to the **Installed** tab.
+   - Verify the footer remains visible without flicker, clipping, or overlapping controls.
+
+**Expected Results:**
+- [x] Installed tab incorporates a persistent bottom footer panel (`LibraryFooter`).
+- [x] Central Library path dynamically resolves and formats with clean forward slashes.
+- [x] Management warning label provides explicit guidance against direct disk modifications.
+- [x] No clickable links or buttons exist within the footer panel (read-only safety).
+- [x] Vertical scrollbar terminates cleanly above the footer panel.
+- [x] Footer remains persistently visible in both empty (0 tools) and populated (1+ tools) states.
+
+**Pass Criteria:**
+- Footer renders with clean styling matching the dark launcher palette.
+- Path and warning text format accurately without clipping.
+- Scrollbar clearance eliminates any overlap between the scrollbar and the footer.
+
+**If test fails:**
+- Verify `Installed` hierarchy in `main.tscn` (`ToolsTabs/Installed` is `VBoxContainer` with `InstalledScrollContainer` and `LibraryFooter`).
+- Check `ToolsPageController._update_library_footer()` path resolution via `PathResolver` and `PathUtils.format_for_display()`.
+- Check `main.gd` UIDeps binding for `library_footer`, `library_path_label`, and `library_warning_label`.
+
+---
+
 ## Summary: Editor Testing Checklist
 
-After completing Editor Tests 1-26, fill in this table:
+After completing Editor Tests 1-27, fill in this table:
 
 | Test | Status | Notes | Blockers |
 |------|--------|-------|----------|
@@ -1680,6 +1726,7 @@ After completing Editor Tests 1-26, fill in this table:
 | 24: Tools Page Empty Categories & State | ✅/⚠️/❌ | | |
 | 25: Settings Cards & Inputs | ✅/⚠️/❌ | | |
 | 26: Compact Dialogs & Input Validation | ✅/⚠️/❌ | | |
+| 27: Tools Page Library Footer & Path | ✅/⚠️/❌ | | |
 
 ---
 
