@@ -117,9 +117,9 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 	_expect(instance.get_node_or_null("AppLayout/Content/PageSettings/ProjectForceOfflineCheckButton") == null, "PageSettings should not contain ProjectForceOfflineCheckButton", results)
 
 	# Verify project offline controls exist under Project Details
-	var project_offline_section = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection")
-	_expect(project_offline_section != null, "ProjectOfflineSection should exist under Project Details", results)
-	var project_offline_status_lbl = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel") as Label
+	var project_offline_section = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy")
+	_expect(project_offline_section != null, "Policy sub-tab should exist under ProjectDetailsTabs", results)
+	var project_offline_status_lbl = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ProjectOfflineStatusLabel") as Label
 	_expect(project_offline_status_lbl != null, "ProjectOfflineStatusLabel should exist under Project Details", results)
 	if project_offline_status_lbl != null and instance.get("projects_controller") != null:
 		var pc = instance.get("projects_controller")
@@ -152,10 +152,11 @@ func _test_main_scene_loads(results: Dictionary) -> void:
 		_expect(open_project_btn.custom_minimum_size == Vector2(140, 32), "Open Project button minimum size should be (140, 32)", results)
 		_expect(open_project_btn.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "Open Project button size flags should be expand fill", results)
 
-	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/AddToolButton") != null, "Add Tool button should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/RemoveToolButton") != null, "Remove Tool button should exist", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow/LaunchButton") != null, "Launch button should exist under ProjectDetailsActionRow", results)
-	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow/SealButton") != null, "Seal button should exist under ProjectDetailsActionRow", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolActionRow/AddToolButton") != null, "Add Tool button should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolActionRow/RemoveToolButton") != null, "Remove Tool button should exist", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/LaunchButton") != null, "Launch button should exist under Toolchain", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerLaunchButton") != null, "ExplorerLaunchButton should exist under Explorer", results)
+	_expect(instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/SealButton") != null, "Seal button should exist under Policy", results)
 
 	instance.free()
 
@@ -321,8 +322,8 @@ func _test_typographic_scale(results: Dictionary) -> void:
 	var section_header_paths: Array[String] = [
 		"AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsSettingsLabel",
 		"AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorSettingsLabel",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineSettingsLabel",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/ExplorerLabel"
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ProjectOfflineSettingsLabel",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar/ExplorerLabel"
 	]
 	for path: String in section_header_paths:
 		var header: Label = instance.get_node_or_null(path) as Label
@@ -337,7 +338,7 @@ func _test_typographic_scale(results: Dictionary) -> void:
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer/ProjectsStatusLabel",
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectsStatusBar/HBoxContainer/OfflineStatusLabel",
 		"AppLayout/Content/PageTools/ToolsStatusLabel",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ProjectOfflineStatusLabel",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ProjectOfflineStatusLabel",
 		"AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorStatusLabel",
 		"AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsHelperLabel",
 		"AppLayout/Content/PageSettings/MirrorCard/VBoxContainer/MirrorHelperLabel"
@@ -562,13 +563,13 @@ func _test_checkbutton_styling(results: Dictionary) -> void:
 		_expect(cb_hover != null, "CheckButton hover stylebox should be defined", results)
 
 	# Verify checkbutton controls and helper labels exist in Project Details
-	var offline_mode_cb: CheckButton = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeCheckButton") as CheckButton
-	var force_offline_cb: CheckButton = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineCheckButton") as CheckButton
+	var offline_mode_cb: CheckButton = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/OfflineModeContainer/ProjectOfflineModeCheckButton") as CheckButton
+	var force_offline_cb: CheckButton = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ForceOfflineContainer/ProjectForceOfflineCheckButton") as CheckButton
 	_expect(offline_mode_cb != null, "ProjectOfflineModeCheckButton should exist as CheckButton under Project Details", results)
 	_expect(force_offline_cb != null, "ProjectForceOfflineCheckButton should exist as CheckButton under Project Details", results)
 
-	var offline_mode_helper: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/OfflineModeContainer/ProjectOfflineModeHelperLabel") as Label
-	var force_offline_helper: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectOfflineSection/ForceOfflineContainer/ProjectForceOfflineHelperLabel") as Label
+	var offline_mode_helper: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/OfflineModeContainer/ProjectOfflineModeHelperLabel") as Label
+	var force_offline_helper: Label = instance.get_node_or_null("AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/ForceOfflineContainer/ProjectForceOfflineHelperLabel") as Label
 	_expect(offline_mode_helper != null, "ProjectOfflineModeHelperLabel should exist under Project Details", results)
 	_expect(force_offline_helper != null, "ProjectForceOfflineHelperLabel should exist under Project Details", results)
 
@@ -585,8 +586,9 @@ func _test_main_scene_button_variations(results: Dictionary) -> void:
 
 	var expected_primary: Array[String] = [
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/NewProjectButton",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow/LaunchButton",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsActionRow/SealButton"
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/LaunchButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerLaunchButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy/SealButton"
 	]
 	for path in expected_primary:
 		var btn: Button = instance.get_node_or_null(path) as Button
@@ -597,10 +599,10 @@ func _test_main_scene_button_variations(results: Dictionary) -> void:
 	var expected_secondary: Array[String] = [
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/AddButton",
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectsControls/AddRemoteProjectButton",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/AddToolButton",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/ChangeVersionButton",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/NewFolderBtn",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ExplorerSection/ExplorerToolbar/NewFileBtn",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolActionRow/AddToolButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolActionRow/ChangeVersionButton",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar/NewFolderBtn",
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Explorer/ExplorerToolbar/NewFileBtn",
 		"AppLayout/Content/PageTools/ToolsToolbar/RefreshButton",
 		"AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootBrowseButton",
 		"AppLayout/Content/PageSettings/ProjectsCard/VBoxContainer/ProjectsRootContainer/ProjectsRootResetButton",
@@ -616,7 +618,7 @@ func _test_main_scene_button_variations(results: Dictionary) -> void:
 
 	var expected_danger: Array[String] = [
 		"AppLayout/Content/PageProjects/ProjectsTabs/Project Library/ProjectActionRow/RemoveButton",
-		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/VSplitContainer/ToolchainSection/ToolActionRow/RemoveToolButton"
+		"AppLayout/Content/PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Toolchain/ToolActionRow/RemoveToolButton"
 	]
 	for path in expected_danger:
 		var btn: Button = instance.get_node_or_null(path) as Button
@@ -665,9 +667,10 @@ func _test_page_projects_hierarchy_and_separation(results: Dictionary) -> void:
 	## Verifies UI reorganization under PageProjects:
 	## - ProjectsTabs is directly below ProjectsTitle
 	## - ProjectsControls is first child under Project Library (above search line edit)
-	## - ProjectsStatusBar is first child under Project Details (above VSplitContainer)
+	## - ProjectsStatusBar is first child under Project Details (above ProjectDetailsTabs)
 	## - ProjectActionRow contains only OpenProjectButton and RemoveButton (no SealButton)
-	## - ProjectDetailsActionRow at bottom of Project Details has separation 12 and contains LaunchButton and SealButton (both expand fill)
+	## - ProjectDetailsTabs has 3 tabs: Toolchain, Explorer, Policy
+	## - VSplitContainer and ProjectDetailsActionRow are removed from Project Details
 	var scene: PackedScene = load("res://main.tscn")
 	_expect(scene != null, "main.tscn should load for hierarchy test", results)
 	if scene == null:
@@ -717,21 +720,30 @@ func _test_page_projects_hierarchy_and_separation(results: Dictionary) -> void:
 		_expect(first_child != null and first_child.name == "ProjectsStatusBar", "ProjectsStatusBar should be first child of Project Details", results)
 
 		var split: VSplitContainer = project_details.get_node_or_null("VSplitContainer") as VSplitContainer
-		_expect(split != null, "VSplitContainer should exist in Project Details", results)
-		if first_child != null and split != null:
-			_expect(split.get_index() > first_child.get_index(), "VSplitContainer should sit below ProjectsStatusBar", results)
+		_expect(split == null, "VSplitContainer should NOT exist in Project Details", results)
 
 		var details_action_row: HBoxContainer = project_details.get_node_or_null("ProjectDetailsActionRow") as HBoxContainer
-		_expect(details_action_row != null, "ProjectDetailsActionRow should exist under Project Details", results)
-		if details_action_row != null:
-			var separation: int = details_action_row.get_theme_constant("separation")
-			_expect(separation == 12, "ProjectDetailsActionRow separation should be 12 (got %d)" % separation, results)
-			var launch_btn: Button = details_action_row.get_node_or_null("LaunchButton") as Button
-			var seal_btn: Button = details_action_row.get_node_or_null("SealButton") as Button
-			_expect(launch_btn != null, "LaunchButton should exist in ProjectDetailsActionRow", results)
-			_expect(seal_btn != null, "SealButton should exist in ProjectDetailsActionRow", results)
+		_expect(details_action_row == null, "ProjectDetailsActionRow should NOT exist under Project Details", results)
+
+		var subtabs: TabContainer = project_details.get_node_or_null("ProjectDetailsTabs") as TabContainer
+		_expect(subtabs != null, "ProjectDetailsTabs should exist in Project Details", results)
+		if first_child != null and subtabs != null:
+			_expect(subtabs.get_index() > first_child.get_index(), "ProjectDetailsTabs should sit below ProjectsStatusBar", results)
+			_expect(subtabs.get_tab_count() == 3, "ProjectDetailsTabs should have 3 tabs", results)
+			_expect(subtabs.get_tab_title(0) == "Toolchain", "Sub-tab 0 should be Toolchain", results)
+			_expect(subtabs.get_tab_title(1) == "Explorer", "Sub-tab 1 should be Explorer", results)
+			_expect(subtabs.get_tab_title(2) == "Policy", "Sub-tab 2 should be Policy", results)
+
+			var launch_btn: Button = subtabs.get_node_or_null("Toolchain/LaunchButton") as Button
+			var explorer_launch_btn: Button = subtabs.get_node_or_null("Explorer/ExplorerLaunchButton") as Button
+			var seal_btn: Button = subtabs.get_node_or_null("Policy/SealButton") as Button
+			_expect(launch_btn != null, "LaunchButton should exist in Toolchain subtab", results)
+			_expect(explorer_launch_btn != null, "ExplorerLaunchButton should exist in Explorer subtab", results)
+			_expect(seal_btn != null, "SealButton should exist in Policy subtab", results)
 			if launch_btn != null:
 				_expect(launch_btn.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "LaunchButton should have expand fill size flags", results)
+			if explorer_launch_btn != null:
+				_expect(explorer_launch_btn.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "ExplorerLaunchButton should have expand fill size flags", results)
 			if seal_btn != null:
 				_expect(seal_btn.size_flags_horizontal == Control.SIZE_EXPAND_FILL, "SealButton should have expand fill size flags", results)
 

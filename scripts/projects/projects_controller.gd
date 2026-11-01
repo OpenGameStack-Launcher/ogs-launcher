@@ -127,9 +127,11 @@ var current_project_config: OgsConfig = null
 var environment_validator: ProjectEnvironmentValidator
 var tools_controller: ToolsController
 var projects_tabs: TabContainer
+var project_details_tabs: TabContainer = null
 var toolchain_header_label: Label = null
 var project_tools_list: ItemList
 var btn_change_version: Button
+var btn_explorer_launch_tool: Button = null
 var project_offline_mode_check_button: CheckButton = null
 var project_force_offline_check_button: CheckButton = null
 var project_offline_status_label: Label = null
@@ -185,9 +187,13 @@ class UIDeps extends RefCounted:
 	var add_tool_dialog: ConfirmationDialog
 	var add_tool_option_list: ItemList
 	var projects_tabs: TabContainer
+	var project_details_tabs: TabContainer = null
 	var toolchain_header_label: Label = null
 	var project_tools_list: ItemList
 	var btn_change_version: Button
+	var btn_explorer_launch_tool: Button = null
+	var btn_explorer_launch: Button = null
+	var explorer_launch_button: Button = null
 	var project_offline_mode_check_button: CheckButton = null
 	var project_force_offline_check_button: CheckButton = null
 	var project_offline_status_label: Label = null
@@ -230,6 +236,12 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	elif deps.btn_seal_for_delivery != null:
 		btn_seal_project = deps.btn_seal_for_delivery
 	btn_launch_tool = deps.btn_launch_tool
+	if deps.btn_explorer_launch_tool != null:
+		btn_explorer_launch_tool = deps.btn_explorer_launch_tool
+	elif deps.btn_explorer_launch != null:
+		btn_explorer_launch_tool = deps.btn_explorer_launch
+	elif deps.explorer_launch_button != null:
+		btn_explorer_launch_tool = deps.explorer_launch_button
 	project_dir_dialog = deps.project_dir_dialog
 	remove_project_dialog = deps.remove_project_dialog
 	new_project_dialog = deps.new_project_dialog
@@ -237,6 +249,7 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 	add_tool_dialog = deps.add_tool_dialog
 	add_tool_option_list = deps.add_tool_option_list
 	projects_tabs = deps.projects_tabs
+	project_details_tabs = deps.project_details_tabs
 	toolchain_header_label = deps.toolchain_header_label
 	project_tools_list = deps.project_tools_list
 	btn_change_version = deps.btn_change_version
@@ -293,6 +306,10 @@ func setup(deps: UIDeps, tools_ctrl: ToolsController = null) -> void:
 			project_tools_list.empty_clicked.connect(_on_tools_list_empty_clicked)
 	btn_remove_project.pressed.connect(_on_remove_project_pressed)
 	btn_launch_tool.pressed.connect(_on_launch_tool_pressed)
+	if btn_explorer_launch_tool != null:
+		btn_explorer_launch_tool.pressed.connect(_on_launch_tool_pressed)
+	if project_details_tabs != null:
+		project_details_tabs.tab_changed.connect(_on_project_details_tab_changed)
 	remove_project_dialog.confirmed.connect(_on_remove_project_confirmed)
 	new_project_dialog.confirmed.connect(_on_new_project_confirmed)
 	add_tool_dialog.confirmed.connect(_on_add_tool_confirmed)
@@ -1802,21 +1819,85 @@ func _update_tool_action_buttons() -> void:
 		btn_change_version.disabled = not can_change
 	_update_launch_button_state()
 
+func _on_project_details_tab_changed(tab_idx: int) -> void:
+	## Synchronizes launch button state and active launch context when switching sub-tabs.
+	if current_manifest == null or current_project_dir.is_empty():
+		_selected_tool_index = -1
+		_selected_launch_tool_id = ""
+		_selected_launch_target_path = ""
+		_update_launch_button_state()
+		return
+
+	match tab_idx:
+		0:
+			# Toolchain sub-tab
+			var selected_items: PackedInt32Array = project_tools_list.get_selected_items() if project_tools_list != null else PackedInt32Array()
+			if selected_items.size() > 0 and selected_items[0] >= 0 and selected_items[0] < current_manifest.tools.size():
+				_selected_tool_index = selected_items[0]
+				var tool_entry: Dictionary = current_manifest.tools[_selected_tool_index]
+				_selected_launch_tool_id = String(tool_entry.get("id", ""))
+				_selected_launch_target_path = ""
+			else:
+				_selected_tool_index = -1
+				_selected_launch_tool_id = ""
+				_selected_launch_target_path = ""
+			_update_tool_action_buttons()
+		1:
+			# Explorer sub-tab
+			if explorer_tree != null and explorer_tree.get_selected() != null:
+				var item: TreeItem = explorer_tree.get_selected()
+				var meta: Variant = item.get_metadata(0)
+				if meta is Dictionary and meta.has("path"):
+					var path: String = String(meta["path"])
+					var is_dir: bool = bool(meta.get("is_dir", false))
+					if is_dir:
+						if self.has_meta("project_explorer_instance"):
+							var explorer = self.get_meta("project_explorer_instance")
+							_selected_launch_tool_id = explorer._infer_tool_from_folder(path)
+						else:
+							_selected_launch_tool_id = ""
+					else:
+						if self.has_meta("project_explorer_instance"):
+							var explorer = self.get_meta("project_explorer_instance")
+							_selected_launch_tool_id = explorer._get_tool_for_file(path)
+						else:
+							_selected_launch_tool_id = ""
+					_selected_launch_target_path = path
+				else:
+					_selected_launch_tool_id = ""
+					_selected_launch_target_path = ""
+			else:
+				_selected_launch_tool_id = ""
+				_selected_launch_target_path = ""
+			_update_tool_action_buttons()
+		2:
+			# Policy sub-tab
+			_update_tool_action_buttons()
+
 func _update_launch_button_state() -> void:
-	## Updates btn_launch_tool text and disabled state based on active selection context.
-	if btn_launch_tool == null:
+	## Updates btn_launch_tool and btn_explorer_launch_tool text and disabled state based on active selection context.
+	var buttons: Array[Button] = []
+	if btn_launch_tool != null:
+		buttons.append(btn_launch_tool)
+	if btn_explorer_launch_tool != null and btn_explorer_launch_tool != btn_launch_tool:
+		buttons.append(btn_explorer_launch_tool)
+
+	if buttons.is_empty():
 		return
 
 	if current_manifest == null or current_project_dir.is_empty() or _selected_launch_tool_id.is_empty():
-		btn_launch_tool.text = "Select a Tool to Launch"
-		btn_launch_tool.disabled = true
+		for b in buttons:
+			b.text = "Select a Tool to Launch"
+			b.disabled = true
 		return
 
 	if not _selected_launch_target_path.is_empty():
 		var filename: String = _selected_launch_target_path.get_file()
 		var tool_name: String = ToolCategoryMapper.get_display_name(_selected_launch_tool_id)
-		btn_launch_tool.text = "Open %s in %s" % [filename, tool_name]
-		btn_launch_tool.disabled = false
+		var text: String = "Open %s in %s" % [filename, tool_name]
+		for b in buttons:
+			b.text = text
+			b.disabled = false
 	else:
 		var tool_name: String = ToolCategoryMapper.get_display_name(_selected_launch_tool_id)
 		var tool_version: String = ""
@@ -1833,8 +1914,10 @@ func _update_launch_button_state() -> void:
 		if not tool_version.is_empty() and tool_version != "?":
 			var v_str := tool_version if (tool_version.begins_with("v") or tool_version.begins_with("V")) else ("v" + tool_version)
 			tool_display = "%s %s" % [tool_name, v_str]
-		btn_launch_tool.text = "Launch %s" % tool_display
-		btn_launch_tool.disabled = false
+		var text: String = "Launch %s" % tool_display
+		for b in buttons:
+			b.text = text
+			b.disabled = false
 
 func deselect_launch_target() -> void:
 	## Clears active tool and file launch selections and reverts launch button to disabled.
@@ -1900,6 +1983,8 @@ func _open_selected_project_tab() -> void:
 	if _selected_project_index >= 0 and _selected_project_index < registry_manager.tracked_projects.size():
 		if projects_tabs != null:
 			projects_tabs.current_tab = 1
+		if project_details_tabs != null:
+			project_details_tabs.current_tab = 0
 ## Validates the project environment and signals if tools are missing.
 func _validate_and_report_environment(project_dir: String, use_project_tools: bool = false) -> void:
 	## Checks if all required tools are available in the library.
