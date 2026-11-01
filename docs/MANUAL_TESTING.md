@@ -23,7 +23,7 @@ Two sample projects are provided in `samples/` for testing:
 | **sample_project** | Development/linked-mode testing | force_offline=false | Tools expected in library (missing state) |
 | **sample_project_sealed** | Sealed/air-gapped project testing | force_offline=true | Tools physically embedded in project |
 
-Both samples include a `stack.json` manifest; see each sample’s `stack.json` for the exact pinned tool versions used in that scenario.
+Both samples include an `ogs_stack.json` manifest; see each sample's `ogs_stack.json` for the exact pinned tool versions used in that scenario.
 
 ---
 
@@ -142,7 +142,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 **If test fails:**
 - Check Godot Output panel for parser/script errors
 - Verify all required nodes exist in main.tscn
-- Confirm ogs_config.json and stack.json schemas in samples are valid
+- Confirm ogs_config.json and ogs_stack.json schemas in samples are valid
 
 ---
 
@@ -211,7 +211,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 - Offline status correctly reflects config state
 
 **If test fails:**
-- Verify sample_project/stack.json is valid JSON
+- Verify sample_project/ogs_stack.json is valid JSON
 - Check if sample_project/ogs_config.json exists; if not, confirm defaults apply
 - Look for path resolution errors in console
 - Verify ToolsController has loaded repository.json successfully
@@ -247,7 +247,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ### Editor Test 3.1: Projects Page - Add Tool / Remove Tool Flow
 
-**Objective:** Verify tool-management controls update `stack.json` reliably using the Add Tool list dialog, displaying toolchain icons, installation status tags, tooltips, and balanced button sizing.
+**Objective:** Verify tool-management controls update `ogs_stack.json` reliably using the Add Tool list dialog, displaying toolchain icons, installation status tags, tooltips, and balanced button sizing.
 
 **Steps:**
 1. Select a project in Project Library (for example `samples/sample_project`)
@@ -277,7 +277,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 **Pass Criteria:**
 - Add Tool and Remove Tool workflows are stable across multiple operations
-- Project tools list and `stack.json` stay in sync after each action
+- Project tools list and `ogs_stack.json` stay in sync after each action
 
 **If test fails:**
 - Check sample_project_sealed/ogs_config.json has force_offline=true
@@ -372,7 +372,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 - [x] Mutual deselection clears the Project Explorer selection when a tool row is clicked.
 - [x] Clicking "Launch Selected Tool" on a missing tool updates the status message and navigates to the Tools page.
 - [x] Double-clicking an uninstalled tool row directly navigates to the Tools page.
-- [x] "Remove Tool" successfully removes the selected missing tool from `stack.json`.
+- [x] "Remove Tool" successfully removes the selected missing tool from `ogs_stack.json`.
 
 **Pass Criteria:**
 - Missing tools can be selected, reconfigured, or removed directly from Project Details without unintended view switching.
@@ -971,7 +971,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 2. Inspect the Project Explorer tree view on the right:
    - Confirm non-excluded text, script, shader, and data files (`.gd`, `.cs`, `.gdshader`, `.shader`, `.txt`, `.md`, `.csv`, `.json`, `.yaml`, `.yml`, `.toml`) appear in the tree.
    - Confirm each recognized file displays the official VSCodium icon (`Images/tools/VSCodium.png`) at a max width of 20px.
-   - Confirm internal launcher and engine metadata files (`stack.json`, `ogs_config.json`, `ogs_metadata.json`, `.import`, `.uid`, `.cfg`, `.tres`, `.tscn`) remain strictly hidden.
+   - Confirm internal launcher and engine metadata files (`ogs_stack.json`, `ogs_config.json`, `ogs_metadata.json`, `.import`, `.uid`, `.cfg`, `.tres`, `.tscn`) remain strictly hidden.
 3. Double-click any recognized text or script file (e.g. `main.gd` or `notes.txt`) in the Project Explorer:
    - Confirm the file is activated and VSCodium launches targeting that file.
 4. Switch to a Godot-only project (a project without VSCodium in its stack):
@@ -1046,7 +1046,7 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 ### Editor Test 14: Primary Projects Folder Configuration and Auto-Generated ogs_config.json
 
-**Objective:** Verify that the Primary Projects Folder setting in PageSettings allows configuring and resetting the project directory, affects New Project creation, and verify that importing a project containing only `stack.json` auto-generates a valid `ogs_config.json`.
+**Objective:** Verify that the Primary Projects Folder setting in PageSettings allows configuring and resetting the project directory, affects New Project creation, and verify that importing a project containing only `ogs_stack.json` auto-generates a valid `ogs_config.json`.
 
 **Steps:**
 1. Navigate to the **Settings** page (click "Settings" in sidebar).
@@ -1063,8 +1063,8 @@ dir "$env:LOCALAPPDATA\OGS\"
 6. Return to the **Settings** page and click **"Reset to Default"** next to Primary Projects Folder:
    - Verify the input field clears and placeholder text returns to the default user directory.
    - Return to Projects page, click "New Project", and confirm the instructions label points back to the default OGS Projects directory.
-7. Prepare a test folder containing ONLY `stack.json` (no `ogs_config.json`):
-   - In a temporary folder, create `stack.json` with a valid stack payload (`{"schema_version": 1, "stack_name": "Stack Only Test", "tools": []}`).
+7. Prepare a test folder containing ONLY `ogs_stack.json` (no `ogs_config.json`):
+   - In a temporary folder, create `ogs_stack.json` with a valid stack payload (`{"schema_version": 1, "stack_name": "Stack Only Test", "tools": []}`).
    - Ensure no `ogs_config.json` exists in that directory.
 8. On the Projects page, click **"Add Local Project"**:
    - In the folder picker, select the temporary folder.
@@ -1079,13 +1079,13 @@ dir "$env:LOCALAPPDATA\OGS\"
 - [x] New Project dialog instructions label reflects active primary folder.
 - [x] Project scaffolding is created in the configured folder.
 - [x] Reset to Default reverts the primary folder to the standard default path.
-- [x] Projects with only `stack.json` are accepted by Add Local Project.
+- [x] Projects with only `ogs_stack.json` are accepted by Add Local Project.
 - [x] Missing `ogs_config.json` is auto-generated on disk with valid default settings.
 
 **Pass Criteria:**
 - Custom projects folder persists and redirects project creation.
 - Reset to Default restores standard directory.
-- Projects containing only stack.json import successfully with auto-generated configuration.
+- Projects containing only ogs_stack.json import successfully with auto-generated configuration.
 
 ---
 
