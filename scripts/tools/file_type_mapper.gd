@@ -30,7 +30,7 @@ const VSCODIUM_EXTENSIONS: Array[String] = [
 ]
 
 const EXCLUDED_FILENAMES: Array[String] = [
-	"stack.json",
+	"ogs_stack.json",
 	"ogs_config.json",
 	"ogs_metadata.json"
 ]

@@ -84,7 +84,7 @@ The test runner will clean up this custom path after tests complete.
 
 Unit tests validate pure logic without instantiating UI nodes. These run quickly and focus on data validation, parsing, and business logic.
 
-**Current unit test suites (31 total, 38 suites across all categories, 2387 passing tests):**
+**Current unit test suites (31 total, 38 suites across all categories, 2403 passing tests):**
 
 - **[tests/stack_manifest_tests.gd](tests/stack_manifest_tests.gd)** — Validates `stack.json` loading, schema compliance, and error codes.
   - Valid manifests pass
@@ -176,7 +176,7 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
 
 - **[tests/project_environment_validator_tests.gd](tests/project_environment_validator_tests.gd)** — Validates project environment readiness for launching.
   - Environment validation against library state
-  - Missing tool detection from stack.json
+  - Missing tool detection from ogs_stack.json
   - Library accessibility checking
   - Download list generation for hydration
   - Error reporting and validation structure
@@ -319,7 +319,7 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
 - **[tests/file_type_mapper_tests.gd](tests/file_type_mapper_tests.gd)** - Validates FileTypeMapper extension mapping and exclusions.
   - VSCodium supported extensions recognized (gd, cs, gdshader, shader, txt, md, csv, json, yaml, yml, toml) in lowercase and uppercase
   - Non-text extensions (png, exe, tscn, tres) rejected
-  - Internal metadata files (stack.json, ogs_config.json, ogs_metadata.json) and extensions (.import, .uid, .cfg, .tres, .tscn) excluded
+  - Internal metadata files (ogs_stack.json, ogs_config.json, ogs_metadata.json) and extensions (.import, .uid, .cfg, .tres, .tscn) excluded
   - Direct query maps text/script extensions to vscodium, project.godot to godot, and asset files to binary tools
   - Stack-aware tool queries require vscodium presence in active tools for text/script mapping while Godot-only stacks return empty string
   - Tool to extension mapping returns txt for vscodium (case-insensitive) and empty string for godot
@@ -388,14 +388,14 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
 **Current scene test suites:**
 
 - **[tests/projects_controller_scene_tests.gd](tests/projects_controller_scene_tests.gd)** - Validates Projects page controller logic.
-  - Add Local Project requires stack.json (auto-generates missing ogs_config.json on disk with default offline policies)
-  - Missing stack.json or empty folder rejected with appropriate status
+  - Add Local Project requires ogs_stack.json (auto-generates missing ogs_config.json on disk with default offline policies)
+  - Missing ogs_stack.json or empty folder rejected with appropriate status
   - Valid sample project adds to persistent Projects list and auto-selects
   - New Project creates scaffold under resolved Primary Projects Folder and auto-adds to library
   - Creating a new project honors configured Primary Projects Folder while test root override takes precedence
   - Persisted project index reloads on next setup
   - Remove Project updates list and persisted index immediately
-  - Add Tool and Remove Tool update project `stack.json` and refresh the tools list
+  - Add Tool and Remove Tool update project `ogs_stack.json` and refresh the tools list
   - Add Tool dialog uses list-based selection and preserves action button state
   - Add Tool candidates include fallback local sources when remote catalog data is unavailable
   - Code category tools (`git`, `vscodium`) bypass creating empty `assets/Code/*` directories
@@ -519,10 +519,10 @@ Scene tests instantiate UI nodes and verify controller behaviors. These are simi
   - Container folders (project root, intermediate folders like assets, 2D, 3D, Audio, and nested subfolders) maintain null icons
   - Icon caching in ProjectExplorer verifies texture instance reuse and missing tool handling
   - Stack-aware text and script file display: when VSCodium is in the stack, all mapped extensions (gd, cs, gdshader, shader, txt, md, csv, json, yaml, yml, toml) appear with the VSCodium icon and emit vscodium on selection
-  - Strict metadata exclusion: internal launcher and engine metadata files (stack.json, ogs_config.json, ogs_metadata.json, .import, .uid, .cfg, .tres, .tscn) remain hidden even when .json is supported
+  - Strict metadata exclusion: internal launcher and engine metadata files (ogs_stack.json, ogs_config.json, ogs_metadata.json, .import, .uid, .cfg, .tres, .tscn) remain hidden even when .json is supported
   - Godot-only pruning: text and script files are pruned when VSCodium is not in the project stack
   - Double-click activation: double-clicking a file emits file_activated signal while double-clicking a folder toggles collapse
-  - Stack fallback: when active tool IDs are omitted in load_project, reads tool IDs from project stack.json
+  - Stack fallback: when active tool IDs are omitted in load_project, reads tool IDs from project ogs_stack.json
 
 ### Startup Tests (Initialization Verification)
 

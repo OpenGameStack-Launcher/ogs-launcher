@@ -301,7 +301,7 @@ func _on_add_tool_confirmed() -> void:
 	add_tool_to_current_project(String(candidate.get("id", "")), String(candidate.get("version", "")))
 
 func add_tool_to_current_project(tool_id: String, version: String) -> bool:
-	## Adds a tool/version entry to current project's stack.json and refreshes UI.
+	## Adds a tool/version entry to current project's ogs_stack.json and refreshes UI.
 ## 
 ## Parameters:
 ## tool_id (String): Tool identifier from repository catalog
@@ -385,7 +385,7 @@ func _on_remove_tool_pressed() -> void:
 	remove_tool_at_index(_pc._selected_tool_index)
 
 func remove_tool_at_index(index: int) -> bool:
-	## Removes tool entry at index from current stack.json and refreshes UI.
+	## Removes tool entry at index from current ogs_stack.json and refreshes UI.
 ## 
 ## Parameters:
 ## index (int): Tool index in current manifest tools list
@@ -420,17 +420,17 @@ func remove_tool_at_index(index: int) -> bool:
 	return true
 
 func _save_current_stack_manifest() -> bool:
-	## Persists current stack manifest to stack.json on disk.
+	## Persists current stack manifest to ogs_stack.json on disk.
 ## 
 ## Returns:
 ## bool: True if manifest write succeeded
 ## 
 	if _pc.current_project_dir.is_empty() or _pc.current_manifest == null:
 		return false
-	var stack_path = _pc.current_project_dir.path_join("stack.json")
+	var stack_path = _pc.current_project_dir.path_join("ogs_stack.json")
 	var payload = _pc.current_manifest.to_dict()
 	if not _pc.registry_manager._save_json_file(stack_path, payload):
-		_pc._update_status("Status: Failed to update stack.json.")
+		_pc._update_status("Status: Failed to update ogs_stack.json.")
 		OgsLogger.warn("project_stack_save_failed", {
 			"component": "projects"
 		})

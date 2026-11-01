@@ -41,7 +41,7 @@ func _test_vscodium_supported_extensions(results: Dictionary) -> void:
 
 func _test_metadata_exclusions(results: Dictionary) -> void:
 	var excluded_files: Array[String] = [
-		"stack.json", "STACK.JSON", "C:/path/stack.json",
+		"ogs_stack.json", "OGS_STACK.JSON", "C:/path/ogs_stack.json",
 		"ogs_config.json", "OGS_CONFIG.JSON", "res://ogs_config.json",
 		"ogs_metadata.json", "C:/tool/ogs_metadata.json",
 		"sprite.png.import", ".import",

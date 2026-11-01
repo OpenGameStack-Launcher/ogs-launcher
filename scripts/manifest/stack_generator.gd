@@ -1,6 +1,6 @@
 ## StackGenerator: Manifest Factory for New OGS Projects
 ##
-## Provides factory methods to create and serialize fresh stack.json manifests.
+## Provides factory methods to create and serialize fresh ogs_stack.json manifests.
 ## Intended for the "New Project" workflow in the OGS Launcher UI.
 ##
 ## Standard Profile (OGS Default):
@@ -11,7 +11,7 @@
 ##
 ## Usage:
 ## var manifest = StackGenerator.create_default()
-## StackGenerator.save_to_file(manifest, "res://stack.json")
+## StackGenerator.save_to_file(manifest, "res://ogs_stack.json")
 ## var json_text = StackGenerator.to_json_string(manifest, pretty=true)
 
 extends RefCounted
@@ -73,7 +73,7 @@ static func to_json_string(manifest: StackManifest, pretty: bool = true) -> Stri
 ## Creates parent directories if needed (via Godot's FileAccess).
 ## Parameters:
 ## manifest (StackManifest): Manifest to save
-## file_path (String): Destination path (e.g., "user://projects/myproject/stack.json")
+## file_path (String): Destination path (e.g., "user://projects/myproject/ogs_stack.json")
 ## Returns:
 ## bool: True if write succeeded, false if file I/O failed
 static func save_to_file(manifest: StackManifest, file_path: String) -> bool:

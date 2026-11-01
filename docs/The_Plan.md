@@ -54,7 +54,7 @@ The MVP is not complete until this full sequence works end to end:
     *   *Extraction:* ToolExtractor unzips archives into library structure (Phase 2: actual unzipping).
     *   *Tests:* Unit tests validating all library operations.
 *   [x] **Project Manager & Environment Validation** — 100% Complete ✅
-    *   *Discovery:* ProjectsController loads and validates `stack.json`.
+    *   *Discovery:* ProjectsController loads and validates `ogs_stack.json` (migrated from `stack.json` in Issue #179).
     *   *Validation:* ProjectEnvironmentValidator checks tools against library.
     *   *UI Integration:* Environment incomplete → shows "Repair Environment" button.
     *   *Repair Workflow:* LibraryHydrator orchestrates batch downloads (Phase 2: actual HTTP).
@@ -183,7 +183,7 @@ Granular, actionable items for the Tools/Projects page redesign:
 *   [x] Add tests for tool availability indicators — 3 scene tests + 9 total tests passing ✅
 *   [x] Unity-Hub-style Project Library workflow - 100% Complete ✅
     *   [x] Persistent project registry (`user://ogs_projects_index.json`)
-    *   [x] Add Local Project requires only `stack.json` (auto-generates missing `ogs_config.json` with default offline policy)
+    *   [x] Add Local Project requires only `ogs_stack.json` (auto-generates missing `ogs_config.json` with default offline policy)
     *   [x] Remove Project with confirmation dialog
     *   [x] New Project scaffolding under configurable Primary Projects Folder (defaults to `%USERPROFILE%/OGS_Projects` or `$HOME/OGS_Projects`)
     *   [x] Primary Projects Folder setting in PageSettings with Browse and Reset to Default buttons, persisted in `ogs_launcher_settings.json`
@@ -201,9 +201,9 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Two-row action layout (Add/Remove/Launch tool + Remove/Seal project)
     *   [x] Add Tool dialog refactored from dropdown to list selection
     *   [x] Add Tool candidate fallback sources (catalog + library + tracked projects)
-    *   [x] Remove Tool writes `stack.json` and refreshes UI immediately
+    *   [x] Remove Tool writes `ogs_stack.json` and refreshes UI immediately
 *   [x] Project Tools List Selection and Launch - 100% Complete ✅
-    *   [x] Pinned tools in stack.json selectable in ProjectToolsList as launch targets
+    *   [x] Pinned tools in ogs_stack.json selectable in ProjectToolsList as launch targets
     *   [x] Direct launch at project root without requiring explorer tree file selection
     *   [x] Single-clicking missing tools in ProjectToolsList selects row and enables Remove Tool and Change Version without navigating away
     *   [x] Double-click item activation launches installed tools immediately at project root, or navigates to Tools page if uninstalled
@@ -620,6 +620,15 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Established pre-merge manual CI dispatch gate in PR review workflow (`gh workflow run ci.yml --ref <headRefName>`, `gh run watch <run_id> --exit-status`) to eliminate redundant CI runs during agent orchestration cycles while guaranteeing clean verification prior to merge.
 - Updated `tests/release_packaging_tests.gd` to validate `workflow_dispatch:` trigger contract.
 - Synchronized canonical review and packaging guides (`docs/REVIEWING_AND_MERGING_PRS.md`, `docs/TESTING.md`, `docs/RELEASE_PACKAGING.md`, `.agents/skills/issue-orchestration/SKILL.md`, `.agents/rules/pr_review_workflow.md`).
+
+**Rename Project Manifest to ogs_stack.json across Lifecycle and Samples (Issue #179, Nov 1, 2026):**
+- Migrated primary project manifest filename from `stack.json` to canonical `ogs_stack.json` across project discovery, validation, creation, tool management, and sample projects.
+- Defined canonical constant `const MANIFEST_FILENAME := "ogs_stack.json"` on `StackManifest`.
+- Enforced strict cutover: only `ogs_stack.json` is recognized for project discovery and loading.
+- Updated metadata exclusion lists in `FileTypeMapper` to hide `ogs_stack.json` from the Project Explorer tree.
+- Renamed manifests in `examples/ogs_stack.json`, `samples/sample_project/ogs_stack.json`, and `samples/sample_project_sealed/ogs_stack.json`.
+- Part 1 of 3 migration (Issue #179 complete; Part 2 covers Sealing, Export, and Remote Clone in Issue #180, and Part 3 covers Documentation Schemas in Issue #181).
+- 38 test suites passing (2403 total tests) with zero failures.
 
 **Next: Mid-Term Enhancements (Phase 3 - March-May 2026)**
 - Multi-select downloads and download queue management

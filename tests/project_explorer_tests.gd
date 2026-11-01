@@ -31,7 +31,7 @@ func run() -> Dictionary:
 	_test_metadata_files_hidden_even_when_json_supported(results)
 	_test_vscodium_files_pruned_when_not_in_stack(results)
 	_test_double_click_file_activated_signal(results)
-	_test_load_project_reads_stack_json_when_tools_omitted(results)
+	_test_load_project_reads_ogs_stack_json_when_tools_omitted(results)
 	return results
 
 func _expect(condition: bool, message: String, results: Dictionary) -> void:
@@ -610,9 +610,9 @@ func _test_vscodium_files_displayed_and_emit_selection(results: Dictionary) -> v
 	_cleanup_dir_recursive(proj)
 
 func _test_metadata_files_hidden_even_when_json_supported(results: Dictionary) -> void:
-	## Internal metadata files (stack.json, ogs_config.json, ogs_metadata.json, .import, .uid, .cfg, .tres, .tscn) are never displayed.
+	## Internal metadata files (ogs_stack.json, ogs_config.json, ogs_metadata.json, .import, .uid, .cfg, .tres, .tscn) are never displayed.
 	var proj: String = _create_test_dir("metadata_hidden")
-	_create_file(proj.path_join("stack.json"), '{"stack_name": "Test"}')
+	_create_file(proj.path_join("ogs_stack.json"), '{"stack_name": "Test"}')
 	_create_file(proj.path_join("ogs_config.json"), '{"offline_mode": false}')
 	_create_file(proj.path_join("ogs_metadata.json"), '{"version": "1.0"}')
 	_create_file(proj.path_join("art/hero.png.import"), "import data")
@@ -632,7 +632,7 @@ func _test_metadata_files_hidden_even_when_json_supported(results: Dictionary) -
 	if root != null:
 		var texts: Array[String] = _collect_item_texts(root)
 		_expect(texts.has("game_data.json"), "user game_data.json should be visible", results)
-		_expect(not texts.has("stack.json"), "stack.json must be hidden", results)
+		_expect(not texts.has("ogs_stack.json"), "ogs_stack.json must be hidden", results)
 		_expect(not texts.has("ogs_config.json"), "ogs_config.json must be hidden", results)
 		_expect(not texts.has("ogs_metadata.json"), "ogs_metadata.json must be hidden", results)
 		_expect(not texts.has("hero.png.import"), ".import file must be hidden", results)
@@ -738,8 +738,8 @@ func _test_double_click_file_activated_signal(results: Dictionary) -> void:
 	tree.free()
 	_cleanup_dir_recursive(proj)
 
-func _test_load_project_reads_stack_json_when_tools_omitted(results: Dictionary) -> void:
-	## When active_tool_ids is omitted, load_project reads tool IDs from stack.json.
+func _test_load_project_reads_ogs_stack_json_when_tools_omitted(results: Dictionary) -> void:
+	## When active_tool_ids is omitted, load_project reads tool IDs from ogs_stack.json.
 	var proj: String = _create_test_dir("stack_json_fallback")
 	var stack_content: String = JSON.stringify({
 		"stack_name": "TestStack",
@@ -748,7 +748,7 @@ func _test_load_project_reads_stack_json_when_tools_omitted(results: Dictionary)
 			{"id": "vscodium", "version": "1.143.17232"}
 		]
 	})
-	_create_file(proj.path_join("stack.json"), stack_content)
+	_create_file(proj.path_join("ogs_stack.json"), stack_content)
 	_create_file(proj.path_join("scripts/helper.gd"), "extends Node")
 
 	var tree: Tree = Tree.new()
@@ -756,14 +756,14 @@ func _test_load_project_reads_stack_json_when_tools_omitted(results: Dictionary)
 	# Call without active_tool_ids parameter
 	explorer.load_project(proj)
 
-	_expect("vscodium" in explorer.active_tool_ids, "active_tool_ids should contain vscodium read from stack.json", results)
-	_expect("godot" in explorer.active_tool_ids, "active_tool_ids should contain godot read from stack.json", results)
+	_expect("vscodium" in explorer.active_tool_ids, "active_tool_ids should contain vscodium read from ogs_stack.json", results)
+	_expect("godot" in explorer.active_tool_ids, "active_tool_ids should contain godot read from ogs_stack.json", results)
 
 	var root: TreeItem = tree.get_root()
 	_expect(root != null, "root should exist", results)
 	if root != null:
 		var texts: Array[String] = _collect_item_texts(root)
-		_expect(texts.has("helper.gd"), "helper.gd should appear because stack.json enabled vscodium", results)
+		_expect(texts.has("helper.gd"), "helper.gd should appear because ogs_stack.json enabled vscodium", results)
 
 	tree.free()
 	_cleanup_dir_recursive(proj)
