@@ -20,7 +20,7 @@ func create_seal_success_fixture(prefix: String) -> Dictionary:
 	if stack_file == null:
 		return {"success": false, "error": "Cannot create ogs_stack.json for fixture"}
 
-	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "%s", "version": "%s", "path": "tools/%s"}]}' % [tool_id, version, tool_id])
+	stack_file.store_string('{"schema_version": 1, "stack_name": "test_stack", "tools": [{"id": "%s", "version": "%s", "path": "ogs_tools/%s"}]}' % [tool_id, version, tool_id])
 
 	var resolver = PathResolver.new()
 	var library_tool_dir = resolver.get_tool_path(tool_id, version)

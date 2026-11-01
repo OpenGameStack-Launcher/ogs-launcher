@@ -5,7 +5,7 @@
 ##
 ## Workflow:
 ## 1. Validate project has ogs_stack.json and all required tools exist in library
-## 2. Create ./tools directory and copy tool binaries from library
+## 2. Create ./ogs_tools directory and copy tool binaries from library
 ## 3. Write ogs_config.json with force_offline=true
 ## 4. Create a sealed zip archive: [ProjectName]_Sealed_[Date].zip
 ##
@@ -84,7 +84,7 @@ func _capture_pre_seal_snapshot(project_path: String) -> Dictionary:
 		"pre_seal_config_content": ""
 	}
 
-	var tools_dir = project_path.path_join("tools")
+	var tools_dir = project_path.path_join("ogs_tools")
 	if DirAccess.dir_exists_absolute(tools_dir):
 		snapshot["tools_dir_existed"] = true
 		var dir = DirAccess.open(tools_dir)
@@ -128,8 +128,8 @@ func _rollback(project_path: String, snapshot: Dictionary, partial_zip_path: Str
 		DirAccess.remove_absolute(archiver.current_zip_path)
 		archiver.current_zip_path = ""
 
-	# 2. Revert tools directory
-	var tools_dir = project_path.path_join("tools")
+	# 2. Revert ogs_tools directory
+	var tools_dir = project_path.path_join("ogs_tools")
 	if snapshot.get("tools_dir_existed", false):
 		if DirAccess.dir_exists_absolute(tools_dir):
 			var pre_existing: Array = snapshot.get("pre_existing_tool_subdirs", [])
@@ -254,7 +254,7 @@ func seal_project(
 	# Capture pre-seal snapshot before any disk modifications
 	var snapshot: Dictionary = _capture_pre_seal_snapshot(project_path)
 
-	# Step 2: Copy tools to local ./tools directory
+	# Step 2: Copy tools to local ./ogs_tools directory
 	var copy_result = _copy_tools_to_local(project_path, validation.manifest, progress_callback, combined_cancel)
 	if copy_result.get("cancelled", false) or combined_cancel.call():
 		_rollback(project_path, snapshot)
@@ -346,7 +346,7 @@ func _validate_project(project_path: String) -> Dictionary:
 	## Delegates project pre-seal validation to ProjectSealValidator.
 	return validator.validate_project(project_path, library)
 
-## Copies all tools from library to project's ./tools directory.
+## Copies all tools from library to project's ./ogs_tools directory.
 ## Returns: {"success": bool, "cancelled": bool, "errors": Array, "tools_copied": Array}
 func _copy_tools_to_local(
 	project_path: String,

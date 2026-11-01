@@ -775,7 +775,7 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Verify `StatusLabel` modulates to success green (`#22C55E`, "✓ Project sealed successfully!")
    - Verify OutputLabel formats archive filename, size in MB, and copied tools with canonical display names via `ToolCategoryMapper` (e.g. "• Godot v4.7.2")
 7. Note the sealed archive location and filename
-8. (Optional) Click "Open Sealed Folder" to verify archive was created
+8. (Optional) Click "Open Sealed Folder" to verify archive was created. Inspect or extract the archive contents to verify that embedded tools reside in `<project_root>/ogs_tools/` rather than `<project_root>/tools/`.
 9. Close seal dialog
 
 **Expected Results:**
@@ -819,10 +819,10 @@ dir "$env:LOCALAPPDATA\OGS\"
 
 **Prerequisites:**
 - Sample project (or a test project) with tools present in the Central Library so "Seal for Delivery" is enabled
-- Pre-existing custom file in the project (e.g. `<project_path>/tools/custom_tool/keep.txt`) and custom `ogs_config.json` text to verify preservation
+- Pre-existing custom file in the project (e.g. `<project_path>/ogs_tools/custom_tool/keep.txt`), developer automation script (e.g. `<project_path>/tools/build_helper.py`), and custom `ogs_config.json` text to verify preservation
 
 **Steps:**
-1. In the target project directory, create a pre-existing directory `<project_path>/tools/custom_tool` containing a text file `keep.txt` with sample text.
+1. In the target project directory, create a pre-existing directory `<project_path>/ogs_tools/custom_tool` containing a text file `keep.txt` with sample text. In addition, create a developer-authored automation script `<project_path>/tools/build_helper.py`.
 2. In `<project_path>/ogs_config.json`, add a custom property (e.g. `{"custom_flag": true, "offline_mode": false}`).
 3. In the launcher, click **"Seal for Delivery"**.
 4. In the confirmation dialog, verify the target project name and configured tools appear, then click **"Confirm"**.
@@ -838,8 +838,9 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Verify `SealProgressBar` hides.
    - Verify the action button text changes to **"Close"** and becomes enabled.
 8. Inspect the filesystem on disk:
-   - Verify any newly copied tool directories under `<project_path>/tools/` have been removed.
-   - Verify the pre-existing `<project_path>/tools/custom_tool/keep.txt` is intact and undamaged.
+   - Verify any newly copied tool directories under `<project_path>/ogs_tools/` have been removed.
+   - Verify the pre-existing `<project_path>/ogs_tools/custom_tool/keep.txt` is intact and undamaged.
+   - Verify the developer-authored `<project_path>/tools/build_helper.py` script and `tools/` folder are intact and untouched.
    - Verify `<project_path>/ogs_config.json` was restored to its exact pre-seal contents (`{"custom_flag": true, ...}`).
    - Verify no incomplete `.zip` archive exists in the parent directory.
 9. Click **"Close"** in `SealDialog` and verify the dialog dismisses cleanly.
@@ -1421,7 +1422,7 @@ dir "$env:LOCALAPPDATA\OGS\"
    - Verify the section header renders in 18px cyan accent typography.
    - Verify the status label displays the normalized path of the active project: `"Selected: <normalized_path>"`.
    - Verify the "Offline mode" CheckButton renders with helper label: `"Blocks outbound network activity while this project is active; allows launching tools from the Central Library or local project stack."`.
-   - Verify the "Force offline" CheckButton renders with helper label: `"Enforces strict air-gap isolation; requires and launches tools exclusively from the project's sealed local tools/ directory."`.
+   - Verify the "Force offline" CheckButton renders with helper label: `"Enforces strict air-gap isolation; requires and launches tools exclusively from the project's sealed local ogs_tools/ directory."`.
 5. Toggle "Offline mode" to ON:
    - Verify the compact status bar offline badge updates to amber: `"Offline Mode: Enabled (offline_mode=true)"`.
    - Verify the sidebar footer status indicator updates to amber `"● Offline"`.
@@ -1995,7 +1996,7 @@ If onboarding wizard does NOT appear, fresh state was not achieved. Repeat the c
 - ✅ Tool indicators show no warnings (⚠️ or ❌) since tools are present locally
 - ✅ "Seal for Delivery" button is **disabled** (already sealed, no reason to reseal)
 - ✅ Offline status shows: **"Offline Mode: Forced (force_offline=true)"** (from sealed config)
-- ✅ Tools are shown as "available in library" (found in local ./tools/ directory)
+- ✅ Tools are shown as "available in library" (found in local ./ogs_tools/ directory)
 - ✅ No network requests are made (launcher respects force_offline)
 
 **Pass Criteria:**

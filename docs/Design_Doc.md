@@ -26,8 +26,8 @@ To avoid confusion, the OGS ecosystem operates on a three-tier architecture:
 *   **Contains:** Exact tool IDs and versions required to build/run that specific project (e.g., `"godot": "4.7.2"`, `"blender": "4.5.7"`).
 *   **Purpose:** Guarantees reproducibility. A project's stack is "frozen" in time - tools never auto-update unless the developer explicitly modifies `ogs_stack.json`.
 *   **Two Forms:**
-    *   **Linked (Development):** `ogs_stack.json` references tools in the Central Library. The `./tools/` folder is empty.
-    *   **Sealed (Delivery):** `ogs_stack.json` + embedded binaries in `./tools/`. Fully self-contained for air-gapped deployment.
+    *   **Linked (Development):** `ogs_stack.json` references tools in the Central Library. The `./ogs_tools/` folder is empty.
+    *   **Sealed (Delivery):** `ogs_stack.json` + embedded binaries in `./ogs_tools/`. Fully self-contained for air-gapped deployment.
 *   **Analogy:** Like `package-lock.json` (npm) or `Pipfile.lock` (Python) but for simulation toolchains.
 
 ### 1.5.4 Mirror (Optional Offline Distribution)
@@ -60,8 +60,8 @@ Every OGS project enforces a specific directory hierarchy to ensure "Seal" compa
 ```text
 My_Simulation_Project/
 ├── ogs_stack.json     # The Environment Manifest (Managed by Launcher)
-├── .gitignore          # Excludes /tools/ and temporary builds
-├── tools/              # (Empty in State 1; Populated in State 2)
+├── .gitignore          # Excludes /ogs_tools/ and temporary builds
+├── ogs_tools/          # (Empty in State 1; Populated in State 2)
 └── project_source/     # The actual Godot Project & Assets
     ├── project.godot
     └── ...
@@ -169,7 +169,7 @@ In the Project Details tab (Tab 1 of the Projects page), the interface organizes
 Per-project offline policies are configured directly in the dedicated **Policy** sub-tab (`PageProjects/ProjectsTabs/Project Details/ProjectDetailsTabs/Policy`):
 *   **In-Context Policy Controls:** Features a normalized project path indicator ("Selected: ...") and two dedicated checkbutton toggles with contextual helper descriptions:
     *   *Offline mode (`offline_mode`):* Blocks outbound network activity while the project is active, allowing tool launches from the Central Library or local project stack.
-    *   *Force offline (`force_offline`):* Enforces strict air-gap isolation, requiring and launching tools exclusively from the project's sealed local `tools/` directory.
+    *   *Force offline (`force_offline`):* Enforces strict air-gap isolation, requiring and launching tools exclusively from the project's sealed local `ogs_tools/` directory.
 *   **Co-Located Project Sealing:** Positions the "Seal for Delivery" action button directly beneath the offline policy controls, reinforcing the workflow connection between air-gap policies and self-contained delivery packaging.
 *   **Decoupled State Persistence:** Toggling either policy setting immediately persists changes to the project's local `ogs_config.json`, triggers `OfflineEnforcer.apply_config()`, emits `offline_state_changed` to update status indicators and pill badge styling, and re-validates the project environment.
 *   **Global Settings Separation:** The Settings page (`PageSettings`) remains dedicated strictly to machine-wide configurations (Primary Projects Folder, Mirror & Offline Repository settings).
@@ -225,7 +225,7 @@ To provide instantaneous feedback on network status and eliminate user confusion
 
 ### 2.20 Two-Phase Determinate File-Count Progress Reporting (ProjectSealer & SealController)
 To provide transparency during packaging and eliminate ambiguity from generic indeterminate elapsed-second timers, the "Seal for Delivery" workflow implements two-phase determinate file-count progress reporting:
-*   **Step 1/2: Copying Tools (`ProjectSealToolCopier`):** Before starting file operations, `ProjectSealToolCopier._count_files_recursive()` pre-counts the total number of files across all tool directories in the Central Library referenced by `ogs_stack.json`. As each file is copied into `./tools/`, it emits monotonic progress notifications (`phase = "Step 1/2: Copying tools"`, `current`, `total`).
+*   **Step 1/2: Copying Tools (`ProjectSealToolCopier`):** Before starting file operations, `ProjectSealToolCopier._count_files_recursive()` pre-counts the total number of files across all tool directories in the Central Library referenced by `ogs_stack.json`. As each file is copied into `./ogs_tools/`, it emits monotonic progress notifications (`phase = "Step 1/2: Copying tools"`, `current`, `total`).
 *   **Step 2/2: Creating ZIP Archive (`ProjectSealArchiver`):** Before archive compression, `ProjectSealArchiver._collect_files_recursive()` collects and sorts all project files into `files_to_pack`. As each file finishes packing into the ZIP archive, it emits progress notifications (`phase = "Step 2/2: Creating ZIP archive"`, `current`, `total`).
 *   **Thread-Safe UI Synchronization (`SealController`):** Worker thread progress updates are protected by `_progress_mutex` and scheduled to the main thread via `call_deferred("_apply_progress_to_ui")`. The progress bar (`SealProgressBar`) is configured in determinate mode (`min_value = 0`, `max_value = 100`, `indeterminate = false`), advancing from 0% to 100% in Phase 1, resetting cleanly to 0% at the start of Phase 2, and advancing to 100% upon completion.
 *   **Thousands Separator Formatting:** File counts in `StatusLabel` and `OutputLabel` are formatted using comma separators via `format_number()` (e.g. `Step 1/2: Copying tools (1,234 of 5,678 files)` and `Step 2/2: Creating ZIP archive (4,200 of 5,678 files)`).
@@ -243,14 +243,14 @@ To provide transparency during packaging and eliminate ambiguity from generic in
         *   *Check:* Is "Godot 4.7.2 (Hardened)" present in the Central Library?
         *   *Action:* If no, download from the OGS Mirror. If yes, launch the project using the central binary.
     2.  **Strict Pinning:** Updates are never automatic. If the user wants to upgrade to "Godot 4.4", they must explicitly click "Upgrade Project Stack" in the Launcher UI, which updates `ogs_stack.json`.
-    3.  **Source Control:** The developer commits `ogs_stack.json` and `project_source/`. The `tools/` folder is ignored via `.gitignore`, keeping the repo lightweight.
+    3.  **Source Control:** The developer commits `ogs_stack.json` and `project_source/`. The `ogs_tools/` folder is ignored via `.gitignore`, keeping the repo lightweight.
 
 ### 3.2 Mode B: Sovereign Sustainment (SIPR / Air-Gapped)
 *   **Target User:** Government Program Offices, Classified Labs.
 *   **Context:** Secure environment receiving the "Sealed" deliverable.
 *   **Workflow:**
     1.  **Reception:** The Government receives a "Sealed Artifact" (Zip or HDD).
-    2.  **Verification:** The Launcher validates that the tools inside the local `./tools/` directory match the hashes in `ogs_stack.json`.
+    2.  **Verification:** The Launcher validates that the tools inside the local `./ogs_tools/` directory match the hashes in `ogs_stack.json`.
     3.  **Isolation:** The Launcher detects the `force_offline=true` flag in the project config and disables all "Check for Updates" or "Asset Library" features.
 
 ---
@@ -295,7 +295,7 @@ This is the critical utility that converts a **State 1 (Linked)** project into a
 
 **The "Seal" Workflow:**
 1.  **Inventory Scan:** The Launcher parses `ogs_stack.json` to identify all required tools.
-2.  **Binary Embedding:** The Launcher physically copies the specific tool binaries from the **Central Library** into the project's local `./tools/` directory.
+2.  **Binary Embedding:** The Launcher physically copies the specific tool binaries from the **Central Library** into the project's local `./ogs_tools/` directory.
 3.  **Config Injection (`ogs_config.json`):**
     *   Generates a local config file in the project root.
     *   Sets `"force_offline": true`.

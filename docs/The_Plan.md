@@ -62,7 +62,7 @@ The MVP is not complete until this full sequence works end to end:
 *   [x] **The "Seal for Delivery" Utility (Export)** - 100% Complete ✅
     *   *ProjectSealer Class:* `seal_project(project_path)` implements full workflow.
     *   *Validation:* Validates manifest and checks tool availability.
-    *   *Copy Logic:* Recursively copies tool binaries from library -> `./tools/`.
+    *   *Copy Logic:* Recursively copies tool binaries from library -> `./ogs_tools/`.
     *   *Config Creation:* Writes `ogs_config.json` with `force_offline=true`.
     *   *Archive Packaging:* Creates a real `.zip` artifact using Godot `ZIPPacker`.
     *   *Packaging Logs:* Logs packaging start, file count, and completion/failure events.
@@ -257,7 +257,7 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Added comprehensive scene tests in `tests/projects_controller_scene_tests.gd`, `tests/main_scene_tests.gd`, and `tests/projects_page_indicators_tests.gd` (38 test suites passing, 1892 total tests with zero failures)
 *   [x] Relocate Project Offline Policy Toggles to Project Details (Issue #134) - 100% Complete ✅
     *   [x] Relocated per-project offline policy toggles (Offline mode and Force offline) from global Settings (PageSettings) directly to Project Details in PageProjects
-    *   [x] Equipped both toggles with explicit in-context helper descriptions differentiating network blocking from strict local tools/ air-gap isolation
+    *   [x] Equipped both toggles with explicit in-context helper descriptions differentiating network blocking from strict local ogs_tools/ air-gap isolation
     *   [x] Refactored SettingsController to focus purely on global settings and transferred project offline policy handling directly to ProjectsController
     *   [x] Dynamic status updates syncing normalized project path and persisting changes to ogs_config.json on disk
     *   [x] Added comprehensive scene tests in `tests/projects_controller_scene_tests.gd`, `tests/main_scene_tests.gd`, and `tests/startup_tests.gd` (1930 tests passing)
@@ -414,7 +414,7 @@ Granular, actionable items for the Tools/Projects page redesign:
 *   **Seal for Delivery Active Cancellation & State Rollback (Phase 2.5):** Complete Nov 1, 2026
     *   Added active "Cancel" button to `SealDialog` during background sealing operations with immediate double-click prevention
     *   Implemented cooperative thread-safe cancellation callbacks (`cancel_check`) evaluated at directory, file, and 1 MB chunk boundaries across `ProjectSealToolCopier` and `ProjectSealArchiver`
-    *   Captured pre-seal filesystem snapshots (existing `./tools/` subdirectories and `ogs_config.json`) in `ProjectSealer`
+    *   Captured pre-seal filesystem snapshots (existing `./ogs_tools/` subdirectories and `ogs_config.json`) in `ProjectSealer`
     *   Built atomic rollback cleaning up newly copied tool folders, deleting partial `.zip` archives, and restoring original configuration
     *   Comprehensive unit and scene tests in `tests/project_sealer_tests.gd` and `tests/seal_controller_tests.gd` (2344 tests passing across 38 test suites with zero failures)
 *   **Test Suite:** 2344 tests passing across 38 test suites (~3-5 sec execution), comprehensive coverage across all components

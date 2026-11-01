@@ -14,7 +14,7 @@ my-game/
 ├── game/
 │   ├── project.godot
 │   └── scenes/
-└── tools/              <- Portable copies of tool binaries (optional in Provisioning Mode)
+└── ogs_tools/          <- Portable copies of tool binaries (optional in Provisioning Mode, populated when sealed)
     ├── godot/
     ├── blender/
     ├── krita/
@@ -37,7 +37,7 @@ my-game/
 |-------|------|----------|-------------|
 | `id` | String | Yes | Unique tool identifier (e.g., `"godot"`, `"blender"`). Used in logs and UI. |
 | `version` | String | Yes | Version string (e.g., `"4.7.2"`, `"4.2"`). No whitespace. |
-| `path` | String | **No** | **(Optional)** Relative path from project root (e.g., `"tools/godot/Godot.exe"`). If omitted, launcher resolves executable from central library at `[LIBRARY_ROOT]/[id]/[version]/`. |
+| `path` | String | **No** | **(Optional)** Relative path from project root (e.g., `"ogs_tools/godot_4.7.2/Godot_v4.7.2-stable_win64.exe"`). If omitted, launcher resolves executable from central library at `[LIBRARY_ROOT]/[id]/[version]/`. |
 | `sha256` | String | No | SHA-256 checksum (lowercase hex, 64 chars). Used in Sovereign Mode to verify binary integrity. |
 
 ## Example
@@ -81,13 +81,13 @@ For projects that bundle tools within their repository:
     {
       "id": "godot",
       "version": "4.7.2",
-      "path": "tools/godot/Godot_v4.7.2-stable_win64.exe",
+      "path": "ogs_tools/godot_4.7.2/Godot_v4.7.2-stable_win64.exe",
       "sha256": "abc123...xyz789"
     },
     {
       "id": "blender",
       "version": "4.2",
-      "path": "tools/blender/blender.exe",
+      "path": "ogs_tools/blender_4.2/blender.exe",
       "sha256": "def456...uvw012"
     }
   ]
@@ -132,11 +132,11 @@ When a manifest fails validation, the launcher reports specific error codes:
 
 ### Provisioning Mode (NIPR / Connected)
 
-The launcher detects missing tools in the `tools/` directory and fetches binaries from mirrors or package repositories. The contractor updates `ogs_stack.json` and commits it to version control alongside binaries (or via Git LFS).
+The launcher detects missing tools in the `ogs_tools/` directory and fetches binaries from mirrors or package repositories. The contractor updates `ogs_stack.json` and commits it to version control alongside binaries (or via Git LFS).
 
 ### Sovereign Mode (SIPR / Air-Gapped)
 
-The launcher verifies that tool binaries in `tools/` match the SHA-256 checksums in `ogs_stack.json`. If offline_mode is enforced, the launcher blocks external network access and launches tools from the frozen stack only.
+The launcher verifies that tool binaries in `ogs_tools/` match the SHA-256 checksums in `ogs_stack.json`. If offline_mode is enforced, the launcher blocks external network access and launches tools from the frozen stack only.
 
 ## Best Practices
 
@@ -188,7 +188,7 @@ Before:
 {
   "id": "godot",
   "version": "4.7.2",
-  "path": "tools/godot/Godot_v4.7.2-stable_win64.exe"
+  "path": "ogs_tools/godot_4.7.2/Godot_v4.7.2-stable_win64.exe"
 }
 ```
 

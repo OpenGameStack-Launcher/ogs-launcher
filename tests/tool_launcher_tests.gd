@@ -35,6 +35,7 @@ func run() -> Dictionary:
 	_test_vscodium_arguments(results)
 	_test_git_vscodium_executable_discovery(results)
 	_test_vscodium_git_settings_injection(results)
+	_test_find_first_project_godot_skips_ogs_tools(results)
 	
 	return results
 
@@ -471,3 +472,41 @@ func _test_vscodium_git_settings_injection(results: Dictionary) -> void:
 	DirAccess.remove_absolute(git_install_dir)
 	DirAccess.remove_absolute(abs_test_lib.path_join("git"))
 	DirAccess.remove_absolute(abs_test_lib)
+
+func _test_find_first_project_godot_skips_ogs_tools(results: Dictionary) -> void:
+	## Validates that recursive search for project.godot skips ogs_tools/ but finds it in other directories.
+	var project_dir = ProjectSettings.globalize_path("user://tool_launcher_skip_ogs_tools_%d" % Time.get_ticks_usec())
+	DirAccess.make_dir_recursive_absolute(project_dir)
+
+	# 1. Place a project.godot inside ogs_tools/embedded_godot/
+	var ogs_tools_godot = project_dir.path_join("ogs_tools/embedded_godot")
+	DirAccess.make_dir_recursive_absolute(ogs_tools_godot)
+	var f1 = FileAccess.open(ogs_tools_godot.path_join("project.godot"), FileAccess.WRITE)
+	if f1:
+		f1.store_string("config_version=5\n\n[application]\nconfig/name=\"Embedded\"\n")
+		f1.close()
+
+	# If there is no other project.godot, _find_first_project_godot should return empty (not the one in ogs_tools)
+	var found_empty = ToolLauncher._find_first_project_godot(project_dir, 3, 0)
+	_expect(found_empty.is_empty(), "_find_first_project_godot should skip ogs_tools directory", results)
+
+	# 2. Place a valid project.godot in developer tools/ directory: should be found because tools/ is not skipped!
+	var dev_tools_dir = project_dir.path_join("tools/game_sub")
+	DirAccess.make_dir_recursive_absolute(dev_tools_dir)
+	var f2 = FileAccess.open(dev_tools_dir.path_join("project.godot"), FileAccess.WRITE)
+	if f2:
+		f2.store_string("config_version=5\n\n[application]\nconfig/name=\"DevToolsGodot\"\n")
+		f2.close()
+
+	var found_dev = ToolLauncher._find_first_project_godot(project_dir, 3, 0)
+	_expect(found_dev == dev_tools_dir.path_join("project.godot"), "_find_first_project_godot should find project.godot inside tools/ directory", results)
+
+	# Cleanup
+	DirAccess.remove_absolute(dev_tools_dir.path_join("project.godot"))
+	DirAccess.remove_absolute(dev_tools_dir)
+	DirAccess.remove_absolute(project_dir.path_join("tools"))
+	DirAccess.remove_absolute(ogs_tools_godot.path_join("project.godot"))
+	DirAccess.remove_absolute(ogs_tools_godot)
+	DirAccess.remove_absolute(project_dir.path_join("ogs_tools"))
+	DirAccess.remove_absolute(project_dir)
+
