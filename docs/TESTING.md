@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 2104
+tests passed: 2154
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -259,10 +259,16 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Returns false when library has visible entries
   - Returns true when library only contains hidden or empty directories
 
-- **[tests/seal_controller_tests.gd](tests/seal_controller_tests.gd)** - Validates SealController thread lifecycle and safety.
+- **[tests/seal_controller_tests.gd](tests/seal_controller_tests.gd)** - Validates SealController thread lifecycle, progress feedback, typography, and safety.
   - Thread joined cleanly when controller freed during active execution
   - Predelete handler safe when no thread is active
+  - Finished-but-started thread joined and cleared during predelete
   - Thread start failure clears state and emits failure
+  - Dialog freed while thread is alive exits safely without crashing
+  - Typography hierarchy (StatusLabel 18px headline, OutputLabel 14px muted #9CA3AF) and SealProgressBar layout properties in `main.tscn`
+  - Progress bar visibility lifecycle and close button disabled state during sealing, success, and error transitions
+  - Canonical tool display naming via ToolCategoryMapper in success summary
+  - Active async sealing lifecycle keeps close button disabled and progress bar visible until thread completion
 
 - **[tests/tools_page_controller_tests.gd](tests/tools_page_controller_tests.gd)** - Validates ToolsPageController thread lifecycle, cleanup, and dynamic count badges.
   - Predelete joins active tool removal thread

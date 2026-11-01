@@ -103,6 +103,7 @@ const DownloadDialogControllerScript = preload("res://scripts/tools/download_dia
 # Seal dialog nodes
 @onready var seal_dialog = $SealDialog
 @onready var seal_status_label = $SealDialog/VBoxContainer/StatusLabel
+@onready var seal_progress_bar = $SealDialog/VBoxContainer/SealProgressBar
 @onready var seal_output_label = $SealDialog/VBoxContainer/OutputLabel
 @onready var seal_open_folder_button = $SealDialog/VBoxContainer/OpenFolderButton
 
@@ -589,7 +590,7 @@ func _ready() -> void:
 	projects_controller.environment_ready.connect(func(): btn_seal_for_delivery.disabled = false; btn_seal_for_delivery.tooltip_text = "")
 	
 	seal_controller = SealControllerScript.new()
-	seal_controller.setup(seal_dialog, seal_status_label, seal_output_label, seal_open_folder_button)
+	seal_controller.setup(seal_dialog, seal_status_label, seal_output_label, seal_open_folder_button, seal_progress_bar)
 	btn_seal_for_delivery.pressed.connect(func(): seal_controller.seal_for_delivery(projects_controller.current_project_dir))
 
 	projects_root_path.text_changed.connect(settings_controller.on_projects_root_text_changed)

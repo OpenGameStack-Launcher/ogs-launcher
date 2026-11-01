@@ -266,6 +266,13 @@ This is the critical utility that converts a **State 1 (Linked)** project into a
     *   Removes `.gitignore` (or modifies it) so the tools are now seen as part of the directory.
 5.  **Packaging:** Zips the entire folder structure into a timestamped artifact (e.g., `Project_Name_Sealed_20251101.zip`).
 
+### 6.1 Seal Dialog UX and Asynchronous Packaging State
+When project sealing is initiated (`SealController.seal_for_delivery()`), packaging executes on a background worker thread (`ProjectSealer`) to keep the UI responsive. The seal modal provides clear visual feedback and defensive interaction guards:
+*   **Progress Feedback:** Displays `SealProgressBar` with `indeterminate = true` while background copying and archive creation are actively running.
+*   **Modal Close Button Protection:** Disables the dialog Close/OK button during active background sealing to prevent accidental modal dismissal mid-operation; automatically restores the button upon success or failure.
+*   **Typography Hierarchy:** Formats `StatusLabel` as the prominent 18px primary headline with state-driven color modulations (`#F3F4F6` progress off-white, `#22C55E` success green, `#EF4444` failure red), paired with a 14px muted body (`#9CA3AF`) on `OutputLabel`.
+*   **Canonical Tool Display Naming:** Passes copied tool IDs through `ToolCategoryMapper.get_display_name()` in completion summaries (e.g., "• Godot v4.7.2", "• Blender v4.2") rather than displaying raw lowercase IDs.
+
 ---
 
 ## 7. Source Hardening & Build Specifications

@@ -67,9 +67,13 @@ The MVP is not complete until this full sequence works end to end:
     *   *Archive Packaging:* Creates a real `.zip` artifact using Godot `ZIPPacker`.
     *   *Packaging Logs:* Logs packaging start, file count, and completion/failure events.
     *   *Tests:* Unit tests covering validation, copying, archive contents, and logging.
-*   [x] **UI Integration: "Seal for Delivery" Button** — 100% Complete ✅
+*   [x] **UI Integration: "Seal for Delivery" Button** - 100% Complete ✅
     *   *Scene Changes:* Added "Seal for Delivery" button to Projects page + SealDialog.
     *   *Wiring:* Connected button to ProjectSealer call in main.gd.
+    *   *Progress Feedback:* Indeterminate `SealProgressBar` active during background packaging thread execution.
+    *   *Close Button State:* Modal Close button automatically disabled during active background sealing to prevent premature dismissal, and re-enabled upon completion or failure.
+    *   *Typography Hierarchy:* Corrected inverted hierarchy in `SealDialog` so `StatusLabel` serves as the primary headline at 18px (with `#F3F4F6` progress, `#22C55E` success, `#EF4444` error semantic colors) and `OutputLabel` renders at 14px with `#9CA3AF` muted styling.
+    *   *Canonical Tool Display Naming:* `ToolCategoryMapper.get_display_name()` maps raw tool IDs to clean, capitalized display names (e.g., "• Godot v4.7.2", "• Blender v4.2") in the completion summary.
     *   *Result Display:* Shows seal status, zip path, size, and tools copied in dialog.
     *   *Open Folder:* "Open Sealed Folder" button to navigate to result on success.
     *   *Error Handling:* Clear error messages if project not loaded or seal fails.

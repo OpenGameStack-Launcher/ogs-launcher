@@ -104,6 +104,7 @@ func _test_all_required_nodes_exist(results: Dictionary) -> void:
 		"RemoveToolDialog/VBoxContainer/ConfirmationLabel",
 		"RemoveToolDialog/VBoxContainer/ProgressBar",
 		"SealDialog",
+		"SealDialog/VBoxContainer/SealProgressBar",
 		"ProjectDirDialog"
 	]
 	

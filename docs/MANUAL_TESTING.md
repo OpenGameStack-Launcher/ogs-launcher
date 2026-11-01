@@ -715,13 +715,19 @@ dir "$env:LOCALAPPDATA\OGS\"
 1. On Projects page, verify the "Seal for Delivery" button is now **enabled** (green, no longer grayed out)
 2. Verify seal button tooltip is cleared (should not say "Download required tools...")
 3. Click "Seal for Delivery" button
-5. Observe seal dialog that opens
-6. Monitor seal progress through stages:
-   - "Validating project..."
-   - "Copying tools..."
-   - "Creating archive..."
-   - Final status
-7. When complete, note the sealed archive location and filename
+4. Observe seal dialog that opens:
+   - Verify `SealProgressBar` is visible and actively indeterminate
+   - Verify `StatusLabel` headline displays 18px text ("Sealing project...") with neutral off-white styling (`#F3F4F6`)
+   - Verify dialog "Close" button (`get_ok_button()`) is disabled while tools are being copied to prevent premature dismissal
+5. Monitor seal progress through stages:
+   - "Sealing project... (Xs)"
+   - OutputLabel updates stage hints at 14px muted text (`#9CA3AF`)
+6. When complete:
+   - Verify `SealProgressBar` hides
+   - Verify dialog "Close" button is re-enabled
+   - Verify `StatusLabel` modulates to success green (`#22C55E`, "✓ Project sealed successfully!")
+   - Verify OutputLabel formats copied tools with canonical display names via `ToolCategoryMapper` (e.g. "• Godot v4.7.2")
+7. Note the sealed archive location and filename
 8. (Optional) Click "Open Sealed Folder" to verify archive was created
 9. Close seal dialog
 
@@ -731,13 +737,19 @@ dir "$env:LOCALAPPDATA\OGS\"
 - ✅ Clicking seal button opens seal dialog without errors
 - ✅ Seal dialog displays:
   - Title: "Seal for Delivery"
-  - Status label progressing through stages
-  - Output/log area showing operations
+  - Prominent 18px `StatusLabel` headline progressing through stages with neutral off-white styling (`#F3F4F6`)
+  - Active indeterminate `SealProgressBar` indicating packaging in progress
+  - Modal "Close" button disabled during active packaging to prevent premature dismissal
+  - Output/log area showing operations at 14px with muted slate styling (`#9CA3AF`)
 - ✅ Seal process completes without crashes
-- ✅ Final status shows: **"✓ Sealed successfully!"** (or similar success message)
+- ✅ Final status displays:
+  - `SealProgressBar` is hidden
+  - Modal "Close" button is re-enabled
+  - `StatusLabel` updates to vibrant success green (`#22C55E`)
+  - Output area lists copied tools using canonical display names (e.g., "• Godot v4.7.2")
 - ✅ Sealed .zip archive is created with substantial size (>5 MB, confirming tools embedded)
 - ✅ Archive filename includes timestamp or project name (e.g., `sample_project_sealed_20260221.zip`)
-- ✅ Dialog closes cleanly
+- ✅ Dialog closes cleanly when "Close" is clicked
 
 **Pass Criteria:**
 - Seal button correctly transitions to enabled state
@@ -1762,23 +1774,29 @@ If onboarding wizard does NOT appear, fresh state was not achieved. Repeat the c
 
 **Steps:**
 1. Click "Seal for Delivery" button
-2. Observe seal dialog that appears
+2. Observe seal dialog that appears:
+   - `SealProgressBar` is visible and actively indeterminate
+   - Modal "Close" button is disabled during active background copying
+   - `StatusLabel` displays prominent 18px headline text ("Sealing project...") with neutral off-white styling (`#F3F4F6`)
 3. Monitor status as sealing progresses:
-   - "Validating project..."
-   - "Copying tools..."
-   - "Creating archive..."
-   - "Seal complete!"
+   - "Sealing project... (Xs)"
+   - OutputLabel shows stage information at 14px muted text (`#9CA3AF`)
 4. When complete, note the sealing output summary:
-   - Tools copied count
+   - `SealProgressBar` is hidden and modal "Close" button is re-enabled
+   - `StatusLabel` modulates to success green (`#22C55E`, "✓ Project sealed successfully!")
+   - Output shows tools copied with canonical display names from `ToolCategoryMapper` (e.g., "• Godot v4.7.2", "• Blender v4.5.7")
    - Project size
    - Sealed archive path
 5. Click "Open Sealed Folder" button to navigate to the result
 6. Verify the sealed .zip file exists with a reasonable size (>100 MB likely)
+7. Click "Close" to dismiss the dialog
 
 **Expected Results:**
 - ✅ Seal dialog progresses through stages without errors
-- ✅ Final status shows: "✓ Sealed successfully!"
-- ✅ Output shows tools copied (e.g., "Tools copied: 2")
+- ✅ Modal "Close" button remains disabled while packaging is in progress and re-enables on completion
+- ✅ `SealProgressBar` is visible during copying and cleanly hidden upon completion
+- ✅ Final status shows: "✓ Project sealed successfully!" in success green (`#22C55E`)
+- ✅ Output shows tools copied with canonical display names from `ToolCategoryMapper`
 - ✅ Sealed .zip file is created in a user-visible location (e.g., user's Documents or Downloads)
 - ✅ Sealed archive filename includes timestamp or project name (e.g., `sample_project_sealed_20260221.zip`)
 - ✅ Archive size is substantial (confirms tools are embedded)

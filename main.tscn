@@ -912,14 +912,23 @@ grow_vertical = 2
 
 [node name="StatusLabel" type="Label" parent="SealDialog/VBoxContainer" unique_id=713948544]
 layout_mode = 2
-theme_override_font_sizes/font_size = 14
+theme_override_font_sizes/font_size = 18
 text = "Sealing project..."
 text_overrun_behavior = 3
+
+[node name="SealProgressBar" type="ProgressBar" parent="SealDialog/VBoxContainer" unique_id=141001410]
+visible = false
+custom_minimum_size = Vector2(0, 14)
+layout_mode = 2
+indeterminate = true
+show_percentage = false
 
 [node name="OutputLabel" type="Label" parent="SealDialog/VBoxContainer" unique_id=1640189469]
 custom_minimum_size = Vector2(300, 0)
 layout_mode = 2
 size_flags_vertical = 3
+theme_override_colors/font_color = Color(0.611765, 0.639216, 0.686275, 1)
+theme_override_font_sizes/font_size = 14
 autowrap_mode = 2
 text_overrun_behavior = 3
 

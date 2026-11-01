@@ -6,7 +6,10 @@
 ##   (b) the predelete handler is safe when no thread is running, and
 ##   (c) a finished-but-started thread is joined and cleared during predelete,
 ##       and
-##   (d) the thread start failure path clears seal state and emits failure.
+##   (d) the thread start failure path clears seal state and emits failure,
+##   (e) progress bar visibility and ok button disabled states during sealing,
+##   (f) typography hierarchy and muted text colors, and
+##   (g) canonical display naming of copied tools.
 
 extends RefCounted
 class_name SealControllerTests
@@ -32,7 +35,7 @@ class DialogFreedSealController:
 			"success": true,
 			"sealed_zip": "user://sealed/project.zip",
 			"project_size_mb": 1.5,
-			"tools_copied": ["Godot"]
+			"tools_copied": ["godot v4.7.2"]
 		}
 
 func run() -> Dictionary:
@@ -48,6 +51,10 @@ func run() -> Dictionary:
 	_test_thread_reference_cleared_after_predelete(results)
 	await _test_thread_start_failure_clears_state(results)
 	await _test_dialog_freed_while_thread_alive(results)
+	_test_seal_dialog_typography_and_layout(results)
+	_test_progress_bar_and_close_button_states(results)
+	_test_tool_display_name_formatting_in_success(results)
+	await _test_async_seal_progress_bar_and_close_button_lifecycle(results)
 
 	return results
 
@@ -107,7 +114,7 @@ func _test_predelete_joins_alive_thread(results: Dictionary) -> void:
 func _test_predelete_no_crash_when_thread_null(results: Dictionary) -> void:
 	## Verifies that the predelete handler does not crash when no thread is running.
 	var controller = SealControllerScript.new()
-	# _seal_thread is null by default — just ensure no crash.
+	# _seal_thread is null by default - just ensure no crash.
 	controller.notification(NOTIFICATION_PREDELETE)
 	_expect(true, "NOTIFICATION_PREDELETE with null thread should not crash", results)
 
@@ -144,12 +151,14 @@ func _test_thread_start_failure_clears_state(results: Dictionary) -> void:
 	var status_label = Label.new()
 	var output_label = Label.new()
 	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
 	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
 	dialog.add_child(output_label)
 	dialog.add_child(open_button)
 	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
 
-	controller.setup(dialog, status_label, output_label, open_button)
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
 
 	var emitted := {
 		"called": false,
@@ -180,6 +189,10 @@ func _test_thread_start_failure_clears_state(results: Dictionary) -> void:
 		"start failure should show the thread start error details",
 		results
 	)
+	_expect(progress_bar.visible == false, "progress bar should be hidden on thread start failure", results)
+	var ok_button: Button = dialog.get_ok_button()
+	_expect(ok_button.disabled == false, "ok button should be enabled on thread start failure", results)
+	_expect(status_label.modulate.is_equal_approx(Color("#EF4444")), "status label modulate should be red on thread start failure", results)
 
 	controller = null
 	dialog.free()
@@ -194,14 +207,16 @@ func _test_dialog_freed_while_thread_alive(results: Dictionary) -> void:
 	var status_label = Label.new()
 	var output_label = Label.new()
 	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
 	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
 	dialog.add_child(output_label)
 	dialog.add_child(open_button)
 	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
 
 	var sem = Semaphore.new()
 	controller.gate = sem
-	controller.setup(dialog, status_label, output_label, open_button)
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
 	controller.seal_for_delivery("res://tests")
 
 	var tree = Engine.get_main_loop() as SceneTree
@@ -239,7 +254,7 @@ func _test_dialog_freed_while_thread_alive(results: Dictionary) -> void:
 		emitted["zip_path"] = zip_path
 	)
 
-	# Free the dialog while the thread is still alive — this simulates the UI
+	# Free the dialog while the thread is still alive - this simulates the UI
 	# being torn down (e.g. scene change) before the seal completes.
 	dialog.free()
 
@@ -273,3 +288,218 @@ func _test_dialog_freed_while_thread_alive(results: Dictionary) -> void:
 	_expect(true, "Controller survived dialog-freed-while-thread-alive without crash", results)
 
 	controller = null
+
+## Test: Verifies typography font sizes, muted colors, and progress bar in main.tscn.
+func _test_seal_dialog_typography_and_layout(results: Dictionary) -> void:
+	## Validates StatusLabel 18px, OutputLabel 14px muted #9CA3AF, and SealProgressBar defaults.
+	var main_scene = load("res://main.tscn")
+	_expect(main_scene != null, "main.tscn should load", results)
+	if main_scene == null:
+		return
+
+	var instance: Node = main_scene.instantiate()
+	_expect(instance != null, "main.tscn should instantiate", results)
+	if instance == null:
+		return
+
+	var status_label: Label = instance.get_node_or_null("SealDialog/VBoxContainer/StatusLabel") as Label
+	_expect(status_label != null, "StatusLabel should exist in SealDialog", results)
+	if status_label != null:
+		var status_font_size = status_label.get_theme_font_size("font_size")
+		_expect(status_font_size == 18, "StatusLabel font size override should be 18px (was %d)" % status_font_size, results)
+
+	var output_label: Label = instance.get_node_or_null("SealDialog/VBoxContainer/OutputLabel") as Label
+	_expect(output_label != null, "OutputLabel should exist in SealDialog", results)
+	if output_label != null:
+		var output_font_size = output_label.get_theme_font_size("font_size")
+		_expect(output_font_size == 14, "OutputLabel font size override should be 14px (was %d)" % output_font_size, results)
+		var font_color: Color = output_label.get_theme_color("font_color")
+		var expected_color: Color = Color("#9CA3AF")
+		_expect(font_color.is_equal_approx(expected_color), "OutputLabel font color should match #9CA3AF", results)
+
+	var progress_bar: ProgressBar = instance.get_node_or_null("SealDialog/VBoxContainer/SealProgressBar") as ProgressBar
+	_expect(progress_bar != null, "SealProgressBar should exist in SealDialog", results)
+	if progress_bar != null:
+		_expect(progress_bar.indeterminate == true, "SealProgressBar indeterminate should be true by default", results)
+		_expect(progress_bar.show_percentage == false, "SealProgressBar show_percentage should be false", results)
+		_expect(progress_bar.custom_minimum_size == Vector2(0, 14), "SealProgressBar custom_minimum_size should be Vector2(0, 14)", results)
+		_expect(progress_bar.visible == false, "SealProgressBar should be hidden by default", results)
+
+	instance.free()
+
+## Test: Verifies progress bar visibility, close button disabled state, and status label colors across states.
+func _test_progress_bar_and_close_button_states(results: Dictionary) -> void:
+	## Validates UI state transitions during progress, success, and error paths.
+	var controller = SealControllerScript.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
+
+	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
+
+	# Initial setup state
+	_expect(progress_bar.visible == false, "Progress bar should start invisible", results)
+	var ok_button: Button = dialog.get_ok_button()
+	_expect(not ok_button.disabled, "OK button should initially be enabled", results)
+
+	# 1. Progress state
+	controller._show_progress()
+	_expect(progress_bar.visible == true, "Progress bar should be visible during _show_progress()", results)
+	_expect(progress_bar.indeterminate == true, "Progress bar should be indeterminate during _show_progress()", results)
+	_expect(ok_button.disabled == true, "OK button should be disabled during _show_progress()", results)
+	_expect(status_label.modulate.is_equal_approx(Color("#F3F4F6")), "Status label modulate should be #F3F4F6 in progress", results)
+
+	# 2. Success state
+	var mock_success = {
+		"success": true,
+		"project_size_mb": 12.4,
+		"sealed_zip": "user://sealed/test.zip",
+		"tools_copied": ["godot v4.7.2"]
+	}
+	controller._show_success(mock_success)
+	_expect(progress_bar.visible == false, "Progress bar should be hidden on success", results)
+	_expect(ok_button.disabled == false, "OK button should be re-enabled on success", results)
+	_expect(status_label.modulate.is_equal_approx(Color("#22C55E")), "Status label modulate should be #22C55E on success", results)
+	_expect(open_button.visible == true, "Open button should be visible on success", results)
+
+	# 3. Re-enter progress state then trigger error
+	controller._show_progress()
+	_expect(progress_bar.visible == true, "Progress bar should become visible again on progress", results)
+	_expect(ok_button.disabled == true, "OK button should be disabled again on progress", results)
+
+	# 4. Error state
+	controller._show_error("Test Failure", ["Disk full", "Missing assets"])
+	_expect(progress_bar.visible == false, "Progress bar should be hidden on error", results)
+	_expect(ok_button.disabled == false, "OK button should be re-enabled on error", results)
+	_expect(status_label.modulate.is_equal_approx(Color("#EF4444")), "Status label modulate should be #EF4444 on error", results)
+	_expect(open_button.visible == false, "Open button should be hidden on error", results)
+
+	controller = null
+	dialog.free()
+
+## Test: Verifies copied tool items are formatted using ToolCategoryMapper canonical display names.
+func _test_tool_display_name_formatting_in_success(results: Dictionary) -> void:
+	## Validates that tool IDs are mapped to clean display names in _show_success().
+	var controller = SealControllerScript.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
+
+	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
+
+	var mock_result = {
+		"success": true,
+		"project_size_mb": 42.0,
+		"sealed_zip": "user://sealed/my_game.zip",
+		"tools_copied": [
+			"godot v4.7.2",
+			"blender v4.2.0",
+			"vscodium (1.85.0)",
+			"gimp",
+			"krita v5.2.2"
+		]
+	}
+
+	controller._show_success(mock_result)
+
+	var out_text: String = output_label.text
+	_expect(out_text.contains("Godot v4.7.2"), "Output text should contain 'Godot v4.7.2'", results)
+	_expect(out_text.contains("Blender v4.2.0"), "Output text should contain 'Blender v4.2.0'", results)
+	_expect(out_text.contains("VSCodium (1.85.0)"), "Output text should contain 'VSCodium (1.85.0)'", results)
+	_expect(out_text.contains("GIMP"), "Output text should contain 'GIMP'", results)
+	_expect(out_text.contains("Krita v5.2.2"), "Output text should contain 'Krita v5.2.2'", results)
+	_expect(not out_text.contains("godot v4.7.2"), "Output text should not contain raw lowercase 'godot v4.7.2'", results)
+	_expect(not out_text.contains("vscodium (1.85.0)"), "Output text should not contain raw lowercase 'vscodium (1.85.0)'", results)
+
+	# Verify empty tools list handling
+	var empty_result = {
+		"success": true,
+		"project_size_mb": 0.5,
+		"sealed_zip": "user://sealed/empty_project.zip",
+		"tools_copied": []
+	}
+	controller._show_success(empty_result)
+	_expect(output_label.text.contains("No tools to copy"), "Empty tools list should display 'No tools to copy'", results)
+
+	controller = null
+	dialog.free()
+
+## Test: Verifies live async sealing disables close button and shows progress bar while thread is alive.
+func _test_async_seal_progress_bar_and_close_button_lifecycle(results: Dictionary) -> void:
+	## Validates active async sealing lifecycle with running thread.
+	var controller = DialogFreedSealController.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
+
+	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	var sem = Semaphore.new()
+	controller.gate = sem
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
+
+	var emitted := {"called": false, "success": false, "zip_path": ""}
+	controller.seal_completed.connect(func(success: bool, zip_path: String) -> void:
+		emitted["called"] = true
+		emitted["success"] = success
+		emitted["zip_path"] = zip_path
+	)
+
+	controller.seal_for_delivery("res://tests")
+
+	var tree = Engine.get_main_loop() as SceneTree
+	var thread_alive_deadline = Time.get_ticks_msec() + 3000
+	var thread: Thread = null
+	while Time.get_ticks_msec() < thread_alive_deadline:
+		thread = controller.get("_seal_thread") as Thread
+		if thread != null and thread.is_alive():
+			break
+		await tree.process_frame
+
+	_expect(thread != null and thread.is_alive(), "Worker thread should be running and alive", results)
+	if thread != null and thread.is_alive():
+		var ok_btn: Button = dialog.get_ok_button()
+		_expect(progress_bar.visible == true, "ProgressBar should be visible while thread is active", results)
+		_expect(progress_bar.indeterminate == true, "ProgressBar should be indeterminate while thread is active", results)
+		_expect(ok_btn.disabled == true, "Close button should be disabled while thread is active", results)
+		_expect(status_label.modulate.is_equal_approx(Color("#F3F4F6")), "StatusLabel modulate should be neutral off-white while active", results)
+
+	# Release worker thread
+	sem.post()
+
+	var completion_deadline = Time.get_ticks_msec() + 3000
+	while not emitted["called"] and Time.get_ticks_msec() < completion_deadline:
+		await tree.process_frame
+
+	_expect(emitted["called"], "seal_completed should be emitted upon completion", results)
+	_expect(emitted["success"], "seal_completed should emit success true", results)
+	var ok_btn_post: Button = dialog.get_ok_button()
+	_expect(progress_bar.visible == false, "ProgressBar should be hidden after seal completes", results)
+	_expect(ok_btn_post.disabled == false, "Close button should be re-enabled after seal completes", results)
+	_expect(status_label.modulate.is_equal_approx(Color("#22C55E")), "StatusLabel modulate should be success green after completion", results)
+	_expect(output_label.text.contains("Godot v4.7.2"), "Output label should format tool display name", results)
+
+	controller = null
+	dialog.free()
