@@ -24,12 +24,18 @@ enum State {
 ## Without this, an orphaned Thread causes Godot 4 warnings and potential crashes.
 func _notification(what: int) -> void:
 	if what == NOTIFICATION_PREDELETE:
+		_cancel_mutex.lock()
+		_is_cancel_requested = true
+		_cancel_mutex.unlock()
+		if _active_sealer != null:
+			_active_sealer.request_cancel()
 		if _seal_thread != null and _seal_thread.is_started():
 			OgsLogger.warn("seal_thread_join_on_free", {
 				"component": "sealer"
 			})
 			_seal_thread.wait_to_finish()
 		_seal_thread = null
+		_active_sealer = null
 
 const OgsLogger = preload("res://scripts/logging/logger.gd")
 const ToolCategoryMapper = preload("res://scripts/tools/tool_category_mapper.gd")
@@ -53,6 +59,11 @@ var _last_sealed_zip: String = ""
 var _seal_in_progress: bool = false
 var _seal_thread: Thread
 var _seal_started_at_msec: int = 0
+
+var _cancel_mutex: Mutex = Mutex.new()
+var _is_cancel_requested: bool = false
+var _is_cancelling: bool = false
+var _active_sealer: ProjectSealer = null
 
 var _progress_mutex: Mutex = Mutex.new()
 var _current_phase: String = ""
@@ -172,6 +183,17 @@ func is_in_confirmation() -> bool:
 ## Returns true if controller is actively sealing in background.
 func is_sealing() -> bool:
 	return _seal_in_progress
+
+## Returns true if cancellation has been requested.
+func is_cancel_requested() -> bool:
+	_cancel_mutex.lock()
+	var req: bool = _is_cancel_requested
+	_cancel_mutex.unlock()
+	return req
+
+## Returns true if cancel rollback is currently in progress.
+func is_cancelling() -> bool:
+	return _is_cancelling
 
 ## Returns dialog Cancel button if available.
 func get_cancel_button() -> Button:
@@ -331,9 +353,28 @@ func confirm_seal() -> void:
 
 ## Cancels sealing and closes the dialog without modifying files or launching a thread.
 func cancel_seal() -> void:
-	## Dismisses confirmation view and aborts the pending seal.
+	## Dismisses confirmation view or initiates cooperative cancellation and rollback.
 	if _seal_in_progress:
-		OgsLogger.warn("cancel_seal_ignored_while_running", {"component": "sealer"})
+		if _is_cancelling:
+			return
+		_is_cancelling = true
+		_cancel_mutex.lock()
+		_is_cancel_requested = true
+		_cancel_mutex.unlock()
+
+		if is_instance_valid(_ok_button):
+			_ok_button.text = "Cancel"
+			_ok_button.disabled = true
+		if is_instance_valid(_cancel_button):
+			_cancel_button.disabled = true
+		if is_instance_valid(_status_label):
+			_status_label.text = "Cancelling and restoring project state..."
+			_status_label.modulate = Color("#F3F4F6")
+
+		if _active_sealer != null:
+			_active_sealer.request_cancel()
+
+		OgsLogger.info("seal_cancel_requested", {"component": "sealer"})
 		return
 
 	_pending_project_path = ""
@@ -365,11 +406,13 @@ func cancel_seal() -> void:
 
 	OgsLogger.info("seal_cancelled_by_user", {"component": "sealer"})
 
-## Handler for OK / Confirm button press.
+## Handler for OK / Confirm / Cancel action button press.
 func _on_ok_pressed() -> void:
 	if _current_state == State.CONFIRMATION:
 		confirm_seal()
-	elif _current_state == State.SUCCESS or _current_state == State.ERROR:
+	elif _current_state == State.SEALING or _seal_in_progress:
+		cancel_seal()
+	elif _current_state == State.SUCCESS or _current_state == State.ERROR or _current_state == State.IDLE:
 		_current_state = State.IDLE
 		if is_instance_valid(_seal_dialog):
 			_seal_dialog.hide()
@@ -378,8 +421,8 @@ func _on_ok_pressed() -> void:
 func _on_cancel_pressed() -> void:
 	if _current_state == State.CONFIRMATION:
 		cancel_seal()
-	elif _seal_in_progress:
-		OgsLogger.warn("seal_cancel_blocked_during_execution", {"component": "sealer"})
+	elif _current_state == State.SEALING or _seal_in_progress:
+		cancel_seal()
 	else:
 		_current_state = State.IDLE
 		if is_instance_valid(_seal_dialog):
@@ -405,6 +448,10 @@ func _run_seal_async(project_path: String) -> void:
 	## Executes sealing asynchronously to keep the UI responsive.
 	_seal_in_progress = true
 	_seal_started_at_msec = Time.get_ticks_msec()
+	_cancel_mutex.lock()
+	_is_cancel_requested = false
+	_cancel_mutex.unlock()
+	_is_cancelling = false
 	_seal_thread = Thread.new()
 	_progress_mutex.lock()
 	_has_progress_update = false
@@ -416,7 +463,10 @@ func _run_seal_async(project_path: String) -> void:
 	if is_instance_valid(_progress_bar):
 		_progress_bar.indeterminate = true
 		_progress_bar.visible = true
-	_set_close_button_disabled(true)
+	if is_instance_valid(_ok_button):
+		_ok_button.text = "Cancel"
+		_ok_button.disabled = false
+		_ok_button.visible = true
 	if is_instance_valid(_cancel_button):
 		_cancel_button.visible = false
 	if is_instance_valid(_status_label):
@@ -430,6 +480,8 @@ func _run_seal_async(project_path: String) -> void:
 	if start_err != OK:
 		_seal_thread = null
 		_seal_in_progress = false
+		_is_cancelling = false
+		_active_sealer = null
 		_progress_mutex.lock()
 		_has_progress_update = false
 		_current_phase = ""
@@ -450,7 +502,7 @@ func _run_seal_async(project_path: String) -> void:
 			break
 		if is_instance_valid(_seal_dialog) and _seal_dialog.is_inside_tree():
 			_update_progress_status()
-		await tree.create_timer(0.25).timeout
+		await tree.create_timer(0.05).timeout
 
 	var result: Dictionary = _seal_thread.wait_to_finish() if _seal_thread != null else {
 		"success": false,
@@ -458,6 +510,10 @@ func _run_seal_async(project_path: String) -> void:
 	}
 	_seal_thread = null
 	_seal_in_progress = false
+	_active_sealer = null
+	var was_cancelling: bool = _is_cancelling
+	_is_cancelling = false
+
 	var can_present_result_ui: bool = (
 		is_instance_valid(_seal_dialog)
 		and _seal_dialog.is_inside_tree()
@@ -466,7 +522,11 @@ func _run_seal_async(project_path: String) -> void:
 		and is_instance_valid(_open_folder_button)
 	)
 
-	if result.success:
+	if result.get("cancelled", false) or was_cancelling:
+		if can_present_result_ui:
+			_show_cancelled(result)
+		seal_completed.emit(false, "")
+	elif result.success:
 		_last_sealed_zip = String(result.get("sealed_zip", ""))
 		if can_present_result_ui:
 			_show_success(result)
@@ -485,12 +545,19 @@ func _start_seal_thread(project_path: String) -> int:
 func _threaded_seal_operation(project_path: String) -> Dictionary:
 	## Performs the full seal workflow off the main thread.
 	var sealer = ProjectSealer.new()
+	_active_sealer = sealer
 	var progress_cb: Callable = Callable(self, "_on_seal_progress_from_thread")
-	return sealer.seal_project(project_path, progress_cb)
+	var cancel_cb: Callable = Callable(self, "is_cancel_requested")
+	var res = sealer.seal_project(project_path, progress_cb, cancel_cb)
+	_active_sealer = null
+	return res
 
 ## Handles thread-safe progress notifications from background worker thread.
 func _on_seal_progress_from_thread(phase: String, current: int, total: int) -> void:
 	## Receives background progress and schedules main-thread UI update.
+	if _is_cancelling:
+		return
+
 	_progress_mutex.lock()
 	_current_phase = phase
 	_current_file_count = current
@@ -519,6 +586,9 @@ func update_progress(phase: String, current: int, total: int) -> void:
 ## Applies determinate progress values and formatted labels to UI nodes on main thread.
 func _apply_progress_to_ui(phase: String, current: int, total: int) -> void:
 	## Updates ProgressBar and labels on main thread.
+	if _is_cancelling:
+		return
+
 	var percent: float = 100.0
 	if total > 0:
 		percent = clampf((float(current) / float(total)) * 100.0, 0.0, 100.0)
@@ -546,9 +616,23 @@ func _apply_progress_to_ui(phase: String, current: int, total: int) -> void:
 			elapsed_seconds
 		]
 
+	if is_instance_valid(_ok_button):
+		_ok_button.text = "Cancel"
+		_ok_button.disabled = false
+		_ok_button.visible = true
+
 ## Updates in-progress status text while background seal runs.
 func _update_progress_status() -> void:
 	## Shows elapsed time and stage hints during long-running packaging.
+	if _is_cancelling:
+		if is_instance_valid(_status_label):
+			_status_label.text = "Cancelling and restoring project state..."
+			_status_label.modulate = Color("#F3F4F6")
+		if is_instance_valid(_ok_button):
+			_ok_button.text = "Cancel"
+			_ok_button.disabled = true
+		return
+
 	_progress_mutex.lock()
 	var has_update: bool = _has_progress_update
 	var phase: String = _current_phase
@@ -558,7 +642,9 @@ func _update_progress_status() -> void:
 
 	if has_update:
 		_apply_progress_to_ui(phase, current, total)
-		_set_close_button_disabled(true)
+		if is_instance_valid(_ok_button):
+			_ok_button.text = "Cancel"
+			_ok_button.disabled = false
 		if is_instance_valid(_cancel_button):
 			_cancel_button.visible = false
 		return
@@ -572,7 +658,9 @@ func _update_progress_status() -> void:
 	if is_instance_valid(_progress_bar):
 		_progress_bar.indeterminate = true
 		_progress_bar.visible = true
-	_set_close_button_disabled(true)
+	if is_instance_valid(_ok_button):
+		_ok_button.text = "Cancel"
+		_ok_button.disabled = false
 	if is_instance_valid(_cancel_button):
 		_cancel_button.visible = false
 
@@ -684,6 +772,11 @@ func _show_error(title: String, errors: Variant) -> void:
 func _show_progress() -> void:
 	## Shows the progress dialog and activates progress indicators.
 	_current_state = State.SEALING
+	_cancel_mutex.lock()
+	_is_cancel_requested = false
+	_cancel_mutex.unlock()
+	_is_cancelling = false
+
 	_progress_mutex.lock()
 	_has_progress_update = false
 	_current_phase = ""
@@ -704,14 +797,54 @@ func _show_progress() -> void:
 		_progress_bar.visible = true
 
 	if is_instance_valid(_ok_button):
-		_ok_button.text = "Close"
-		_ok_button.disabled = true
+		_ok_button.text = "Cancel"
+		_ok_button.disabled = false
 		_ok_button.visible = true
 	if is_instance_valid(_cancel_button):
 		_cancel_button.visible = false
 
 	if is_instance_valid(_seal_dialog) and _seal_dialog.is_inside_tree():
 		_seal_dialog.popup_centered()
+
+## Displays cancelled state after rollback completes.
+func _show_cancelled(_result: Dictionary = {}) -> void:
+	## Shows the cancellation confirmation and enables Close button.
+	_current_state = State.IDLE
+	_progress_mutex.lock()
+	_has_progress_update = false
+	_current_phase = ""
+	_current_file_count = 0
+	_total_file_count = 0
+	_progress_mutex.unlock()
+
+	if is_instance_valid(_status_label):
+		_status_label.text = "Seal cancelled."
+		_status_label.modulate = Color("#F3F4F6")
+
+	if is_instance_valid(_output_label):
+		_output_label.text = "Packaging was cancelled by user.\nProject state has been restored."
+	if is_instance_valid(_open_folder_button):
+		_open_folder_button.visible = false
+	if is_instance_valid(_progress_bar):
+		_progress_bar.visible = false
+		_progress_bar.value = 0
+		_progress_bar.indeterminate = false
+		_progress_bar.min_value = 0
+		_progress_bar.max_value = 100
+
+	if is_instance_valid(_ok_button):
+		_ok_button.text = "Close"
+		_ok_button.disabled = false
+		_ok_button.visible = true
+	if is_instance_valid(_cancel_button):
+		_cancel_button.visible = false
+
+	if is_instance_valid(_seal_dialog) and _seal_dialog.is_inside_tree():
+		_seal_dialog.popup_centered()
+
+	OgsLogger.info("seal_cancelled_and_restored", {
+		"component": "sealer"
+	})
 
 ## Opens the folder containing the sealed zip.
 func _on_open_folder_pressed() -> void:
