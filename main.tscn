@@ -3,6 +3,12 @@
 [ext_resource type="Script" uid="uid://d4ld263wl24he" path="res://main.gd" id="1_vvehl"]
 [ext_resource type="Script" path="res://scripts/projects/custom_item_list.gd" id="2_cui"]
 [ext_resource type="Texture2D" uid="uid://mqwr6wkp68ub" path="res://Images/logo.png" id="3_logo"]
+[ext_resource type="Texture2D" uid="uid://dxhngsntpkwn5" path="res://Images/tools/Godot.png" id="4_godot"]
+[ext_resource type="Texture2D" uid="uid://dkejx4uc7icni" path="res://Images/tools/Blender.png" id="5_blender"]
+[ext_resource type="Texture2D" uid="uid://dflwhhlk6q73s" path="res://Images/tools/GIMP.png" id="6_gimp"]
+[ext_resource type="Texture2D" uid="uid://do72mv8pqjh7h" path="res://Images/tools/Audacity.png" id="7_audacity"]
+[ext_resource type="Texture2D" uid="uid://dj0x3pxmxd4a1" path="res://Images/tools/Krita.png" id="8_krita"]
+[ext_resource type="Texture2D" uid="uid://b6xk6oca4duf2" path="res://Images/tools/VSCodium.png" id="9_vscodium"]
 
 [sub_resource type="StyleBoxFlat" id="StyleBoxFlat_sidebar"]
 content_margin_left = 12.0
@@ -50,6 +56,22 @@ content_margin_left = 16.0
 content_margin_top = 16.0
 content_margin_right = 16.0
 content_margin_bottom = 16.0
+bg_color = Color(0.12, 0.14, 0.18, 0.8)
+border_width_left = 1
+border_width_top = 1
+border_width_right = 1
+border_width_bottom = 1
+border_color = Color(0.2, 0.24, 0.3, 0.8)
+corner_radius_top_left = 6
+corner_radius_top_right = 6
+corner_radius_bottom_left = 6
+corner_radius_bottom_right = 6
+
+[sub_resource type="StyleBoxFlat" id="StyleBoxFlat_starter_stack_card"]
+content_margin_left = 14.0
+content_margin_top = 10.0
+content_margin_right = 14.0
+content_margin_bottom = 10.0
 bg_color = Color(0.12, 0.14, 0.18, 0.8)
 border_width_left = 1
 border_width_top = 1
@@ -1072,32 +1094,209 @@ placeholder_text = "File name"
 [node name="OnboardingWizardDialog" type="AcceptDialog" parent="." unique_id=279852584]
 title = "Welcome to Open Game Stack"
 initial_position = 1
-size = Vector2i(460, 180)
+size = Vector2i(560, 420)
+min_size = Vector2i(540, 380)
 ok_button_text = "Start"
 
 [node name="VBoxContainer" type="VBoxContainer" parent="OnboardingWizardDialog" unique_id=2088917370]
 anchors_preset = 15
 anchor_right = 1.0
 anchor_bottom = 1.0
-offset_bottom = -42.0
+offset_left = 16.0
+offset_top = 12.0
+offset_right = -16.0
+offset_bottom = -16.0
 grow_horizontal = 2
 grow_vertical = 2
+theme_override_constants/separation = 12
+
+[node name="BrandHeader" type="HBoxContainer" parent="OnboardingWizardDialog/VBoxContainer" unique_id=300100101]
+layout_mode = 2
+theme_override_constants/separation = 12
+
+[node name="BrandLogo" type="TextureRect" parent="OnboardingWizardDialog/VBoxContainer/BrandHeader" unique_id=300100102]
+custom_minimum_size = Vector2(48, 48)
+layout_mode = 2
+texture = ExtResource("3_logo")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="HeaderTitle" type="Label" parent="OnboardingWizardDialog/VBoxContainer/BrandHeader" unique_id=300100103]
+layout_mode = 2
+size_flags_horizontal = 3
+theme_override_colors/font_color = Color(0.95, 0.96, 0.98, 1)
+theme_override_font_sizes/font_size = 18
+text = "Welcome to Open Game Stack"
+vertical_alignment = 1
 
 [node name="Welcome" type="Label" parent="OnboardingWizardDialog/VBoxContainer" unique_id=326475952]
-custom_minimum_size = Vector2(200, 0)
 layout_mode = 2
+theme_override_colors/font_color = Color(0.85, 0.88, 0.92, 1)
+theme_override_font_sizes/font_size = 13
 text = "First-run setup: initialize the default frozen stack (Godot 4.7.2 + Blender 4.2 LTS) in your central library."
 autowrap_mode = 2
 
-[node name="StatusLabel" type="Label" parent="OnboardingWizardDialog/VBoxContainer" unique_id=2044879495]
-modulate = Color(0.6, 0.6, 0.6, 1)
+[node name="StarterStackCard" type="PanelContainer" parent="OnboardingWizardDialog/VBoxContainer" unique_id=300100104]
 layout_mode = 2
+theme_override_styles/panel = SubResource("StyleBoxFlat_starter_stack_card")
+
+[node name="CardContent" type="VBoxContainer" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard" unique_id=300100105]
+layout_mode = 2
+theme_override_constants/separation = 8
+
+[node name="CardHeader" type="VBoxContainer" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent" unique_id=300100106]
+layout_mode = 2
+theme_override_constants/separation = 2
+
+[node name="StarterStackTitle" type="Label" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/CardHeader" unique_id=300100107]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.45, 0.8, 1, 1)
+theme_override_font_sizes/font_size = 14
+text = "Default Starter Stack"
+
+[node name="StarterStackSubtitle" type="Label" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/CardHeader" unique_id=300100108]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 12
+text = "OGS provides portable, offline-first toolchain management for your projects."
+autowrap_mode = 2
+
+[node name="ToolPreviewRow" type="HBoxContainer" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent" unique_id=300100109]
+layout_mode = 2
+theme_override_constants/separation = 16
+alignment = 1
+
+[node name="ToolGodot" type="VBoxContainer" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow" unique_id=300100110]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="GodotIcon" type="TextureRect" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow/ToolGodot" unique_id=300100111]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("4_godot")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GodotLabel" type="Label" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow/ToolGodot" unique_id=300100112]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Godot"
+horizontal_alignment = 1
+
+[node name="ToolBlender" type="VBoxContainer" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow" unique_id=300100113]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="BlenderIcon" type="TextureRect" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow/ToolBlender" unique_id=300100114]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("5_blender")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="BlenderLabel" type="Label" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow/ToolBlender" unique_id=300100115]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Blender"
+horizontal_alignment = 1
+
+[node name="ToolGIMP" type="VBoxContainer" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow" unique_id=300100116]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="GIMPIcon" type="TextureRect" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow/ToolGIMP" unique_id=300100117]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("6_gimp")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="GIMPLabel" type="Label" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow/ToolGIMP" unique_id=300100118]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "GIMP"
+horizontal_alignment = 1
+
+[node name="ToolAudacity" type="VBoxContainer" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow" unique_id=300100119]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="AudacityIcon" type="TextureRect" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow/ToolAudacity" unique_id=300100120]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("7_audacity")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="AudacityLabel" type="Label" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow/ToolAudacity" unique_id=300100121]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Audacity"
+horizontal_alignment = 1
+
+[node name="ToolKrita" type="VBoxContainer" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow" unique_id=300100122]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="KritaIcon" type="TextureRect" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow/ToolKrita" unique_id=300100123]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("8_krita")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="KritaLabel" type="Label" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow/ToolKrita" unique_id=300100124]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "Krita"
+horizontal_alignment = 1
+
+[node name="ToolVSCodium" type="VBoxContainer" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow" unique_id=300100125]
+layout_mode = 2
+theme_override_constants/separation = 4
+alignment = 1
+
+[node name="VSCodiumIcon" type="TextureRect" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow/ToolVSCodium" unique_id=300100126]
+custom_minimum_size = Vector2(32, 32)
+layout_mode = 2
+texture = ExtResource("9_vscodium")
+expand_mode = 1
+stretch_mode = 5
+
+[node name="VSCodiumLabel" type="Label" parent="OnboardingWizardDialog/VBoxContainer/StarterStackCard/CardContent/ToolPreviewRow/ToolVSCodium" unique_id=300100127]
+layout_mode = 2
+theme_override_font_sizes/font_size = 11
+text = "VSCodium"
+horizontal_alignment = 1
+
+[node name="StatusLabel" type="Label" parent="OnboardingWizardDialog/VBoxContainer" unique_id=2044879495]
+layout_mode = 2
+theme_override_colors/font_color = Color(0.65, 0.7, 0.78, 1)
+theme_override_font_sizes/font_size = 13
 text = "Ready to initialize."
+
+[node name="DialogSpacer" type="Control" parent="OnboardingWizardDialog/VBoxContainer" unique_id=300100128]
+layout_mode = 2
+size_flags_vertical = 3
 
 [node name="ButtonContainer" type="HBoxContainer" parent="OnboardingWizardDialog/VBoxContainer" unique_id=2007118452]
 layout_mode = 2
+theme_override_constants/separation = 12
 alignment = 2
 
 [node name="SkipButton" type="Button" parent="OnboardingWizardDialog/VBoxContainer/ButtonContainer" unique_id=1145177868]
+theme_type_variation = &"SecondaryButton"
+custom_minimum_size = Vector2(130, 36)
 layout_mode = 2
 text = "Skip for Now"
+
+[node name="StartButton" type="Button" parent="OnboardingWizardDialog/VBoxContainer/ButtonContainer" unique_id=300100129]
+theme_type_variation = &"PrimaryButton"
+custom_minimum_size = Vector2(130, 36)
+layout_mode = 2
+text = "Start"

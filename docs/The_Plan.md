@@ -92,11 +92,12 @@ The MVP is not complete until this full sequence works end to end:
     *   *Tests:* Comprehensive test coverage for all mirror functionality
     *   *Remote Repo Support:* Optional GitHub Releases repository.json support
     *   *Note:* Server infrastructure scale-out is post-MVP backlog
-*   [x] **Onboarding Wizard** — 100% Complete ✅
+*   [x] **Onboarding Wizard** - 100% Complete ✅
     *   *First Run Detection:* Checks if wizard has been completed and library is empty
-    *   *UI Dialog:* Welcoming screen with default stack information (Godot 4.7.2 + Blender 4.5.7)
-    *   *Default Stack Bootstrap:* Creates library directory structure for default tools
-    *   *Skip Option:* Users can skip wizard and configure manually
+    *   *Brand Visuals & Preview Card:* Welcoming dialog header with 48x48 OGS logo and starter stack card showcasing 6 core tools (Godot, Blender, GIMP, Audacity, Krita, VSCodium) with icons and descriptions
+    *   *Unified Action Buttons:* Single horizontal footer action row with 130x36 PrimaryButton ("Start") and SecondaryButton ("Skip for Now"), hiding default AcceptDialog OK button
+    *   *Default Stack Bootstrap:* Creates library directory structure for default tools (Godot 4.7.2 + Blender 4.2 LTS)
+    *   *Skip Option:* Users can skip wizard and configure manually, persisting completion flag
     *   *Completion Flag:* Persists to disk so wizard only shows once
 *   [x] **Mirror Root Settings** — 100% Complete ✅
     *   *Settings Page UI:* Mirror root configuration field with Browse and Reset buttons

@@ -29,7 +29,7 @@ godot --headless --script res://tests/test_runner.gd
 Expected output:
 ```
 TestRunner: Test library isolated to C:\Users\[user]\AppData\Local/OGS_TEST/Library
-tests passed: 2154
+tests passed: 2158
 tests failed: 0
 TestRunner: Cleaned up test library at C:\Users\[user]\AppData\Local/OGS_TEST/Library
 ```
@@ -255,9 +255,13 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Tool categorization for "Code" category tools
   - Defensive dynamic bucket creation for unknown or future categories
 
-- **[tests/onboarding_wizard_tests.gd](tests/onboarding_wizard_tests.gd)** - Validates first-run detection behavior for onboarding wizard.
+- **[tests/onboarding_wizard_tests.gd](tests/onboarding_wizard_tests.gd)** - Validates first-run detection behavior, dialog layout, and brand visuals for onboarding wizard.
   - Returns false when library has visible entries
   - Returns true when library only contains hidden or empty directories
+  - Dialog scene structure, dimensions (min 540x380), brand logo (48x48 centered aspect ratio), starter stack preview cards (Godot, Blender, GIMP, Audacity, Krita, VSCodium), and unified horizontal action button layout
+  - Start action triggers wizard_completed signal, writes completion flag, and generates default tool directories (godot 4.7.2, blender 4.2)
+  - Skip for Now action marks wizard complete, hides dialog, and emits completion signal
+  - Custom action add_button fallback for skip workflows
 
 - **[tests/seal_controller_tests.gd](tests/seal_controller_tests.gd)** - Validates SealController thread lifecycle, progress feedback, typography, and safety.
   - Thread joined cleanly when controller freed during active execution
