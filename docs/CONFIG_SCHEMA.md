@@ -2,7 +2,7 @@
 
 ## Overview
 
-An `ogs_config.json` file controls launcher behavior, especially air-gap enforcement and offline mode. This is the user/system configuration file, separate from the project manifest (`stack.json`).
+An `ogs_config.json` file controls launcher behavior, especially air-gap enforcement and offline mode. This is the user/system configuration file, separate from the project manifest (`ogs_stack.json`).
 
 ## File Location
 
@@ -10,7 +10,7 @@ Typically located at the project root or in a user config directory:
 
 ```
 my-game/
-├── stack.json          <- Project manifest (frozen stack definition)
+├── ogs_stack.json     <- Project manifest (frozen stack definition)
 ├── ogs_config.json     <- Launcher config (air-gap flags, user preferences)
 └── game/
 ```
@@ -66,12 +66,12 @@ Alternatively, for system-wide configuration:
 
 ## Validation Rules
 
-1. **All fields are optional** — Missing config file returns defaults with no error
-2. **Boolean-only for flags** — `offline_mode` and `force_offline` must be booleans if present
-3. **Allowlist host format** — `allowed_hosts` must be an array of strings if present
-4. **Allowlist port format** — `allowed_ports` must be an array of integers if present
-5. **Allowlist port range** — each `allowed_ports` entry must be between `1` and `65535`
-6. **Schema version** — Only `1` is supported currently
+1. **All fields are optional** - Missing config file returns defaults with no error
+2. **Boolean-only for flags** - `offline_mode` and `force_offline` must be booleans if present
+3. **Allowlist host format** - `allowed_hosts` must be an array of strings if present
+4. **Allowlist port format** - `allowed_ports` must be an array of integers if present
+5. **Allowlist port range** - each `allowed_ports` entry must be between `1` and `65535`
+6. **Schema version** - Only `1` is supported currently
 
 ### Validation Error Codes
 
@@ -99,7 +99,7 @@ var config = OgsConfig.load_from_file("res://ogs_config.json")
 # Result: offline_mode=false, force_offline=false, no errors
 ```
 
-When importing an existing project via **Add Local Project** or selecting a tracked project that only contains `stack.json`, the launcher automatically writes a default `ogs_config.json` to the project root with standard settings (`offline_mode=false`, `force_offline=false`). This allows developers to clone repositories without local configuration files and begin development immediately.
+When importing an existing project via **Add Local Project** or selecting a tracked project that only contains `ogs_stack.json`, the launcher automatically writes a default `ogs_config.json` to the project root with standard settings (`offline_mode=false`, `force_offline=false`). This allows developers to clone repositories without local configuration files and begin development immediately.
 
 ### User-Triggered Air-Gap
 
@@ -132,10 +132,10 @@ When the government receives the project, the launcher detects `force_offline=tr
 
 ## Best Practices
 
-1. **Commit ogs_config.json if using force_offline** — Ensures sealed projects stay sealed across deployments
-2. **Do not hardcode network URLs in tools** — Launcher overrides tool configs to enforce offline mode
-3. **Test with offline mode enabled** — Verify your project works in air-gapped environments before release
-4. **Document deployment mode** — Clearly indicate whether a project is development or sealed/sovereign
+1. **Commit ogs_config.json if using force_offline** - Ensures sealed projects stay sealed across deployments
+2. **Do not hardcode network URLs in tools** - Launcher overrides tool configs to enforce offline mode
+3. **Test with offline mode enabled** - Verify your project works in air-gapped environments before release
+4. **Document deployment mode** - Clearly indicate whether a project is development or sealed/sovereign
 
 ## Detection & Enforcement
 
@@ -191,6 +191,6 @@ In addition to per-project configuration (`ogs_config.json`), the launcher persi
 ## Future Extensions (Phase 2+)
 
 Future versions may add:
-- `cache_dir` — Custom cache location for offline downloads
-- `log_file` — Path to persistent logs for debugging
-- `tool_config_overrides` — Per-tool environment variable injection
+- `cache_dir` - Custom cache location for offline downloads
+- `log_file` - Path to persistent logs for debugging
+- `tool_config_overrides` - Per-tool environment variable injection

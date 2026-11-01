@@ -4,7 +4,7 @@ This document lists recurring security pitfalls and checks for contributors. Use
 
 ## Trust Boundaries
 
-- Treat `stack.json` and `ogs_config.json` as untrusted input.
+- Treat `ogs_stack.json` and `ogs_config.json` as untrusted input.
 - Do not execute binaries from untrusted or unexpected locations.
 - Avoid writing project paths or sensitive data to shared user storage without explicit need.
 
@@ -45,7 +45,7 @@ This document lists recurring security pitfalls and checks for contributors. Use
   - `-c protocol.ext.allow=never`: Disables custom protocol helpers that can execute arbitrary commands (`ext::`).
   - `-c protocol.file.allow=never`: Prevents cloning local filesystem paths via Git protocol smuggling.
 - Symlink and Hook Hardening: Enforce `-c core.symlinks=false` and `-c core.fsmonitor=false` to mitigate repository checkout vulnerabilities such as symlink path traversal and malicious hook execution (CVE-2024-32002).
-- Two-Phase Pre-Checkout Manifest Verification: For remote repositories containing heavy binary assets, perform a blobless, no-checkout clone (`--filter=blob:none --no-checkout`) followed by `git show HEAD:stack.json` inspection. Validate `stack.json` using `StackManifest` before hydrating working tree files, aborting and purging if the manifest is invalid or missing.
+- Two-Phase Pre-Checkout Manifest Verification: For remote repositories containing heavy binary assets, perform a blobless, no-checkout clone (`--filter=blob:none --no-checkout`) followed by `git show HEAD:ogs_stack.json` inspection. Validate `ogs_stack.json` using `StackManifest` before hydrating working tree files, aborting and purging if the manifest is invalid or missing.
 - Defensive Directory Deletion Bounds: Guard all folder purges (on cancellation or failure) with `PathUtils.is_path_under_root(target_dir, dest_root)` to prevent accidental directory traversal or unintended deletions outside the configured projects directory.
 - Credential and Path Redaction: Never log user passwords, Personal Access Tokens, or raw filesystem home directories. Route all operational logging through `OgsLogger` which automatically redacts sensitive paths.
 

@@ -18,7 +18,7 @@ This plan realizes the core vision from `docs/Design_Doc.md`: **"Sovereignty Ove
 
 ### Success Criteria
 *   User runs `OGS_Setup.exe` to install the Launcher.
-*   Launcher detects missing tools in `stack.json` and downloads them to `%LOCALAPPDATA%/OGS/Library/`.
+*   Launcher detects missing tools in `ogs_stack.json` and downloads them to `%LOCALAPPDATA%/OGS/Library/`.
 *   User can have 3 projects using "Godot 4.7.2" while only having one copy of Godot on disk.
 *   User clicks **"Seal for Delivery,"** and the Launcher produces a standalone `.zip` file containing the project AND the embedded tools.
 *   That `.zip` file can be moved to a disconnected PC and run immediately.
@@ -26,7 +26,7 @@ This plan realizes the core vision from `docs/Design_Doc.md`: **"Sovereignty Ove
 ### Demo Walkthrough (MVP Completion Gate)
 The MVP is not complete until this full sequence works end to end:
 1.  On a connected laptop, download and install the Launcher.
-2.  Import an existing Godot project and generate `stack.json` (convert to OGS project).
+2.  Import an existing Godot project and generate `ogs_stack.json` (convert to OGS project).
 3.  Use the Launcher to hydrate tools into the Central Library.
 4.  Click **"Seal for Delivery"** to export a sealed `.zip` with embedded tools and Launcher.
 5.  Transfer the `.zip` to an air-gapped PC, unzip, and run the Launcher from inside the sealed folder.
@@ -54,7 +54,7 @@ The MVP is not complete until this full sequence works end to end:
     *   *Extraction:* ToolExtractor unzips archives into library structure (Phase 2: actual unzipping).
     *   *Tests:* Unit tests validating all library operations.
 *   [x] **Project Manager & Environment Validation** — 100% Complete ✅
-    *   *Discovery:* ProjectsController loads and validates `ogs_stack.json` (migrated from `stack.json` in Issue #179).
+    *   *Discovery:* ProjectsController loads and validates `ogs_stack.json`.
     *   *Validation:* ProjectEnvironmentValidator checks tools against library.
     *   *UI Integration:* Environment incomplete → shows "Repair Environment" button.
     *   *Repair Workflow:* LibraryHydrator orchestrates batch downloads (Phase 2: actual HTTP).
@@ -203,7 +203,7 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Add Tool candidate fallback sources (catalog + library + tracked projects)
     *   [x] Remove Tool writes `ogs_stack.json` and refreshes UI immediately
 *   [x] Project Tools List Selection and Launch - 100% Complete ✅
-    *   [x] Pinned tools in ogs_stack.json selectable in ProjectToolsList as launch targets
+    *   [x] Pinned tools in `ogs_stack.json` selectable in ProjectToolsList as launch targets
     *   [x] Direct launch at project root without requiring explorer tree file selection
     *   [x] Single-clicking missing tools in ProjectToolsList selects row and enables Remove Tool and Change Version without navigating away
     *   [x] Double-click item activation launches installed tools immediately at project root, or navigates to Tools page if uninstalled
@@ -378,7 +378,7 @@ Granular, actionable items for the Tools/Projects page redesign:
 *   **Foundation (Phase 1):** Completed Feb 15, 2026
 *   **Showcase MVP (Phase 1.5):** Central Library, Hydration, and Seal for Delivery complete Feb 18, 2026
 *   **Mirror Infrastructure (Phase 2):** Mirror client + GitHub Releases complete Feb 20, 2026
-*   **Path Field Refactor:** Made optional in stack.json, library-based resolution complete Feb 22, 2026
+*   **Path Field Refactor:** Made optional in ogs_stack.json, library-based resolution complete Feb 22, 2026
 *   **Tools Page Redesign (Phase 2.5):** Complete Feb 22, 2026
     *   Installed/Download tabs with category grouping
     *   ToolsController with download tracking and progress indication
@@ -468,7 +468,7 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Test suite evolved from 259 to 327 passing tests as Projects/Tools coverage expanded
 
 **Path Field Made Optional (Feb 22, 2026):**
-- stack.json `path` field is now optional (library-based resolution by default)
+- ogs_stack.json `path` field is now optional (library-based resolution by default)
 - ToolLauncher resolves executables from central library when path omitted
 - Backward compatible: existing manifests with paths still work
 - Migration notes added to MANIFEST_SCHEMA.md
@@ -501,7 +501,7 @@ Granular, actionable items for the Tools/Projects page redesign:
 
 **Stack-Aware Project Explorer VSCodium Mappings and Double-Click Launch (Oct 31, 2026):**
 - Expanded FileTypeMapper with VSCodium supported extensions: gd, cs, gdshader, shader, txt, md, csv, json, yaml, yml, toml
-- Implemented explicit metadata file and extension exclusions (stack.json, ogs_config.json, ogs_metadata.json, .import, .uid, .cfg, .tres, .tscn) to keep launcher and engine internals hidden
+- Implemented explicit metadata file and extension exclusions (ogs_stack.json, ogs_config.json, ogs_metadata.json, .import, .uid, .cfg, .tres, .tscn) to keep launcher and engine internals hidden
 - Stack awareness in ProjectExplorer: when VSCodium is in project's pinned tools, surfaces text, script, shader, and data files with the VSCodium icon (20px width)
 - Preserved clean directory pruning for Godot-only projects: script and text files remain pruned when VSCodium is not in the project's pinned stack
 - Added double-click file activation (file_activated signal) in ProjectExplorer to trigger immediate tool launch targeting the activated file
@@ -527,7 +527,7 @@ Granular, actionable items for the Tools/Projects page redesign:
 - Headless `RemoteProjectCloner` service (`scripts/projects/remote_project_cloner.gd`) managing asynchronous Git cloning and validation.
 - PortableGit executable resolution in `LibraryManager` (`resolve_git_executable`): locates `cmd/git.exe` on Windows and `bin/git` on Unix/macOS, selecting the highest installed version.
 - Strict URL validation rejecting empty strings, argument injection (`-` prefix), disallowed protocols (`file://`, `ext::`), directory traversal, and shell metacharacters while supporting `https://`, `http://` (local LAN mirrors), `ssh://`, and SCP-style syntax (`git@host:repo.git`).
-- Two-phase clone verification: blobless clone (`--filter=blob:none --no-checkout`) with fallback to standard `--no-checkout`, followed by `HEAD:stack.json` inspection prior to checking out heavy game assets.
+- Two-phase clone verification: blobless clone (`--filter=blob:none --no-checkout`) with fallback to standard `--no-checkout`, followed by `HEAD:ogs_stack.json` inspection prior to checking out heavy game assets.
 - Hardened Git security flags (`protocol.ext.allow=never`, `protocol.file.allow=never`, `core.symlinks=false`, `core.fsmonitor=false`).
 - Threaded execution with non-blocking pipe streaming, live percentage/phase signals, thread-safe cancellation, and safe cleanup bounded by destination root (`PathUtils.is_path_under_root`).
 - 34 test suites passing (1189 total tests) with zero failures.

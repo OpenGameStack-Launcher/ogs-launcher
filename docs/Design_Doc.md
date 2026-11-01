@@ -1,7 +1,7 @@
 # OGS-Launcher: Technical Design Document
 
 ## 1. Executive Summary
-The **Open Game Stack (OGS) Launcher** is a standalone application designed to bridge the gap between rapid commercial development and secure government sustainment. Unlike commercial launchers (Epic, Unity Hub), OGS operates on a **"Hub & Spoke"** architecture: it serves as a **Central Library Manager** during development (saving disk space and bandwidth) but enables the creation of **"Sealed Artifacts"**—self-contained, air-gapped simulations—for delivery. Its primary mandate is to prioritize project sovereignty over ecosystem connectivity.
+The **Open Game Stack (OGS) Launcher** is a standalone application designed to bridge the gap between rapid commercial development and secure government sustainment. Unlike commercial launchers (Epic, Unity Hub), OGS operates on a **"Hub & Spoke"** architecture: it serves as a **Central Library Manager** during development (saving disk space and bandwidth) but enables the creation of **"Sealed Artifacts"** - self-contained, air-gapped simulations - for delivery. Its primary mandate is to prioritize project sovereignty over ecosystem connectivity.
 
 ---
 
@@ -22,12 +22,12 @@ To avoid confusion, the OGS ecosystem operates on a three-tier architecture:
 *   **Analogy:** Like `~/.nvm` (Node Version Manager) or Unity Hub's installation directory.
 
 ### 1.5.3 Frozen Stack (Per-Project)
-*   **What:** A **version-pinned toolchain specification** defined in each project's `stack.json`.
+*   **What:** A **version-pinned toolchain specification** defined in each project's `ogs_stack.json`.
 *   **Contains:** Exact tool IDs and versions required to build/run that specific project (e.g., `"godot": "4.7.2"`, `"blender": "4.5.7"`).
-*   **Purpose:** Guarantees reproducibility. A project's stack is "frozen" in time—tools never auto-update unless the developer explicitly modifies `stack.json`.
+*   **Purpose:** Guarantees reproducibility. A project's stack is "frozen" in time - tools never auto-update unless the developer explicitly modifies `ogs_stack.json`.
 *   **Two Forms:**
-    *   **Linked (Development):** `stack.json` references tools in the Central Library. The `./tools/` folder is empty.
-    *   **Sealed (Delivery):** `stack.json` + embedded binaries in `./tools/`. Fully self-contained for air-gapped deployment.
+    *   **Linked (Development):** `ogs_stack.json` references tools in the Central Library. The `./tools/` folder is empty.
+    *   **Sealed (Delivery):** `ogs_stack.json` + embedded binaries in `./tools/`. Fully self-contained for air-gapped deployment.
 *   **Analogy:** Like `package-lock.json` (npm) or `Pipfile.lock` (Python) but for simulation toolchains.
 
 ### 1.5.4 Mirror (Optional Offline Distribution)
@@ -45,7 +45,7 @@ To support both modern CI/CD workflows and long-term archiving, OGS defines two 
 
 ### 2.1 State 1: The "Linked" Project (Development)
 *   **Context:** Connected Developer Workstation.
-*   **Structure:** A lightweight root folder containing a `stack.json` manifest and the source assets.
+*   **Structure:** A lightweight root folder containing an `ogs_stack.json` manifest and the source assets.
 *   **Binaries:** The project does *not* contain heavy tool binaries. Instead, it "links" to a **Central Tool Library** managed by the Launcher (located in `%LOCALAPPDATA%/OGS/Library` on Windows, or `~/.config/ogs-launcher/library` on Unix).
 *   **Efficiency:** Multiple projects using "Godot 4.7.2" share the same single installation, mimicking the efficiency of Unity Hub or NVM.
 *   **Testing Note:** For automated testing, this path can be overridden via the `OGS_LIBRARY_ROOT` environment variable to isolate tests from production data. See [TESTING.md](TESTING.md#test-library-isolation).
@@ -59,7 +59,7 @@ To support both modern CI/CD workflows and long-term archiving, OGS defines two 
 Every OGS project enforces a specific directory hierarchy to ensure "Seal" compatibility:
 ```text
 My_Simulation_Project/
-├── stack.json          # The Environment Manifest (Managed by Launcher)
+├── ogs_stack.json     # The Environment Manifest (Managed by Launcher)
 ├── .gitignore          # Excludes /tools/ and temporary builds
 ├── tools/              # (Empty in State 1; Populated in State 2)
 └── project_source/     # The actual Godot Project & Assets
@@ -70,7 +70,7 @@ My_Simulation_Project/
 ### 2.4 Project Discovery & Workspace Management
 The launcher manages projects through a local project registry (`ogs_projects_index.json`):
 *   **Primary Projects Folder:** Scaffolding new projects creates project directories inside a configurable Primary Projects Folder. By default, this resolves to `%USERPROFILE%/OGS_Projects` on Windows or `$HOME/OGS_Projects` on Unix. Users can customize this location on the Settings page or reset it back to default at any time. Settings are persisted in `ogs_launcher_settings.json`.
-*   **Add Local Project:** Adding an existing project folder requires only `stack.json`. If `ogs_config.json` is missing (as when cloning repositories that omit local environment configuration), the launcher automatically creates a default `ogs_config.json` with standard offline policies (`offline_mode: false`, `force_offline: false`).
+*   **Add Local Project:** Adding an existing project folder requires only `ogs_stack.json`. If `ogs_config.json` is missing (as when cloning repositories that omit local environment configuration), the launcher automatically creates a default `ogs_config.json` with standard offline policies (`offline_mode: false`, `force_offline: false`).
 
 ### 2.5 Remote Project Git Cloner Service
 To enable seamless collaboration and distribution of frozen stacks across development teams without compromising air-gap safety, the launcher includes an asynchronous headless cloner service (`RemoteProjectCloner`):
@@ -78,7 +78,7 @@ To enable seamless collaboration and distribution of frozen stacks across develo
 *   **Air-Gap and Security Gating:** Verifies `OfflineEnforcer.is_offline()` before initiating any network operation; immediately rejects clone requests when offline mode is active.
 *   **Remote URL Security Validation:** Validates URLs against argument injection (rejecting leading dashes or hyphens), disallowed protocols (`file://`, `ext::`), local filesystem paths, traversal sequences, and shell metacharacters, while supporting `https://`, `http://` (for local LAN mirrors), `ssh://`, and SCP-style syntax (`git@host:repo.git`).
 *   **Two-Phase Manifest Verification:**
-    1.  *Phase A (Blobless Pre-Checkout):* Executes `git clone --filter=blob:none --no-checkout` (with fallback to `--no-checkout`) and queries `git show HEAD:stack.json` to validate the root manifest before checking out heavy game assets. If the manifest is missing or invalid, the partial clone is immediately purged.
+    1.  *Phase A (Blobless Pre-Checkout):* Executes `git clone --filter=blob:none --no-checkout` (with fallback to `--no-checkout`) and queries `git show HEAD:ogs_stack.json` to validate the root manifest before checking out heavy game assets. If the manifest is missing or invalid, the partial clone is immediately purged.
     2.  *Phase B (Checkout & Auto-Config):* Populates the working tree with `git checkout --progress HEAD` and automatically generates a default `ogs_config.json` if missing.
 *   **Defensive Process and Path Management:** Hardens all Git executions with `-c protocol.ext.allow=never -c protocol.file.allow=never -c core.symlinks=false -c core.fsmonitor=false`. Streams progress via non-blocking pipes, supports thread-safe cancellation killing child PIDs, and bounds all directory deletions strictly within destination roots via `PathUtils.is_path_under_root`.
 
@@ -225,7 +225,7 @@ To provide instantaneous feedback on network status and eliminate user confusion
 
 ### 2.20 Two-Phase Determinate File-Count Progress Reporting (ProjectSealer & SealController)
 To provide transparency during packaging and eliminate ambiguity from generic indeterminate elapsed-second timers, the "Seal for Delivery" workflow implements two-phase determinate file-count progress reporting:
-*   **Step 1/2: Copying Tools (`ProjectSealToolCopier`):** Before starting file operations, `ProjectSealToolCopier._count_files_recursive()` pre-counts the total number of files across all tool directories in the Central Library referenced by `stack.json`. As each file is copied into `./tools/`, it emits monotonic progress notifications (`phase = "Step 1/2: Copying tools"`, `current`, `total`).
+*   **Step 1/2: Copying Tools (`ProjectSealToolCopier`):** Before starting file operations, `ProjectSealToolCopier._count_files_recursive()` pre-counts the total number of files across all tool directories in the Central Library referenced by `ogs_stack.json`. As each file is copied into `./tools/`, it emits monotonic progress notifications (`phase = "Step 1/2: Copying tools"`, `current`, `total`).
 *   **Step 2/2: Creating ZIP Archive (`ProjectSealArchiver`):** Before archive compression, `ProjectSealArchiver._collect_files_recursive()` collects and sorts all project files into `files_to_pack`. As each file finishes packing into the ZIP archive, it emits progress notifications (`phase = "Step 2/2: Creating ZIP archive"`, `current`, `total`).
 *   **Thread-Safe UI Synchronization (`SealController`):** Worker thread progress updates are protected by `_progress_mutex` and scheduled to the main thread via `call_deferred("_apply_progress_to_ui")`. The progress bar (`SealProgressBar`) is configured in determinate mode (`min_value = 0`, `max_value = 100`, `indeterminate = false`), advancing from 0% to 100% in Phase 1, resetting cleanly to 0% at the start of Phase 2, and advancing to 100% upon completion.
 *   **Thousands Separator Formatting:** File counts in `StatusLabel` and `OutputLabel` are formatted using comma separators via `format_number()` (e.g. `Step 1/2: Copying tools (1,234 of 5,678 files)` and `Step 2/2: Creating ZIP archive (4,200 of 5,678 files)`).
@@ -239,24 +239,24 @@ To provide transparency during packaging and eliminate ambiguity from generic in
 *   **Target User:** DoD Contractors, Indie Developers.
 *   **Context:** Unclassified environment with internet access.
 *   **Workflow:**
-    1.  **Hydration (Link):** When a user opens a project, the Launcher reads `stack.json`.
+    1.  **Hydration (Link):** When a user opens a project, the Launcher reads `ogs_stack.json`.
         *   *Check:* Is "Godot 4.7.2 (Hardened)" present in the Central Library?
         *   *Action:* If no, download from the OGS Mirror. If yes, launch the project using the central binary.
-    2.  **Strict Pinning:** Updates are never automatic. If the user wants to upgrade to "Godot 4.4", they must explicitly click "Upgrade Project Stack" in the Launcher UI, which updates `stack.json`.
-    3.  **Source Control:** The developer commits `stack.json` and `project_source/`. The `tools/` folder is ignored via `.gitignore`, keeping the repo lightweight.
+    2.  **Strict Pinning:** Updates are never automatic. If the user wants to upgrade to "Godot 4.4", they must explicitly click "Upgrade Project Stack" in the Launcher UI, which updates `ogs_stack.json`.
+    3.  **Source Control:** The developer commits `ogs_stack.json` and `project_source/`. The `tools/` folder is ignored via `.gitignore`, keeping the repo lightweight.
 
 ### 3.2 Mode B: Sovereign Sustainment (SIPR / Air-Gapped)
 *   **Target User:** Government Program Offices, Classified Labs.
 *   **Context:** Secure environment receiving the "Sealed" deliverable.
 *   **Workflow:**
     1.  **Reception:** The Government receives a "Sealed Artifact" (Zip or HDD).
-    2.  **Verification:** The Launcher validates that the tools inside the local `./tools/` directory match the hashes in `stack.json`.
+    2.  **Verification:** The Launcher validates that the tools inside the local `./tools/` directory match the hashes in `ogs_stack.json`.
     3.  **Isolation:** The Launcher detects the `force_offline=true` flag in the project config and disables all "Check for Updates" or "Asset Library" features.
 
 ---
 
 ## 4. The Validated Toolchain (Standard Profile)
-The OGS-Launcher manages a "Standard OGS Profile" of tools known to be compliant with the "Hardened" spec. The Tool Catalog (`repository.json`) offers multiple pre-validated versions per tool; a project pins exactly one version of each via its `stack.json`. The OGS Launcher **application itself** is built with Godot 4.7.2.
+The OGS-Launcher manages a "Standard OGS Profile" of tools known to be compliant with the "Hardened" spec. The Tool Catalog (`repository.json`) offers multiple pre-validated versions per tool; a project pins exactly one version of each via its `ogs_stack.json`. The OGS Launcher **application itself** is built with Godot 4.7.2.
 
 | Tool | Versions (Catalog) | License | Role |
 | :--- | :--- | :--- | :--- |
@@ -294,7 +294,7 @@ Upon launching a tool, the Launcher injects configuration overrides to ensure th
 This is the critical utility that converts a **State 1 (Linked)** project into a **State 2 (Sealed)** artifact.
 
 **The "Seal" Workflow:**
-1.  **Inventory Scan:** The Launcher parses `stack.json` to identify all required tools.
+1.  **Inventory Scan:** The Launcher parses `ogs_stack.json` to identify all required tools.
 2.  **Binary Embedding:** The Launcher physically copies the specific tool binaries from the **Central Library** into the project's local `./tools/` directory.
 3.  **Config Injection (`ogs_config.json`):**
     *   Generates a local config file in the project root.
@@ -307,7 +307,7 @@ This is the critical utility that converts a **State 1 (Linked)** project into a
 
 ### 6.1 Seal Dialog UX, Confirmation State, and Asynchronous Packaging
 When the user clicks "Seal for Delivery" on a ready project, `SealController.seal_for_delivery()` presents a pre-seal confirmation view rather than immediately starting heavy background operations. The dialog and lifecycle provide clear visual feedback, explicit user confirmation, and defensive window chrome guards:
-*   **Pre-Seal Confirmation View:** Displays the resolved target project name from `stack.json` (or folder name fallback), canonical stack tools formatted via `ToolCategoryMapper.get_display_name()`, and a multi-minute packaging advisory notice.
+*   **Pre-Seal Confirmation View:** Displays the resolved target project name from `ogs_stack.json` (or folder name fallback), canonical stack tools formatted via `ToolCategoryMapper.get_display_name()`, and a multi-minute packaging advisory notice.
 *   **Explicit Confirmation Actions:** Bottom action buttons display Confirm (PrimaryButton) and Cancel (SecondaryButton). Clicking Cancel dismisses the dialog immediately without touching files or starting threads; clicking Confirm transitions the dialog in-place into active sealing.
 *   **Borderless Dialog Chrome and Styled Header:** `SealDialog` is configured with `borderless = true`, unresizable window flags, and empty close theme icons to remove the OS titlebar close button. An internal `HeaderBar` with an 18px `HeaderTitle` ("Seal for Delivery") and horizontal separator provides clean window structure.
 *   **Modal Dismissal Protection:** Intercepts `close_requested` on `SealDialog` to block window dismissal while background worker threads are actively sealing.

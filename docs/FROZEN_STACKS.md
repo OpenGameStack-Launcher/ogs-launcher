@@ -6,12 +6,12 @@ This document records the **Tool Catalog** - the authoritative list of tools ava
 
 **Important Terminology:**
 - **Tool Catalog** = The remote `repository.json` listing available tools (what this document describes)
-- **Frozen Stack** = A per-project `stack.json` specifying version-pinned tools (see [Design_Doc.md](Design_Doc.md#terminology--architecture))
+- **Frozen Stack** = A per-project `ogs_stack.json` specifying version-pinned tools (see [Design_Doc.md](Design_Doc.md#terminology--architecture))
 
 ## Tool Catalog Contents
 
 The catalog lists every tool **version** available for download; a project's
-`stack.json` pins exactly one version per tool. The catalog currently offers:
+`ogs_stack.json` pins exactly one version per tool. The catalog currently offers:
 
 - **Godot Engine:** 4.3 (v1.0, stable, hardened build), 4.7.2 (v2.0, stable, hardened build)
 - **Blender:** 4.5.7 (v1.0, stable), 5.2 (v2.0, stable)
@@ -24,7 +24,7 @@ The catalog lists every tool **version** available for download; a project's
 > The **OGS Launcher application itself** is built with Godot 4.7.2 - see
 > [copilot-instructions.md](../.github/copilot-instructions.md). That is
 > independent of which Godot version(s) a *project* chooses to freeze via
-> `stack.json`; both 4.3 and 4.7.2 remain available to end users.
+> `ogs_stack.json`; both 4.3 and 4.7.2 remain available to end users.
 
 ## Remote Repository
 
@@ -37,7 +37,7 @@ The catalog lists every tool **version** available for download; a project's
 In Frozen Stacks v3.0, code editing and version control tools operate with specialized portable semantics:
 - **Project-Rooted Git Bash:** Launching Git automatically specifies `--cd=<project_dir>` so the terminal opens directly at the project root directory.
 - **Workspace-Rooted VSCodium:** Launching VSCodium passes the project directory as the workspace folder, with optional target file support.
-- **Automatic Portable Git Detection in VSCodium:** When a project includes both VSCodium and Git in `stack.json`, launching VSCodium checks for the presence of portable Git in the Central Library. If found, the launcher automatically injects or updates `git.path` (`<git_tool_dir>/cmd/git.exe`) and `git.enabled: true` in `<project_dir>/.vscode/settings.json`, preserving existing user settings.
+- **Automatic Portable Git Detection in VSCodium:** When a project includes both VSCodium and Git in `ogs_stack.json`, launching VSCodium checks for the presence of portable Git in the Central Library. If found, the launcher automatically injects or updates `git.path` (`<git_tool_dir>/cmd/git.exe`) and `git.enabled: true` in `<project_dir>/.vscode/settings.json`, preserving existing user settings.
 - **Air-Gap Telemetry Suppression:** When offline enforcement is active, launching VSCodium automatically appends `--disable-telemetry` to suppress outbound telemetry.
 - **Scaffolding Semantics:** Code category tools operate directly on project code and root directories, skipping the creation of empty `assets/Code/` folders during tool addition.
 
@@ -48,7 +48,7 @@ In Frozen Stacks v3.0, code editing and version control tools operate with speci
    - Downloads the archive from the GitHub Release URL specified in the manifest
    - Verifies the SHA-256 hash matches the manifest entry
    - Extracts the tool to the Central Library (`%LOCALAPPDATA%/OGS/Library/[tool_id]/[version]/`)
-3. **Project Usage:** Projects reference these tools via their `stack.json` manifests, creating a "frozen stack" for that specific project.
+3. **Project Usage:** Projects reference these tools via their `ogs_stack.json` manifests, creating a "frozen stack" for that specific project.
 
 ## Maintenance Notes
 

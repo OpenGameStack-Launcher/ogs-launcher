@@ -17,7 +17,7 @@ trigger: always_on
    - All network activity must go through the explicit download/mirror flows (`scripts/network/` and `scripts/mirror/`) and must honor `OfflineEnforcer` and `SocketBlocker`.
 
 3. **UNTRUSTED INPUT & PATH TRAVERSAL PROTECTION**:
-   - Treat `stack.json`, `ogs_config.json`, `repository.json`, and ZIP archives as untrusted input.
+   - Treat `ogs_stack.json`, `ogs_config.json`, `repository.json`, and ZIP archives as untrusted input.
    - Normalize and validate all resolved paths to prevent directory traversal (`../`) and zip-slip attacks during archive extraction or tool launching.
    - Enforce SHA-256 hash verification on tool archives before extraction.
 
