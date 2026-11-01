@@ -14,7 +14,8 @@ The **PR Reviewer & Documentation Agent** acts as the quality gatekeeper and doc
 3. **Verify Architecture, Security & Code Standards:** Audit the diff against Godot 4.7.2 syntax, static typing, `OgsLogger` usage, air-gap/offline safety, and path traversal protections (see `.agents/skills/code-review/SKILL.md`).
 4. **Independent Test Execution & Visual QA:** Run the headless test suite inside the worktree and confirm zero failures (`tests failed: 0`), and verify UI changes using MCP visual QA (`python mcp_client.py screenshot` / `get_ui_elements`; see `.agents/skills/mcp-visual-qa/SKILL.md`).
 5. **Synchronize Documentation:** Update `docs/TESTING.md`, `docs/MANUAL_TESTING.md`, `docs/The_Plan.md`, `docs/*_SCHEMA.md`, and `README.md` as appropriate on the feature branch prior to merge.
-6. **Merge to Main & Clean Up:** Perform a standard Git merge commit (`--merge --delete-branch`), release Windows file locks, remove all local worktrees for the issue/PR, prune worktrees, and synchronize local `main`.
+6. **Pre-Merge CI Verification Gate:** Manually dispatch the Windows CI workflow (`ci.yml`) on `<headRefName>`, monitor execution to completion, and gate merge approval on exit code 0.
+7. **Merge to Main & Clean Up:** Perform a standard Git merge commit (`--merge --delete-branch`), release Windows file locks, remove all local worktrees for the issue/PR, prune worktrees, and synchronize local `main`.
 
 ---
 
@@ -39,6 +40,7 @@ Before approving or merging any Pull Request, verify the following:
 * [ ] **Node Cleanup:** Scene tests call `.free()` on all instantiated UI nodes.
 * [ ] **Independent Test Execution:** Reviewer independently runs `godot --headless -s res://tests/test_runner.gd` on the branch and confirms 0 failures.
 * [ ] **Visual QA (MCP Bridge):** If the PR modifies UI scenes, layouts, dialogs, icons, or visual behavior, launch the worktree app locally (`godot --path <worktree_path>`), capture a screenshot via `python mcp_client.py screenshot` (and inspect UI controls via `python mcp_client.py get_ui_elements`), view `screenshot.png` with `read_file` to verify the application is visually working right, and stop the Godot process (`Stop-Process -Name "Godot*" -Force -ErrorAction SilentlyContinue`).
+* [ ] **Pre-Merge Manual CI Verification:** Dispatch CI workflow on the feature branch (`gh workflow run ci.yml --ref <headRefName>`), monitor with `gh run watch <run_id> --exit-status`, and confirm exit status 0 before merging.
 
 ---
 
@@ -120,7 +122,27 @@ gh pr review <pr_number> --request-changes --body "<Detailed description of what
 ### Scenario B: Approved & Ready to Merge
 Once all acceptance criteria are met, automated tests pass with 0 failures, and documentation is synchronized on the feature branch, proceed to merge.
 
-#### 1. Release Windows Locks & Remove Worktrees Before Merging
+#### 1. Pre-Merge Manual CI Verification Gate
+After all documentation updates and review commits are pushed to `<headRefName>`, dispatch the Windows CI workflow against the feature branch:
+```powershell
+gh workflow run ci.yml --ref <headRefName>
+```
+
+Retrieve the workflow run ID and watch execution to completion:
+```powershell
+# Retrieve dispatched run ID
+$runId = gh run list --workflow=ci.yml --branch <headRefName> --event workflow_dispatch --limit 1 --json databaseId --jq ".[0].databaseId"
+
+# Watch execution to completion (adhering to the 10-minute liveness update requirement)
+gh run watch $runId --exit-status
+```
+
+> [!IMPORTANT]
+> The PR may ONLY be merged if the dispatched CI workflow run exits with status code 0 (`tests failed: 0`, smoke packaging validation passed). If CI fails, investigate failures, push fixes to `<headRefName>`, and re-dispatch.
+>
+> **Bootstrap Caveat:** GitHub requires `workflow_dispatch` to exist on the default branch (`main`) before `gh workflow run ci.yml --ref <branch>` can be invoked. For PR #178 (which introduces this trigger to `ci.yml`), manual dispatch via CLI will become active immediately once PR #178 is merged into `main`.
+
+#### 2. Release Windows Locks & Remove Worktrees Before Merging
 Before merging, terminate any lingering background Godot processes so Windows file locks are released, return to the repository root (`c:\Projects\ogs-launcher`), and remove any worktrees associated with the issue or PR:
 
 ```powershell
@@ -145,7 +167,7 @@ if (Test-Path ".worktrees/review-pr-<pr_number>") {
 git worktree prune
 ```
 
-#### 2. Merge the Pull Request
+#### 3. Merge the Pull Request
 Merge using the GitHub CLI with a **standard merge commit** (preserving complete Git history) and delete the remote branch:
 ```powershell
 gh pr merge <pr_number> --merge --delete-branch
@@ -153,7 +175,7 @@ gh pr merge <pr_number> --merge --delete-branch
 > [!IMPORTANT]
 > **DO NOT squash** (`--squash`) or rebase (`--rebase`). Standard merge commits (`--merge`) preserve the detailed history of atomic commits in the repository.
 
-#### 3. Verify Issue Closure
+#### 4. Verify Issue Closure
 Confirm that the linked issue (`Resolves #<issue_number>`) has transitioned to `CLOSED`:
 ```powershell
 gh issue view <issue_number> --json state
@@ -163,7 +185,7 @@ If GitHub did not automatically close the issue (for example, if the PR body omi
 gh issue close <issue_number> --comment "Resolved and merged via PR #<pr_number>."
 ```
 
-#### 4. Local Repository Synchronization & Branch Cleanup
+#### 5. Local Repository Synchronization & Branch Cleanup
 From the main project directory (`c:\Projects\ogs-launcher`):
 ```powershell
 # Ensure main is checked out and synchronized with origin/main
