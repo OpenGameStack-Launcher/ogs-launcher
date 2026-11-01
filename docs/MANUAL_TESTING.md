@@ -760,32 +760,34 @@ dir "$env:LOCALAPPDATA\OGS\"
 1. On Projects page, verify the "Seal for Delivery" button is now **enabled** (green, no longer grayed out)
 2. Verify seal button tooltip is cleared (should not say "Download required tools...")
 3. Click "Seal for Delivery" button
-4. Observe seal dialog that opens:
-   - Verify `SealProgressBar` is visible and actively indeterminate
-   - Verify `StatusLabel` headline displays 18px text ("Sealing project...") with neutral off-white styling (`#F3F4F6`)
-   - Verify dialog "Close" button (`get_ok_button()`) is disabled while tools are being copied to prevent premature dismissal
-5. Monitor seal progress through stages:
-   - "Sealing project... (Xs)"
-   - OutputLabel updates stage hints at 14px muted text (`#9CA3AF`)
+4. Observe confirmation view in seal dialog:
+   - Verify confirmation view displays target project name, configured stack tools, and advisory notice explaining standalone packaging
+   - Verify "Confirm" (PrimaryButton) and "Cancel" (SecondaryButton) buttons are visible
+5. Click "Confirm" to start packaging:
+   - Verify modal "Cancel" button hides and "Close" button becomes disabled
+   - Verify two-phase determinate progress reporting:
+     - Step 1/2 (Copying tools): `SealProgressBar` displays determinate progress (0% to 100%), while `StatusLabel` and `OutputLabel` display "Step 1/2: Copying tools (X of Y files)" with thousands comma separators where applicable
+     - Step 2/2 (Creating ZIP archive): `SealProgressBar` resets to 0% and advances to 100%, while `StatusLabel` and `OutputLabel` display "Step 2/2: Creating ZIP archive (X of Y files)" with thousands comma separators
+     - Elapsed timer displays on `OutputLabel` ("Elapsed time: Xs") alongside progress status
 6. When complete:
    - Verify `SealProgressBar` hides
    - Verify dialog "Close" button is re-enabled
    - Verify `StatusLabel` modulates to success green (`#22C55E`, "✓ Project sealed successfully!")
-   - Verify OutputLabel formats copied tools with canonical display names via `ToolCategoryMapper` (e.g. "• Godot v4.7.2")
+   - Verify OutputLabel formats archive filename, size in MB, and copied tools with canonical display names via `ToolCategoryMapper` (e.g. "• Godot v4.7.2")
 7. Note the sealed archive location and filename
 8. (Optional) Click "Open Sealed Folder" to verify archive was created
 9. Close seal dialog
 
 **Expected Results:**
-- ✅ Seal button transitions from disabled → enabled (green color)
+- ✅ Seal button transitions from disabled -> enabled (green color)
 - ✅ Seal button tooltip is empty or cleared
-- ✅ Clicking seal button opens seal dialog without errors
-- ✅ Seal dialog displays:
-  - Title: "Seal for Delivery"
-  - Prominent 18px `StatusLabel` headline progressing through stages with neutral off-white styling (`#F3F4F6`)
-  - Active indeterminate `SealProgressBar` indicating packaging in progress
+- ✅ Clicking seal button opens pre-seal confirmation view with project name, tools list, and advisory notice
+- ✅ Clicking "Confirm" transitions dialog in-place to active packaging
+- ✅ Seal dialog displays two-phase determinate progress:
+  - Step 1/2: "Step 1/2: Copying tools (X of Y files)" with determinate progress bar from 0% to 100%
+  - Step 2/2: "Step 2/2: Creating ZIP archive (X of Y files)" with progress bar resetting to 0% and advancing to 100%
+  - Thousands comma formatting applied to file counts (e.g. "1,234 of 5,678 files")
   - Modal "Close" button disabled during active packaging to prevent premature dismissal
-  - Output/log area showing operations at 14px with muted slate styling (`#9CA3AF`)
 - ✅ Seal process completes without crashes
 - ✅ Final status displays:
   - `SealProgressBar` is hidden

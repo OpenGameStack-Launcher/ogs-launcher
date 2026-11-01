@@ -209,6 +209,14 @@ To provide instantaneous feedback on network status and eliminate user confusion
 *   **Navigation Guard:** When navigating to the Tools page (`layout_controller.page_changed`), requests are only dispatched if `not tools_controller.has_repository_data()`, avoiding redundant network fetches across navigation switches.
 *   **Defensive Request Cleanup:** `ToolsController.cleanup()` tracks active in-flight `HTTPRequest` nodes (`_active_http_requests`), cancelling pending requests and calling `queue_free()` upon close notifications (`NOTIFICATION_WM_CLOSE_REQUEST`, `NOTIFICATION_PREDELETE`) and `_exit_tree()`, preventing orphan node leaks and dangling signals.
 
+### 2.20 Two-Phase Determinate File-Count Progress Reporting (ProjectSealer & SealController)
+To provide transparency during packaging and eliminate ambiguity from generic indeterminate elapsed-second timers, the "Seal for Delivery" workflow implements two-phase determinate file-count progress reporting:
+*   **Step 1/2: Copying Tools (`ProjectSealToolCopier`):** Before starting file operations, `ProjectSealToolCopier._count_files_recursive()` pre-counts the total number of files across all tool directories in the Central Library referenced by `stack.json`. As each file is copied into `./tools/`, it emits monotonic progress notifications (`phase = "Step 1/2: Copying tools"`, `current`, `total`).
+*   **Step 2/2: Creating ZIP Archive (`ProjectSealArchiver`):** Before archive compression, `ProjectSealArchiver._collect_files_recursive()` collects and sorts all project files into `files_to_pack`. As each file finishes packing into the ZIP archive, it emits progress notifications (`phase = "Step 2/2: Creating ZIP archive"`, `current`, `total`).
+*   **Thread-Safe UI Synchronization (`SealController`):** Worker thread progress updates are protected by `_progress_mutex` and scheduled to the main thread via `call_deferred("_apply_progress_to_ui")`. The progress bar (`SealProgressBar`) is configured in determinate mode (`min_value = 0`, `max_value = 100`, `indeterminate = false`), advancing from 0% to 100% in Phase 1, resetting cleanly to 0% at the start of Phase 2, and advancing to 100% upon completion.
+*   **Thousands Separator Formatting:** File counts in `StatusLabel` and `OutputLabel` are formatted using comma separators via `format_number()` (e.g. `Step 1/2: Copying tools (1,234 of 5,678 files)` and `Step 2/2: Creating ZIP archive (4,200 of 5,678 files)`).
+*   **Clean Edge Case Handling:** If a phase processes 0 files, progress is reported as 100% without division-by-zero errors. Upon error or success, the progress bar is hidden, the dialog Close button is re-enabled, and summary information is presented.
+
 ---
 
 ## 3. Operational Modes & User Stories

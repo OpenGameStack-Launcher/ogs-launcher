@@ -63,6 +63,10 @@ func run() -> Dictionary:
 	await _test_confirm_transitions_in_place_to_sealing_progress(results)
 	_test_close_requested_blocked_while_sealing(results)
 	_test_main_tscn_seal_dialog_chrome_configuration(results)
+	_test_determinate_progress_two_phases(results)
+	_test_determinate_progress_thousands_formatting(results)
+	_test_determinate_progress_zero_files_edge_case(results)
+	_test_determinate_progress_error_hides_progress_bar(results)
 
 	return results
 
@@ -736,3 +740,154 @@ func _test_main_tscn_seal_dialog_chrome_configuration(results: Dictionary) -> vo
 		_expect(header_title.get_theme_font_size("font_size") == 18, "HeaderTitle font size should be 18px", results)
 
 	instance.free()
+
+## Test: Two-phase determinate progress reporting updates ProgressBar and labels accurately across Step 1 and Step 2.
+func _test_determinate_progress_two_phases(results: Dictionary) -> void:
+	## Validates determinate progress bar 0%..100% for Step 1, reset to 0%..100% for Step 2, and success hide.
+	var controller = SealControllerScript.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
+
+	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
+
+	# --- Step 1/2: Copying tools ---
+	controller.update_progress("Step 1/2: Copying tools", 0, 10)
+	_expect(progress_bar.indeterminate == false, "Progress bar should be determinate during active copying", results)
+	_expect(progress_bar.min_value == 0, "Progress bar min_value should be 0", results)
+	_expect(progress_bar.max_value == 100, "Progress bar max_value should be 100", results)
+	_expect(progress_bar.value == 0.0, "Progress bar value should be 0% at start of Step 1", results)
+	_expect(progress_bar.visible == true, "Progress bar should be visible during active copying", results)
+	_expect(status_label.text.contains("Step 1/2: Copying tools (0 of 10 files)"), "StatusLabel should format Step 1 0 of 10 files", results)
+	_expect(output_label.text.contains("Step 1/2: Copying tools (0 of 10 files)"), "OutputLabel should format Step 1 0 of 10 files", results)
+
+	controller.update_progress("Step 1/2: Copying tools", 5, 10)
+	_expect(is_equal_approx(progress_bar.value, 50.0), "Progress bar value should be 50% at midpoint of Step 1", results)
+	_expect(status_label.text.contains("Step 1/2: Copying tools (5 of 10 files)"), "StatusLabel should format Step 1 5 of 10 files", results)
+
+	controller.update_progress("Step 1/2: Copying tools", 10, 10)
+	_expect(is_equal_approx(progress_bar.value, 100.0), "Progress bar value should be 100% at end of Step 1", results)
+	_expect(status_label.text.contains("Step 1/2: Copying tools (10 of 10 files)"), "StatusLabel should format Step 1 10 of 10 files", results)
+
+	# --- Step 2/2: Creating ZIP archive (resets to 0%) ---
+	controller.update_progress("Step 2/2: Creating ZIP archive", 0, 20)
+	_expect(progress_bar.indeterminate == false, "Progress bar should remain determinate during Step 2", results)
+	_expect(progress_bar.value == 0.0, "Progress bar value should reset to 0% at start of Step 2", results)
+	_expect(status_label.text.contains("Step 2/2: Creating ZIP archive (0 of 20 files)"), "StatusLabel should format Step 2 0 of 20 files", results)
+	_expect(output_label.text.contains("Step 2/2: Creating ZIP archive (0 of 20 files)"), "OutputLabel should format Step 2 0 of 20 files", results)
+
+	controller.update_progress("Step 2/2: Creating ZIP archive", 10, 20)
+	_expect(is_equal_approx(progress_bar.value, 50.0), "Progress bar value should be 50% at midpoint of Step 2", results)
+
+	controller.update_progress("Step 2/2: Creating ZIP archive", 20, 20)
+	_expect(is_equal_approx(progress_bar.value, 100.0), "Progress bar value should be 100% at end of Step 2", results)
+	_expect(status_label.text.contains("Step 2/2: Creating ZIP archive (20 of 20 files)"), "StatusLabel should format Step 2 20 of 20 files", results)
+
+	# --- Completion hides progress bar and enables OK button ---
+	controller._show_success({
+		"success": true,
+		"project_size_mb": 5.0,
+		"sealed_zip": "user://sealed/project.zip",
+		"tools_copied": ["godot v4.7.2"]
+	})
+	_expect(progress_bar.visible == false, "Progress bar should be hidden upon success completion", results)
+	_expect(dialog.get_ok_button().disabled == false, "OK button should be re-enabled upon completion", results)
+
+	controller = null
+	dialog.free()
+
+## Test: Progress label formatting applies thousands separators for large counts.
+func _test_determinate_progress_thousands_formatting(results: Dictionary) -> void:
+	## Validates thousands comma formatting (e.g. 1,234 of 5,678 files).
+	var controller = SealControllerScript.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
+
+	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
+
+	controller.update_progress("Step 1/2: Copying tools", 1234, 5678)
+	_expect(status_label.text.contains("Step 1/2: Copying tools (1,234 of 5,678 files)"), "StatusLabel should format 1,234 of 5,678 files with commas", results)
+	_expect(output_label.text.contains("Step 1/2: Copying tools (1,234 of 5,678 files)"), "OutputLabel should format 1,234 of 5,678 files with commas", results)
+
+	controller.update_progress("Step 2/2: Creating ZIP archive", 1000000, 2500000)
+	_expect(status_label.text.contains("Step 2/2: Creating ZIP archive (1,000,000 of 2,500,000 files)"), "StatusLabel should format million counts with commas", results)
+
+	controller = null
+	dialog.free()
+
+## Test: Edge cases with 0 files report 100% cleanly without division by zero.
+func _test_determinate_progress_zero_files_edge_case(results: Dictionary) -> void:
+	## Validates clean handling of 0 files in both Step 1 and Step 2.
+	var controller = SealControllerScript.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
+
+	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
+
+	controller.update_progress("Step 1/2: Copying tools", 0, 0)
+	_expect(progress_bar.value == 100.0, "Progress bar should report 100% cleanly when total is 0", results)
+	_expect(status_label.text.contains("Step 1/2: Copying tools (0 of 0 files)"), "StatusLabel should format 0 of 0 files cleanly", results)
+
+	controller.update_progress("Step 2/2: Creating ZIP archive", 0, 0)
+	_expect(progress_bar.value == 100.0, "Progress bar should report 100% cleanly in Step 2 when total is 0", results)
+	_expect(status_label.text.contains("Step 2/2: Creating ZIP archive (0 of 0 files)"), "StatusLabel should format Step 2 0 of 0 files cleanly", results)
+
+	controller = null
+	dialog.free()
+
+## Test: Error occurrence hides progress bar and re-enables close button.
+func _test_determinate_progress_error_hides_progress_bar(results: Dictionary) -> void:
+	## Validates that errors cleanly hide progress bar and display error message in output label.
+	var controller = SealControllerScript.new()
+	var dialog = AcceptDialog.new()
+	var status_label = Label.new()
+	var output_label = Label.new()
+	var open_button = Button.new()
+	var progress_bar = ProgressBar.new()
+
+	dialog.add_child(status_label)
+	dialog.add_child(progress_bar)
+	dialog.add_child(output_label)
+	dialog.add_child(open_button)
+	(Engine.get_main_loop() as SceneTree).root.add_child(dialog)
+
+	controller.setup(dialog, status_label, output_label, open_button, progress_bar)
+
+	controller.update_progress("Step 1/2: Copying tools", 3, 10)
+	_expect(progress_bar.visible == true, "Progress bar should be visible during progress", results)
+
+	controller._show_error("Disk Full", ["Could not write archive to disk"])
+	_expect(progress_bar.visible == false, "Progress bar should be hidden on error", results)
+	_expect(output_label.text.contains("Could not write archive to disk"), "Output label should display error details", results)
+	_expect(dialog.get_ok_button().disabled == false, "Close button should be re-enabled on error", results)
+	_expect(status_label.modulate.is_equal_approx(Color("#EF4444")), "Status label modulate should be red on error", results)
+
+	controller = null
+	dialog.free()
+

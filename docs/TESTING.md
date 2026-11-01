@@ -201,6 +201,10 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Sealed zip path returned in result
   - Path handling with and without trailing slashes
   - Result structure validation (success, errors, sealed_zip, tools_copied, project_size_mb)
+  - Tool copier pre-counting and monotonic progress updates from 0 to total files
+  - Archiver packaging progress updates from 0 to total files
+  - Sealer forwarding two-phase progress events across tool copying and ZIP creation
+  - Zero-file edge case handling reporting 100% cleanly without division by zero
 
 - **[tests/mirror_repository_tests.gd](tests/mirror_repository_tests.gd)** — Validates local mirror repository.json loading and schema.
   - Valid manifests load correctly
@@ -283,6 +287,11 @@ Unit tests validate pure logic without instantiating UI nodes. These run quickly
   - Confirm flow transitions dialog in-place to active sealing progress and initiates background packaging
   - Window close_requested signal interception blocks unexpected modal dismissal during active sealing
   - Window chrome configuration verifies borderless, unresizable, dialog flags, and styled in-dialog HeaderBar layout in `main.tscn`
+  - Two-phase determinate progress updates: 0% to 100% for Step 1/2, resetting to 0% and advancing to 100% for Step 2/2
+  - StatusLabel and OutputLabel formatted with "Step 1/2: Copying tools (X of Y files)" and "Step 2/2: Creating ZIP archive (X of Y files)"
+  - Thousands comma formatting for large file counts (e.g. 1,234 of 5,678 files)
+  - Zero-file edge case handling reporting 100% cleanly without division by zero
+  - Error occurrence cleanly hiding progress bar, displaying error details, and re-enabling Close button
 
 - **[tests/tools_page_controller_tests.gd](tests/tools_page_controller_tests.gd)** - Validates ToolsPageController thread lifecycle, cleanup, and dynamic count badges.
   - Predelete joins active tool removal thread

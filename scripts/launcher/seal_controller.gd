@@ -54,6 +54,12 @@ var _seal_in_progress: bool = false
 var _seal_thread: Thread
 var _seal_started_at_msec: int = 0
 
+var _progress_mutex: Mutex = Mutex.new()
+var _current_phase: String = ""
+var _current_file_count: int = 0
+var _total_file_count: int = 0
+var _has_progress_update: bool = false
+
 ## Sets up the seal controller with dialog and display components.
 ## Parameters:
 ## seal_dialog (AcceptDialog): The dialog to show results
@@ -81,6 +87,8 @@ func setup(
 
 	if is_instance_valid(_progress_bar):
 		_progress_bar.visible = false
+		_progress_bar.min_value = 0
+		_progress_bar.max_value = 100
 
 	# Wire folder button
 	if is_instance_valid(_open_folder_button) and not _open_folder_button.pressed.is_connected(_on_open_folder_pressed):
@@ -200,6 +208,29 @@ static func _format_tool_entry(raw_entry: String) -> String:
 		formatted = "%s%s" % [ToolCategoryMapper.get_display_name(raw_id), rest]
 	return prefix + formatted
 
+## Formats an integer with thousands separator commas (e.g. 1000 -> "1,000").
+static func format_number(value: int) -> String:
+	## Formats integer with thousands commas.
+	var s: String = str(value)
+	var is_negative: bool = s.begins_with("-")
+	if is_negative:
+		s = s.substr(1)
+	var res: String = ""
+	var count: int = 0
+	for i in range(s.length() - 1, -1, -1):
+		if count > 0 and count % 3 == 0:
+			res = "," + res
+		res = s[i] + res
+		count += 1
+	if is_negative:
+		res = "-" + res
+	return res
+
+## Internal shorthand for format_number.
+static func _format_number(value: int) -> String:
+	## Formats integer with thousands commas.
+	return format_number(value)
+
 ## Helper to set ok button disabled state on the seal dialog if available.
 func _set_close_button_disabled(is_disabled: bool) -> void:
 	## Updates dialog OK button disabled state.
@@ -258,6 +289,8 @@ func _show_confirmation(project_path: String) -> void:
 
 	if is_instance_valid(_progress_bar):
 		_progress_bar.visible = false
+		_progress_bar.min_value = 0
+		_progress_bar.max_value = 100
 	if is_instance_valid(_open_folder_button):
 		_open_folder_button.visible = false
 
@@ -305,6 +338,20 @@ func cancel_seal() -> void:
 
 	_pending_project_path = ""
 	_current_state = State.IDLE
+
+	_progress_mutex.lock()
+	_has_progress_update = false
+	_current_phase = ""
+	_current_file_count = 0
+	_total_file_count = 0
+	_progress_mutex.unlock()
+
+	if is_instance_valid(_progress_bar):
+		_progress_bar.visible = false
+		_progress_bar.value = 0
+		_progress_bar.indeterminate = false
+		_progress_bar.min_value = 0
+		_progress_bar.max_value = 100
 
 	if is_instance_valid(_cancel_button):
 		_cancel_button.visible = false
@@ -359,6 +406,12 @@ func _run_seal_async(project_path: String) -> void:
 	_seal_in_progress = true
 	_seal_started_at_msec = Time.get_ticks_msec()
 	_seal_thread = Thread.new()
+	_progress_mutex.lock()
+	_has_progress_update = false
+	_current_phase = ""
+	_current_file_count = 0
+	_total_file_count = 0
+	_progress_mutex.unlock()
 
 	if is_instance_valid(_progress_bar):
 		_progress_bar.indeterminate = true
@@ -377,6 +430,12 @@ func _run_seal_async(project_path: String) -> void:
 	if start_err != OK:
 		_seal_thread = null
 		_seal_in_progress = false
+		_progress_mutex.lock()
+		_has_progress_update = false
+		_current_phase = ""
+		_current_file_count = 0
+		_total_file_count = 0
+		_progress_mutex.unlock()
 		_show_error("Seal operation failed.", "Unable to start background packaging thread.")
 		OgsLogger.error("seal_thread_start_failed", {
 			"component": "sealer",
@@ -426,18 +485,90 @@ func _start_seal_thread(project_path: String) -> int:
 func _threaded_seal_operation(project_path: String) -> Dictionary:
 	## Performs the full seal workflow off the main thread.
 	var sealer = ProjectSealer.new()
-	return sealer.seal_project(project_path)
+	var progress_cb: Callable = Callable(self, "_on_seal_progress_from_thread")
+	return sealer.seal_project(project_path, progress_cb)
+
+## Handles thread-safe progress notifications from background worker thread.
+func _on_seal_progress_from_thread(phase: String, current: int, total: int) -> void:
+	## Receives background progress and schedules main-thread UI update.
+	_progress_mutex.lock()
+	_current_phase = phase
+	_current_file_count = current
+	_total_file_count = total
+	_has_progress_update = true
+	_progress_mutex.unlock()
+
+	call_deferred("_apply_progress_to_ui", phase, current, total)
+
+## Updates determinate progress bar and labels for active sealing phase.
+## Parameters:
+## phase (String): Active phase description (e.g. "Step 1/2: Copying tools")
+## current (int): Current file index completed in this phase
+## total (int): Total files in this phase
+func update_progress(phase: String, current: int, total: int) -> void:
+	## Directly updates progress state and UI.
+	_progress_mutex.lock()
+	_current_phase = phase
+	_current_file_count = current
+	_total_file_count = total
+	_has_progress_update = true
+	_progress_mutex.unlock()
+
+	_apply_progress_to_ui(phase, current, total)
+
+## Applies determinate progress values and formatted labels to UI nodes on main thread.
+func _apply_progress_to_ui(phase: String, current: int, total: int) -> void:
+	## Updates ProgressBar and labels on main thread.
+	var percent: float = 100.0
+	if total > 0:
+		percent = clampf((float(current) / float(total)) * 100.0, 0.0, 100.0)
+	elif current == 0 and total == 0:
+		percent = 100.0
+
+	if is_instance_valid(_progress_bar):
+		_progress_bar.indeterminate = false
+		_progress_bar.min_value = 0
+		_progress_bar.max_value = 100
+		_progress_bar.value = percent
+		_progress_bar.visible = true
+
+	var count_text: String = "%s of %s files" % [format_number(current), format_number(total)]
+	var formatted_status: String = "%s (%s)" % [phase, count_text]
+
+	if is_instance_valid(_status_label):
+		_status_label.text = formatted_status
+		_status_label.modulate = Color("#F3F4F6")
+
+	if is_instance_valid(_output_label):
+		var elapsed_seconds: int = int((Time.get_ticks_msec() - _seal_started_at_msec) / 1000.0)
+		_output_label.text = "%s\n\nElapsed time: %ds\nPlease keep this window open while packaging completes." % [
+			formatted_status,
+			elapsed_seconds
+		]
 
 ## Updates in-progress status text while background seal runs.
 func _update_progress_status() -> void:
 	## Shows elapsed time and stage hints during long-running packaging.
+	_progress_mutex.lock()
+	var has_update: bool = _has_progress_update
+	var phase: String = _current_phase
+	var current: int = _current_file_count
+	var total: int = _total_file_count
+	_progress_mutex.unlock()
+
+	if has_update:
+		_apply_progress_to_ui(phase, current, total)
+		_set_close_button_disabled(true)
+		if is_instance_valid(_cancel_button):
+			_cancel_button.visible = false
+		return
+
 	var elapsed_seconds: int = int((Time.get_ticks_msec() - _seal_started_at_msec) / 1000.0)
-	var phase: String = "Validating and copying tools" if elapsed_seconds < 10 else "Packaging archive"
 	if is_instance_valid(_status_label):
 		_status_label.text = "Sealing project... (%ds)" % elapsed_seconds
 		_status_label.modulate = Color("#F3F4F6")
 	if is_instance_valid(_output_label):
-		_output_label.text = "Stage: %s\n\nThis step can take several minutes for large toolchains.\nPlease keep this window open." % phase
+		_output_label.text = "Stage: Preparing tools\n\nThis step can take several minutes for large toolchains.\nPlease keep this window open."
 	if is_instance_valid(_progress_bar):
 		_progress_bar.indeterminate = true
 		_progress_bar.visible = true
@@ -449,6 +580,13 @@ func _update_progress_status() -> void:
 func _show_success(result: Dictionary) -> void:
 	## Shows the successful seal result.
 	_current_state = State.SUCCESS
+	_progress_mutex.lock()
+	_has_progress_update = false
+	_current_phase = ""
+	_current_file_count = 0
+	_total_file_count = 0
+	_progress_mutex.unlock()
+
 	if is_instance_valid(_status_label):
 		_status_label.text = "✓ Project sealed successfully!"
 		_status_label.modulate = Color("#22C55E")
@@ -472,6 +610,10 @@ func _show_success(result: Dictionary) -> void:
 		_open_folder_button.visible = true
 	if is_instance_valid(_progress_bar):
 		_progress_bar.visible = false
+		_progress_bar.value = 0
+		_progress_bar.indeterminate = false
+		_progress_bar.min_value = 0
+		_progress_bar.max_value = 100
 
 	if is_instance_valid(_ok_button):
 		_ok_button.text = "Close"
@@ -494,6 +636,13 @@ func _show_success(result: Dictionary) -> void:
 func _show_error(title: String, errors: Variant) -> void:
 	## Shows the error result.
 	_current_state = State.ERROR
+	_progress_mutex.lock()
+	_has_progress_update = false
+	_current_phase = ""
+	_current_file_count = 0
+	_total_file_count = 0
+	_progress_mutex.unlock()
+
 	if is_instance_valid(_status_label):
 		_status_label.text = "✗ %s" % title
 		_status_label.modulate = Color("#EF4444")
@@ -511,6 +660,10 @@ func _show_error(title: String, errors: Variant) -> void:
 		_open_folder_button.visible = false
 	if is_instance_valid(_progress_bar):
 		_progress_bar.visible = false
+		_progress_bar.value = 0
+		_progress_bar.indeterminate = false
+		_progress_bar.min_value = 0
+		_progress_bar.max_value = 100
 
 	if is_instance_valid(_ok_button):
 		_ok_button.text = "Close"
@@ -531,6 +684,13 @@ func _show_error(title: String, errors: Variant) -> void:
 func _show_progress() -> void:
 	## Shows the progress dialog and activates progress indicators.
 	_current_state = State.SEALING
+	_progress_mutex.lock()
+	_has_progress_update = false
+	_current_phase = ""
+	_current_file_count = 0
+	_total_file_count = 0
+	_progress_mutex.unlock()
+
 	if is_instance_valid(_status_label):
 		_status_label.text = "Sealing project..."
 		_status_label.modulate = Color("#F3F4F6")
@@ -539,6 +699,7 @@ func _show_progress() -> void:
 	if is_instance_valid(_open_folder_button):
 		_open_folder_button.visible = false
 	if is_instance_valid(_progress_bar):
+		_progress_bar.value = 0
 		_progress_bar.indeterminate = true
 		_progress_bar.visible = true
 

@@ -70,7 +70,7 @@ The MVP is not complete until this full sequence works end to end:
 *   [x] **UI Integration: "Seal for Delivery" Button** - 100% Complete ✅
     *   *Scene Changes:* Added "Seal for Delivery" button to Projects page + SealDialog.
     *   *Wiring:* Connected button to ProjectSealer call in main.gd.
-    *   *Progress Feedback:* Indeterminate `SealProgressBar` active during background packaging thread execution.
+    *   *Progress Feedback:* Two-phase determinate `SealProgressBar` reporting file counts (`X of Y files`) across Step 1/2 (copying tools) and Step 2/2 (creating ZIP archive) with thousands comma formatting.
     *   *Close Button State:* Modal Close button automatically disabled during active background sealing to prevent premature dismissal, and re-enabled upon completion or failure.
     *   *Typography Hierarchy:* Corrected inverted hierarchy in `SealDialog` so `StatusLabel` serves as the primary headline at 18px (with `#F3F4F6` progress, `#22C55E` success, `#EF4444` error semantic colors) and `OutputLabel` renders at 14px with `#9CA3AF` muted styling.
     *   *Canonical Tool Display Naming:* `ToolCategoryMapper.get_display_name()` maps raw tool IDs to clean, capitalized display names (e.g., "• Godot v4.7.2", "• Blender v4.2") in the completion summary.
@@ -288,6 +288,13 @@ Granular, actionable items for the Tools/Projects page redesign:
     *   [x] Guarded `layout_controller.page_changed` for "tools" to prevent redundant network fetches when catalog data is already present
     *   [x] Implemented in-flight `HTTPRequest` tracking and clean disposal via `ToolsController.cleanup()` during application exit and destruction
     *   [x] Comprehensive unit and scene tests in `tests/tools_controller_tests.gd` and `tests/main_scene_tests.gd` (2232 tests passing across 38 test suites with zero failures)
+*   [x] Two-Phase Determinate File-Count Progress Reporting for Seal for Delivery (Issue #167) - 100% Complete ✅
+    *   [x] Step 1/2 (Copying tools): ProjectSealToolCopier recursively pre-counts total files across all manifest tools before copying, reporting progress increments as each file copy completes
+    *   [x] Step 2/2 (Creating ZIP archive): ProjectSealArchiver reports packaging progress from 0 to total files as each file is added to the ZIP archive
+    *   [x] ProjectSealer forwards two-phase progress events to callers via progress callback
+    *   [x] SealController configures determinate ProgressBar (min_value = 0, max_value = 100, indeterminate = false) and formats StatusLabel and OutputLabel with "Step 1/2: Copying tools (X of Y files)" and "Step 2/2: Creating ZIP archive (X of Y files)" with thousands comma separators
+    *   [x] Clean edge case handling for 0 files and error states (hiding progress bar and re-enabling Close button)
+    *   [x] Added unit tests in tests/project_sealer_tests.gd and tests/seal_controller_tests.gd (2315 tests passing across 38 test suites with zero failures)
 
 **Progress Dialog Modularity:**
 *   [x] Refactor progress dialog to support:

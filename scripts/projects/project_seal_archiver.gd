@@ -8,9 +8,10 @@ const OgsLogger = preload("res://scripts/logging/logger.gd")
 ## Creates zip archive for project and returns output metadata.
 ## Parameters:
 ## project_path (String): Absolute project path to archive
+## progress_callback (Callable): Optional callback for progress reporting (phase, current, total)
 ## Returns:
 ## Dictionary: {"success": bool, "errors": Array, "zip_path": String, "size_mb": float}
-func create_sealed_zip(project_path: String) -> Dictionary:
+func create_sealed_zip(project_path: String, progress_callback: Callable = Callable()) -> Dictionary:
 	## Packages full project content into a timestamped zip archive.
 	var result = {
 		"success": false,
@@ -39,6 +40,12 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 	var files_to_pack = _collect_files_recursive(project_path)
 	files_to_pack.sort()
 
+	var total_files: int = files_to_pack.size()
+	if total_files == 0:
+		_notify_progress(progress_callback, "Step 2/2: Creating ZIP archive", 0, 0)
+	else:
+		_notify_progress(progress_callback, "Step 2/2: Creating ZIP archive", 0, total_files)
+
 	OgsLogger.info("sealed_zip_packaging_start", {
 		"component": "sealer",
 		"project_path": project_path,
@@ -57,6 +64,7 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 		})
 		return result
 
+	var current_file: int = 0
 	var normalized_project_path = project_path.replace("\\", "/")
 	for abs_file_path in files_to_pack:
 		var normalized_abs_path = abs_file_path.replace("\\", "/")
@@ -119,6 +127,8 @@ func create_sealed_zip(project_path: String) -> Dictionary:
 
 		source_file.close()
 		zipper.close_file()
+		current_file += 1
+		_notify_progress(progress_callback, "Step 2/2: Creating ZIP archive", current_file, total_files)
 
 	zipper.close()
 
@@ -183,3 +193,15 @@ func _collect_files_recursive(dir_path: String) -> Array[String]:
 
 	dir.list_dir_end()
 	return files
+
+## Safely invokes progress callback supporting both 2-arg and 3-arg signatures.
+static func _notify_progress(callback: Callable, phase: String, current: int, total: int) -> void:
+	## Invokes progress callback if valid, forwarding phase, current, and total.
+	if not callback.is_valid():
+		return
+	var arg_count: int = callback.get_argument_count()
+	if arg_count == 2:
+		callback.call(current, total)
+	else:
+		callback.call(phase, current, total)
+
